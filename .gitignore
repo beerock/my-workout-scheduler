@@ -1,3 +1,17 @@
+# Claude Code (cache/config if path exists)
+.claude/
+claude.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE (Cursor, VS Code, others)
+.vscode/
+.cursor/
+.idea/
+*.swp
+
 # Logs
 logs
 *.log
