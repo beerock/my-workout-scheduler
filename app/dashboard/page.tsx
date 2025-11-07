@@ -26,12 +26,33 @@ export default async function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-6">
             Welcome, {user.email}! This is your dashboard.
           </p>
-          <p className="text-gray-500 text-sm mt-2">
-            Schedule management coming soon...
-          </p>
+          
+          <div className="space-y-4">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Quick Actions</h3>
+              <div className="space-y-2">
+                <a
+                  href="/dashboard/credentials"
+                  className="block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-center"
+                >
+                  Manage Gym Credentials
+                </a>
+                <p className="text-sm text-gray-500 mt-2">
+                  Store your gym website login credentials securely
+                </p>
+              </div>
+            </div>
+
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Coming Soon</h3>
+              <p className="text-gray-500 text-sm">
+                Schedule management forms will be available here
+              </p>
+            </div>
+          </div>
         </div>
       </main>
     </div>

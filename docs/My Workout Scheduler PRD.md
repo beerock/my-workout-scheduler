@@ -1,9 +1,15 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.0  
+**Version:** 2.1  
 **Product Owner:** Brock Busby  
 **Last Updated:** November 7, 2025  
 **Status:** Active Development (2-Week Prototype)
+
+**Recent Updates:**
+- Completed Days 1-2: Next.js setup, Supabase auth, login/signup pages
+- Completed database schema and RLS policies
+- Implemented application-level encryption for gym credentials
+- Built gym credentials form with password show/hide and confirmation
 
 **Major Changes from v1.0:**
 
@@ -232,7 +238,9 @@ booking\_attempts (
 ### Security
 
 - Supabase Row Level Security (RLS) policies ensure users only see their own data  
-- Gym credentials encrypted using Supabase Vault  
+- Gym credentials encrypted using application-level AES-256-GCM encryption (Node.js crypto module)
+  - Encryption key stored in environment variables (never sent to database)
+  - Password encrypted before storage, decrypted only when needed for automation
 - GitHub Actions secrets for API keys  
 - HTTPS everywhere (Vercel default)
 
@@ -257,19 +265,21 @@ booking\_attempts (
 
 **Days 1-2: Setup & Auth**
 
-- [ ] Create Next.js project  
-- [ ] Set up Supabase project  
-- [ ] Connect Supabase Auth  
-- [ ] Build login/signup pages  
+- [x] Create Next.js project  
+- [x] Set up Supabase project  
+- [x] Connect Supabase Auth  
+- [x] Build login/signup pages  
 - [ ] Deploy to Vercel
 
 **Days 3-4: Schedule Management**
 
-- [ ] Create database schema in Supabase  
+- [x] Create database schema in Supabase  
+- [x] Set up Row Level Security (RLS) policies
+- [x] Implement application-level encryption for gym credentials
+- [x] Build gym credentials form (with password show/hide and confirmation)
 - [ ] Build "Add Class" form  
 - [ ] Build "View Schedule" page  
-- [ ] Implement edit/delete functionality  
-- [ ] Store gym credentials (encrypted)
+- [ ] Implement edit/delete functionality
 
 **Days 5-7: Booking Script**
 
@@ -469,8 +479,14 @@ booking\_attempts (
 - Instant PostgreSQL database  
 - Built-in auth (saves weeks of work)  
 - Row Level Security (RLS)  
-- Credential encryption via Vault  
 - Generous free tier
+
+**Encryption:**
+
+- Application-level AES-256-GCM encryption (Node.js crypto module)
+- Encryption key stored in environment variables
+- More secure than database-level encryption (key never sent to database)
+- Works on free tier (no paid Supabase Vault needed)
 
 **GitHub Actions:**
 
