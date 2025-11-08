@@ -52,6 +52,7 @@ export interface Database {
           booking_window_hours: number
           timezone: string
           active: boolean
+          next_skip_date: string | null
           created_at: string
           updated_at: string
         }
@@ -65,6 +66,7 @@ export interface Database {
           booking_window_hours?: number
           timezone?: string
           active?: boolean
+          next_skip_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -78,6 +80,27 @@ export interface Database {
           booking_window_hours?: number
           timezone?: string
           active?: boolean
+          next_skip_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_settings: {
+        Row: {
+          user_id: string
+          schedule_paused: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          schedule_paused?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          schedule_paused?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -87,7 +110,7 @@ export interface Database {
           id: string
           recurring_class_id: string
           attempt_timestamp: string
-          status: 'pending' | 'confirmed' | 'waitlisted' | 'failed'
+          status: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped'
           branch_used: string | null
           error_message: string | null
           created_at: string
@@ -96,7 +119,7 @@ export interface Database {
           id?: string
           recurring_class_id: string
           attempt_timestamp: string
-          status: 'pending' | 'confirmed' | 'waitlisted' | 'failed'
+          status: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped'
           branch_used?: string | null
           error_message?: string | null
           created_at?: string
@@ -105,7 +128,7 @@ export interface Database {
           id?: string
           recurring_class_id?: string
           attempt_timestamp?: string
-          status?: 'pending' | 'confirmed' | 'waitlisted' | 'failed'
+          status?: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped'
           branch_used?: string | null
           error_message?: string | null
           created_at?: string
@@ -119,8 +142,10 @@ export interface Database {
 export type GymCredentials = Database['public']['Tables']['gym_credentials']['Row']
 export type RecurringClass = Database['public']['Tables']['recurring_classes']['Row']
 export type BookingAttempt = Database['public']['Tables']['booking_attempts']['Row']
+export type UserSettings = Database['public']['Tables']['user_settings']['Row']
 
 export type NewGymCredentials = Database['public']['Tables']['gym_credentials']['Insert']
 export type NewRecurringClass = Database['public']['Tables']['recurring_classes']['Insert']
 export type NewBookingAttempt = Database['public']['Tables']['booking_attempts']['Insert']
+export type NewUserSettings = Database['public']['Tables']['user_settings']['Insert']
 

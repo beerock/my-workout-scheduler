@@ -55,6 +55,7 @@ My Workout Scheduler automates class reservations for recurring fitness sessions
      1. In Supabase Dashboard → SQL Editor
      2. Run `supabase/migrations/001_initial_schema.sql`
      3. Run `supabase/migrations/002_rls_policies.sql`
+     4. Run `supabase/migrations/003_schedule_management.sql` (for schedule features)
    - **Test encryption:** Run `npx tsx test-encryption.ts` to verify encryption works
 
 6. **Run the development server:**
@@ -96,18 +97,24 @@ my-workout-scheduler/
 ✅ Protected routes middleware  
 ✅ Dashboard page  
 ✅ Landing page with auth redirect  
-✅ Database schema (gym_credentials, recurring_classes, booking_attempts)  
+✅ Database schema (gym_credentials, recurring_classes, booking_attempts, user_settings)  
 ✅ Row Level Security (RLS) policies  
 ✅ TypeScript database types  
+✅ **Gym credentials storage form** (with encryption)  
+✅ **Schedule management** (add/edit/delete recurring classes)  
+✅ **Global pause toggle** (pause all bookings)  
+✅ **Per-class active toggle** (enable/disable individual classes)  
+✅ **Skip next occurrence** (with smart unskip logic)  
+✅ **Schedule list view** (sorted by day and time)  
 
 ## Next Steps
 
 See the [PRD](./docs/My%20Workout%20Scheduler%20PRD.md) for the full roadmap. Upcoming features:
 
-- Schedule management forms (add/edit/delete recurring classes)
-- Gym credentials storage form
-- Dashboard enhancements (display classes, booking status)
 - Booking automation (GitHub Actions + Puppeteer)
+- Booking history and status tracking
+- Email notifications
+- Vacation mode (date range pause)
 
 ## Deployment to Vercel
 
