@@ -31,6 +31,7 @@
     "@types/react-dom": "^19.2.2",
     "dotenv": "^17.2.3",
     "next": "^16.0.1",
+    "puppeteer": "^23.11.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "typescript": "^5.9.3"
