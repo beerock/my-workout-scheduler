@@ -1,15 +1,23 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.1  
+**Version:** 2.2  
 **Product Owner:** Brock Busby  
-**Last Updated:** November 7, 2025  
+**Last Updated:** November 8, 2025  
 **Status:** Active Development (2-Week Prototype)
 
 **Recent Updates:**
-- Completed Days 1-2: Next.js setup, Supabase auth, login/signup pages
-- Completed database schema and RLS policies
-- Implemented application-level encryption for gym credentials
-- Built gym credentials form with password show/hide and confirmation
+- ✅ Completed Days 1-2: Next.js setup, Supabase auth, login/signup pages
+- ✅ Completed database schema and RLS policies
+- ✅ Implemented application-level encryption for gym credentials
+- ✅ Built gym credentials form with password show/hide and confirmation
+- ✅ **COMPLETED: Full Schedule Management System**
+  - Add/Edit/Delete/Copy recurring classes
+  - Schedule list view with prominent day/time display
+  - Global pause toggle (pause all bookings)
+  - Per-class active toggle
+  - Skip next occurrence feature with smart unskip logic
+  - Timezone handling and date calculations
+  - Copy class feature for quick duplication
 
 **Major Changes from v1.0:**
 
@@ -73,14 +81,18 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 | **Credential Storage** | Securely store gym website login credentials (Supabase encrypted) | High |
 | **Gym Configuration** | Set gym URL and default branch | High |
 
-### 3.2 Schedule Management
+### 3.2 Schedule Management ✅ COMPLETE
 
-| Feature | Description | Priority |
-| :---- | :---- | :---- |
-| **Add Recurring Class** | Simple form: day, time, class type, branch, booking window hours | High |
-| **View Schedule** | List view of configured recurring classes | High |
-| **Edit/Delete Class** | Basic CRUD operations on schedule items | High |
-| **Timezone Setting** | User specifies timezone (stored in profile) | High |
+| Feature | Description | Priority | Status |
+| :---- | :---- | :---- | :---- |
+| **Add Recurring Class** | Form: day, time, class type, branch, booking window hours, timezone | High | ✅ |
+| **View Schedule** | List view with prominent day/time display, sorted by day then time | High | ✅ |
+| **Edit/Delete Class** | Full CRUD operations with confirmation dialogs | High | ✅ |
+| **Copy Class** | Duplicate existing class with pre-populated form | Medium | ✅ |
+| **Timezone Setting** | User specifies timezone per class (stored in recurring_classes) | High | ✅ |
+| **Global Pause** | Toggle to pause all bookings across all classes | High | ✅ |
+| **Per-Class Active Toggle** | Enable/disable individual classes | High | ✅ |
+| **Skip Next Occurrence** | Skip a single upcoming class with smart unskip logic | High | ✅ |
 
 **Example Configuration:**
 
@@ -271,15 +283,21 @@ booking\_attempts (
 - [x] Build login/signup pages  
 - [ ] Deploy to Vercel
 
-**Days 3-4: Schedule Management**
+**Days 3-4: Schedule Management** ✅ COMPLETE
 
 - [x] Create database schema in Supabase  
 - [x] Set up Row Level Security (RLS) policies
 - [x] Implement application-level encryption for gym credentials
 - [x] Build gym credentials form (with password show/hide and confirmation)
-- [ ] Build "Add Class" form  
-- [ ] Build "View Schedule" page  
-- [ ] Implement edit/delete functionality
+- [x] Build "Add Class" form (with all required fields)
+- [x] Build "View Schedule" page (with prominent day/time display)
+- [x] Implement edit/delete functionality
+- [x] Add copy class feature
+- [x] Global pause toggle (pause all bookings)
+- [x] Per-class active toggle
+- [x] Skip next occurrence feature with booking window logic
+- [x] User settings table for pause state
+- [x] Database migration for schedule management features
 
 **Days 5-7: Booking Script**
 
@@ -521,7 +539,3 @@ With 2 users booking \~6 classes/week \= \~50 bookings/month:
 
 - ✅ Well under all limits  
 - ✅ Could scale to 10-20 users if needed
-
----
-
-**End of PRD v2.0**
