@@ -1,45 +1,33 @@
-# Architecture Proposal: Vercel Cron Jobs vs GitHub Actions
+# Architecture Decision: Booking Automation Platform
 
 **Date:** 2025-01-XX  
-**Status:** Proposal - Not Yet Implemented  
-**Related:** [PRD](./My%20Workout%20Scheduler%20PRD.md) Section 5.3
+**Status:** ✅ **IMPLEMENTED** - GitHub Actions with 15-minute schedule  
+**Related:** [PRD](./My%20Workout%20Scheduler%20PRD.md) Section 5.3  
+**Decision:** GitHub Actions (paid tier) with 15-minute cron schedule + clock drift retry logic
 
 ---
 
-## Current Proposed Architecture (PRD)
-
-The PRD currently specifies:
-
-- **Automation Platform:** GitHub Actions (free tier)
-- **Schedule:** Runs every hour via cron
-- **Process:** Query DB → Launch Puppeteer → Book classes → Update DB
-
-### The Problem
+## Original Problem
 
 **Timing Gap Issue:**
 
-Hourly GitHub Actions create a critical timing vulnerability:
+The original PRD specified hourly GitHub Actions, which created a critical timing vulnerability:
 
 1. **Scenario:** User adds a class at 2:15 PM that needs booking at 2:30 PM (15 minutes away)
 2. **Last GitHub Action:** Ran at 2:00 PM
 3. **Next GitHub Action:** Won't run until 3:00 PM
 4. **Result:** ❌ **MISSED BOOKING WINDOW**
 
-**Edge Cases:**
-- User adds class with short booking window (< 1 hour)
-- User adds class close to booking window opening time
-- User edits existing class to change booking window
-- System needs to react immediately to user actions
-
 **Additional Concerns:**
+- Maximum delay of 59 minutes between checks
+- Clock drift between system and gym website clocks
 - GitHub Actions minutes consumption (2,000/month free tier)
-- Separate codebase/service to maintain
-- Environment variable management in two places
-- Less integrated with the web application
 
 ---
 
-## Proposed Solution: Vercel Cron Jobs + Immediate Triggers
+## Proposed Solutions
+
+### Option 1: Vercel Cron Jobs + Immediate Triggers (Not Chosen)
 
 ### Architecture Overview
 
@@ -177,18 +165,19 @@ export async function saveRecurringClass(data, id) {
 
 ## Comparison Table
 
-| Aspect | GitHub Actions (Current PRD) | Vercel Cron (Proposed) |
-|--------|------------------------------|------------------------|
-| **Scheduling Frequency** | Hourly (minimum) | Every 5-15 minutes |
-| **Immediate Triggers** | ❌ No | ✅ Yes (on class save) |
-| **Codebase Location** | Separate workflow file | Same Next.js app |
-| **Environment Variables** | GitHub Secrets | Vercel Dashboard |
-| **Deployment** | Separate from web app | Same deployment |
-| **Logs & Monitoring** | GitHub Actions logs | Vercel Dashboard |
-| **Local Testing** | Requires GitHub setup | `vercel dev` works |
-| **Cost** | Uses GitHub Actions minutes | Included in Vercel |
-| **Integration** | Loosely coupled | Tightly integrated |
-| **Maintenance** | Two services | One service |
+| Aspect | GitHub Actions (Original) | GitHub Actions (Implemented) | Vercel Cron (Not Chosen) |
+|--------|---------------------------|-----------------------------|--------------------------|
+| **Scheduling Frequency** | Hourly | Every 15 minutes | Every 5-15 minutes |
+| **Immediate Triggers** | ❌ No | ❌ No | ✅ Yes (on class save) |
+| **Clock Drift Handling** | ❌ No | ✅ Yes (retry logic) | ❌ No |
+| **Codebase Location** | Separate workflow | Separate workflow | Same Next.js app |
+| **Environment Variables** | GitHub Secrets | GitHub Secrets | Vercel Dashboard |
+| **Deployment** | Separate from web app | Separate from web app | Same deployment |
+| **Logs & Monitoring** | GitHub Actions logs | GitHub Actions logs | Vercel Dashboard |
+| **Puppeteer Compatibility** | ✅ Works | ✅ Works | ⚠️ Size/timeout limits |
+| **Cost** | Free tier | ~$4-8/month (paid) | Free tier (but Puppeteer issues) |
+| **Integration** | Loosely coupled | Loosely coupled | Tightly integrated |
+| **Maintenance** | Two services | Two services | One service |
 
 ---
 
@@ -260,32 +249,109 @@ This still improves on pure GitHub Actions by adding immediate triggers.
 
 ---
 
-## Recommendation
+### Option 2: Enhanced GitHub Actions (✅ **IMPLEMENTED**)
 
-**Proceed with Vercel Cron Jobs + Immediate Triggers** for the following reasons:
+**Decision:** Enhanced GitHub Actions with 15-minute schedule and clock drift handling
 
-1. ✅ Solves the critical timing gap issue
-2. ✅ Simplifies architecture significantly
-3. ✅ Better developer experience
-4. ✅ More cost-effective
-5. ✅ Better user experience
+#### Implementation Details
 
-**Risk Mitigation:**
-- Test Puppeteer in Vercel serverless functions early
-- Have fallback plan (Railway/Render) if size limits are an issue
-- Start with 15-minute cron, can adjust frequency as needed
+**1. Updated Cron Schedule**
+- Changed from hourly (`0 * * * *`) to every 15 minutes (`*/15 * * * *`)
+- Reduces maximum delay from 59 minutes to 15 minutes
+- Requires GitHub Actions paid tier (~$4-8/month)
+
+**2. Clock Drift Retry Logic**
+- Handles timing discrepancies between system clock and gym website clock
+- Retry mechanism: 6 attempts with 30-second intervals (2-3 minute window)
+- Only retries if booking button not found (clock drift scenario)
+- Refreshes page and re-navigates on each retry
+- Falls back to next cron run if retries fail
+
+**3. Architecture**
+```
+┌─────────────────────────────────────────────────────────┐
+│              GitHub Actions Workflow                    │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  Scheduled Cron Job                                      │
+│  ├─ Runs every 15 minutes (`*/15 * * * *`)            │
+│  ├─ Queries Supabase for classes with open windows     │
+│  └─ For each due booking:                               │
+│      ├─ Launch Puppeteer (headless browser)           │
+│      ├─ Login with encrypted credentials               │
+│      ├─ Navigate to class schedule                     │
+│      ├─ Select branch                                   │
+│      ├─ Find target class                               │
+│      ├─ Retry logic (6 attempts, 30s intervals)        │
+│      │   └─ Handles clock drift                        │
+│      ├─ Book class (reserve/waitlist)                  │
+│      ├─ Update booking_attempts table                   │
+│      └─ Send email notification                         │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Files Modified:**
+- `.github/workflows/booking-automation.yml` - Updated cron schedule
+- `scripts/booking-automation.ts` - Added clock drift retry logic
+
+#### Benefits
+
+1. ✅ **Solves Timing Gap** - 15-minute checks vs hourly
+2. ✅ **Handles Clock Drift** - Retry logic compensates for timing discrepancies
+3. ✅ **Proven Platform** - GitHub Actions reliable for Puppeteer
+4. ✅ **No Size Limits** - Puppeteer works without constraints
+5. ✅ **Cost Effective** - ~$4-8/month for paid tier
+6. ✅ **Simple Architecture** - Single workflow, well-understood platform
+
+#### Trade-offs
+
+- ❌ Requires paid tier (not free)
+- ❌ Separate from web app codebase
+- ❌ No immediate triggers (15-minute minimum delay)
+- ❌ Environment variables in GitHub Secrets
 
 ---
 
-## Next Steps
+## Decision: Enhanced GitHub Actions
 
-1. Research Puppeteer compatibility with Vercel serverless functions
-2. Create proof-of-concept `/api/book-classes` route
-3. Test locally with `vercel dev`
-4. Deploy and test cron job execution
-5. Implement immediate trigger on class save
-6. Update PRD to reflect new architecture
-7. Remove GitHub Actions from roadmap (if successful)
+**Why GitHub Actions was chosen over Vercel Cron:**
+
+1. ✅ **Puppeteer Compatibility** - Vercel free tier has 10s timeout and 50MB size limit, insufficient for full Puppeteer booking process
+2. ✅ **Proven Solution** - GitHub Actions already working, just needed frequency improvement
+3. ✅ **Cost Acceptable** - ~$4-8/month is reasonable for MVP
+4. ✅ **Clock Drift Handled** - Retry logic compensates for timing issues
+5. ✅ **Reliability** - GitHub Actions proven stable for long-running Puppeteer scripts
+
+**Risk Mitigation:**
+- ✅ 15-minute schedule reduces delay significantly
+- ✅ Clock drift retry logic handles timing discrepancies
+- ✅ Monitoring via GitHub Actions logs
+- ✅ Can adjust frequency if needed (5 minutes in backlog)
+
+---
+
+## Implementation Status
+
+✅ **COMPLETED:**
+
+1. ✅ Updated GitHub Actions cron schedule to 15 minutes (`*/15 * * * *`)
+2. ✅ Implemented clock drift retry logic (6 attempts, 30-second intervals)
+3. ✅ Updated PRD to reflect new architecture
+4. ✅ Added Daxko API research to backlog (potential future enhancement)
+
+**Current Implementation:**
+- GitHub Actions workflow: `.github/workflows/booking-automation.yml`
+- Booking script with retry logic: `scripts/booking-automation.ts`
+- Schedule: Every 15 minutes (`*/15 * * * *`)
+- Cost: ~$4-8/month (GitHub Actions paid tier)
+
+## Future Considerations
+
+**Backlog Items:**
+- 5-minute check frequency (currently 15 minutes)
+- Daxko API integration (could replace Puppeteer if API access available)
+- Immediate triggers on class save (would require Vercel or separate service)
 
 ---
 

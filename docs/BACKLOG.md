@@ -375,3 +375,101 @@ Add SMS notification support in addition to email notifications. Users can choos
 **Priority**: Low
 **Last Updated**: 2025-01-10
 
+---
+
+## Daxko API Integration (Replace Puppeteer)
+
+### Overview
+Daxko (YMCA's platform provider) has an official API for managing classes and bookings. This could replace Puppeteer browser automation with direct API calls, making the system faster, more reliable, and potentially enabling Vercel free tier usage.
+
+**API Documentation**: [Daxko GroupEx Pro API](https://docs.partners.daxko.com/openapi/gxp/v1/)
+
+### Requirements
+
+1. **API Authentication**
+   - Research Daxko API authentication requirements
+   - Determine if API access is available for end users or requires partner status
+   - Store API credentials securely (if needed)
+
+2. **Replace Puppeteer with API Calls**
+   - Map current Puppeteer flow to API endpoints:
+     - Login → API authentication
+     - Navigate to schedule → API class listing endpoint
+     - Select branch → API branch filtering
+     - Find class → API class search
+     - Book class → API booking endpoint
+   - Handle API responses and error codes
+
+3. **Benefits Over Puppeteer**
+   - **Faster**: API calls are <5 seconds vs 30-60 seconds for Puppeteer
+   - **More reliable**: No browser rendering issues, no selector changes
+   - **Vercel compatible**: Could work on Vercel free tier (10s timeout)
+   - **Simpler**: No browser binary, no screenshots needed
+   - **Better error handling**: Structured API responses vs HTML parsing
+
+4. **Migration Strategy**
+   - Research API availability and access requirements
+   - Create proof-of-concept API integration
+   - Test with real gym account
+   - Gradually migrate from Puppeteer to API
+   - Keep Puppeteer as fallback if API unavailable
+
+### Implementation Notes
+
+- **API Research**: First step is to understand:
+  - Is API available for end users or only partners?
+  - What authentication method is required?
+  - What endpoints are available for booking?
+  - Are there rate limits?
+  - Is there a cost associated with API access?
+
+- **Code Location**: 
+  - New file: `scripts/daxko-api-client.ts` (API client)
+  - Modify: `scripts/booking-automation.ts` to use API instead of Puppeteer
+  - Or create: `scripts/booking-automation-api.ts` (new API-based version)
+
+- **Fallback Strategy**: 
+  - If API is unavailable or limited, keep Puppeteer as backup
+  - Could use API for checking availability, Puppeteer for booking
+
+### Testing Considerations
+
+- Test API authentication flow
+- Test class search and filtering
+- Test booking endpoint
+- Test error handling (rate limits, invalid credentials, etc.)
+- Compare API response times vs Puppeteer
+- Verify booking success rate with API
+
+### Potential Architecture Impact
+
+**If API is available and works:**
+- ✅ Could use **Vercel free tier** (API calls are fast)
+- ✅ Could check **every 1 minute** (no timeout concerns)
+- ✅ Much simpler architecture
+- ✅ More reliable than browser automation
+
+**If API requires partner status or is limited:**
+- ⚠️ May need to stick with Puppeteer
+- ⚠️ Or use hybrid: API for checks, Puppeteer for booking
+
+### Research Findings
+
+**API Access:**
+- API appears to be partner/enterprise focused
+- Requires contacting Daxko sales or emailing [email protected] for access
+- May not be available to end users directly
+- Documentation: https://docs.partners.daxko.com/openapi/gxp/v1/
+
+**Next Steps:**
+1. Contact Daxko to inquire about API access for end users
+2. Determine if API is available for individual gym members or only for gym partners
+3. If available, research authentication method and booking endpoints
+4. Create proof-of-concept if access is granted
+
+### Status
+**Status**: Backlogged - Research in progress
+**Priority**: High (could fundamentally change architecture)
+**Last Updated**: 2025-01-XX
+**Next Step**: Contact Daxko to determine API access eligibility
+
