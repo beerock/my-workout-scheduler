@@ -83,6 +83,13 @@ my-workout-scheduler/
 │   └── supabase/database.ts  # Database helper functions
 ├── supabase/
 │   └── migrations/     # SQL migration files
+├── scripts/            # Automation scripts
+│   ├── booking-automation.ts      # Puppeteer booking script
+│   ├── database-helpers.ts        # Database query helpers
+│   ├── run-booking-automation.ts  # Main automation entry point
+│   └── test-*.ts                  # Test scripts
+├── .github/
+│   └── workflows/      # GitHub Actions workflows
 ├── middleware.ts       # Route protection middleware
 └── docs/               # Project documentation
 ```
@@ -106,13 +113,48 @@ my-workout-scheduler/
 ✅ **Per-class active toggle** (enable/disable individual classes)  
 ✅ **Skip next occurrence** (with smart unskip logic)  
 ✅ **Schedule list view** (sorted by day and time)  
+✅ **Booking automation** (GitHub Actions + Puppeteer)  
+✅ **Automated class booking** (runs hourly via GitHub Actions)  
+✅ **Booking attempt tracking** (records all booking attempts in database)
+
+## Booking Automation
+
+The app includes automated booking via GitHub Actions that runs every hour to book classes on the gym website.
+
+### Quick Start
+
+1. **Set up GitHub Actions secrets** (see [GitHub Actions Setup Guide](./docs/GITHUB_ACTIONS_SETUP.md)):
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ENCRYPTION_KEY`
+
+2. **Test locally**:
+   ```bash
+   # Test database query
+   npm run test:booking-query
+   
+   # Test database helpers
+   npm run test:database-helpers
+   
+   # Dry-run test (no actual bookings)
+   npm run test:booking-dry-run
+   
+   # Run full automation (makes real bookings!)
+   npm run automation:run
+   ```
+
+3. **Push to GitHub** - The workflow will run automatically every hour
+
+### Documentation
+
+- [Booking Automation Guide](./docs/BOOKING_AUTOMATION.md) - Full automation system documentation
+- [GitHub Actions Setup](./docs/GITHUB_ACTIONS_SETUP.md) - Step-by-step setup instructions
 
 ## Next Steps
 
 See the [PRD](./docs/My%20Workout%20Scheduler%20PRD.md) for the full roadmap. Upcoming features:
 
-- Booking automation (GitHub Actions + Puppeteer)
-- Booking history and status tracking
+- Booking history and status tracking UI
 - Email notifications
 - Vacation mode (date range pause)
 

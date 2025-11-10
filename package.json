@@ -10,7 +10,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:booking-query": "tsx scripts/test-booking-query.ts",
+    "test:database-helpers": "tsx scripts/test-database-helpers.ts",
+    "test:booking-dry-run": "tsx scripts/test-booking-automation-dry-run.ts",
+    "test:single-booking": "tsx scripts/test-single-booking.ts",
+    "automation:run": "tsx scripts/run-booking-automation.ts"
   },
   "repository": {
     "type": "git",
@@ -31,7 +36,7 @@
     "@types/react-dom": "^19.2.2",
     "dotenv": "^17.2.3",
     "next": "^16.0.1",
-    "puppeteer": "^23.11.1",
+    "puppeteer": "^24.29.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "typescript": "^5.9.3"
