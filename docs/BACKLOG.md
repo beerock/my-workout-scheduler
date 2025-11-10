@@ -2,6 +2,26 @@
 
 This document contains features and improvements that are planned for future implementation.
 
+---
+
+## Operational Notes & Reminders
+
+### Enable/Disable Automatic Booking Schedule
+
+**To disable automatic booking (e.g., for testing):**
+- Comment out the `schedule` section in `.github/workflows/booking-automation.yml`
+- Commit and push the change
+- The workflow will stop running automatically but can still be triggered manually
+
+**To re-enable automatic booking:**
+- Uncomment the `schedule` section in `.github/workflows/booking-automation.yml`
+- Commit and push the change
+- The workflow will resume running every 15 minutes automatically
+
+**Current Status:** Schedule is disabled (commented out) for testing
+
+---
+
 ## Retry Logic for Full Classes
 
 ### Overview

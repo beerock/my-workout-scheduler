@@ -192,6 +192,7 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 - **Tool:** Puppeteer (headless Chrome)  
 - **Process:** Query DB → Launch browser → Book classes → Update DB
 - **Clock Drift Handling:** Retry logic (6 attempts, 30-second intervals) if booking button not found
+- **Configuration Note:** To disable automatic booking (e.g., for testing), comment out the `schedule` section in `.github/workflows/booking-automation.yml`. To re-enable, uncomment the schedule section and push the change.
 
 **3.1 Clock Drift Handling**
 
