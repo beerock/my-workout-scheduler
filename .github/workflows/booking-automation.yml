@@ -1,10 +1,12 @@
 name: Booking Automation
 
 on:
-  schedule:
-    # Run every 15 minutes
-    - cron: '*/15 * * * *'
-  workflow_dispatch: # Allow manual triggering
+  # DISABLED: Commented out to prevent automatic runs
+  # Uncomment the schedule section below to re-enable automatic booking checks
+  # schedule:
+  #   # Run every 15 minutes
+  #   - cron: '*/15 * * * *'
+  workflow_dispatch: # Allow manual triggering (still works for testing)
 
 jobs:
   book-classes:
