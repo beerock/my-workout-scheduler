@@ -104,7 +104,7 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 
 | Feature | Description | Priority |
 | :---- | :---- | :---- |
-| **Scheduled Execution** | GitHub Actions runs hourly, checks for booking windows | High |
+| **Scheduled Execution** | GitHub Actions runs every 15 minutes, checks for booking windows | High |
 | **Browser Automation** | Puppeteer logs into gym site and completes booking flow | High |
 | **Booking Logic** | Reserve if available, waitlist if full, skip if already booked | High |
 | **Error Handling** | Detect failures, log errors, send notification | High |
@@ -112,8 +112,8 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 
 **Booking Flow:**
 
-1. GitHub Action runs every hour  
-2. Queries database: "Any classes need booking in the next hour?"  
+1. GitHub Action runs every 15 minutes  
+2. Queries database: "Any classes with booking windows currently open?"  
 3. For each booking due:  
    - Launch Puppeteer in headless mode  
    - Login with stored credentials  
@@ -187,10 +187,20 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 
 **3\. Automation Worker**
 
-- **Platform:** GitHub Actions (free tier)  
-- **Schedule:** Runs every hour via cron  
+- **Platform:** GitHub Actions (paid tier, ~$4-8/month)  
+- **Schedule:** Runs every 15 minutes via cron (`*/15 * * * *`)  
 - **Tool:** Puppeteer (headless Chrome)  
 - **Process:** Query DB → Launch browser → Book classes → Update DB
+- **Clock Drift Handling:** Retry logic (6 attempts, 30-second intervals) if booking button not found
+
+**3.1 Clock Drift Handling**
+
+To handle timing discrepancies between our system clock and the gym website clock:
+
+- **Retry Logic:** If booking button not found (window may not be open on gym site yet), retry up to 6 times
+- **Retry Interval:** 30 seconds between attempts (2-3 minute total retry window)
+- **Page Refresh:** On each retry, refresh page and re-navigate to get latest state
+- **Fallback:** If retries fail, next cron run (15 minutes later) will attempt again
 
 **4\. Notifications**
 
@@ -242,7 +252,7 @@ booking\_attempts (
 ### Data Flow
 
 1. **User configures schedule** → Next.js form → Supabase DB  
-2. **GitHub Action runs hourly** → Queries Supabase for due bookings  
+2. **GitHub Action runs every 15 minutes** → Queries Supabase for due bookings  
 3. **Puppeteer script executes** → Books class → Writes result to DB  
 4. **Email sent** → Via Resend/SendGrid → User notified  
 5. **User checks dashboard** → Next.js queries Supabase → Shows status
@@ -267,7 +277,7 @@ booking\_attempts (
 | **Security** | Encrypted credentials | Supabase Vault for gym passwords |
 | **Scalability** | Support 2 users | Hard limit for prototype; free tiers handle this easily |
 | **Maintainability** | Simple codebase | Prioritize readability over cleverness |
-| **Cost** | $0/month | All free tier services |
+| **Cost** | ~$4-8/month | GitHub Actions paid tier required for 15-minute schedule; other services free tier |
 
 ---
 
@@ -313,7 +323,7 @@ booking\_attempts (
 **Days 8-10: GitHub Actions Scheduler**
 
 - [ ] Create GitHub Action workflow  
-- [ ] Set up hourly cron trigger  
+- [ ] Set up 15-minute cron trigger (`*/15 * * * *`)  
 - [ ] Query Supabase for due bookings  
 - [ ] Run Puppeteer in GitHub Actions  
 - [ ] Write results back to database  
@@ -532,7 +542,7 @@ booking\_attempts (
 
 - Vercel: 100GB bandwidth/month  
 - Supabase: 500MB database, 50k auth users  
-- GitHub Actions: 2,000 minutes/month  
+- GitHub Actions: 2,000 minutes/month (free tier) - **Note:** 15-minute schedule requires paid tier (~$4-8/month)  
 - Resend: 100 emails/day
 
 With 2 users booking \~6 classes/week \= \~50 bookings/month:

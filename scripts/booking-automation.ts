@@ -140,16 +140,89 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
 
     screenshotPath = await takeScreenshot(page, '05-schedule-page')
 
-    // Step 4: Find and book class
+    // Step 4: Find and book class (with retry logic for clock drift)
     console.log(`Finding class: ${classType} at ${classTime}...`)
-    const bookingResult = await findAndBookClass(
-      page,
-      classType,
-      classTime,
-      branchResult.selectedBranch || branch
-    )
+    
+    // Retry logic for clock drift: if booking button not found, retry a few times
+    // This handles cases where gym website clock is slightly off from our system clock
+    const maxRetries = 6 // 2-3 minutes of retries (6 × 30 seconds)
+    const retryDelay = 30000 // 30 seconds between retries
+    let bookingResult: {
+      status: 'confirmed' | 'waitlisted' | 'failed'
+      errorMessage?: string
+      selectedBranch: string
+    } | null = null
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const branchToUse = branchResult.selectedBranch || branch
+      bookingResult = await findAndBookClass(
+        page,
+        classType,
+        classTime,
+        branchToUse
+      )
+      
+      // If booking succeeded or failed for reasons other than button not found, return
+      if (bookingResult.status === 'confirmed' || bookingResult.status === 'waitlisted') {
+        break // Success!
+      }
+      
+      // Check if error is due to button not found (clock drift scenario)
+      const isButtonNotFound = 
+        bookingResult.errorMessage?.includes('Could not find or click booking button') ||
+        bookingResult.errorMessage?.includes('not found on schedule')
+      
+      // If it's not a "button not found" error, return immediately (don't retry)
+      if (!isButtonNotFound) {
+        break
+      }
+      
+      // If this is the last attempt, return the failure
+      if (attempt === maxRetries - 1) {
+        console.log(`⚠️  Booking button not found after ${maxRetries} attempts. This may be due to clock drift. Next cron run will retry.`)
+        break
+      }
+      
+      // Button not found - retry after delay (clock drift scenario)
+      console.log(`⏰ Booking button not found (attempt ${attempt + 1}/${maxRetries}). This may be clock drift. Retrying in ${retryDelay / 1000} seconds...`)
+      await new Promise(resolve => setTimeout(resolve, retryDelay))
+      
+      // Refresh page and re-navigate to get latest state
+      console.log('🔄 Refreshing page and re-navigating...')
+      await page.reload({ waitUntil: 'networkidle2' })
+      
+      // Re-select branch (might have been reset)
+      const branchResultRetry = await selectBranch(page, branch)
+      if (!branchResultRetry.success) {
+        console.log(`⚠️  Branch selection failed on retry: ${branchResultRetry.error}, using original branch`)
+      }
+      
+      // Re-navigate to target day
+      const navigationResultRetry = await navigateToDay(page, dayOfWeek)
+      if (!navigationResultRetry.success) {
+        console.log(`⚠️  Navigation failed on retry: ${navigationResultRetry.error}`)
+        // Continue anyway - might still work
+      }
+      
+      screenshotPath = await takeScreenshot(page, `05-retry-${attempt + 1}`)
+      
+      // Update branchResult for next iteration (use retry result if successful)
+      if (branchResultRetry.success && branchResultRetry.selectedBranch) {
+        branchResult.selectedBranch = branchResultRetry.selectedBranch
+      }
+    }
 
     screenshotPath = await takeScreenshot(page, '06-after-booking-attempt')
+
+    // Ensure we have a booking result (should always be set by retry loop)
+    if (!bookingResult) {
+      return {
+        status: 'failed',
+        branchUsed: branchResult.selectedBranch || null,
+        errorMessage: 'Booking attempt failed - no result returned',
+        screenshotPath,
+      }
+    }
 
     // Clean up screenshot after a delay (for debugging)
     // In production, you might want to keep screenshots or upload them to storage
@@ -162,7 +235,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
 
     return {
       status: bookingResult.status,
-      branchUsed: (branchResult.selectedBranch || null) as string | null,
+      branchUsed: (bookingResult.selectedBranch || null) as string | null,
       errorMessage: (bookingResult.errorMessage || null) as string | null,
       screenshotPath,
     }
