@@ -179,6 +179,9 @@ async function testSingleBooking() {
       delete process.env.PUPPETEER_HEADLESS
     }
 
+    // Keep browser open for inspection
+    process.env.KEEP_BROWSER_OPEN = 'true'
+
     const bookingResult = await bookClass(bookingParams)
 
     // Update attempt record
