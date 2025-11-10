@@ -74,12 +74,17 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
     // Set a reasonable timeout
     page.setDefaultTimeout(30000) // 30 seconds
 
-    // Navigate to gym URL
-    console.log(`Navigating to ${gymUrl}...`)
-    await page.goto(gymUrl, { waitUntil: 'networkidle2' })
+    // Navigate to login page first (YMCA Daxko requires separate login page)
+    // Extract base URL and construct login URL
+    const urlObj = new URL(gymUrl)
+    const baseUrl = `${urlObj.protocol}//${urlObj.host}`
+    const loginUrl = `${baseUrl}/online/4032/Security/login.mvc`
+    
+    console.log(`Navigating to login page: ${loginUrl}...`)
+    await page.goto(loginUrl, { waitUntil: 'networkidle2' })
 
     // Take screenshot for debugging
-    screenshotPath = await takeScreenshot(page, '01-initial-page')
+    screenshotPath = await takeScreenshot(page, '01-login-page')
 
     // Step 1: Login
     console.log('Attempting login...')
@@ -95,6 +100,15 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
     }
 
     screenshotPath = await takeScreenshot(page, '03-after-login')
+
+    // Note: performLogin now handles navigating to class schedule via "Group Ex" link
+    // If that didn't work, try navigating directly
+    const currentUrl = page.url()
+    if (!currentUrl.includes('ClassSchedule') && !currentUrl.includes('GroupEx')) {
+      console.log(`Navigating directly to class schedule: ${gymUrl}...`)
+      await page.goto(gymUrl, { waitUntil: 'networkidle2' })
+    }
+    screenshotPath = await takeScreenshot(page, '04-schedule-page')
 
     // Step 2: Select branch
     console.log(`Selecting branch: ${branch}...`)
@@ -164,14 +178,20 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
       screenshotPath,
     }
   } finally {
-    if (browser) {
+    // Keep browser open if KEEP_BROWSER_OPEN env var is set (for debugging)
+    if (browser && process.env.KEEP_BROWSER_OPEN !== 'true') {
       await browser.close()
+    } else if (browser) {
+      console.log('\n🔍 Browser kept open for inspection (set KEEP_BROWSER_OPEN=true to enable)')
+      console.log('   Close the browser manually when done.')
     }
   }
 }
 
 /**
- * Perform login on the gym website
+ * Perform login on the gym website (two-step process)
+ * Step 1: Enter email/phone and click SUBMIT
+ * Step 2: Enter password and click LOGIN
  */
 async function performLogin(
   page: Page,
@@ -179,60 +199,160 @@ async function performLogin(
   password: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Wait for login form to appear
-    // Adjust selectors based on actual YMCA Daxko platform structure
-    await page.waitForSelector('input[type="text"], input[name="username"], input[id*="user"], input[id*="email"]', {
+    // Step 1: Enter email/phone and submit
+    console.log('Step 1: Entering email/phone...')
+    await page.waitForSelector('input[name="user_name"], input[id="user_name"]', {
       timeout: 10000,
     })
 
-    // Find username field (try multiple possible selectors)
-    const usernameSelectors = [
-      'input[name="username"]',
-      'input[id*="user"]',
-      'input[id*="email"]',
-      'input[type="text"]',
-      '#username',
-      '#email',
+    // Find username/email field
+    const usernameField = await page.$('input[name="user_name"], input[id="user_name"]')
+    if (!usernameField) {
+      return { success: false, error: 'Could not find username/email field' }
+    }
+
+    console.log('Found username field, typing email...')
+    await usernameField.type(username, { delay: 50 })
+
+    // Find and click SUBMIT button
+    console.log('Looking for SUBMIT button...')
+    const submitButtonSelectors = [
+      'button:has-text("SUBMIT")',
+      'button:has-text("Submit")',
+      'input[type="submit"]',
+      'button[type="submit"]',
+      'button',
+      'input[value*="SUBMIT" i]',
+      'input[value*="Submit" i]',
     ]
 
-    let usernameField = null
-    for (const selector of usernameSelectors) {
+    let submitButton = null
+    for (const selector of submitButtonSelectors) {
       try {
-        usernameField = await page.$(selector)
-        if (usernameField) break
+        const buttons = await page.$$(selector)
+        for (const btn of buttons) {
+          const buttonText = await page.evaluate((el) => (el as HTMLElement).textContent?.toUpperCase() || '', btn)
+          const buttonValue = await page.evaluate((el) => (el as HTMLInputElement).value?.toUpperCase() || '', btn)
+          if (buttonText.includes('SUBMIT') || buttonValue.includes('SUBMIT')) {
+            submitButton = btn
+            console.log(`Found SUBMIT button with selector: ${selector}`)
+            break
+          }
+        }
+        if (submitButton) break
       } catch {
         continue
       }
     }
 
-    if (!usernameField) {
-      return { success: false, error: 'Could not find username field' }
+    if (!submitButton) {
+      return { success: false, error: 'Could not find SUBMIT button' }
     }
 
-    await usernameField.type(username, { delay: 50 })
+    await submitButton.click()
+    console.log('Clicked SUBMIT button, waiting for password page...')
+
+    // Wait for navigation to password page
+    await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 })
+
+    // Step 2: Enter password and login
+    console.log('Step 2: Entering password...')
+    await page.waitForSelector('input[type="password"]', {
+      timeout: 10000,
+    })
 
     // Find password field
     const passwordField = await page.$('input[type="password"]')
     if (!passwordField) {
-      return { success: false, error: 'Could not find password field' }
+      // Try alternative selectors
+      const passwordSelectors = [
+        'input[name="password"]',
+        'input[id*="password"]',
+        'input[id*="pass"]',
+        '#password',
+        '#pass',
+      ]
+
+      let foundPasswordField = null
+      for (const selector of passwordSelectors) {
+        try {
+          foundPasswordField = await page.$(selector)
+          if (foundPasswordField) {
+            console.log(`Found password field with selector: ${selector}`)
+            break
+          }
+        } catch {
+          continue
+        }
+      }
+
+      if (!foundPasswordField) {
+        return { success: false, error: 'Could not find password field on password page' }
+      }
+
+      await foundPasswordField.type(password, { delay: 50 })
+    } else {
+      await passwordField.type(password, { delay: 50 })
     }
 
-    await passwordField.type(password, { delay: 50 })
+    // Check "Keep me logged in" checkbox if it exists
+    console.log('Checking for "Keep me logged in" checkbox...')
+    const keepLoggedInSelectors = [
+      'input[type="checkbox"][id*="remember"]',
+      'input[type="checkbox"][name*="remember"]',
+      'input[type="checkbox"][id*="keep"]',
+      'input[type="checkbox"][name*="keep"]',
+      'input[type="checkbox"]',
+    ]
 
-    // Find and click login button
+    for (const selector of keepLoggedInSelectors) {
+      try {
+        const checkbox = await page.$(selector)
+        if (checkbox) {
+          const label = await page.evaluate((el) => {
+            const parent = el.parentElement
+            return parent?.textContent?.toLowerCase() || ''
+          }, checkbox)
+          
+          if (label.includes('keep') || label.includes('remember') || label.includes('logged')) {
+            const isChecked = await page.evaluate((el) => (el as HTMLInputElement).checked, checkbox)
+            if (!isChecked) {
+              await checkbox.click()
+              console.log('Checked "Keep me logged in" checkbox')
+            }
+            break
+          }
+        }
+      } catch {
+        continue
+      }
+    }
+
+    // Find and click LOGIN button
+    console.log('Looking for LOGIN button...')
     const loginButtonSelectors = [
-      'button[type="submit"]',
-      'input[type="submit"]',
+      'button:has-text("LOGIN")',
       'button:has-text("Login")',
-      'button:has-text("Sign In")',
-      'a:has-text("Login")',
-      'a:has-text("Sign In")',
+      'input[type="submit"]',
+      'button[type="submit"]',
+      'button',
+      'input[value*="LOGIN" i]',
+      'input[value*="Login" i]',
     ]
 
     let loginButton = null
     for (const selector of loginButtonSelectors) {
       try {
-        loginButton = await page.$(selector)
+        const buttons = await page.$$(selector)
+        for (const btn of buttons) {
+          const buttonText = await page.evaluate((el) => (el as HTMLElement).textContent?.toUpperCase() || '', btn)
+          const buttonValue = await page.evaluate((el) => (el as HTMLInputElement).value?.toUpperCase() || '', btn)
+          if (buttonText.includes('LOGIN') || buttonValue.includes('LOGIN')) {
+            loginButton = btn
+            console.log(`Found LOGIN button with selector: ${selector}`)
+            break
+          }
+        }
         if (loginButton) break
       } catch {
         continue
@@ -240,29 +360,73 @@ async function performLogin(
     }
 
     if (!loginButton) {
-      // Try to submit the form directly
-      await page.keyboard.press('Enter')
-    } else {
-      await loginButton.click()
+      return { success: false, error: 'Could not find LOGIN button' }
     }
+
+    await loginButton.click()
+    console.log('Clicked LOGIN button, waiting for navigation...')
 
     // Wait for navigation after login (either success or error)
     await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 })
 
     // Check if login was successful
-    // Look for indicators of successful login (adjust based on actual site)
     const currentUrl = page.url()
-    const pageContent = await page.content()
+    const pageContent = (await page.content()).toLowerCase()
 
-    // Common indicators of failed login
+    // Check for error indicators
     if (
       pageContent.includes('invalid') ||
       pageContent.includes('incorrect') ||
-      pageContent.includes('error') ||
-      currentUrl.includes('login') ||
-      currentUrl.includes('signin')
+      pageContent.includes('wrong password') ||
+      pageContent.includes('authentication failed') ||
+      (currentUrl.includes('login') && !currentUrl.includes('dashboard') && !currentUrl.includes('classschedule'))
     ) {
-      return { success: false, error: 'Login credentials appear to be invalid' }
+      return { success: false, error: 'Login credentials appear to be invalid or login failed' }
+    }
+
+    // If we're still on login page, it failed
+    if (currentUrl.includes('login') && !currentUrl.includes('dashboard')) {
+      return { success: false, error: 'Still on login page after login attempt' }
+    }
+
+    console.log('Login successful! Navigating to class schedule...')
+    
+    // Click "Group Ex" in header nav to get to class schedule
+    const groupExSelectors = [
+      'a:has-text("Group Ex")',
+      'a:has-text("Group EX")',
+      'a:has-text("group ex")',
+      'a[href*="GroupEx"]',
+      'a[href*="groupex"]',
+      'nav a:has-text("Group")',
+    ]
+
+    let groupExLink = null
+    for (const selector of groupExSelectors) {
+      try {
+        const links = await page.$$(selector)
+        for (const link of links) {
+          const linkText = await page.evaluate((el) => (el as HTMLElement).textContent?.toUpperCase() || '', link)
+          if (linkText.includes('GROUP EX') || linkText.includes('GROUPEX')) {
+            groupExLink = link
+            console.log(`Found "Group Ex" link with selector: ${selector}`)
+            break
+          }
+        }
+        if (groupExLink) break
+      } catch {
+        continue
+      }
+    }
+
+    if (groupExLink) {
+      await groupExLink.click()
+      console.log('Clicked "Group Ex" link, waiting for class schedule page...')
+      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 })
+    } else {
+      console.log('Could not find "Group Ex" link, trying to navigate directly to class schedule URL...')
+      // Try navigating directly to the class schedule URL
+      // The gymUrl should be the class schedule page
     }
 
     return { success: true }
@@ -275,7 +439,7 @@ async function performLogin(
 }
 
 /**
- * Select branch from dropdown
+ * Select branch from dropdown or button list
  */
 async function selectBranch(
   page: Page,
@@ -286,9 +450,13 @@ async function selectBranch(
   error?: string
 }> {
   try {
-    // Wait for branch selector to appear
-    // Common selectors for dropdowns
-    const branchSelectors = [
+    console.log(`Looking for branch selector for: ${targetBranch}...`)
+    
+    // Wait a bit for page to fully load
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    // Try to find a select dropdown first
+    const selectSelectors = [
       'select[name*="branch"]',
       'select[id*="branch"]',
       'select[name*="location"]',
@@ -297,58 +465,96 @@ async function selectBranch(
     ]
 
     let branchSelect = null
-    for (const selector of branchSelectors) {
+    let foundSelector = null
+    for (const selector of selectSelectors) {
       try {
         branchSelect = await page.$(selector)
-        if (branchSelect) break
+        if (branchSelect) {
+          foundSelector = selector
+          console.log(`Found select element with selector: ${selector}`)
+          break
+        }
       } catch {
         continue
       }
     }
 
-    if (!branchSelect) {
-      return { success: false, error: 'Could not find branch selector' }
+    if (branchSelect && foundSelector) {
+      // Handle select dropdown
+      const options = await page.evaluate((select) => {
+        const selectElement = select as HTMLSelectElement
+        return Array.from(selectElement.options).map((opt) => ({
+          value: opt.value,
+          text: opt.text.trim(),
+        }))
+      }, branchSelect)
+
+      console.log(`Found ${options.length} branch options in select`)
+
+      // Find matching branch (case-insensitive, partial match)
+      const matchingOption = options.find(
+        (opt) =>
+          opt.text.toLowerCase().includes(targetBranch.toLowerCase()) ||
+          targetBranch.toLowerCase().includes(opt.text.toLowerCase())
+      )
+
+      if (!matchingOption) {
+        return {
+          success: false,
+          error: `Branch "${targetBranch}" not found. Available: ${options.map((o) => o.text).join(', ')}`,
+        }
+      }
+
+      // Select the branch using the selector we found
+      console.log(`Selecting branch using selector: ${foundSelector}, value: ${matchingOption.value}`)
+      await page.select(foundSelector, matchingOption.value)
+
+      // Wait for page to update after branch selection
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      return { success: true, selectedBranch: matchingOption.text }
     }
 
-    // Get all options
-    const options = await page.evaluate((select) => {
-      const selectElement = select as HTMLSelectElement
-      return Array.from(selectElement.options).map((opt) => ({
-        value: opt.value,
-        text: opt.text.trim(),
-      }))
-    }, branchSelect)
+    // If no select found, try to find buttons/links for branches
+    console.log('No select element found, looking for branch buttons/links...')
+    
+    // Try to find all clickable elements that might be branch selectors
+    const allClickable = await page.$$('button, a, [role="button"], [onclick*="branch"], [onclick*="location"]')
+    console.log(`Found ${allClickable.length} potential clickable elements`)
 
-    // Find matching branch (case-insensitive, partial match)
-    const matchingOption = options.find(
-      (opt) =>
-        opt.text.toLowerCase().includes(targetBranch.toLowerCase()) ||
-        targetBranch.toLowerCase().includes(opt.text.toLowerCase())
-    )
-
-    if (!matchingOption) {
-      return {
-        success: false,
-        error: `Branch "${targetBranch}" not found. Available: ${options.map((o) => o.text).join(', ')}`,
+    // Look for elements containing branch names
+    const branchTexts: Array<{ element: any; text: string }> = []
+    for (const element of allClickable) {
+      const text = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || '', element)
+      if (text) {
+        branchTexts.push({ element, text })
       }
     }
 
-    // Select the branch
-    await page.select(
-      branchSelectors.find((s) => {
-        try {
-          return page.$(s)
-        } catch {
-          return false
-        }
-      }) || 'select',
-      matchingOption.value
+    // Find matching branch
+    const matchingBranch = branchTexts.find(
+      (bt) =>
+        bt.text.toLowerCase().includes(targetBranch.toLowerCase()) ||
+        targetBranch.toLowerCase().includes(bt.text.toLowerCase())
     )
 
-    // Wait for page to update after branch selection
-    await new Promise(resolve => setTimeout(resolve, 2000)) // Wait for any dynamic content to load
+    if (matchingBranch) {
+      console.log(`Found branch button/link: ${matchingBranch.text}`)
+      await matchingBranch.element.click()
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      return { success: true, selectedBranch: matchingBranch.text }
+    }
 
-    return { success: true, selectedBranch: matchingOption.text }
+    // If still not found, list all available branch options for debugging
+    const availableBranches = branchTexts.map(bt => bt.text).filter(t => t.length > 0 && t.length < 50)
+    if (availableBranches.length > 0) {
+      return {
+        success: false,
+        error: `Branch "${targetBranch}" not found. Available options: ${availableBranches.join(', ')}`,
+      }
+    }
+
+    return { success: false, error: 'Could not find branch selector or branch options on page' }
   } catch (error) {
     return {
       success: false,
@@ -359,43 +565,60 @@ async function selectBranch(
 
 /**
  * Navigate to the schedule for a specific day of week
+ * Looks for date tabs like "Mon 10" and clicks the appropriate one
  */
 async function navigateToDay(
   page: Page,
   dayOfWeek: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Day names mapping (0 = Sunday, 6 = Saturday)
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    const targetDayName = dayNames[dayOfWeek]
+    // Calculate the target date (next occurrence of this day of week)
+    const today = new Date()
+    const currentDayOfWeek = today.getUTCDay() // 0 = Sunday, 6 = Saturday
+    let daysUntilTarget = dayOfWeek - currentDayOfWeek
+    if (daysUntilTarget < 0) {
+      daysUntilTarget += 7 // Next week
+    }
+    if (daysUntilTarget === 0) {
+      // Same day - check if we need next week's occurrence
+      // For now, assume we want this week's occurrence
+    }
 
-    // Try to find day navigation (could be tabs, buttons, or calendar)
-    const daySelectors = [
-      `a:has-text("${targetDayName}")`,
-      `button:has-text("${targetDayName}")`,
-      `[data-day="${dayOfWeek}"]`,
-      `[data-day="${targetDayName}"]`,
-      `.day-${dayOfWeek}`,
-      `.day-${targetDayName.toLowerCase()}`,
-    ]
+    const targetDate = new Date(today)
+    targetDate.setUTCDate(today.getUTCDate() + daysUntilTarget)
+    const dayOfMonth = targetDate.getUTCDate()
 
-    let dayElement = null
-    for (const selector of daySelectors) {
-      try {
-        dayElement = await page.$(selector)
-        if (dayElement) break
-      } catch {
-        continue
+    // Day name abbreviations (Mon, Tue, Wed, etc.)
+    const dayAbbrevs = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const targetDayAbbrev = dayAbbrevs[dayOfWeek]
+
+    // Look for date tab in format "Mon 10" or "Mon, 10" or similar
+    console.log(`Looking for date tab: ${targetDayAbbrev} ${dayOfMonth}...`)
+    
+    // Try to find tabs/buttons with the date
+    const allClickable = await page.$$('button, a, [role="tab"], [role="button"], .tab, [class*="tab"]')
+    console.log(`Found ${allClickable.length} potential tab elements`)
+
+    let dateTab = null
+    for (const element of allClickable) {
+      const text = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || '', element)
+      // Check if text matches pattern like "Mon 10", "Mon, 10", "Mon10", etc.
+      const normalizedText = text.replace(/[,\s]/g, '').toUpperCase()
+      const targetPattern = `${targetDayAbbrev.toUpperCase()}${dayOfMonth}`
+      
+      if (normalizedText.includes(targetPattern) || text.includes(`${targetDayAbbrev} ${dayOfMonth}`)) {
+        dateTab = element
+        console.log(`Found date tab: "${text}"`)
+        break
       }
     }
 
-    if (dayElement) {
-      await dayElement.click()
-      await new Promise(resolve => setTimeout(resolve, 2000)) // Wait for schedule to load
+    if (dateTab) {
+      await dateTab.click()
+      console.log(`Clicked date tab, waiting for schedule to load...`)
+      await new Promise(resolve => setTimeout(resolve, 3000)) // Wait for schedule to load
     } else {
-      // If no day selector found, the page might show all days or default to today
-      // This is acceptable - we'll search through all classes
-      console.log('No day selector found, will search all visible classes')
+      console.log(`Could not find date tab for ${targetDayAbbrev} ${dayOfMonth}, will search all visible classes`)
     }
 
     return { success: true }
@@ -408,7 +631,67 @@ async function navigateToDay(
 }
 
 /**
+ * Attempt to click the booking button for a class
+ * Returns success status
+ */
+async function attemptBookingButtonClick(
+  page: Page,
+  classType: string,
+  targetTime12: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Find and click the button - search for all buttons and match by parent row
+    const allButtons = await page.$$('a.btn.btn-primary, a[role="button"], button.btn-primary, button[class*="btn"], a[class*="btn"]')
+    
+    for (const button of allButtons) {
+      const buttonText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || '', button)
+      const buttonTextLower = buttonText.toLowerCase()
+      
+      // Check if this is a booking button
+      if (buttonTextLower.includes('reserve') || 
+          buttonTextLower.includes('book') || 
+          buttonTextLower.includes('waitlist') ||
+          buttonTextLower.includes('add to waitlist')) {
+        
+        // Check if button is in the matching class row
+        const isInMatchingRow = await page.evaluate((el, classType, targetTime12) => {
+          let current: HTMLElement | null = el.parentElement
+          let depth = 0
+          while (current && depth < 6) {
+            // Check if we're in a div.row
+            if (current.tagName === 'DIV' && current.className.includes('row')) {
+              const rowText = (current.textContent || '').toLowerCase()
+              if (rowText.includes(classType.toLowerCase()) && 
+                  rowText.includes(targetTime12.toLowerCase())) {
+                return true
+              }
+            }
+            current = current.parentElement
+            depth++
+          }
+          return false
+        }, button, classType, targetTime12)
+        
+        if (isInMatchingRow) {
+          console.log(`Found booking button: "${buttonText}"`)
+          await button.click()
+          return { success: true }
+        }
+      }
+    }
+    
+    return { success: false, error: 'Could not find booking button' }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+}
+
+/**
  * Find and book a class matching the criteria
+ * Handles "Load more results" button to search through all classes
  */
 async function findAndBookClass(
   page: Page,
@@ -424,69 +707,337 @@ async function findAndBookClass(
     // Parse class time
     const [hours, minutes] = classTime.split(':').map(Number)
     const targetTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+    // Also try 12-hour format (e.g., "4:15 PM")
+    const hour12 = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours)
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+    const targetTime12 = `${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`
+    
 
-    // Get all class rows/cards from the page
-    const classes = await page.evaluate(() => {
-      // Common class container selectors
-      const containers = document.querySelectorAll(
-        'tr, .class-item, .schedule-item, [class*="class"], [class*="schedule"]'
-      )
+    // Function to search for class in currently loaded classes
+    const searchForClass = async (): Promise<{
+      found: boolean
+      classElement?: any
+      buttonElement?: any
+      status?: 'reserved' | 'available' | 'full'
+      debugInfo?: any
+    }> => {
+      // Get all class rows/cards from the page with more detailed structure
+      const classes = await page.evaluate(() => {
+        // Try to find the actual class list container first
+        const possibleContainers = [
+          'table tbody tr',
+          '[class*="schedule"] [class*="item"]',
+          '[class*="class"] [class*="item"]',
+          '[class*="row"]',
+          'tr',
+          '[data-class-id]',
+          '[data-schedule-id]',
+        ]
 
-      return Array.from(containers).map((container) => {
-        const text = container.textContent || ''
-        const buttons = Array.from(container.querySelectorAll('button, a, input[type="button"]'))
-        const buttonTexts = buttons.map((btn) => (btn as HTMLElement).textContent?.trim() || '')
-
-        return {
-          html: container.outerHTML.substring(0, 500), // First 500 chars for debugging
-          text: text.substring(0, 500),
-          buttonTexts,
+        let allContainers: Element[] = []
+        
+        for (const selector of possibleContainers) {
+          try {
+            const found = document.querySelectorAll(selector)
+            if (found.length > 0) {
+              allContainers = Array.from(found)
+              break
+            }
+          } catch (e) {
+            continue
+          }
         }
+
+        // If no specific containers found, get all potential containers
+        if (allContainers.length === 0) {
+          allContainers = Array.from(document.querySelectorAll(
+            'tr, .class-item, .schedule-item, [class*="class"], [class*="schedule"], [class*="row"], div[class*="card"]'
+          ))
+        }
+
+        return Array.from(allContainers).map((container, index) => {
+          const text = container.textContent || ''
+          const innerHTML = container.innerHTML
+          const buttons = Array.from(container.querySelectorAll('button, a, input[type="button"], [role="button"]'))
+          const buttonTexts = buttons.map((btn) => (btn as HTMLElement).textContent?.trim() || '')
+          const buttonIds = buttons.map((btn) => (btn as HTMLElement).id || '')
+          const buttonClasses = buttons.map((btn) => (btn as HTMLElement).className || '')
+
+          // Extract time patterns from text
+          const timePatterns = text.match(/\d{1,2}:\d{2}\s*(AM|PM)?/gi) || []
+          
+          // Extract class name patterns (look for common class name indicators)
+          const classNameMatch = text.match(/([A-Z][A-Z\s]+(?:PUMP|YOGA|CYCLE|CARDIO|STRENGTH|CORE|FITNESS|TRAINING|DANCE|AQUA|SWIM|PILATES|BARRE|ZUMBA|KICKBOXING|BOXING|MARTIAL|ARTS|SPIN|RIDE|WALK|RUN|JOG|STRETCH|FLEX|BALANCE|MEDITATION|MINDFUL|STRESS|RELAX|RESTORE|RENEW|REVIVE|REVITALIZE|REJUVENATE|REFRESH|REBOOT|RESET|REVAMP|REVIVE|REVITALIZE|REJUVENATE|REFRESH|REBOOT|RESET|REVAMP)[A-Z\s]*)/i)
+
+          return {
+            index,
+            tagName: container.tagName,
+            className: container.className || '',
+            id: (container as HTMLElement).id || '',
+            html: container.outerHTML.substring(0, 1000),
+            text: text.substring(0, 2000),
+            innerHTML: innerHTML.substring(0, 1000),
+            buttonTexts,
+            buttonIds,
+            buttonClasses,
+            timePatterns,
+            classNameMatch: classNameMatch ? classNameMatch[0] : null,
+          }
+        })
       })
-    })
 
-    // Find class matching type and time
-    let matchingClass = null
-    let matchingButton = null
+      // Save debug info to file for inspection
+      const debugDir = path.join(process.cwd(), 'debug')
+      if (!fs.existsSync(debugDir)) {
+        fs.mkdirSync(debugDir, { recursive: true })
+      }
+      
+      const debugFile = path.join(debugDir, `class-list-debug-${Date.now()}.json`)
+      fs.writeFileSync(debugFile, JSON.stringify({
+        searchFor: {
+          classType,
+          classTime,
+          targetTime,
+          targetTime12,
+        },
+        foundClasses: classes,
+        totalClasses: classes.length,
+      }, null, 2))
+      console.log(`💾 Saved class list debug info to: ${debugFile}`)
 
-    for (const classItem of classes) {
-      const classText = classItem.text.toLowerCase()
-      const matchesType = classText.includes(classType.toLowerCase())
-      const matchesTime = classText.includes(targetTime) || classText.includes(classTime)
+      // Also save a sample of the HTML
+      const htmlSample = await page.evaluate(() => {
+        // Try to find the main schedule container
+        const scheduleContainer = document.querySelector('[class*="schedule"], [id*="schedule"], table, [class*="class-list"]') || document.body
+        return scheduleContainer.outerHTML.substring(0, 50000) // First 50KB
+      })
+      const htmlFile = path.join(debugDir, `page-html-sample-${Date.now()}.html`)
+      fs.writeFileSync(htmlFile, htmlSample)
+      console.log(`💾 Saved HTML sample to: ${htmlFile}`)
 
-      if (matchesType && matchesTime) {
-        matchingClass = classItem
+      // Log summary of found classes
+      console.log(`\n📋 Found ${classes.length} potential class containers`)
+      if (classes.length > 0) {
+        console.log('Sample classes found:')
+        classes.slice(0, 5).forEach((c, i) => {
+          console.log(`  ${i + 1}. ${c.tagName}${c.className ? '.' + c.className.split(' ')[0] : ''}${c.id ? '#' + c.id : ''}`)
+          console.log(`     Text preview: ${c.text.substring(0, 100).replace(/\n/g, ' ')}...`)
+          if (c.timePatterns.length > 0) {
+            console.log(`     Times found: ${c.timePatterns.join(', ')}`)
+          }
+          if (c.classNameMatch) {
+            console.log(`     Class name match: ${c.classNameMatch}`)
+          }
+        })
+      }
 
-        // Find the booking button
-        const reserveButton = classItem.buttonTexts.find(
-          (btn) =>
-            btn.toUpperCase().includes('RESERVE') ||
-            btn.toUpperCase().includes('BOOK') ||
-            btn.toUpperCase().includes('JOIN WAITLIST') ||
-            btn.toUpperCase().includes('ADD TO WAITLIST')
-        )
+      // Find class matching type and time
+      for (const classItem of classes) {
+        const classText = classItem.text.toLowerCase()
+        const matchesType = classText.includes(classType.toLowerCase())
+        
+        // Try multiple time formats - check both text content and time patterns
+        // The time format on the page is typically "4:15 PM - 5:15 PM" (start - end)
+        // We need to match the start time
+        const matchesTime = 
+          classText.includes(targetTime) ||
+          classText.includes(classTime) ||
+          classText.includes(targetTime12.toLowerCase()) ||
+          classText.includes(targetTime12.replace(' ', '').toLowerCase()) ||
+          // Match start time from time patterns (first time in the array is usually start time)
+          (classItem.timePatterns.length > 0 && classItem.timePatterns.some(tp => {
+            const tpLower = tp.toLowerCase().trim()
+            // Match exact time or time with AM/PM
+            return tpLower === targetTime || 
+                   tpLower === targetTime12.toLowerCase() ||
+                   tpLower === targetTime12.replace(' ', '').toLowerCase() ||
+                   // Also check if the time pattern starts with our target time
+                   tpLower.startsWith(targetTime12.toLowerCase()) ||
+                   tpLower.startsWith(targetTime12.replace(' ', '').toLowerCase())
+          })) ||
+          // Match time range format like "4:15 PM - 5:15 PM" by checking if it starts with our time
+          classText.match(new RegExp(`\\b${targetTime12.toLowerCase().replace(/[:\s]/g, '[:\s]?')}`, 'i')) ||
+          classText.match(new RegExp(`\\b${targetTime12.replace(' ', '').toLowerCase().replace(/[:\s]/g, '[:\s]?')}`, 'i'))
 
-        if (reserveButton) {
-          matchingButton = reserveButton
+        if (matchesType && matchesTime) {
+          console.log(`✅ Found matching class!`)
+          console.log(`   Type match: ${matchesType}`)
+          console.log(`   Time match: ${matchesTime}`)
+          console.log(`   Text: ${classItem.text.substring(0, 200)}`)
+          console.log(`   Time patterns found: ${classItem.timePatterns.join(', ')}`)
+          
+          // Check status - look for reserved, full, waitlist indicators
+          // NOTE: If it says "Class Full", there's no booking button - class is truly full
+          
+          // Check if already reserved
+          const isReserved = 
+            classText.includes('reserved') ||
+            classItem.buttonTexts.some((btn) => btn.toUpperCase().includes('RESERVED'))
+          
+          // Check for "Class Full" - if it says this, there's no booking button
+          const isFull = 
+            classText.includes('full') || classText.includes('class full')
+          
+          // Check for booking buttons (RESERVE, BOOK, WAITLIST)
+          // Only check if class is not full (if full, there's no button)
+          const hasBookingButton = !isFull && (
+            classItem.buttonTexts.some((btn) => {
+              const btnUpper = btn.toUpperCase()
+              return btnUpper.includes('RESERVE') || 
+                     btnUpper.includes('BOOK') || 
+                     btnUpper.includes('WAITLIST') ||
+                     btnUpper.includes('ADD TO WAITLIST')
+            }) ||
+            classItem.buttonClasses.some((btnClass) => {
+              // btn-primary class typically indicates a booking button
+              return btnClass.includes('btn-primary')
+            }) ||
+            // Also check HTML for button patterns (in case button text wasn't captured)
+            (classItem.html.toLowerCase().includes('btn-primary') && 
+             (classItem.html.toLowerCase().includes('reserve') || 
+              classItem.html.toLowerCase().includes('book') ||
+              classItem.html.toLowerCase().includes('waitlist')))
+          )
+
+          // Determine status
+          let status: 'reserved' | 'available' | 'full'
+          if (isReserved) {
+            status = 'reserved'
+          } else if (isFull) {
+            status = 'full'
+          } else {
+            // Has booking button = available
+            status = 'available'
+          }
+          
+          console.log(`   Status check: isReserved=${isReserved}, isFull=${isFull}, hasBookingButton=${hasBookingButton}`)
+          console.log(`   Button texts: ${classItem.buttonTexts.join(', ')}`)
+
+          return {
+            found: true,
+            status,
+            debugInfo: classItem,
+          }
+        }
+      }
+
+      // If not found, log what we were looking for vs what we found
+      console.log(`\n❌ Class not found in current results`)
+      console.log(`   Looking for: "${classType}" at ${targetTime} (${targetTime12})`)
+      console.log(`   Searched ${classes.length} containers`)
+      
+      // Show classes that partially match
+      const typeMatches = classes.filter(c => c.text.toLowerCase().includes(classType.toLowerCase()))
+      const timeMatches = classes.filter(c => 
+        c.text.includes(targetTime) || 
+        c.text.includes(targetTime12) ||
+        c.timePatterns.some(tp => tp.includes(targetTime) || tp.includes(targetTime12))
+      )
+      
+      if (typeMatches.length > 0) {
+        console.log(`   Found ${typeMatches.length} containers with matching class type:`)
+        typeMatches.slice(0, 3).forEach(c => {
+          console.log(`     - ${c.text.substring(0, 150).replace(/\n/g, ' ')}`)
+        })
+      }
+      
+      if (timeMatches.length > 0) {
+        console.log(`   Found ${timeMatches.length} containers with matching time:`)
+        timeMatches.slice(0, 3).forEach(c => {
+          console.log(`     - ${c.text.substring(0, 150).replace(/\n/g, ' ')}`)
+        })
+      }
+
+      return { found: false, debugInfo: { classes, typeMatches, timeMatches } }
+    }
+
+    // First, search in currently loaded classes
+    console.log('Searching for class in loaded results...')
+    let searchResult = await searchForClass()
+
+    // If not found, click "Load more results" repeatedly until found or button disappears
+    if (!searchResult.found) {
+      console.log('Class not found in initial results, looking for "Load more results" button...')
+      let loadMoreAttempts = 0
+      const maxLoadMoreAttempts = 20 // Safety limit
+
+      while (loadMoreAttempts < maxLoadMoreAttempts) {
+        // Find "Load more results" button - try ID first (YMCA Daxko specific)
+        let loadMoreButton = null
+        
+        // Try ID selector first (most reliable)
+        try {
+          loadMoreButton = await page.$('#load-more')
+          if (loadMoreButton) {
+            console.log('Found "Load more results" button by ID (#load-more)')
+          }
+        } catch {
+          // Continue to other selectors
         }
 
-        break
+        // If not found by ID, try other selectors
+        if (!loadMoreButton) {
+          const loadMoreSelectors = [
+            'button[id="load-more"]',
+            'button:has-text("Load more results")',
+            'button:has-text("LOAD MORE RESULTS")',
+            'button:has-text("Load More")',
+            'button:has-text("load more")',
+            'a:has-text("Load more")',
+            'button[aria-label*="load more" i]',
+            'button[class*="load-more" i]',
+          ]
+
+          for (const selector of loadMoreSelectors) {
+            try {
+              const buttons = await page.$$(selector)
+              for (const btn of buttons) {
+                const buttonText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || '', btn)
+                const buttonId = await page.evaluate((el) => (el as HTMLElement).id || '', btn)
+                if (buttonText.toLowerCase().includes('load more') || buttonId === 'load-more') {
+                  loadMoreButton = btn
+                  console.log(`Found "Load more results" button: "${buttonText}" (id: ${buttonId})`)
+                  break
+                }
+              }
+              if (loadMoreButton) break
+            } catch {
+              continue
+            }
+          }
+        }
+
+        if (!loadMoreButton) {
+          console.log('No "Load more results" button found - reached end of list')
+          break
+        }
+
+        console.log(`Clicking "Load more results" (attempt ${loadMoreAttempts + 1})...`)
+        await loadMoreButton.click()
+        await new Promise(resolve => setTimeout(resolve, 3000)) // Wait for new results to load
+
+        // Search again
+        searchResult = await searchForClass()
+        if (searchResult.found) {
+          console.log('Class found after loading more results!')
+          break
+        }
+
+        loadMoreAttempts++
       }
     }
 
-    if (!matchingClass) {
+    // Check search result
+    if (!searchResult.found) {
       return {
         status: 'failed',
-        errorMessage: `Class "${classType}" at ${targetTime} not found on schedule`,
+        errorMessage: `Class "${classType}" at ${targetTime} not found on schedule (searched all loaded results)`,
         selectedBranch: branchUsed,
       }
     }
 
-    // Check if already reserved
-    if (
-      matchingClass.text.toUpperCase().includes('RESERVED') ||
-      matchingClass.buttonTexts.some((btn) => btn.toUpperCase().includes('RESERVED'))
-    ) {
+    // Handle different statuses
+    if (searchResult.status === 'reserved') {
       return {
         status: 'confirmed',
         errorMessage: 'Class already reserved',
@@ -494,13 +1045,8 @@ async function findAndBookClass(
       }
     }
 
-    // Check if full (no waitlist option)
-    if (
-      matchingClass.text.toUpperCase().includes('FULL') &&
-      !matchingClass.buttonTexts.some((btn) =>
-        btn.toUpperCase().includes('WAITLIST')
-      )
-    ) {
+    if (searchResult.status === 'full') {
+      // If it says "Class Full", there's no booking button - class is truly full
       return {
         status: 'failed',
         errorMessage: 'Class is full and no waitlist option available',
@@ -508,39 +1054,65 @@ async function findAndBookClass(
       }
     }
 
-    // Find and click the booking button
-    // Try multiple approaches to find the button
-    let clicked = false
+    // Class found and available - now find and click the booking button
+    console.log('Class found! Looking for booking button...')
     
-    // Approach 1: Find all buttons and filter by text
-    const allButtons = await page.$$('button, a, input[type="button"]')
+    // Use the helper function to attempt booking
+    const bookingResult = await attemptBookingButtonClick(page, classType, targetTime12)
+    let clicked = bookingResult.success
     
-    for (const button of allButtons) {
-      const buttonText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || '', button)
-      const parentText = await page.evaluate(
-        (el) => (el.parentElement?.textContent || '').toLowerCase(),
-        button
-      )
+    // Fallback: Get all buttons and find the one in the class row
+    if (!clicked) {
+      const allButtons = await page.$$('button, a[role="button"], a.btn, input[type="button"]')
       
-      const buttonTextLower = buttonText.toLowerCase()
-      const isBookingButton = 
-        buttonTextLower.includes('reserve') ||
-        buttonTextLower.includes('book') ||
-        buttonTextLower.includes('waitlist') ||
-        buttonTextLower.includes('add to waitlist')
+      for (const button of allButtons) {
+        const buttonText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || '', button)
+        const buttonClass = await page.evaluate((el) => (el as HTMLElement).className || '', button)
+        const parentText = await page.evaluate(
+          (el) => {
+            // Get text from parent and all ancestors up to class container
+            let text = ''
+            let current: HTMLElement | null = el.parentElement
+            let depth = 0
+            while (current && depth < 6) {
+              text += (current.textContent || '').toLowerCase()
+              current = current.parentElement
+              depth++
+            }
+            return text
+          },
+          button
+        )
+        
+        const buttonTextLower = buttonText.toLowerCase()
+        const isBookingButton = 
+          buttonTextLower.includes('reserve') ||
+          buttonTextLower.includes('book') ||
+          buttonTextLower.includes('waitlist') ||
+          buttonTextLower.includes('add to waitlist') ||
+          (buttonClass.includes('btn-primary') && (buttonTextLower.includes('reserve') || buttonTextLower === ''))
 
-      // Check if this button is in the matching class row
-      if (isBookingButton && parentText.includes(classType.toLowerCase()) && parentText.includes(targetTime)) {
-        await button.click()
-        clicked = true
-        break
+        // Check if this button is in the matching class row
+        const matchesClass = 
+          parentText.includes(classType.toLowerCase()) &&
+          (parentText.includes(targetTime) ||
+           parentText.includes(classTime) ||
+           parentText.includes(targetTime12.toLowerCase()) ||
+           parentText.includes(targetTime12.replace(' ', '').toLowerCase()))
+
+        if (isBookingButton && matchesClass) {
+          console.log(`Found booking button: "${buttonText}" (class: ${buttonClass})`)
+          await button.click()
+          clicked = true
+          break
+        }
       }
     }
 
     if (!clicked) {
       return {
         status: 'failed',
-        errorMessage: 'Could not find or click booking button',
+        errorMessage: 'Could not find or click booking button for the class',
         selectedBranch: branchUsed,
       }
     }

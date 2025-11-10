@@ -29,6 +29,7 @@ async function testDatabaseHelpers() {
       console.log('Classes needing booking:')
       classes.forEach((c, i) => {
         console.log(`\n${i + 1}. ${c.class_type}`)
+        console.log(`   Class ID: ${c.id}  ← Use this for testing!`)
         console.log(`   User ID: ${c.user_id}`)
         console.log(`   Day: ${getDayName(c.day_of_week)}, Time: ${c.class_time}`)
         console.log(`   Branch: ${c.branch}`)
