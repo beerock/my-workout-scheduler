@@ -18,7 +18,132 @@ This document contains features and improvements that are planned for future imp
 - Commit and push the change
 - The workflow will resume running every 15 minutes automatically
 
-**Current Status:** Schedule is disabled (commented out) for testing
+**Current Status:** Schedule is enabled (runs every 15 minutes automatically)
+
+---
+
+## Event-Driven Trigger Architecture (Future Optimization)
+
+### Overview
+Replace the 15-minute polling approach with an event-driven trigger system that only runs GitHub Actions when a booking window actually opens. This reduces GitHub Actions usage from ~250 minutes/month to ~48-144 minutes/month (80% cost reduction).
+
+### Current Approach
+- **Method**: GitHub Actions cron runs every 15 minutes (`*/15 * * * *`)
+- **Usage**: ~250 minutes/month (12.5% of 2,000 min free tier)
+- **Runs**: 2,880 runs/month (most runs exit early if no bookings needed)
+- **Status**: ✅ Working, meets all KPIs (<60s booking latency with parallel processing)
+
+### Optimization Option A: Supabase pg_cron
+
+**Architecture:**
+```
+Supabase pg_cron (scheduled at exact booking window times)
+  → Triggers GitHub Actions via webhook (repository_dispatch)
+  → GitHub Actions runs Puppeteer (parallel processing)
+```
+
+**Benefits:**
+- ✅ Free tier compatible (pg_cron available on Supabase free tier)
+- ✅ Exact timing (fires at booking window open time)
+- ✅ Minimal GitHub Actions usage (24 runs/month = 48-144 min)
+- ✅ Only runs when needed (no wasted runs)
+
+**Drawbacks:**
+- ⚠️ Complex implementation (8-10 hours)
+- ⚠️ Need to manage pg_cron jobs (create/delete on class changes)
+- ⚠️ Need to clean up `cron.job_run_details` table regularly (grows large)
+- ⚠️ More failure points (DB cron → webhook → GitHub)
+- ⚠️ Requires GitHub Personal Access Token with workflow scope
+
+**Implementation Requirements:**
+1. Create Supabase migration with pg_cron functions:
+   - `calculate_next_booking_window(class_id)`
+   - `schedule_booking_trigger(class_id)`
+   - `unschedule_booking_trigger(class_id)`
+   - `trigger_github_actions_webhook()`
+2. Update class CRUD operations to schedule/unschedule triggers
+3. Add GitHub Actions `repository_dispatch` trigger
+4. Set up GitHub PAT and store in Supabase secrets
+5. Implement table cleanup for `cron.job_run_details`
+
+### Optimization Option B: Vercel Cron
+
+**Architecture:**
+```
+Vercel cron (scheduled in vercel.json)
+  → Next.js API route (/api/cron/booking)
+  → Triggers GitHub Actions via webhook (repository_dispatch)
+  → GitHub Actions runs Puppeteer (parallel processing)
+```
+
+**Benefits:**
+- ✅ Free tier compatible (Vercel Hobby plan)
+- ✅ Exact timing
+- ✅ Minimal GitHub Actions usage (24 runs/month = 48-144 min)
+- ✅ Simpler than pg_cron (no database functions needed)
+- ✅ Better debugging (Vercel dashboard shows cron logs)
+- ✅ No table cleanup needed
+
+**Drawbacks:**
+- ⚠️ Static cron jobs in vercel.json (need redeploy when booking times change)
+- ⚠️ Requires Next.js API route
+- ⚠️ Requires GitHub Personal Access Token with workflow scope
+- ⚠️ Medium complexity (4-6 hours implementation)
+
+**Implementation Requirements:**
+1. Add cron schedule to `vercel.json`:
+   ```json
+   {
+     "crons": [
+       {"path": "/api/cron/booking", "schedule": "15 14 * * 1"},  // Mon 2:15 PM
+       {"path": "/api/cron/booking", "schedule": "15 14 * * 3"},  // Wed 2:15 PM
+       {"path": "/api/cron/booking", "schedule": "30 9 * * 6"}    // Sat 9:30 AM
+     ]
+   }
+   ```
+2. Create Next.js API route: `app/api/cron/booking/route.ts`
+3. Add GitHub Actions `repository_dispatch` trigger
+4. Set up GitHub PAT and store as Vercel environment variable
+5. (Optional) Daily sync job to update cron schedule based on active classes
+
+### When to Implement
+
+**DO NOT implement unless:**
+- GitHub Actions usage approaches 1,500+ minutes/month (75% of free tier)
+- Need to scale to 10+ users
+- Want to minimize infrastructure costs
+- Have 4-10 hours available for optimization work
+
+**Current situation:**
+- Usage: ~250 min/month (12.5% of free tier)
+- Room to scale to 5-6 users before approaching limits
+- All KPIs are being met (<60s booking latency)
+- System is stable and working
+
+### Recommendation
+
+**For MVP (current state):**
+- ✅ Stick with 15-minute polling + parallel processing
+- ✅ Monitor GitHub Actions usage for 2-4 weeks
+- ✅ Only optimize if usage becomes a concern
+
+**If optimization needed:**
+- 🥇 **Recommended**: Vercel Cron (Option B) - simpler, easier to debug
+- 🥈 **Alternative**: Supabase pg_cron (Option A) - if you prefer database-centric approach
+
+### Cost Analysis
+
+| Approach | GitHub Actions Usage | % of Free Tier | Runs/Month | Implementation Time |
+|----------|---------------------|----------------|------------|---------------------|
+| **Current (15-min polling)** | 250 min | 12.5% | 2,880 | 0 hours (done) |
+| **Vercel Cron** | 48-144 min | 2.4-7.2% | 24 | 4-6 hours |
+| **Supabase pg_cron** | 48-144 min | 2.4-7.2% | 24 | 8-10 hours |
+
+### Status
+**Status**: Backlogged - Not currently needed
+**Priority**: Low (optimization only, current approach works well)
+**Last Updated**: 2025-01-11
+**Next Step**: Monitor GitHub Actions usage for 2-4 weeks before reconsidering
 
 ---
 

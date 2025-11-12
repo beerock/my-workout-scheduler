@@ -27,6 +27,162 @@ if (!process.env.ENCRYPTION_KEY) {
 }
 
 /**
+ * Process bookings for a single user (all their classes)
+ * This function runs independently for each user, enabling parallel processing
+ */
+async function processUserBookings(
+  userId: string,
+  classes: ClassNeedingBooking[]
+): Promise<{
+  confirmed: number
+  waitlisted: number
+  failed: number
+  skipped: number
+  errors: number
+}> {
+  const userResults = {
+    confirmed: 0,
+    waitlisted: 0,
+    failed: 0,
+    skipped: 0,
+    errors: 0,
+  }
+
+  console.log(`\n${'─'.repeat(60)}`)
+  console.log(`👤 User: ${userId} (${classes.length} class(es))`)
+  console.log('─'.repeat(60))
+
+  // Decrypt credentials once per user
+  let decryptedPassword: string
+  try {
+    const firstClass = classes[0]
+    decryptedPassword = decryptPassword(firstClass.encrypted_password)
+  } catch (error) {
+    console.error(`❌ Failed to decrypt password for user ${userId}:`, error)
+    // Create failed attempts for all classes
+    for (const classItem of classes) {
+      await createBookingAttempt(
+        classItem.id,
+        'failed',
+        null,
+        `Password decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+      userResults.errors++
+      userResults.failed++
+    }
+    return userResults
+  }
+
+  // Process each class for this user
+  for (const classItem of classes) {
+    console.log(`\n📅 Processing: ${classItem.class_type}`)
+    console.log(`   Day: ${getDayName(classItem.day_of_week)}, Time: ${classItem.class_time}`)
+    console.log(`   Branch: ${classItem.branch}`)
+
+    // Check if we should skip today
+    const today = new Date().toISOString().split('T')[0]
+    if (classItem.next_skip_date === today) {
+      console.log(`   ⏭️  Skipping (next_skip_date = today)`)
+
+      // Create skipped attempt
+      const attemptId = await createBookingAttempt(
+        classItem.id,
+        'skipped',
+        null,
+        `Skipped: next_skip_date equals today (${today})`
+      )
+      userResults.skipped++
+
+      // Clear the skip date
+      try {
+        await clearSkipDate(classItem.id)
+        console.log(`   ✅ Cleared skip date`)
+      } catch (error) {
+        console.error(`   ⚠️  Failed to clear skip date:`, error)
+      }
+
+      continue
+    }
+
+    // Create pending attempt
+    let attemptId: string
+    try {
+      attemptId = await createBookingAttempt(classItem.id, 'pending', classItem.branch)
+    } catch (error) {
+      console.error(`   ❌ Failed to create booking attempt:`, error)
+      userResults.errors++
+      continue
+    }
+
+    // Prepare booking parameters
+    const bookingParams: BookingParams = {
+      gymUrl: classItem.gym_url,
+      username: classItem.username,
+      password: decryptedPassword,
+      branch: classItem.branch,
+      dayOfWeek: classItem.day_of_week,
+      classTime: classItem.class_time,
+      classType: classItem.class_type,
+      nextSkipDate: classItem.next_skip_date,
+    }
+
+    // Execute booking
+    try {
+      console.log(`   🔄 Attempting booking...`)
+      const bookingResult = await bookClass(bookingParams)
+
+      // Update attempt with result
+      await updateBookingAttempt(attemptId, {
+        status: bookingResult.status,
+        branch_used: bookingResult.branchUsed,
+        error_message: bookingResult.errorMessage,
+      })
+
+      // Update results
+      switch (bookingResult.status) {
+        case 'confirmed':
+          userResults.confirmed++
+          console.log(`   ✅ Confirmed`)
+          break
+        case 'waitlisted':
+          userResults.waitlisted++
+          console.log(`   ⏳ Waitlisted`)
+          break
+        case 'failed':
+          userResults.failed++
+          console.log(`   ❌ Failed: ${bookingResult.errorMessage}`)
+          break
+        case 'skipped':
+          userResults.skipped++
+          console.log(`   ⏭️  Skipped: ${bookingResult.errorMessage}`)
+          break
+      }
+
+      if (bookingResult.screenshotPath) {
+        console.log(`   📸 Screenshot: ${bookingResult.screenshotPath}`)
+      }
+    } catch (error) {
+      // Update attempt with error
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      await updateBookingAttempt(attemptId, {
+        status: 'failed',
+        error_message: `Exception: ${errorMessage}`,
+      })
+
+      userResults.failed++
+      userResults.errors++
+      console.error(`   ❌ Booking exception:`, errorMessage)
+    }
+
+    // Small delay between bookings to avoid rate limiting
+    await sleep(2000) // 2 seconds
+  }
+
+  return userResults
+}
+
+/**
  * Main automation function
  */
 async function runBookingAutomation() {
@@ -58,143 +214,26 @@ async function runBookingAutomation() {
       return { success: true, results }
     }
 
-    // Group classes by user (to potentially reuse browser sessions)
+    // Group classes by user (to process each user's bookings independently)
     const classesByUser = groupClassesByUser(classesNeedingBooking)
 
-    console.log(`👥 Processing ${classesByUser.size} user(s)...\n`)
+    console.log(`👥 Processing ${classesByUser.size} user(s) in parallel...\n`)
 
-    // Process each user's classes
-    for (const [userId, classes] of classesByUser.entries()) {
-      console.log(`\n${'─'.repeat(60)}`)
-      console.log(`👤 User: ${userId} (${classes.length} class(es))`)
-      console.log('─'.repeat(60))
+    // Process all users in parallel using Promise.all()
+    // This allows multiple users to book simultaneously instead of waiting for each other
+    const userResultsArray = await Promise.all(
+      Array.from(classesByUser.entries()).map(([userId, classes]) =>
+        processUserBookings(userId, classes)
+      )
+    )
 
-      // Decrypt credentials once per user
-      let decryptedPassword: string
-      try {
-        const firstClass = classes[0]
-        decryptedPassword = decryptPassword(firstClass.encrypted_password)
-      } catch (error) {
-        console.error(`❌ Failed to decrypt password for user ${userId}:`, error)
-        // Create failed attempts for all classes
-        for (const classItem of classes) {
-          await createBookingAttempt(
-            classItem.id,
-            'failed',
-            null,
-            `Password decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-          )
-          results.errors++
-          results.failed++
-        }
-        continue
-      }
-
-      // Process each class for this user
-      for (const classItem of classes) {
-        console.log(`\n📅 Processing: ${classItem.class_type}`)
-        console.log(`   Day: ${getDayName(classItem.day_of_week)}, Time: ${classItem.class_time}`)
-        console.log(`   Branch: ${classItem.branch}`)
-
-        // Check if we should skip today
-        const today = new Date().toISOString().split('T')[0]
-        if (classItem.next_skip_date === today) {
-          console.log(`   ⏭️  Skipping (next_skip_date = today)`)
-          
-          // Create skipped attempt
-          const attemptId = await createBookingAttempt(
-            classItem.id,
-            'skipped',
-            null,
-            `Skipped: next_skip_date equals today (${today})`
-          )
-          results.skipped++
-
-          // Clear the skip date
-          try {
-            await clearSkipDate(classItem.id)
-            console.log(`   ✅ Cleared skip date`)
-          } catch (error) {
-            console.error(`   ⚠️  Failed to clear skip date:`, error)
-          }
-
-          continue
-        }
-
-        // Create pending attempt
-        let attemptId: string
-        try {
-          attemptId = await createBookingAttempt(classItem.id, 'pending', classItem.branch)
-        } catch (error) {
-          console.error(`   ❌ Failed to create booking attempt:`, error)
-          results.errors++
-          continue
-        }
-
-        // Prepare booking parameters
-        const bookingParams: BookingParams = {
-          gymUrl: classItem.gym_url,
-          username: classItem.username,
-          password: decryptedPassword,
-          branch: classItem.branch,
-          dayOfWeek: classItem.day_of_week,
-          classTime: classItem.class_time,
-          classType: classItem.class_type,
-          nextSkipDate: classItem.next_skip_date,
-        }
-
-        // Execute booking
-        try {
-          console.log(`   🔄 Attempting booking...`)
-          const bookingResult = await bookClass(bookingParams)
-
-          // Update attempt with result
-          await updateBookingAttempt(attemptId, {
-            status: bookingResult.status,
-            branch_used: bookingResult.branchUsed,
-            error_message: bookingResult.errorMessage,
-          })
-
-          // Update results
-          switch (bookingResult.status) {
-            case 'confirmed':
-              results.confirmed++
-              console.log(`   ✅ Confirmed`)
-              break
-            case 'waitlisted':
-              results.waitlisted++
-              console.log(`   ⏳ Waitlisted`)
-              break
-            case 'failed':
-              results.failed++
-              console.log(`   ❌ Failed: ${bookingResult.errorMessage}`)
-              break
-            case 'skipped':
-              results.skipped++
-              console.log(`   ⏭️  Skipped: ${bookingResult.errorMessage}`)
-              break
-          }
-
-          if (bookingResult.screenshotPath) {
-            console.log(`   📸 Screenshot: ${bookingResult.screenshotPath}`)
-          }
-        } catch (error) {
-          // Update attempt with error
-          const errorMessage =
-            error instanceof Error ? error.message : 'Unknown error occurred'
-          await updateBookingAttempt(attemptId, {
-            status: 'failed',
-            error_message: `Exception: ${errorMessage}`,
-          })
-
-          results.failed++
-          results.errors++
-          console.error(`   ❌ Booking exception:`, errorMessage)
-        }
-
-        // Small delay between bookings to avoid rate limiting
-        await sleep(2000) // 2 seconds
-      }
+    // Aggregate results from all users
+    for (const userResult of userResultsArray) {
+      results.confirmed += userResult.confirmed
+      results.waitlisted += userResult.waitlisted
+      results.failed += userResult.failed
+      results.skipped += userResult.skipped
+      results.errors += userResult.errors
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2)
