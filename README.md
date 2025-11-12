@@ -114,12 +114,12 @@ my-workout-scheduler/
 ✅ **Skip next occurrence** (with smart unskip logic)  
 ✅ **Schedule list view** (sorted by day and time)  
 ✅ **Booking automation** (GitHub Actions + Puppeteer)  
-✅ **Automated class booking** (runs hourly via GitHub Actions)  
+✅ **Automated class booking** (runs every 15 minutes via GitHub Actions)  
 ✅ **Booking attempt tracking** (records all booking attempts in database)
 
 ## Booking Automation
 
-The app includes automated booking via GitHub Actions that runs every hour to book classes on the gym website.
+The app includes automated booking via GitHub Actions that runs every 15 minutes to book classes on the gym website.
 
 ### Quick Start
 
@@ -143,7 +143,7 @@ The app includes automated booking via GitHub Actions that runs every hour to bo
    npm run automation:run
    ```
 
-3. **Push to GitHub** - The workflow will run automatically every hour
+3. **Push to GitHub** - The workflow will run automatically every 15 minutes
 
 ### Documentation
 
