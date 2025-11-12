@@ -5,7 +5,7 @@ This document describes the automated booking system that runs via GitHub Action
 ## Overview
 
 The automation system:
-1. Runs every hour via GitHub Actions cron schedule
+1. Runs every 15 minutes via GitHub Actions cron schedule
 2. Queries the database for classes that need booking
 3. Uses Puppeteer to automate the booking process on the gym website
 4. Records all attempts in the `booking_attempts` table
@@ -16,7 +16,7 @@ The automation system:
 ### Components
 
 1. **GitHub Actions Workflow** (`.github/workflows/booking-automation.yml`)
-   - Scheduled to run every hour
+   - Scheduled to run every 15 minutes (`*/15 * * * *`)
    - Can be manually triggered via `workflow_dispatch`
    - Sets up Node.js environment and runs the automation script
 
