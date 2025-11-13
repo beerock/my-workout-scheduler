@@ -14,24 +14,32 @@ Based on actual screenshots and testing, the YMCA Daxko booking process works as
 **Page shows:**
 - Class details (name, location, time, duration)
 - "Select Group Members for Reservation" section
-- **"Active Members"** list with checkboxes
+- **"Active Members"** or **"Active Members (Accepting Spot in WaitList)"** header
+- If full: Orange warning banner: "Reservation Spots are full. Any one Active Member can Join Waitlist."
 - User's name (e.g., "Brock Busby") with unchecked checkbox
 - BACK button
-- RESERVE button (or WAITLIST if class is full)
+- **RESERVE button (Note: button ALWAYS says "RESERVE" even when joining waitlist!)**
 
 **Required Actions:**
 1. ✅ **Select checkbox next to user's name** (critical step!)
-2. ✅ Click RESERVE button (or WAITLIST button if class is full)
+2. ✅ Click RESERVE button (will book or waitlist depending on availability)
 
 **Result:** Navigates to confirmation page
 
 ### Step 3: Confirmation Page
-**Page shows:**
+
+**For Successful Booking:**
 - **"Awesome!"** heading
 - Green checkmark icon
-- Class details
-- User's name who booked
 - **"Now that reservation is complete, you can..."** text
+- Class details and booked user's name
+- Options: "Add to Calendar", "Edit", "BROWSE MORE CLASSES", "VIEW MY APPOINTMENTS"
+
+**For Waitlist Addition:**
+- **"Awesome!"** heading
+- Green checkmark icon
+- **"Now that you are in waitlist, you can..."** text
+- Class details and waitlisted user's name
 - Options: "Add to Calendar", "Edit", "BROWSE MORE CLASSES", "VIEW MY APPOINTMENTS"
 
 ## Implementation Requirements
@@ -56,21 +64,23 @@ for (const checkbox of checkboxes) {
 ```
 
 ### Confirmation Detection Keywords
-Based on actual confirmation page:
-- **Primary:** `"awesome!"` (exact text on confirmation page)
-- **Primary:** `"now that reservation is complete"` (exact text on confirmation page)
-- **Secondary:** `"reservation is complete"`
-- **Fallback:** `"reserved"`, `"booking confirmed"`
+Based on actual confirmation pages:
+- **Waitlist:** `"now that you are in waitlist"`, `"you are in waitlist"`, `"added to waitlist"`
+- **Booking:** `"now that reservation is complete"`, `"reservation is complete"`
+- **Note:** Always check for waitlist text first, then booking text
 
-## Code Updates Needed
+## Code Implementation ✅
 
 Location: `scripts/booking-automation.ts` function `findAndBookClass()`
 
-1. After first RESERVE button click → wait for navigation
-2. **NEW:** Find and click user checkbox on description page
-3. Find and click second RESERVE/WAITLIST button
-4. Wait for confirmation page
-5. Detect confirmation using "Awesome!" and "Now that reservation is complete" keywords
+**Completed Steps:**
+1. ✅ After first RESERVE button click → wait for navigation
+2. ✅ Find and click user checkbox on description page
+3. ✅ Check page content for "Accepting Spot in WaitList" to detect if class is full
+4. ✅ Find and click RESERVE button (always says "RESERVE" regardless of booking vs waitlist)
+5. ✅ Wait for confirmation page
+6. ✅ Detect waitlist using "Now that you are in waitlist" keyword
+7. ✅ Detect booking using "Now that reservation is complete" keyword
 
 ## Testing Checklist
 

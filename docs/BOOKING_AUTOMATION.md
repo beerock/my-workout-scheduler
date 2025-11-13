@@ -120,25 +120,36 @@ The YMCA Daxko platform requires a **two-step booking process**:
 The class description page shows:
 - Class details (name, location, time, duration)
 - "Select Group Members for Reservation" section
+- **"Active Members"** or **"Active Members (Accepting Spot in WaitList)"** header
+- If full: Orange warning banner: "Reservation Spots are full. Any one Active Member can Join Waitlist."
 - "Active Members" list with checkboxes next to member names
-- RESERVE button (or WAITLIST if class is full)
+- **RESERVE button (Note: button ALWAYS says "RESERVE" even when joining waitlist!)**
 
 **Required actions:**
-1. ✅ Select checkbox next to user's name
-2. ✅ Click RESERVE or WAITLIST button
+1. ✅ Detect if class is full by checking for "Accepting Spot in WaitList" text
+2. ✅ Select checkbox next to user's name
+3. ✅ Click RESERVE button (will book or waitlist depending on availability)
 
 **Result:** Navigates to confirmation page
 
 ### Step 3: Confirmation Page
-The confirmation page displays:
+
+**For Successful Booking:**
 - "Awesome!" heading
 - Green checkmark icon
-- "Now that reservation is complete, you can..." text
+- **"Now that reservation is complete, you can..."** text
 - Class details and booked user's name
 
+**For Waitlist Addition:**
+- "Awesome!" heading
+- Green checkmark icon
+- **"Now that you are in waitlist, you can..."** text
+- Class details and waitlisted user's name
+
 **Detection keywords:**
-- Primary: `"awesome!"`, `"now that reservation is complete"`
-- Fallback: `"reservation is complete"`, `"reserved"`, `"booking confirmed"`
+- **Waitlist detection:** `"now that you are in waitlist"`, `"you are in waitlist"`, `"added to waitlist"`
+- **Booking detection:** `"now that reservation is complete"`, `"reservation is complete"`
+- **Important:** Always check for waitlist text first before confirming as booked
 
 ## Error Handling
 
