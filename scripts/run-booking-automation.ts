@@ -123,6 +123,7 @@ async function processUserBookings(
       dayOfWeek: classItem.day_of_week,
       classTime: classItem.class_time,
       classType: classItem.class_type,
+      timezone: classItem.timezone,
       nextSkipDate: classItem.next_skip_date,
     }
 

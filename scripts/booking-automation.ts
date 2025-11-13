@@ -22,6 +22,7 @@ export type BookingParams = {
   dayOfWeek: number // 0 = Sunday, 6 = Saturday
   classTime: string // Format: "HH:MM" or "HH:MM:SS"
   classType: string // Class name/type to match
+  timezone: string // Gym's timezone (e.g., "America/New_York")
   nextSkipDate: string | null // If equals today, skip booking
 }
 
@@ -37,6 +38,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
     dayOfWeek,
     classTime,
     classType,
+    timezone,
     nextSkipDate,
   } = params
 
@@ -127,7 +129,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
 
     // Step 3: Navigate to target day's schedule
     console.log(`Navigating to day ${dayOfWeek} schedule...`)
-    const navigationResult = await navigateToDay(page, dayOfWeek)
+    const navigationResult = await navigateToDay(page, dayOfWeek, timezone, classTime)
     if (!navigationResult.success) {
       screenshotPath = await takeScreenshot(page, '05-navigation-failed')
       return {
@@ -198,7 +200,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
       }
       
       // Re-navigate to target day
-      const navigationResultRetry = await navigateToDay(page, dayOfWeek)
+      const navigationResultRetry = await navigateToDay(page, dayOfWeek, timezone, classTime)
       if (!navigationResultRetry.success) {
         console.log(`⚠️  Navigation failed on retry: ${navigationResultRetry.error}`)
         // Continue anyway - might still work
@@ -694,31 +696,72 @@ function fuzzyMatch(str1: string, str2: string, threshold: number = 0.8): boolea
 /**
  * Navigate to the schedule for a specific day of week
  * Looks for date tabs like "Mon 10" and clicks the appropriate one
+ * Uses gym's timezone for accurate date calculations
  */
 async function navigateToDay(
   page: Page,
-  dayOfWeek: number
+  dayOfWeek: number,
+  timezone: string,
+  classTime: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Calculate the target date (next occurrence of this day of week)
-    // CRITICAL: Never look at past dates, always find the next occurrence
-    const today = new Date()
-    const currentDayOfWeek = today.getDay() // 0 = Sunday, 6 = Saturday
+    // Calculate "today" in the gym's timezone
+    const now = new Date()
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    })
+    
+    const parts = formatter.formatToParts(now)
+    const gymDate = {
+      year: parseInt(parts.find(p => p.type === 'year')!.value),
+      month: parseInt(parts.find(p => p.type === 'month')!.value),
+      day: parseInt(parts.find(p => p.type === 'day')!.value),
+      hour: parseInt(parts.find(p => p.type === 'hour')!.value),
+      minute: parseInt(parts.find(p => p.type === 'minute')!.value),
+    }
+    
+    // Create a date object representing "today" in gym's timezone
+    const todayInGymTz = new Date(gymDate.year, gymDate.month - 1, gymDate.day, gymDate.hour, gymDate.minute)
+    const currentDayOfWeek = todayInGymTz.getDay() // 0 = Sunday, 6 = Saturday
+    
     let daysUntilTarget = dayOfWeek - currentDayOfWeek
     
-    // If target day is in the past this week OR today, look for next week's occurrence
-    // This ensures we NEVER try to book classes on past dates
-    if (daysUntilTarget <= 0) {
-      daysUntilTarget += 7 // Always go to next week if today or past
+    // Handle same-day classes: check if class time has passed
+    if (daysUntilTarget === 0) {
+      // Same day - check if class time has passed
+      const [classHour, classMinute] = classTime.split(':').map(Number)
+      const currentTimeMinutes = gymDate.hour * 60 + gymDate.minute
+      const classTimeMinutes = classHour * 60 + classMinute
+      
+      if (currentTimeMinutes >= classTimeMinutes) {
+        // Class time has passed today, look for next week
+        daysUntilTarget = 7
+        console.log(`Class time (${classTime}) has passed today, looking for next week's occurrence`)
+      } else {
+        // Class time hasn't passed, use today
+        daysUntilTarget = 0
+        console.log(`Class time (${classTime}) hasn't passed yet, using today`)
+      }
+    } else if (daysUntilTarget < 0) {
+      // Past day this week, look for next week
+      daysUntilTarget += 7
+      console.log(`Target day is in the past this week, looking for next week's occurrence`)
     }
 
-    const targetDate = new Date(today)
-    targetDate.setDate(today.getDate() + daysUntilTarget)
+    // Calculate target date
+    const targetDate = new Date(todayInGymTz)
+    targetDate.setDate(todayInGymTz.getDate() + daysUntilTarget)
     const dayOfMonth = targetDate.getDate()
     
-    console.log(`Today: ${today.toLocaleDateString()}, Current day: ${currentDayOfWeek}`)
+    console.log(`Today in ${timezone}: ${gymDate.month}/${gymDate.day}/${gymDate.year}, Current day: ${currentDayOfWeek}`)
     console.log(`Target day: ${dayOfWeek}, Days until target: ${daysUntilTarget}`)
-    console.log(`Target date: ${targetDate.toLocaleDateString()}`)
+    console.log(`Target date: ${targetDate.toLocaleDateString('en-US', { timeZone: timezone })}`)
 
     // Day name abbreviations (Mon, Tue, Wed, etc.)
     const dayAbbrevs = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -1197,27 +1240,6 @@ async function findAndBookClass(
     // Class found and available - now find and click the booking button
     console.log('Class found! Looking for booking button...')
     
-    // CRITICAL: Check if booking window is open
-    // Look for tooltip text like "Reservation starts at..." which indicates window not yet open
-    const pageContent = await page.content()
-    const pageContentLower = pageContent.toLowerCase()
-    
-    const bookingWindowNotOpen = 
-      pageContentLower.includes('reservation starts at') ||
-      pageContentLower.includes('reservations open') ||
-      pageContentLower.includes('booking opens')
-    
-    if (bookingWindowNotOpen) {
-      console.log('⚠️  Booking window is NOT yet open for this class')
-      return {
-        status: 'failed',
-        errorMessage: 'Booking window not yet open - class reservation starts at a future time',
-        selectedBranch: branchUsed,
-      }
-    }
-    
-    console.log('✓ Booking window appears to be open, proceeding...')
-    
     // Use the helper function to attempt booking
     const bookingResult = await attemptBookingButtonClick(page, classType, targetTime12)
     let clicked = bookingResult.success
@@ -1263,6 +1285,40 @@ async function findAndBookClass(
 
         if (isBookingButton && matchesClass) {
           console.log(`Found booking button: "${buttonText}" (class: ${buttonClass})`)
+          
+          // Check if button is disabled (indicates booking window not open)
+          const isDisabled = await page.evaluate((el) => {
+            return (el as HTMLButtonElement).disabled || 
+                   (el as HTMLElement).getAttribute('disabled') !== null ||
+                   (el as HTMLElement).classList.contains('disabled')
+          }, button)
+          
+          // Check for tooltip indicating booking window not open
+          const buttonTooltip = await page.evaluate((el) => {
+            return (el as HTMLElement).getAttribute('title') || 
+                   (el as HTMLElement).getAttribute('data-tooltip') ||
+                   (el as HTMLElement).getAttribute('aria-label') || ''
+          }, button)
+          
+          const tooltipLower = buttonTooltip.toLowerCase()
+          const hasBookingWindowTooltip = 
+            tooltipLower.includes('reservation starts at') ||
+            tooltipLower.includes('reservations open') ||
+            tooltipLower.includes('booking opens')
+          
+          if (isDisabled || hasBookingWindowTooltip) {
+            console.log(`⚠️  Booking window is NOT yet open for this class`)
+            if (isDisabled) {
+              console.log(`   Button is disabled`)
+            }
+            if (hasBookingWindowTooltip) {
+              console.log(`   Tooltip: "${buttonTooltip}"`)
+            }
+            // Set clicked to false and break - we'll handle the error after the loop
+            clicked = false
+            break
+          }
+          
           await button.click()
           clicked = true
           break
@@ -1271,6 +1327,22 @@ async function findAndBookClass(
     }
 
     if (!clicked) {
+      // Check if we failed due to booking window or just couldn't find button
+      const pageContent = await page.content()
+      const pageContentLower = pageContent.toLowerCase()
+      const hasBookingWindowText = 
+        pageContentLower.includes('reservation starts at') ||
+        pageContentLower.includes('reservations open') ||
+        pageContentLower.includes('booking opens')
+      
+      if (hasBookingWindowText) {
+        return {
+          status: 'failed',
+          errorMessage: 'Booking window not yet open - class reservation starts at a future time',
+          selectedBranch: branchUsed,
+        }
+      }
+      
       return {
         status: 'failed',
         errorMessage: 'Could not find or click booking button for the class',
