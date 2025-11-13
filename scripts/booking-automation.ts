@@ -646,20 +646,24 @@ async function navigateToDay(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Calculate the target date (next occurrence of this day of week)
+    // CRITICAL: Never look at past dates, always find the next occurrence
     const today = new Date()
-    const currentDayOfWeek = today.getUTCDay() // 0 = Sunday, 6 = Saturday
+    const currentDayOfWeek = today.getDay() // 0 = Sunday, 6 = Saturday
     let daysUntilTarget = dayOfWeek - currentDayOfWeek
-    if (daysUntilTarget < 0) {
-      daysUntilTarget += 7 // Next week
-    }
-    if (daysUntilTarget === 0) {
-      // Same day - check if we need next week's occurrence
-      // For now, assume we want this week's occurrence
+    
+    // If target day is in the past this week OR today, look for next week's occurrence
+    // This ensures we NEVER try to book classes on past dates
+    if (daysUntilTarget <= 0) {
+      daysUntilTarget += 7 // Always go to next week if today or past
     }
 
     const targetDate = new Date(today)
-    targetDate.setUTCDate(today.getUTCDate() + daysUntilTarget)
-    const dayOfMonth = targetDate.getUTCDate()
+    targetDate.setDate(today.getDate() + daysUntilTarget)
+    const dayOfMonth = targetDate.getDate()
+    
+    console.log(`Today: ${today.toLocaleDateString()}, Current day: ${currentDayOfWeek}`)
+    console.log(`Target day: ${dayOfWeek}, Days until target: ${daysUntilTarget}`)
+    console.log(`Target date: ${targetDate.toLocaleDateString()}`)
 
     // Day name abbreviations (Mon, Tue, Wed, etc.)
     const dayAbbrevs = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -1129,6 +1133,27 @@ async function findAndBookClass(
 
     // Class found and available - now find and click the booking button
     console.log('Class found! Looking for booking button...')
+    
+    // CRITICAL: Check if booking window is open
+    // Look for tooltip text like "Reservation starts at..." which indicates window not yet open
+    const pageContent = await page.content()
+    const pageContentLower = pageContent.toLowerCase()
+    
+    const bookingWindowNotOpen = 
+      pageContentLower.includes('reservation starts at') ||
+      pageContentLower.includes('reservations open') ||
+      pageContentLower.includes('booking opens')
+    
+    if (bookingWindowNotOpen) {
+      console.log('⚠️  Booking window is NOT yet open for this class')
+      return {
+        status: 'failed',
+        errorMessage: 'Booking window not yet open - class reservation starts at a future time',
+        selectedBranch: branchUsed,
+      }
+    }
+    
+    console.log('✓ Booking window appears to be open, proceeding...')
     
     // Use the helper function to attempt booking
     const bookingResult = await attemptBookingButtonClick(page, classType, targetTime12)
