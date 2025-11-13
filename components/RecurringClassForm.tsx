@@ -238,7 +238,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
           ))}
         </select>
         <p className="mt-1 text-xs text-gray-500">
-          Your local timezone for accurate scheduling
+          Gym/Class location timezone (e.g., Eastern Time for Asheville YMCA). This is the timezone where the class takes place, not your viewing timezone.
         </p>
       </div>
 
