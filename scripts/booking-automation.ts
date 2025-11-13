@@ -637,6 +637,61 @@ async function selectBranch(
 }
 
 /**
+ * Calculate fuzzy string similarity (0-1 scale)
+ * Uses Levenshtein distance to handle minor spelling differences
+ */
+function calculateSimilarity(str1: string, str2: string): number {
+  const s1 = str1.toLowerCase().trim()
+  const s2 = str2.toLowerCase().trim()
+  
+  // Exact match
+  if (s1 === s2) return 1.0
+  
+  // Substring match (very common case)
+  if (s1.includes(s2) || s2.includes(s1)) return 0.95
+  
+  // Calculate Levenshtein distance
+  const matrix: number[][] = []
+  
+  for (let i = 0; i <= s1.length; i++) {
+    matrix[i] = [i]
+  }
+  
+  for (let j = 0; j <= s2.length; j++) {
+    matrix[0][j] = j
+  }
+  
+  for (let i = 1; i <= s1.length; i++) {
+    for (let j = 1; j <= s2.length; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        matrix[i][j] = matrix[i - 1][j - 1]
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j] + 1      // deletion
+        )
+      }
+    }
+  }
+  
+  const distance = matrix[s1.length][s2.length]
+  const maxLength = Math.max(s1.length, s2.length)
+  
+  // Convert distance to similarity (0-1 scale)
+  return 1 - (distance / maxLength)
+}
+
+/**
+ * Check if two strings match with fuzzy logic
+ * Returns true if similarity is above threshold (default 0.8 = 80% similar)
+ */
+function fuzzyMatch(str1: string, str2: string, threshold: number = 0.8): boolean {
+  const similarity = calculateSimilarity(str1, str2)
+  return similarity >= threshold
+}
+
+/**
  * Navigate to the schedule for a specific day of week
  * Looks for date tabs like "Mon 10" and clicks the appropriate one
  */
@@ -911,7 +966,15 @@ async function findAndBookClass(
       // Find class matching type and time
       for (const classItem of classes) {
         const classText = classItem.text.toLowerCase()
-        const matchesType = classText.includes(classType.toLowerCase())
+        
+        // Use fuzzy matching for class type to handle minor spelling differences
+        // Extract potential class names from the text
+        const words = classText.split(/\s+/)
+        const matchesType = 
+          classText.includes(classType.toLowerCase()) || // Exact substring match (fast path)
+          fuzzyMatch(classText, classType, 0.75) ||       // Fuzzy match on full text (lower threshold)
+          words.some(word => fuzzyMatch(word, classType, 0.8)) || // Fuzzy match on individual words
+          (classItem.classNameMatch && fuzzyMatch(classItem.classNameMatch, classType, 0.8)) // Fuzzy match on extracted class name
         
         // Try multiple time formats - check both text content and time patterns
         // The time format on the page is typically "4:15 PM - 5:15 PM" (start - end)
