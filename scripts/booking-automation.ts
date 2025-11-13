@@ -1245,8 +1245,26 @@ async function findAndBookClass(
       console.log('User checkbox selected')
     }
 
-    // STEP 4: Find RESERVE or WAITLIST button on description page
-    console.log('Looking for RESERVE or WAITLIST button on class description page...')
+    // STEP 4: Check if class is full (user will be added to waitlist)
+    // Note: YMCA shows "Active Members (Accepting Spot in WaitList)" when full
+    // The button still says "RESERVE" even when joining waitlist!
+    const descriptionContent = await page.content()
+    const descriptionContentLower = descriptionContent.toLowerCase()
+    
+    const isFullWaitlist = 
+      descriptionContentLower.includes('accepting spot in waitlist') ||
+      descriptionContentLower.includes('reservation spots are full') ||
+      descriptionContentLower.includes('any one active member can join waitlist')
+    
+    if (isFullWaitlist) {
+      console.log('⚠️  Class is FULL - user will be added to WAITLIST')
+    } else {
+      console.log('✓ Class has available spots - user will be BOOKED')
+    }
+
+    // STEP 5: Find RESERVE button on description page
+    // Note: Button text is ALWAYS "RESERVE" regardless of booking vs waitlist
+    console.log('Looking for RESERVE button on class description page...')
 
     const secondButtonSelectors = [
       'button:has-text("RESERVE")',
@@ -1255,14 +1273,9 @@ async function findAndBookClass(
       'a.btn:has-text("RESERVE")',
       'input[type="submit"][value="RESERVE"]',
       'input[type="button"][value="RESERVE"]',
-      'button:has-text("WAITLIST")',
-      'button:has-text("ADD TO WAITLIST")',
-      'button:has-text("Join Waitlist")',
-      'a:has-text("WAITLIST")',
     ]
 
     let secondButton = null
-    let isWaitlistButton = false
 
     // Try standard selectors first
     for (const selector of secondButtonSelectors) {
@@ -1272,10 +1285,8 @@ async function findAndBookClass(
           const btnText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || (el as HTMLInputElement).value?.trim() || '', btn)
           console.log(`Found button on description page: "${btnText}"`)
           
-          if (btnText && (btnText.toUpperCase().includes('RESERVE') || 
-                          btnText.toUpperCase().includes('WAITLIST'))) {
+          if (btnText && btnText.toUpperCase().includes('RESERVE')) {
             secondButton = btn
-            isWaitlistButton = btnText.toUpperCase().includes('WAITLIST')
             break
           }
         }
@@ -1291,9 +1302,8 @@ async function findAndBookClass(
       const allButtons = await page.$$('button, a, input[type="submit"], input[type="button"]')
       for (const btn of allButtons) {
         const btnText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || (el as HTMLInputElement).value?.trim() || '', btn)
-        if (btnText && (btnText.toUpperCase() === 'RESERVE' || btnText.toUpperCase() === 'WAITLIST')) {
+        if (btnText && btnText.toUpperCase() === 'RESERVE') {
           secondButton = btn
-          isWaitlistButton = btnText.toUpperCase() === 'WAITLIST'
           console.log(`Found via fallback: "${btnText}"`)
           break
         }
@@ -1303,52 +1313,48 @@ async function findAndBookClass(
     if (!secondButton) {
       return {
         status: 'failed',
-        errorMessage: 'No RESERVE or WAITLIST button found on class description page',
+        errorMessage: 'No RESERVE button found on class description page',
         selectedBranch: branchUsed,
       }
     }
 
-    // STEP 5: Click second RESERVE or WAITLIST button
-    const buttonAction = isWaitlistButton ? 'WAITLIST' : 'RESERVE'
-    console.log(`Clicking ${buttonAction} button on class description page...`)
+    // STEP 6: Click RESERVE button (will book or waitlist depending on availability)
+    console.log('Clicking RESERVE button on class description page...')
     await secondButton.click()
 
-    // STEP 6: Wait for final confirmation page
+    // STEP 7: Wait for final confirmation page
     console.log('Waiting for confirmation page...')
     await new Promise(resolve => setTimeout(resolve, 3000))
 
     // Take screenshot of confirmation
     await takeScreenshot(page, '06-final-confirmation')
 
-    // STEP 7: Check confirmation page with actual YMCA Daxko keywords
+    // STEP 8: Check confirmation page with actual YMCA Daxko keywords
     const finalUrl = page.url()
     const finalContent = (await page.content()).toLowerCase()
 
     console.log(`Final URL: ${finalUrl}`)
     console.log(`Checking for confirmation keywords...`)
 
-    // Detect confirmation using actual YMCA Daxko confirmation page text
-    // Based on screenshots: "Awesome!" and "Now that reservation is complete"
+    // Detect waitlist vs booking using ACTUAL YMCA confirmation page text
+    // Waitlist: "Awesome! ... Now that you are in waitlist, you can..."
+    // Booking: "Awesome! ... Now that reservation is complete, you can..."
+    const isWaitlisted = 
+      finalContent.includes('now that you are in waitlist') ||
+      finalContent.includes('you are in waitlist') ||
+      finalContent.includes('added to waitlist') ||
+      finalContent.includes('joined the waitlist') ||
+      finalContent.includes('on the waitlist')
+
     const isConfirmed = 
-      finalContent.includes('awesome!') ||
       finalContent.includes('now that reservation is complete') ||
       finalContent.includes('reservation is complete') ||
+      (finalContent.includes('awesome!') && !isWaitlisted) ||
       finalUrl.includes('confirmation') ||
-      finalUrl.includes('success') ||
-      (!isWaitlistButton && (
-        finalContent.includes('reserved') ||
-        finalContent.includes('booking confirmed')
-      ))
-
-    const isWaitlisted = 
-      isWaitlistButton ||
-      finalContent.includes('added to waitlist') ||
-      finalContent.includes('waitlist confirmed') ||
-      finalContent.includes('on the waitlist') ||
-      finalContent.includes('joined the waitlist')
+      finalUrl.includes('success')
 
     if (isWaitlisted) {
-      console.log('✅ Successfully added to waitlist')
+      console.log('✅ Successfully added to WAITLIST')
       return {
         status: 'waitlisted',
         selectedBranch: branchUsed,
@@ -1356,7 +1362,7 @@ async function findAndBookClass(
     }
 
     if (isConfirmed) {
-      console.log('✅ Successfully confirmed booking')
+      console.log('✅ Successfully BOOKED class')
       return {
         status: 'confirmed',
         selectedBranch: branchUsed,
@@ -1366,7 +1372,7 @@ async function findAndBookClass(
     console.log('⚠️  Booking result unclear')
     return {
       status: 'failed',
-      errorMessage: 'Booking result unclear after clicking second button - check screenshots',
+      errorMessage: 'Booking result unclear after clicking RESERVE button - check screenshots',
       selectedBranch: branchUsed,
     }
   } catch (error) {
