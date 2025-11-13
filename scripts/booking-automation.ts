@@ -1190,22 +1190,165 @@ async function findAndBookClass(
       }
     }
 
-    // Wait for confirmation or error message
+    // STEP 2: Handle class description page (two-step booking process)
+    console.log('Clicked first RESERVE button, waiting for class description page...')
+    
+    // Wait for navigation to class description page
+    try {
+      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 })
+    } catch (e) {
+      console.log('Navigation timeout or no navigation detected, checking current page...')
+    }
+
+    // Verify we're on class description page and take screenshot
+    const descriptionUrl = page.url()
+    console.log(`Current URL after first click: ${descriptionUrl}`)
+    await takeScreenshot(page, '05a-class-description-page')
+
+    // STEP 3: Select checkbox for user in "Active Members" section
+    console.log('Looking for user checkbox in "Active Members" section...')
+    
+    const checkboxSelectors = [
+      'input[type="checkbox"]',
+      'input[type="checkbox"][name*="member"]',
+      'input[type="checkbox"][value*="member"]',
+    ]
+
+    let userCheckbox = null
+
+    for (const selector of checkboxSelectors) {
+      try {
+        const checkboxes = await page.$$(selector)
+        for (const checkbox of checkboxes) {
+          // Check if this checkbox is unchecked (it should be for user selection)
+          const isChecked = await page.evaluate((el) => (el as HTMLInputElement).checked, checkbox)
+          
+          if (!isChecked) {
+            // This is likely our user's checkbox
+            userCheckbox = checkbox
+            break
+          }
+        }
+        if (userCheckbox) break
+      } catch (e) {
+        continue
+      }
+    }
+
+    if (!userCheckbox) {
+      console.log('Warning: Could not find user checkbox, may already be selected or page structure different')
+      // Don't fail here - might already be selected or not needed in some cases
+    } else {
+      console.log('Found user checkbox, clicking to select member...')
+      await userCheckbox.click()
+      await new Promise(resolve => setTimeout(resolve, 500)) // Wait for selection to register
+      console.log('User checkbox selected')
+    }
+
+    // STEP 4: Find RESERVE or WAITLIST button on description page
+    console.log('Looking for RESERVE or WAITLIST button on class description page...')
+
+    const secondButtonSelectors = [
+      'button:has-text("RESERVE")',
+      'button:has-text("Reserve")',  
+      'a:has-text("RESERVE")',
+      'a.btn:has-text("RESERVE")',
+      'input[type="submit"][value="RESERVE"]',
+      'input[type="button"][value="RESERVE"]',
+      'button:has-text("WAITLIST")',
+      'button:has-text("ADD TO WAITLIST")',
+      'button:has-text("Join Waitlist")',
+      'a:has-text("WAITLIST")',
+    ]
+
+    let secondButton = null
+    let isWaitlistButton = false
+
+    // Try standard selectors first
+    for (const selector of secondButtonSelectors) {
+      try {
+        const buttons = await page.$$(selector)
+        for (const btn of buttons) {
+          const btnText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || (el as HTMLInputElement).value?.trim() || '', btn)
+          console.log(`Found button on description page: "${btnText}"`)
+          
+          if (btnText && (btnText.toUpperCase().includes('RESERVE') || 
+                          btnText.toUpperCase().includes('WAITLIST'))) {
+            secondButton = btn
+            isWaitlistButton = btnText.toUpperCase().includes('WAITLIST')
+            break
+          }
+        }
+        if (secondButton) break
+      } catch (e) {
+        continue
+      }
+    }
+
+    // Fallback: search all buttons/links on page
+    if (!secondButton) {
+      console.log('Trying fallback button search...')
+      const allButtons = await page.$$('button, a, input[type="submit"], input[type="button"]')
+      for (const btn of allButtons) {
+        const btnText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || (el as HTMLInputElement).value?.trim() || '', btn)
+        if (btnText && (btnText.toUpperCase() === 'RESERVE' || btnText.toUpperCase() === 'WAITLIST')) {
+          secondButton = btn
+          isWaitlistButton = btnText.toUpperCase() === 'WAITLIST'
+          console.log(`Found via fallback: "${btnText}"`)
+          break
+        }
+      }
+    }
+
+    if (!secondButton) {
+      return {
+        status: 'failed',
+        errorMessage: 'No RESERVE or WAITLIST button found on class description page',
+        selectedBranch: branchUsed,
+      }
+    }
+
+    // STEP 5: Click second RESERVE or WAITLIST button
+    const buttonAction = isWaitlistButton ? 'WAITLIST' : 'RESERVE'
+    console.log(`Clicking ${buttonAction} button on class description page...`)
+    await secondButton.click()
+
+    // STEP 6: Wait for final confirmation page
+    console.log('Waiting for confirmation page...')
     await new Promise(resolve => setTimeout(resolve, 3000))
 
-    // Check result
-    const pageContent = (await page.content()).toLowerCase()
-    const isWaitlisted =
-      pageContent.includes('waitlist') ||
-      pageContent.includes('added to waitlist')
+    // Take screenshot of confirmation
+    await takeScreenshot(page, '06-final-confirmation')
 
-    const isConfirmed =
-      pageContent.includes('confirmed') ||
-      pageContent.includes('reserved') ||
-      pageContent.includes('success') ||
-      (!isWaitlisted && !pageContent.includes('error') && !pageContent.includes('failed'))
+    // STEP 7: Check confirmation page with actual YMCA Daxko keywords
+    const finalUrl = page.url()
+    const finalContent = (await page.content()).toLowerCase()
+
+    console.log(`Final URL: ${finalUrl}`)
+    console.log(`Checking for confirmation keywords...`)
+
+    // Detect confirmation using actual YMCA Daxko confirmation page text
+    // Based on screenshots: "Awesome!" and "Now that reservation is complete"
+    const isConfirmed = 
+      finalContent.includes('awesome!') ||
+      finalContent.includes('now that reservation is complete') ||
+      finalContent.includes('reservation is complete') ||
+      finalUrl.includes('confirmation') ||
+      finalUrl.includes('success') ||
+      (!isWaitlistButton && (
+        finalContent.includes('reserved') ||
+        finalContent.includes('booking confirmed')
+      ))
+
+    const isWaitlisted = 
+      isWaitlistButton ||
+      finalContent.includes('added to waitlist') ||
+      finalContent.includes('waitlist confirmed') ||
+      finalContent.includes('on the waitlist') ||
+      finalContent.includes('joined the waitlist')
 
     if (isWaitlisted) {
+      console.log('✅ Successfully added to waitlist')
       return {
         status: 'waitlisted',
         selectedBranch: branchUsed,
@@ -1213,15 +1356,17 @@ async function findAndBookClass(
     }
 
     if (isConfirmed) {
+      console.log('✅ Successfully confirmed booking')
       return {
         status: 'confirmed',
         selectedBranch: branchUsed,
       }
     }
 
+    console.log('⚠️  Booking result unclear')
     return {
       status: 'failed',
-      errorMessage: 'Booking result unclear - check screenshot',
+      errorMessage: 'Booking result unclear after clicking second button - check screenshots',
       selectedBranch: branchUsed,
     }
   } catch (error) {
