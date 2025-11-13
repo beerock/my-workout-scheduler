@@ -1,0 +1,619 @@
+{
+  "searchFor": {
+    "classType": "BODYPUMP",
+    "classTime": "16:15:00",
+    "targetTime": "16:15",
+    "targetTime12": "4:15 PM"
+  },
+  "foundClasses": [
+    {
+      "index": 0,
+      "tagName": "BUTTON",
+      "className": "slick-arrow slick-prev slick-disabled",
+      "id": "",
+      "html": "<button type=\"button\" data-role=\"none\" class=\"slick-arrow slick-prev slick-disabled\" style=\"display: block;\"> Previous</button>",
+      "text": " Previous",
+      "innerHTML": " Previous",
+      "buttonTexts": [],
+      "buttonIds": [],
+      "buttonClasses": [],
+      "timePatterns": [],
+      "classNameMatch": null
+    },
+    {
+      "index": 1,
+      "tagName": "BUTTON",
+      "className": "slick-arrow slick-next",
+      "id": "",
+      "html": "<button type=\"button\" data-role=\"none\" class=\"slick-arrow slick-next\" style=\"display: block;\"> Next</button>",
+      "text": " Next",
+      "innerHTML": " Next",
+      "buttonTexts": [],
+      "buttonIds": [],
+      "buttonClasses": [],
+      "timePatterns": [],
+      "classNameMatch": null
+    },
+    {
+      "index": 2,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=13107693111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>BODYPUMP</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Studio</div></div><div class=\"col-sm-2 col-11 timing_detail\">6:00 AM - 6:55 AM</div><div class=\"col-sm-2 col-11\">Roxanne Bryson</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=13107693111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation start",
+      "text": "BODYPUMPAsheville YMCAStudio6:00 AM - 6:55 AMRoxanne BrysonSee MoreReserve32 of 32 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=13107693111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>BODYPUMP</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Studio</div></div><div class=\"col-sm-2 col-11 timing_detail\">6:00 AM - 6:55 AM</div><div class=\"col-sm-2 col-11\">Roxanne Bryson</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=13107693111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/2025 a",
+      "buttonTexts": [
+        "BODYPUMP",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "6:00 AM",
+        "6:55 AM"
+      ],
+      "classNameMatch": "BODYPUMPAsheville YMCAStudio"
+    },
+    {
+      "index": 3,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11839867111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">6:00 AM - 6:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11839867111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation ",
+      "text": "RacquetballAsheville YMCAShort Door Court6:00 AM - 6:50 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11839867111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">6:00 AM - 6:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11839867111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/2",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "6:00 AM",
+        "6:50 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 4,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827930111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Tall Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">6:30 AM - 7:20 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827930111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation s",
+      "text": "RacquetballAsheville YMCATall Door Court6:30 AM - 7:20 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827930111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Tall Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">6:30 AM - 7:20 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827930111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/20",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "6:30 AM",
+        "7:20 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 5,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827920111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">7:00 AM - 7:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827920111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation ",
+      "text": "RacquetballAsheville YMCAShort Door Court7:00 AM - 7:50 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827920111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">7:00 AM - 7:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827920111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/2",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "7:00 AM",
+        "7:50 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 6,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=14300919111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>BODYBALANCE</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Multi-Purpose Room </div></div><div class=\"col-sm-2 col-11 timing_detail\">7:15 AM - 8:15 AM</div><div class=\"col-sm-2 col-11\">Tracy Davids</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=14300919111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Res",
+      "text": "BODYBALANCEAsheville YMCAMulti-Purpose Room 7:15 AM - 8:15 AMTracy DavidsSee MoreReserve18 of 18 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=14300919111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>BODYBALANCE</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Multi-Purpose Room </div></div><div class=\"col-sm-2 col-11 timing_detail\">7:15 AM - 8:15 AM</div><div class=\"col-sm-2 col-11\">Tracy Davids</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=14300919111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts a",
+      "buttonTexts": [
+        "BODYBALANCE",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "7:15 AM",
+        "8:15 AM"
+      ],
+      "classNameMatch": "BODYBALANCEAsheville YMCAMulti"
+    },
+    {
+      "index": 7,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827931111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Tall Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">7:30 AM - 8:20 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827931111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation s",
+      "text": "RacquetballAsheville YMCATall Door Court7:30 AM - 8:20 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827931111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Tall Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">7:30 AM - 8:20 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827931111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/20",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "7:30 AM",
+        "8:20 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 8,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827924111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">8:00 AM - 8:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827924111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation ",
+      "text": "RacquetballAsheville YMCAShort Door Court8:00 AM - 8:50 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827924111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">8:00 AM - 8:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827924111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/2",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "8:00 AM",
+        "8:50 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 9,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=14864769111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Athletic Conditioning</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Studio O</div></div><div class=\"col-sm-2 col-11 timing_detail\">8:30 AM - 9:15 AM</div><div class=\"col-sm-2 col-11\">Suzanne Ion</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=14864769111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reser",
+      "text": "Athletic ConditioningAsheville YMCAStudio O8:30 AM - 9:15 AMSuzanne IonSee MoreReserve25 of 25 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=14864769111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Athletic Conditioning</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Studio O</div></div><div class=\"col-sm-2 col-11 timing_detail\">8:30 AM - 9:15 AM</div><div class=\"col-sm-2 col-11\">Suzanne Ion</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=14864769111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at ",
+      "buttonTexts": [
+        "Athletic Conditioning",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "8:30 AM",
+        "9:15 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 10,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=14096119111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Low Impact Fitness</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Gym</div></div><div class=\"col-sm-2 col-11 timing_detail\">8:30 AM - 9:30 AM</div><div class=\"col-sm-2 col-11\">Cynthia Lee</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=14096119111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation s",
+      "text": "Low Impact FitnessAsheville YMCAGym8:30 AM - 9:30 AMCynthia LeeSee MoreReserve25 of 25 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=14096119111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Low Impact Fitness</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Gym</div></div><div class=\"col-sm-2 col-11 timing_detail\">8:30 AM - 9:30 AM</div><div class=\"col-sm-2 col-11\">Cynthia Lee</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=14096119111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/20",
+      "buttonTexts": [
+        "Low Impact Fitness",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "8:30 AM",
+        "9:30 AM"
+      ],
+      "classNameMatch": "Low Impact FitnessAsheville YMCAGym"
+    },
+    {
+      "index": 11,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11829141111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Tall Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">8:30 AM - 9:20 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11829141111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation s",
+      "text": "RacquetballAsheville YMCATall Door Court8:30 AM - 9:20 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11829141111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Tall Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">8:30 AM - 9:20 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11829141111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/20",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "8:30 AM",
+        "9:20 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 12,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=12986989111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Cycle</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Cycle Studio</div></div><div class=\"col-sm-2 col-11 timing_detail\">9:00 AM - 9:45 AM</div><div class=\"col-sm-2 col-11\">Becky Upham</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=12986989111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation start",
+      "text": "CycleAsheville YMCACycle Studio9:00 AM - 9:45 AMBecky UphamSee MoreReserve20 of 20 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=12986989111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Cycle</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Cycle Studio</div></div><div class=\"col-sm-2 col-11 timing_detail\">9:00 AM - 9:45 AM</div><div class=\"col-sm-2 col-11\">Becky Upham</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=12986989111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/2025 a",
+      "buttonTexts": [
+        "Cycle",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "9:00 AM",
+        "9:45 AM"
+      ],
+      "classNameMatch": "CycleAsheville YMCACycle Studio"
+    },
+    {
+      "index": 13,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827926111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">9:00 AM - 9:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827926111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation ",
+      "text": "RacquetballAsheville YMCAShort Door Court9:00 AM - 9:50 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827926111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">9:00 AM - 9:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827926111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/2",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "9:00 AM",
+        "9:50 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 14,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=13629576111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Hydro Burn</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>South Pool</div></div><div class=\"col-sm-2 col-11 timing_detail\">9:30 AM - 10:20 AM</div><div class=\"col-sm-2 col-11\">Shonna Campbell</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=13629576111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservati",
+      "text": "Hydro BurnAsheville YMCASouth Pool9:30 AM - 10:20 AMShonna CampbellSee MoreReserve25 of 25 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=13629576111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Hydro Burn</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>South Pool</div></div><div class=\"col-sm-2 col-11 timing_detail\">9:30 AM - 10:20 AM</div><div class=\"col-sm-2 col-11\">Shonna Campbell</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=13629576111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/1",
+      "buttonTexts": [
+        "Hydro Burn",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "9:30 AM",
+        "10:20 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 15,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827934111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Tall Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">9:30 AM - 10:20 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827934111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation ",
+      "text": "RacquetballAsheville YMCATall Door Court9:30 AM - 10:20 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827934111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Tall Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">9:30 AM - 10:20 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827934111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/2",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "9:30 AM",
+        "10:20 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 16,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=14385569111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Booty Barre</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Studio</div></div><div class=\"col-sm-2 col-11 timing_detail\">9:45 AM - 10:45 AM</div><div class=\"col-sm-2 col-11\">Kayla Aimesbury <span class=\"label label-blue\">sub</span></div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=14385569111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn",
+      "text": "Booty BarreAsheville YMCAStudio9:45 AM - 10:45 AMKayla Aimesbury subSee MoreReserve36 of 36 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=14385569111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Booty Barre</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Studio</div></div><div class=\"col-sm-2 col-11 timing_detail\">9:45 AM - 10:45 AM</div><div class=\"col-sm-2 col-11\">Kayla Aimesbury <span class=\"label label-blue\">sub</span></div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=14385569111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\"",
+      "buttonTexts": [
+        "Booty Barre",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "9:45 AM",
+        "10:45 AM"
+      ],
+      "classNameMatch": "Booty BarreAsheville YMCAStudio"
+    },
+    {
+      "index": 17,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827928111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">10:00 AM - 10:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827928111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservatio",
+      "text": "RacquetballAsheville YMCAShort Door Court10:00 AM - 10:50 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=11827928111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">10:00 AM - 10:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=11827928111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "10:00 AM",
+        "10:50 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 18,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=13665166111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Fluid Movement</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>South Pool</div></div><div class=\"col-sm-2 col-11 timing_detail\">10:30 AM - 11:20 AM</div><div class=\"col-sm-2 col-11\">Shonna Campbell</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=13665166111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Rese",
+      "text": "Fluid MovementAsheville YMCASouth Pool10:30 AM - 11:20 AMShonna CampbellSee MoreReserve25 of 25 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=13665166111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Fluid Movement</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>South Pool</div></div><div class=\"col-sm-2 col-11 timing_detail\">10:30 AM - 11:20 AM</div><div class=\"col-sm-2 col-11\">Shonna Campbell</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=13665166111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at",
+      "buttonTexts": [
+        "Fluid Movement",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "10:30 AM",
+        "11:20 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 19,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=12276414111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Tall Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">10:30 AM - 11:20 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=12276414111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation",
+      "text": "RacquetballAsheville YMCATall Door Court10:30 AM - 11:20 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=12276414111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Tall Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">10:30 AM - 11:20 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=12276414111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16/",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "10:30 AM",
+        "11:20 AM"
+      ],
+      "classNameMatch": null
+    },
+    {
+      "index": 20,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=13523756111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Total Body Training</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Studio</div></div><div class=\"col-sm-2 col-11 timing_detail\">11:00 AM - 11:50 AM</div><div class=\"col-sm-2 col-11\">Suzanne Ion</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=13523756111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reserva",
+      "text": "Total Body TrainingAsheville YMCAStudio11:00 AM - 11:50 AMSuzanne IonSee MoreReserve30 of 30 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=13523756111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Total Body Training</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Studio</div></div><div class=\"col-sm-2 col-11 timing_detail\">11:00 AM - 11:50 AM</div><div class=\"col-sm-2 col-11\">Suzanne Ion</div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=13523756111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11",
+      "buttonTexts": [
+        "Total Body Training",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "11:00 AM",
+        "11:50 AM"
+      ],
+      "classNameMatch": "Total Body TrainingAsheville YMCAStudio"
+    },
+    {
+      "index": 21,
+      "tagName": "DIV",
+      "className": "row",
+      "id": "",
+      "html": "<div class=\"row\"><div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=12276428111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">11:00 AM - 11:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=12276428111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservatio",
+      "text": "RacquetballAsheville YMCAShort Door Court11:00 AM - 11:50 AMStaff See MoreReserve1 of 1 open",
+      "innerHTML": "<div class=\"col-sm-10 col-9\"><div class=\"col-sm-3 col-11\"><a href=\"/online/4032/GXP/ClassDetail.mvc?class_id=12276428111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\"><strong>Racquetball</strong></a></div><div class=\"col-sm-3 col-11\"><div><strong>Asheville YMCA</strong></div><div>Short Door Court</div></div><div class=\"col-sm-2 col-11 timing_detail\">11:00 AM - 11:50 AM</div><div class=\"col-sm-2 col-11\">Staff </div><div class=\"col-sm-2 col-11 hide display-sm-inline-block\"><a href=\"/online/4032/GXP/ClassDetail.mvc?&amp;class_id=12276428111725&amp;filter=H4sIAAAAAAAEAF3NQQqAIBAAwL_sOSGjEPxKhIhKCOWGu0IR_T0hOtR1LnOCtxxAQ9d2g5BSSAUNzPtmFnSWIyYTPehetY_GRJyLY8zVCfQ4PU5cfMSvucUSmWTX8PM6zpiPV68bjf7U9oUAAAA1\">See More</a></div></div><div class=\"col-sm-2 col-4\"><div class=\"text-right\"><div><button type=\"button\" class=\"btn btn-primary tooltip\" aria-label=\"Reservation starts at 11/16",
+      "buttonTexts": [
+        "Racquetball",
+        "See More",
+        "Reserve"
+      ],
+      "buttonIds": [
+        "",
+        "",
+        ""
+      ],
+      "buttonClasses": [
+        "",
+        "",
+        "btn btn-primary tooltip"
+      ],
+      "timePatterns": [
+        "11:00 AM",
+        "11:50 AM"
+      ],
+      "classNameMatch": null
+    }
+  ],
+  "totalClasses": 22
+}
