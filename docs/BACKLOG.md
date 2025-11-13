@@ -618,3 +618,91 @@ Daxko (YMCA's platform provider) has an official API for managing classes and bo
 **Last Updated**: 2025-01-XX
 **Next Step**: Contact Daxko to determine API access eligibility
 
+---
+
+## Multi-Gym Support with Gym-Specific Class Forms
+
+### Overview
+Support multiple gym systems (YMCA, Planet Fitness, Gold's Gym, etc.) with gym-specific class detail forms and booking flows.
+
+### Requirements
+
+1. **Gym Selection in UI**
+   - User selects gym type when adding gym credentials
+   - Different gyms may have different login flows
+   - Gym-specific configuration options
+
+2. **Gym-Specific Class Forms**
+   - YMCA: Current form with branch dropdown, class type text input
+   - Planet Fitness: Different fields based on their system
+   - Gold's Gym: Their specific requirements
+   - Each gym has tailored UI matching their class listing structure
+
+3. **Branch Name Validation**
+   - Dropdown populated from actual gym website (scraped or API)
+   - Prevents typos and ensures exact match with gym's dropdown
+   - Update branch list periodically
+   - Reduces user errors significantly
+
+4. **Gym-Specific Booking Scripts**
+   - Pluggable architecture for different gym booking flows
+   - Each gym has its own Puppeteer script
+   - Common interface for all gym types
+   - Easy to add new gym support
+
+### Benefits
+- **Reduces user errors:** Dropdowns vs free text input
+- **Supports multiple gym systems:** Not limited to YMCA
+- **Easier to maintain:** Gym-specific logic is isolated
+- **Better user experience:** Forms match what users see on gym websites
+- **Scalable:** Easy to add new gyms
+
+### Implementation Notes
+
+**Database Changes:**
+- Add `gym_type` field to `gym_credentials` table (e.g., 'ymca', 'planet_fitness', 'golds_gym')
+- Store gym-specific configuration as JSON
+
+**Code Structure:**
+```
+scripts/
+  ├── booking-automation/
+  │   ├── base.ts           # Common interface
+  │   ├── ymca-daxko.ts     # Current implementation
+  │   ├── planet-fitness.ts # Future
+  │   └── golds-gym.ts      # Future
+  └── gym-scrapers/
+      ├── ymca-branches.ts  # Scrape YMCA branch list
+      └── ...
+```
+
+**UI Updates:**
+- Add gym type selector on gym credentials form
+- Conditional form fields based on gym type
+- Branch dropdown populated via API (scraped from gym website)
+
+### Code Location
+- Database migration: `supabase/migrations/` - Add `gym_type` field
+- Booking scripts: `scripts/booking-automation/` directory (refactor)
+- UI: `components/GymCredentialsForm.tsx`, `components/RecurringClassForm.tsx`
+- API: `app/api/gym-branches/route.ts` (new endpoint)
+
+### Testing Considerations
+- Test with multiple gym types
+- Test branch scraping accuracy
+- Test gym-specific booking flows
+- Verify fallback behavior if scraping fails
+
+### Dependencies
+- Current YMCA implementation working first ✅
+- Each new gym requires:
+  - Understanding their booking flow
+  - Puppeteer script development
+  - Testing with real account
+
+### Status
+**Status**: Backlogged - Not currently implemented
+**Priority**: Medium (future enhancement)
+**Last Updated**: 2025-11-13
+**Dependencies**: Complete YMCA implementation and test in production first
+

@@ -92,8 +92,13 @@ If `next_skip_date` equals today:
    - Select branch
    - Navigate to target day's schedule
    - Find class matching type and time
-   - Click booking button
-   - Verify result
+   - **TWO-STEP BOOKING PROCESS:**
+     - **Step 1:** Click RESERVE button on class list → navigates to class description page
+     - **Step 2:** On class description page:
+       - Select checkbox next to user's name in "Active Members" section
+       - Click RESERVE or WAITLIST button
+       - Navigate to confirmation page
+   - Verify result using confirmation page keywords ("Awesome!", "Now that reservation is complete")
    - Update `booking_attempt` with final status
 
 4. **Result Statuses**
@@ -101,6 +106,39 @@ If `next_skip_date` equals today:
    - `'waitlisted'`: Added to waitlist
    - `'failed'`: Booking failed (error logged)
    - `'skipped'`: Skipped due to `next_skip_date`
+
+## YMCA Daxko Booking Flow Details
+
+The YMCA Daxko platform requires a **two-step booking process**:
+
+### Step 1: Class List → Class Description Page
+- Find class on schedule page by type and time
+- Click RESERVE button on class row
+- **Result:** Navigates to class description/reservation page
+
+### Step 2: Class Description Page → Confirmation
+The class description page shows:
+- Class details (name, location, time, duration)
+- "Select Group Members for Reservation" section
+- "Active Members" list with checkboxes next to member names
+- RESERVE button (or WAITLIST if class is full)
+
+**Required actions:**
+1. ✅ Select checkbox next to user's name
+2. ✅ Click RESERVE or WAITLIST button
+
+**Result:** Navigates to confirmation page
+
+### Step 3: Confirmation Page
+The confirmation page displays:
+- "Awesome!" heading
+- Green checkmark icon
+- "Now that reservation is complete, you can..." text
+- Class details and booked user's name
+
+**Detection keywords:**
+- Primary: `"awesome!"`, `"now that reservation is complete"`
+- Fallback: `"reservation is complete"`, `"reserved"`, `"booking confirmed"`
 
 ## Error Handling
 
@@ -117,6 +155,11 @@ If `next_skip_date` equals today:
 ### Class Not Found
 - Status: `'failed'`
 - Error message: "Class [type] at [time] not found on schedule"
+
+### Class Description Page Issues
+- **Checkbox not found:** Warning logged, continues (may already be selected)
+- **RESERVE/WAITLIST button not found:** Status `'failed'`, error message logged
+- **Navigation timeout:** Continues and checks current page
 
 ### Already Reserved
 - Status: `'confirmed'`
