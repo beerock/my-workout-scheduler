@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.2  
+**Version:** 2.3  
 **Product Owner:** Brock Busby  
-**Last Updated:** November 8, 2025  
+**Last Updated:** November 13, 2025  
 **Status:** Active Development (2-Week Prototype)
 
 **Recent Updates:**
@@ -24,6 +24,15 @@
   - Parallel processing for multiple users (<60s total booking time)
   - Database integration (booking attempts tracking)
   - Error handling and screenshot capture
+  - Two-step booking flow (class list → description page with checkbox selection)
+  - Duplicate prevention logic (prevents re-booking already confirmed/waitlisted classes)
+  - Fuzzy matching for class names (handles minor spelling variations)
+  - Booking window detection (checks if window is open before attempting)
+  - Timezone-aware date calculations (uses gym's local timezone)
+- ⚠️ **KNOWN ISSUE: GitHub Actions Cron Reliability**
+  - Cron schedules may not auto-trigger reliably for frequent intervals (every 15 minutes)
+  - Manual triggers work and may help "prime" the schedule
+  - Consider event-driven trigger architecture based on booking window times (backlogged)
 
 **Major Changes from v1.0:**
 
@@ -62,11 +71,13 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 
 ## 2\. Target Users
 
-### Prototype Users (n=2)
+### MVP Users (n=5)
 
 - **Primary:** Brock (Asheville YMCA, Downtown \+ Woodfin branches)  
 - **Secondary:** Nicole (same gyms/branches)  
+- **Additional:** Up to 3 more users
 - **Characteristics:** Tech-savvy, want automation, attend recurring weekly classes, willing to use functional-over-pretty UI
+- **Typical Usage:** Each user will likely have 2-5 recurring classes scheduled
 
 ### Future Users
 
@@ -113,6 +124,9 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 | **Scheduled Execution** | GitHub Actions runs every 15 minutes, checks for booking windows | High |
 | **Browser Automation** | Puppeteer logs into gym site and completes booking flow | High |
 | **Booking Logic** | Reserve if available, waitlist if full, skip if already booked | High |
+| **Duplicate Prevention** | Checks if class occurrence already booked/waitlisted before attempting | High |
+| **Fuzzy Matching** | Handles minor spelling variations in class names (case-insensitive) | Medium |
+| **Booking Window Detection** | Verifies booking window is open before attempting (checks button tooltip/disabled state) | High |
 | **Error Handling** | Detect failures, log errors, send notification | High |
 | **Status Updates** | Write booking results back to database | High |
 
@@ -121,12 +135,22 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 1. GitHub Action runs every 15 minutes  
 2. Queries database: "Any classes with booking windows currently open?"  
 3. For each booking due:  
+   - **Duplicate Check:** Skip if class occurrence already confirmed/waitlisted  
    - Launch Puppeteer in headless mode  
    - Login with stored credentials  
    - Navigate to class schedule  
-   - Verify correct branch  
-   - Find target class (day \+ time)  
-   - Check status and take action (reserve/waitlist/skip)  
+   - Verify correct branch (select from dropdown if needed)  
+   - Navigate to target day schedule  
+   - Find target class using fuzzy matching (day \+ time \+ class name)  
+   - **Booking Window Check:** Verify window is open (button not disabled, no tooltip indicating future time)  
+   - **Step 1:** Click "RESERVE" button on class list page  
+   - **Step 2:** Navigate to class description page  
+   - **Step 3:** Select checkbox next to user name in "Active Members" section  
+   - **Step 4:** Determine if class is full (check for "Accepting Spot in WaitList" text)  
+   - **Step 5:** Click final "RESERVE" or "WAITLIST" button  
+   - **Step 6:** Wait for confirmation page and detect result:
+     - Confirmed: "Now that reservation is complete"  
+     - Waitlisted: "Now that you are in waitlist"  
    - Update database with result  
    - Send email notification
 
@@ -282,9 +306,9 @@ booking\_attempts (
 | **Reliability** | 90%+ uptime | Acceptable for prototype; GitHub Actions is reliable |
 | **Performance** | \<60s booking latency | From registration open to booking submitted |
 | **Security** | Encrypted credentials | Supabase Vault for gym passwords |
-| **Scalability** | Support 2 users | Hard limit for prototype; free tiers handle this easily |
+| **Scalability** | Support up to 5 users | MVP limit; free tiers handle this easily |
 | **Maintainability** | Simple codebase | Prioritize readability over cleverness |
-| **Cost** | ~$4-8/month | GitHub Actions paid tier required for 15-minute schedule; other services free tier |
+| **Cost** | Free tier (mostly) | MVP should use free tiers where possible. GitHub Actions paid tier (~$4-8/month) required for 15-minute schedule; all other services use free tier |
 
 ---
 
@@ -324,6 +348,11 @@ booking\_attempts (
 - [x] Implement booking logic (reserve/waitlist)  
 - [x] Test manually with real credentials  
 - [x] Handle common error cases
+- [x] Implement two-step booking flow (class list → description page with checkbox)
+- [x] Add duplicate prevention logic
+- [x] Implement fuzzy matching for class names
+- [x] Add booking window detection
+- [x] Implement timezone-aware date calculations
 
 ### Week 2: Automation & Polish
 
@@ -335,6 +364,7 @@ booking\_attempts (
 - [x] Run Puppeteer in GitHub Actions  
 - [x] Write results back to database  
 - [x] Test end-to-end automation with parallel processing
+- [x] Document GitHub Actions cron reliability issues
 
 **Days 11-12: Dashboard & Notifications**
 
@@ -346,11 +376,12 @@ booking\_attempts (
 
 **Days 13-14: Testing & Launch**
 
-- [ ] Test with both user accounts  
-- [ ] Real booking attempts for upcoming classes  
+- [ ] Test with up to 5 user accounts  
+- [ ] Real booking attempts for upcoming classes (2-5 classes per user)  
 - [ ] Fix any critical bugs  
-- [ ] Document setup for Nicole  
-- [ ] Launch prototype
+- [ ] Document setup for additional users  
+- [ ] Verify free tier limits are sufficient  
+- [ ] Launch MVP
 
 ---
 
@@ -373,26 +404,29 @@ booking\_attempts (
 
 ### Constraints
 
-- Prototype limited to 2 users (Brock \+ Nicole)  
+- MVP limited to 5 users  
+- Each user typically has 2-5 recurring classes scheduled  
 - Manual class schedule entry (no auto-import)  
 - Email notifications only  
 - Single gym system (YMCA Daxko platform)  
 - Basic error handling (manual retry required)  
-- Functional UI (not polished design)
+- Functional UI (not polished design)  
+- Free tier services where possible (GitHub Actions paid tier exception for frequent scheduling)
 
 ---
 
-## 9\. Success Criteria (Prototype Launch)
+## 9\. Success Criteria (MVP Launch)
 
 ### Must Have ✅
 
-- Brock and Nicole can create accounts and log in  
-- Users can add/edit/delete recurring classes  
+- Up to 5 users can create accounts and log in  
+- Users can add/edit/delete recurring classes (2-5 classes per user typical)  
 - GitHub Action runs on schedule and attempts bookings  
 - System books at least 1 class successfully for each user  
 - Users receive email notifications  
 - Dashboard shows accurate booking status  
-- No security vulnerabilities (credentials encrypted)
+- No security vulnerabilities (credentials encrypted)  
+- MVP runs on free tier services (GitHub Actions paid tier exception acceptable)
 
 ### Nice to Have
 
@@ -415,12 +449,14 @@ booking\_attempts (
 
 | Risk | Impact | Mitigation |
 | :---- | :---- | :---- |
-| GitHub Actions timeout (6hr limit) | Medium | Each booking takes \<5 min; fine for 2 users |
+| GitHub Actions timeout (6hr limit) | Medium | Each booking takes \<5 min; fine for up to 5 users |
+| GitHub Actions cron reliability | Medium | Cron schedules may not auto-trigger reliably for frequent intervals (every 15 minutes). Manual triggers work and may help "prime" the schedule. Consider event-driven trigger architecture based on booking window times (backlogged) |
 | Gym website changes layout | High | Version selectors, alert on failures, manual fix |
 | Puppeteer fails in GitHub Actions | High | Test thoroughly, add detailed logging |
-| Free tier limits exceeded | Low | 2 users well under all limits |
+| Free tier limits exceeded | Low | Up to 5 users with 2-5 classes each well under all limits |
 | Timezone calculation errors | Medium | Use date-fns-tz, thorough testing |
-| Concurrent booking conflicts | Low | 2 users booking different times/branches |
+| Concurrent booking conflicts | Low | Up to 5 users booking different times/branches |
+| Duplicate bookings | Low | Duplicate prevention logic checks if class occurrence already booked/waitlisted before attempting |
 
 ---
 
@@ -454,10 +490,11 @@ booking\_attempts (
 
 ## 12\. Open Questions
 
-- [ ] What's the exact timing window for YMCA bookings? (Test and document)  
-- [ ] Should waitlist be automatic or require confirmation?  
+- [x] What's the exact timing window for YMCA bookings? (Test and document) - **ANSWERED:** Booking windows are configurable per class (e.g., 26 hours prior). System checks if window is open before attempting (button disabled/tooltip indicates future time).  
+- [x] Should waitlist be automatic or require confirmation? - **ANSWERED:** Waitlist is automatic. System detects if class is full and automatically joins waitlist.  
 - [ ] Do we need to handle class cancellations from gym side?  
-- [ ] What happens if both users book the same class/time? (Unlikely but possible)
+- [ ] What happens if multiple users book the same class/time? (Unlikely but possible) - **NOTE:** Duplicate prevention logic prevents re-booking, but doesn't prevent different users from booking the same class  
+- [ ] What's the best solution for GitHub Actions cron reliability? (Event-driven triggers? Different scheduling service?)
 
 ---
 
@@ -465,35 +502,50 @@ booking\_attempts (
 
 **Target URL:** `https://ops1.operations.daxko.com/Online/4032/GXP/ClassSchedule.mvc`
 
-**Manual Booking Steps:**
+**Manual Booking Steps (Two-Step Process):**
 
 1. Navigate to URL → Login page appears  
 2. Enter username/password → Submit  
 3. Select branch from dropdown (e.g., "Asheville \- Downtown")  
 4. Navigate to class schedule for target day  
 5. Find target class (e.g., "BODYPUMP 4:15 PM")  
-6. Check button text:  
-   - "RESERVE" → Click to book  
-   - "ADD TO WAITLIST" → Click to join waitlist  
+6. **Step 1:** Check button text on class list page:  
+   - "RESERVE" → Click to proceed (button may be disabled with tooltip "Reservation starts at [DATE] at [TIME]" if window not open)  
    - "RESERVED" → Already booked, stop  
    - "FULL" → No action available  
-7. If button clicked → Confirmation page appears  
-8. Verify confirmation text → Done
+7. **Step 2:** After clicking "RESERVE", navigate to class description page  
+8. **Step 3:** On description page, locate "Active Members" section  
+9. **Step 4:** Select checkbox next to user's name  
+10. **Step 5:** Check if class is full (look for "Accepting Spot in WaitList" text)  
+11. **Step 6:** Click final button:
+    - "RESERVE" → If class has spots available  
+    - "WAITLIST" → If class is full (button text may still say "RESERVE" but page indicates waitlist)  
+12. **Step 7:** Confirmation page appears with one of:
+    - **Confirmed:** "Now that reservation is complete"  
+    - **Waitlisted:** "Now that you are in waitlist"  
+13. Verify confirmation text → Done
 
 **Automation Considerations:**
 
 - Must handle dynamic JavaScript-rendered content  
 - Branch selection is critical (wrong branch \= wrong class)  
-- Button text is the source of truth for availability  
+- Two-step booking process requires navigation between pages  
+- Checkbox selection is required before final booking button  
+- Final button text may not change for waitlist scenarios (check page text instead)  
+- Confirmation page text is the source of truth for booking status  
 - Session can timeout (need to detect and re-login)  
-- Page layout may vary by branch
+- Page layout may vary by branch  
+- Booking window detection: Check if "RESERVE" button is disabled or has tooltip indicating future time
 
 **Guardrails:**
 
 - Never proceed if "RESERVED" status showing  
 - Stop if wrong branch detected in dropdown  
 - Halt on login failure or unexpected page  
-- Skip if booking window not yet open  
+- Skip if booking window not yet open (button disabled or tooltip shows future time)  
+- Skip if class occurrence already booked/waitlisted (duplicate prevention)  
+- Verify checkbox is selected before clicking final button  
+- Use confirmation page text (not button text) to determine waitlist vs. confirmed  
 - Log all actions for debugging
 
 ---
@@ -525,8 +577,8 @@ booking\_attempts (
 
 **GitHub Actions:**
 
-- Free for public repos  
-- Reliable cron scheduling  
+- Free for public repos (paid tier required for frequent cron schedules)  
+- Cron scheduling (may be unreliable for frequent intervals like every 15 minutes; manual triggers work as workaround)  
 - Runs Puppeteer headless  
 - Easy secrets management  
 - No separate server needed
@@ -552,7 +604,8 @@ booking\_attempts (
 - GitHub Actions: 2,000 minutes/month (free tier) - **Note:** 15-minute schedule requires paid tier (~$4-8/month)  
 - Resend: 100 emails/day
 
-With 2 users booking \~6 classes/week \= \~50 bookings/month:
+With up to 5 users, each booking 2-5 classes/week (average 3 classes/user) \= \~15 classes/week total \= \~60 bookings/month:
 
 - ✅ Well under all limits  
-- ✅ Could scale to 10-20 users if needed
+- ✅ Free tier services sufficient for MVP  
+- ✅ Could scale to 10-20 users if needed (may require paid tiers)
