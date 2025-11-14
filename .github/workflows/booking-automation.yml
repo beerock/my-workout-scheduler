@@ -1,9 +1,9 @@
 name: Booking Automation
 
 on:
-  # schedule:
-  #   # Run every 15 minutes
-  #   - cron: '*/15 * * * *'
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
   workflow_dispatch: # Allow manual triggering (still works for testing)
 
 jobs:
