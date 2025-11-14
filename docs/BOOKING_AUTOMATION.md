@@ -51,6 +51,7 @@ A class is eligible for booking when ALL of the following are true:
 2. ✅ User's `schedule_paused = false` (or null)
 3. ✅ `next_skip_date` is NULL or not equal to today
 4. ✅ Booking window is open: `current_time >= class_datetime - booking_window_hours`
+5. ✅ No existing successful booking (confirmed or waitlisted) for the upcoming class occurrence
 
 ### Booking Window Calculation
 
@@ -72,12 +73,36 @@ If `next_skip_date` equals today:
 - The `next_skip_date` is **cleared** (set to NULL)
 - This allows the class to be booked normally on the next occurrence
 
+### Duplicate Prevention
+
+The system prevents duplicate booking attempts for the same class occurrence:
+
+**How it works:**
+- Before attempting to book, the system checks `booking_attempts` for successful bookings (status = `'confirmed'` or `'waitlisted'`)
+- For each successful booking, it calculates which class occurrence it was for based on the `attempt_timestamp` and booking window
+- If a successful booking exists for the upcoming class occurrence **and** the class time hasn't passed yet, the class is skipped
+- Once the class time has passed, the system allows booking again for the next week's occurrence
+
+**Behavior:**
+- ✅ **Already booked/waitlisted:** Skips booking (no Puppeteer launched)
+- ✅ **Class time passed:** Allows booking for next week's occurrence
+- ✅ **Manual cancellation:** Won't re-book (since successful booking record exists)
+- ✅ **Class full (no waitlist):** Keeps retrying until successful (no successful booking record exists yet)
+
+**Example:**
+- Friday 7:30 AM class with 26-hour booking window
+- Booking window opens Thursday 5:30 AM
+- First automation run at 7:30 AM Thursday: Books successfully → status `'confirmed'`
+- Second automation run at 7:45 AM Thursday: Sees existing booking → **skips** (no Puppeteer)
+- After Friday 7:30 AM: Class time passed → allows booking for next Friday
+
 ## Booking Process Flow
 
 1. **Query Database**
    - Get all active classes
    - Filter by pause status and skip dates
    - Check booking windows
+   - Check for existing successful bookings (duplicate prevention)
    - Join with gym credentials
 
 2. **Group by User**
