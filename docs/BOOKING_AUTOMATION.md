@@ -19,6 +19,7 @@ The automation system:
    - Scheduled to run every 15 minutes (`*/15 * * * *`)
    - Can be manually triggered via `workflow_dispatch`
    - Sets up Node.js environment and runs the automation script
+   - **Note**: GitHub Actions cron schedules can be delayed or skipped during high-load periods. If scheduled runs don't appear, manually trigger the workflow or wait for the next scheduled interval.
 
 2. **Main Automation Script** (`scripts/run-booking-automation.ts`)
    - Entry point for the automation
