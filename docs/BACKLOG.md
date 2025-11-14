@@ -256,6 +256,94 @@ When a class is not available at the primary branch, automatically attempt to bo
 
 ---
 
+## Performance Optimizations
+
+### Browser Session Reuse for Same User
+
+#### Overview
+Currently, each class booking launches a new browser instance and logs in separately, even when multiple classes belong to the same user. This optimization reuses the same browser session for all classes belonging to a single user, reducing login overhead and improving efficiency.
+
+#### Current Behavior
+- Each class booking launches a new Puppeteer browser instance
+- Each class booking performs a separate login
+- All classes for a user are processed sequentially, but each requires a fresh login
+
+#### Proposed Behavior
+- Launch one browser instance per user
+- Log in once per user
+- Process all classes for that user in the same browser session
+- Close browser after all classes for that user are complete
+
+#### Benefits
+- **Reduced login time**: Login once per user instead of once per class
+- **Faster execution**: Eliminates redundant browser launches and logins
+- **Better resource usage**: Fewer browser instances running simultaneously
+
+#### Implementation Notes
+- Modify `processUserBookings()` in `scripts/run-booking-automation.ts`
+- Launch browser once before processing classes
+- Pass browser instance to `bookClass()` function
+- Close browser after all classes are processed
+- Handle errors gracefully (ensure browser closes even on failure)
+
+#### Estimated Impact
+- **Time savings**: ~5-10 seconds per additional class per user
+- **Example**: User with 3 classes saves ~10-20 seconds total
+
+#### Status
+**Status**: Backlogged - Not currently implemented
+**Priority**: Low (nice-to-have optimization, current approach works)
+**Last Updated**: 2025-01-14
+
+---
+
+### Cookie Persistence Across Automation Runs
+
+#### Overview
+Implement cookie persistence so that users remain logged in across automation runs, eliminating the need to log in on every run. This leverages the "Keep me logged in" checkbox functionality.
+
+#### Current Behavior
+- Each automation run starts with a fresh browser instance
+- Cookies/sessions are not persisted between runs
+- Users must log in on every automation run
+- "Keep me logged in" checkbox only helps within a single browser session
+
+#### Proposed Behavior
+- Save cookies after successful login
+- Store cookies in a secure location (encrypted, user-specific)
+- Restore cookies at the start of each automation run
+- Attempt to use saved cookies before performing login
+- Fall back to login if cookies are expired or invalid
+
+#### Benefits
+- **Faster execution**: Skip login step if cookies are valid
+- **Better user experience**: Respects "Keep me logged in" preference
+- **Reduced load**: Fewer login requests to gym website
+
+#### Implementation Notes
+- Store cookies in database or secure file storage (encrypted)
+- Associate cookies with user_id and gym_url
+- Implement cookie expiration checking
+- Handle cookie refresh/update when cookies expire
+- Security: Encrypt cookies at rest, use secure storage
+
+#### Challenges
+- Cookie storage security (must be encrypted)
+- Cookie expiration handling
+- Cookie format compatibility across Puppeteer versions
+- Handling multiple gym URLs per user (if supported in future)
+
+#### Estimated Impact
+- **Time savings**: ~5-10 seconds per user per run (if cookies valid)
+- **Reliability**: Depends on gym website cookie expiration policy
+
+#### Status
+**Status**: Backlogged - Not currently implemented
+**Priority**: Low (nice-to-have optimization, login is fast)
+**Last Updated**: 2025-01-14
+
+---
+
 ## Manual "Book Now" Button
 
 ### Overview
