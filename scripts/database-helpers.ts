@@ -633,3 +633,154 @@ export async function clearSkipDate(recurringClassId: string): Promise<void> {
   }
 }
 
+/**
+ * Get a single class by ID with credentials
+ * Used by Inngest to fetch class data when booking event fires
+ */
+export async function getClassById(classId: string): Promise<ClassNeedingBooking | null> {
+  const supabase = getSupabaseClient()
+
+  // Get class data
+  const { data: classData, error: classError } = await supabase
+    .from('recurring_classes')
+    .select('*')
+    .eq('id', classId)
+    .eq('active', true)
+    .single()
+
+  if (classError || !classData) {
+    return null
+  }
+
+  // Get gym credentials
+  const { data: credentials, error: credsError } = await supabase
+    .from('gym_credentials')
+    .select('user_id, gym_url, username, encrypted_password, default_branch')
+    .eq('user_id', classData.user_id)
+    .single()
+
+  if (credsError || !credentials) {
+    return null
+  }
+
+  // Get user settings to check if paused
+  const { data: settings, error: settingsError } = await supabase
+    .from('user_settings')
+    .select('schedule_paused')
+    .eq('user_id', classData.user_id)
+    .single()
+
+  if (settingsError) {
+    // Settings might not exist - treat as not paused
+    console.warn(`No settings found for user ${classData.user_id}`)
+  }
+
+  // If user is paused, return null (don't book)
+  if (settings?.schedule_paused === true) {
+    return null
+  }
+
+  return {
+    id: classData.id,
+    user_id: classData.user_id,
+    day_of_week: classData.day_of_week,
+    class_time: classData.class_time,
+    class_type: classData.class_type,
+    branch: classData.branch,
+    booking_window_hours: classData.booking_window_hours,
+    timezone: classData.timezone,
+    active: classData.active,
+    next_skip_date: classData.next_skip_date,
+    gym_url: credentials.gym_url,
+    username: credentials.username,
+    encrypted_password: credentials.encrypted_password,
+    default_branch: credentials.default_branch,
+  }
+}
+
+/**
+ * Get all active classes (for daily scheduler)
+ * Returns all active classes where user is not paused
+ */
+export async function getAllActiveClasses(): Promise<ClassNeedingBooking[]> {
+  const supabase = getSupabaseClient()
+
+  // Get all active classes
+  const { data: classes, error: classesError } = await supabase
+    .from('recurring_classes')
+    .select('*')
+    .eq('active', true)
+
+  if (classesError || !classes || classes.length === 0) {
+    return []
+  }
+
+  // Get unique user IDs
+  const userIds = [...new Set(classes.map((c) => c.user_id))]
+
+  // Get gym credentials for all users
+  const { data: credentials, error: credsError } = await supabase
+    .from('gym_credentials')
+    .select('user_id, gym_url, username, encrypted_password, default_branch')
+    .in('user_id', userIds)
+
+  if (credsError) {
+    throw new Error(`Failed to fetch credentials: ${credsError.message}`)
+  }
+
+  // Get user settings for all users
+  const { data: settings, error: settingsError } = await supabase
+    .from('user_settings')
+    .select('user_id, schedule_paused')
+    .in('user_id', userIds)
+
+  if (settingsError) {
+    console.warn(`Failed to fetch user settings: ${settingsError.message}`)
+  }
+
+  // Create lookup maps
+  const credentialsMap = new Map(
+    (credentials || []).map((c) => [c.user_id, c])
+  )
+  const settingsMap = new Map(
+    (settings || []).map((s) => [s.user_id, s])
+  )
+
+  // Build result array
+  const result: ClassNeedingBooking[] = []
+
+  for (const classItem of classes) {
+    // Check if user has credentials
+    const creds = credentialsMap.get(classItem.user_id)
+    if (!creds) {
+      console.warn(`No credentials found for user ${classItem.user_id}, class ${classItem.id}`)
+      continue
+    }
+
+    // Check if user is paused
+    const userSettings = settingsMap.get(classItem.user_id)
+    if (userSettings?.schedule_paused === true) {
+      continue
+    }
+
+    result.push({
+      id: classItem.id,
+      user_id: classItem.user_id,
+      day_of_week: classItem.day_of_week,
+      class_time: classItem.class_time,
+      class_type: classItem.class_type,
+      branch: classItem.branch,
+      booking_window_hours: classItem.booking_window_hours,
+      timezone: classItem.timezone,
+      active: classItem.active,
+      next_skip_date: classItem.next_skip_date,
+      gym_url: creds.gym_url,
+      username: creds.username,
+      encrypted_password: creds.encrypted_password,
+      default_branch: creds.default_branch,
+    })
+  }
+
+  return result
+}
+

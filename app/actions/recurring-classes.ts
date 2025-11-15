@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { scheduleBooking, calculateBookingWindowOpen } from '@/lib/inngest/scheduler'
 
 export type RecurringClassFormData = {
   day_of_week: number
@@ -16,6 +17,8 @@ export type RecurringClassResult = {
   success: boolean
   error?: string
   id?: string
+  bookingWindowAlreadyOpen?: boolean
+  bookingTime?: Date
 }
 
 /**
@@ -70,6 +73,8 @@ export async function saveRecurringClass(
       active: true,
     }
 
+    let resultId: string
+
     if (id) {
       // Update existing class
       const { error } = await supabase
@@ -85,11 +90,7 @@ export async function saveRecurringClass(
         }
       }
 
-      revalidatePath('/dashboard/schedule')
-      return {
-        success: true,
-        id,
-      }
+      resultId = id
     } else {
       // Insert new class
       const { data: newClass, error } = await supabase
@@ -105,10 +106,56 @@ export async function saveRecurringClass(
         }
       }
 
+      resultId = newClass.id
+    }
+
+    // Schedule booking with Inngest
+    try {
+      const bookingTime = calculateBookingWindowOpen(
+        data.day_of_week,
+        data.class_time,
+        data.booking_window_hours || 26,
+        data.timezone || 'America/New_York'
+      )
+
+      const isBookingWindowOpen = bookingTime.getTime() <= Date.now()
+
+      if (isBookingWindowOpen) {
+        // Booking window is already open - return flag for client to handle
+        revalidatePath('/dashboard/schedule')
+        return {
+          success: true,
+          id: resultId,
+          bookingWindowAlreadyOpen: true,
+          bookingTime,
+        }
+      } else {
+        // Schedule booking for future time
+        await scheduleBooking({
+          id: resultId,
+          day_of_week: data.day_of_week,
+          class_time: data.class_time,
+          booking_window_hours: data.booking_window_hours || 26,
+          timezone: data.timezone || 'America/New_York',
+        })
+
+        revalidatePath('/dashboard/schedule')
+        return {
+          success: true,
+          id: resultId,
+          bookingWindowAlreadyOpen: false,
+          bookingTime,
+        }
+      }
+    } catch (schedulingError) {
+      // If scheduling fails, still return success (class was saved)
+      // Just log the error and return without scheduling info
+      console.error('Failed to schedule booking with Inngest:', schedulingError)
       revalidatePath('/dashboard/schedule')
       return {
         success: true,
-        id: newClass.id,
+        id: resultId,
+        error: 'Class saved but failed to schedule booking. The daily scheduler will pick it up.',
       }
     }
   } catch (error) {
