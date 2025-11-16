@@ -50,7 +50,7 @@ if (!process.env.ENCRYPTION_KEY) {
   process.exit(1)
 }
 
-const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey)
+const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey) as any
 
 async function testSingleBooking() {
   console.log('🧪 Testing Single Class Booking\n')
