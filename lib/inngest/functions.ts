@@ -3,7 +3,6 @@
  * Handles booking attempts, retries for clock drift, and retries for full classes
  */
 import { inngest } from './client';
-import { bookClass, type BookingParams } from '@/scripts/booking-automation';
 import {
   createBookingAttempt,
   updateBookingAttempt,
@@ -12,7 +11,6 @@ import {
   clearSkipDate,
   type ClassNeedingBooking,
 } from '@/scripts/database-helpers';
-import { decryptPassword } from '@/lib/encryption';
 import { calculateClassStartTime, scheduleBooking } from './scheduler';
 
 /**
@@ -81,176 +79,84 @@ export const bookClassFunction = inngest.createFunction(
 
     console.log(`[Inngest] Created booking attempt record: ${attemptId}`);
 
-    // Step 3: Decrypt password
-    const password = await step.run('decrypt-password', async () => {
-      return decryptPassword(classData.encrypted_password);
+    // Step 3: Trigger GitHub Actions workflow
+    console.log(`[Inngest] Triggering GitHub Actions workflow for class ${classId}...`);
+    const workflowResult = await step.run('trigger-github-actions', async () => {
+      const githubToken = process.env.GITHUB_TOKEN;
+      const githubRepo = process.env.GITHUB_REPOSITORY || 'beerock/my-workout-scheduler';
+
+      if (!githubToken) {
+        throw new Error('GITHUB_TOKEN environment variable is required');
+      }
+
+      const [owner, repo] = githubRepo.split('/');
+
+      try {
+        // Trigger the workflow using GitHub API
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/actions/workflows/booking-automation.yml/dispatches`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${githubToken}`,
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ref: 'main',
+              inputs: {
+                class_id: classId,
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`GitHub API error (${response.status}): ${errorText}`);
+        }
+
+        console.log(`[Inngest] ✅ GitHub Actions workflow triggered successfully`);
+
+        return {
+          success: true,
+          message: 'GitHub Actions workflow triggered',
+        };
+      } catch (error) {
+        console.error(`[Inngest] Failed to trigger GitHub Actions:`, error);
+        throw error;
+      }
     });
 
-    // Step 4: Prepare booking parameters
-    const bookingParams: BookingParams = {
-      gymUrl: classData.gym_url,
-      username: classData.username,
-      password: password,
-      branch: classData.branch,
-      dayOfWeek: classData.day_of_week,
-      classTime: classData.class_time,
-      classType: classData.class_type,
-      timezone: classData.timezone,
-      nextSkipDate: classData.next_skip_date,
+    console.log(`[Inngest] Workflow trigger result:`, workflowResult);
+
+    // Step 4: Wait briefly and return
+    // Note: The actual booking happens in GitHub Actions asynchronously
+    // Results will be written directly to Supabase by the GitHub Actions workflow
+    const result = {
+      status: 'pending' as const,
+      message: 'Booking initiated via GitHub Actions',
     };
 
-    // Step 5: Execute booking with Puppeteer
-    console.log(`[Inngest] Starting Puppeteer automation...`);
-    const result = await step.run('execute-booking', async () => {
-      try {
-        return await bookClass(bookingParams);
-      } catch (error) {
-        console.error(`[Inngest] Puppeteer error:`, error);
-        return {
-          status: 'failed' as const,
-          errorMessage:
-            error instanceof Error ? error.message : 'Unknown error',
-          branchUsed: null,
-          screenshotPath: null,
-        };
-      }
-    });
-
     console.log(
-      `[Inngest] Booking result: ${result.status} - ${result.errorMessage || 'success'}`
+      `[Inngest] Booking initiated via GitHub Actions for class ${classId}`
     );
 
-    // Step 6: Update booking attempt with result
-    await step.run('update-attempt-record', async () => {
-      await updateBookingAttempt(attemptId, {
-        status: result.status,
-        branch_used: result.branchUsed,
-        error_message: result.errorMessage,
-      });
-    });
+    // Note: GitHub Actions will handle:
+    // - Running Puppeteer automation
+    // - Retrying for clock drift (if needed)
+    // - Writing results to Supabase
+    // - Uploading screenshots
 
-    // Step 7: Handle different result scenarios
-    const nextAction = await step.run('handle-result', async () => {
-      // Scenario 1: Success (confirmed or waitlisted)
-      if (result.status === 'confirmed' || result.status === 'waitlisted') {
-        console.log(
-          `[Inngest] ✅ Booking ${result.status} - no further action needed`
-        );
-        return { action: 'complete', status: result.status };
-      }
-
-      // Scenario 2: Already booked (skipped)
-      if (
-        result.status === 'skipped' ||
-        result.errorMessage?.toLowerCase().includes('already')
-      ) {
-        console.log(`[Inngest] ⏭️  Class already booked - stopping`);
-        return { action: 'complete', status: 'skipped' };
-      }
-
-      // Scenario 3: Booking window not open yet (clock drift)
-      const isClockDrift =
-        result.errorMessage?.includes('Booking window not open yet') ||
-        result.errorMessage?.includes('tooltip shown') ||
-        result.errorMessage?.includes('not yet open');
-
-      if (isClockDrift && attemptNumber < 12) {
-        console.log(
-          `[Inngest] ⏰ Clock drift detected - scheduling retry #${attemptNumber + 1} in 15 seconds`
-        );
-
-        // Schedule retry in 15 seconds
-        await inngest.send({
-          name: 'booking/attempt',
-          data: {
-            classId,
-            attemptNumber: attemptNumber + 1,
-          },
-          ts: Date.now() + 15000, // 15 seconds
-        });
-
-        return {
-          action: 'retry-clock-drift',
-          nextRetry: attemptNumber + 1,
-          nextRetryTime: new Date(Date.now() + 15000),
-        };
-      }
-
-      if (isClockDrift && attemptNumber >= 12) {
-        console.log(
-          `[Inngest] ❌ Clock drift - max retries (12) reached, giving up`
-        );
-        return {
-          action: 'stop',
-          reason: 'max-clock-drift-retries-reached',
-        };
-      }
-
-      // Scenario 4: Class is full
-      const isFull =
-        result.errorMessage?.toLowerCase().includes('full') ||
-        result.errorMessage?.toLowerCase().includes('no waitlist');
-
-      if (isFull) {
-        console.log(`[Inngest] 🔒 Class is full - checking if we should retry`);
-
-        // Calculate class start time
-        const classStartTime = calculateClassStartTime(
-          classData.day_of_week,
-          classData.class_time,
-          classData.timezone
-        );
-
-        // Schedule retry in 15 minutes (if before class starts)
-        const nextRetryTime = Date.now() + 15 * 60 * 1000; // 15 minutes
-
-        if (nextRetryTime < classStartTime.getTime()) {
-          console.log(
-            `[Inngest] 🔄 Scheduling retry in 15 minutes (class starts at ${classStartTime.toISOString()})`
-          );
-
-          await inngest.send({
-            name: 'booking/attempt',
-            data: {
-              classId,
-              attemptNumber: 1, // Reset attempt number for class full retries
-            },
-            ts: nextRetryTime,
-          });
-
-          return {
-            action: 'retry-class-full',
-            nextRetryTime: new Date(nextRetryTime),
-            classStartTime,
-          };
-        } else {
-          console.log(
-            `[Inngest] ⏱️  Class starting soon (${classStartTime.toISOString()}) - stopping retries`
-          );
-          return {
-            action: 'stop',
-            reason: 'class-starting-soon',
-            classStartTime,
-          };
-        }
-      }
-
-      // Scenario 5: Other failures (technical errors, etc.)
-      console.log(
-        `[Inngest] ❌ Booking failed: ${result.errorMessage} - not retrying`
-      );
-      return {
-        action: 'stop',
-        reason: 'technical-error',
-        errorMessage: result.errorMessage,
-      };
-    });
+    // The booking attempt record will be updated by GitHub Actions workflow
+    // when the booking completes
 
     return {
       classId,
-      status: result.status,
       attemptId,
-      nextAction,
+      message: 'GitHub Actions workflow triggered successfully',
+      workflowTriggered: true,
     };
   }
 );
