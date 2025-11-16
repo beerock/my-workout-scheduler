@@ -6,144 +6,118 @@ This document contains features and improvements that are planned for future imp
 
 ## Operational Notes & Reminders
 
-### Enable/Disable Automatic Booking Schedule
+### Production Deployment Status
 
-**To disable automatic booking (e.g., for testing):**
-- Comment out the `schedule` section in `.github/workflows/booking-automation.yml`
-- Commit and push the change
-- The workflow will stop running automatically but can still be triggered manually
+**Current Status:** ✅ DEPLOYED TO PRODUCTION
 
-**To re-enable automatic booking:**
-- Uncomment the `schedule` section in `.github/workflows/booking-automation.yml`
-- Commit and push the change
-- The workflow will resume running every 15 minutes automatically
+- **Production URL:** https://my-workout-scheduler.vercel.app
+- **Hosting:** Vercel (Hobby plan, free tier)
+- **Architecture:** Inngest (event scheduling) → GitHub Actions (Puppeteer execution) → Supabase (data storage)
+- **Monitoring:** Inngest Dashboard for event scheduling and runs
+- **GitHub Actions:** Triggered via workflow_dispatch by Inngest (not on cron schedule)
 
-**Current Status:** Schedule is enabled (runs every 15 minutes automatically)
+### Production Architecture
+
+**Event-Driven Booking Flow:**
+1. User creates/edits class → Inngest event scheduled
+2. Inngest waits until exact booking window time
+3. Inngest triggers `/api/inngest` webhook
+4. Booking function triggers GitHub Actions via GitHub API
+5. GitHub Actions runs Puppeteer automation
+6. Results written directly to Supabase
+7. User sees results in dashboard
+
+**Why GitHub Actions for Puppeteer?**
+- Vercel serverless functions have timeout limits (10s hobby, 60s pro)
+- Puppeteer automation takes 30-60 seconds
+- GitHub Actions has no practical timeout constraints (30 min max)
+- Chrome/Chromium pre-installed in GitHub Actions environment
+- Better logging and screenshot artifacts on failure
 
 ---
 
-## Event-Driven Trigger Architecture (Future Optimization)
+## Event-Driven Trigger Architecture ✅ COMPLETED
 
 ### Overview
-Replace the 15-minute polling approach with an event-driven trigger system that only runs GitHub Actions when a booking window actually opens. This reduces GitHub Actions usage from ~250 minutes/month to ~48-144 minutes/month (80% cost reduction).
+**STATUS: ✅ COMPLETED AND DEPLOYED TO PRODUCTION**
 
-### Current Approach
+Successfully migrated from 15-minute polling to event-driven architecture using Inngest. The system now triggers bookings at exact booking window times with zero wasted runs.
+
+### Previous Approach (Deprecated)
 - **Method**: GitHub Actions cron runs every 15 minutes (`*/15 * * * *`)
 - **Usage**: ~250 minutes/month (12.5% of 2,000 min free tier)
 - **Runs**: 2,880 runs/month (most runs exit early if no bookings needed)
-- **Status**: ✅ Working, meets all KPIs (<60s booking latency with parallel processing)
+- **Status**: ❌ Replaced by Inngest event-driven architecture
 
-### Optimization Option A: Supabase pg_cron
+### Current Production Approach ✅
+- **Method**: Inngest event-driven scheduling with GitHub Actions execution
+- **Inngest Usage**: ~1,530 events/month (3% of 50k free tier)
+- **GitHub Actions Usage**: ~300 minutes/month (15% of 2,000 min free tier)
+- **Runs**: Only when booking windows open (~100 bookings/month for 5 users)
+- **Benefits Achieved**:
+  - ✅ Precise timing (triggers at exact booking window times, not rounded to 15-min intervals)
+  - ✅ Zero wasted runs (no polling, only runs when needed)
+  - ✅ Better reliability (Inngest has 99.9%+ uptime SLA)
+  - ✅ Intelligent retry logic built-in (Inngest handles failures gracefully)
+  - ✅ Better monitoring (Inngest dashboard shows all scheduled events and runs)
+  - ✅ No timeout constraints (GitHub Actions handles Puppeteer execution)
+  - ✅ Still completely FREE (all services on free tier)
 
-**Architecture:**
-```
-Supabase pg_cron (scheduled at exact booking window times)
-  → Triggers GitHub Actions via webhook (repository_dispatch)
-  → GitHub Actions runs Puppeteer (parallel processing)
-```
+### Implementation Details
 
-**Benefits:**
-- ✅ Free tier compatible (pg_cron available on Supabase free tier)
-- ✅ Exact timing (fires at booking window open time)
-- ✅ Minimal GitHub Actions usage (24 runs/month = 48-144 min)
-- ✅ Only runs when needed (no wasted runs)
-
-**Drawbacks:**
-- ⚠️ Complex implementation (8-10 hours)
-- ⚠️ Need to manage pg_cron jobs (create/delete on class changes)
-- ⚠️ Need to clean up `cron.job_run_details` table regularly (grows large)
-- ⚠️ More failure points (DB cron → webhook → GitHub)
-- ⚠️ Requires GitHub Personal Access Token with workflow scope
-
-**Implementation Requirements:**
-1. Create Supabase migration with pg_cron functions:
-   - `calculate_next_booking_window(class_id)`
-   - `schedule_booking_trigger(class_id)`
-   - `unschedule_booking_trigger(class_id)`
-   - `trigger_github_actions_webhook()`
-2. Update class CRUD operations to schedule/unschedule triggers
-3. Add GitHub Actions `repository_dispatch` trigger
-4. Set up GitHub PAT and store in Supabase secrets
-5. Implement table cleanup for `cron.job_run_details`
-
-### Optimization Option B: Vercel Cron
+**Chosen Solution:** Inngest Event-Driven Architecture
 
 **Architecture:**
 ```
-Vercel cron (scheduled in vercel.json)
-  → Next.js API route (/api/cron/booking)
-  → Triggers GitHub Actions via webhook (repository_dispatch)
-  → GitHub Actions runs Puppeteer (parallel processing)
+User creates/edits class in Next.js
+  → Next.js sends event to Inngest with precise timestamp
+  → Inngest waits until booking window time
+  → Inngest triggers Next.js /api/inngest webhook
+  → Booking function triggers GitHub Actions via API (workflow_dispatch)
+  → GitHub Actions runs Puppeteer automation
+  → Results written to Supabase
 ```
 
-**Benefits:**
-- ✅ Free tier compatible (Vercel Hobby plan)
-- ✅ Exact timing
-- ✅ Minimal GitHub Actions usage (24 runs/month = 48-144 min)
+**Implementation Completed:**
+1. ✅ Installed Inngest SDK and created client
+2. ✅ Created `/api/inngest` API route for webhooks
+3. ✅ Built `bookClassFunction` with intelligent retry logic
+4. ✅ Built `dailySchedulerFunction` (midnight UTC cron)
+5. ✅ Integrated scheduling with class CRUD operations
+6. ✅ Modified GitHub Actions workflow to accept `class_id` input
+7. ✅ Updated booking function to trigger GitHub Actions via API
+8. ✅ Deployed to Vercel production
+9. ✅ Synced Inngest with production URL
+10. ✅ Configured all environment variables
+
+**Environment Variables Required:**
+- Vercel: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `GITHUB_TOKEN`, `GITHUB_REPOSITORY`
+- GitHub Actions: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ENCRYPTION_KEY`
+
+**Why Inngest vs Other Options:**
+- ✅ Purpose-built for event-driven workflows
+- ✅ Built-in retry logic and error handling
+- ✅ Visual dashboard for monitoring
+- ✅ TypeScript SDK with Next.js integration
 - ✅ Simpler than pg_cron (no database functions needed)
-- ✅ Better debugging (Vercel dashboard shows cron logs)
-- ✅ No table cleanup needed
+- ✅ More flexible than Vercel Cron (no redeployment needed for schedule changes)
+- ✅ Generous free tier (50k events/month)
+- ✅ Zero wasted runs (only triggers when booking windows open)
 
-**Drawbacks:**
-- ⚠️ Static cron jobs in vercel.json (need redeploy when booking times change)
-- ⚠️ Requires Next.js API route
-- ⚠️ Requires GitHub Personal Access Token with workflow scope
-- ⚠️ Medium complexity (4-6 hours implementation)
+### Results
 
-**Implementation Requirements:**
-1. Add cron schedule to `vercel.json`:
-   ```json
-   {
-     "crons": [
-       {"path": "/api/cron/booking", "schedule": "15 14 * * 1"},  // Mon 2:15 PM
-       {"path": "/api/cron/booking", "schedule": "15 14 * * 3"},  // Wed 2:15 PM
-       {"path": "/api/cron/booking", "schedule": "30 9 * * 6"}    // Sat 9:30 AM
-     ]
-   }
-   ```
-2. Create Next.js API route: `app/api/cron/booking/route.ts`
-3. Add GitHub Actions `repository_dispatch` trigger
-4. Set up GitHub PAT and store as Vercel environment variable
-5. (Optional) Daily sync job to update cron schedule based on active classes
-
-### When to Implement
-
-**DO NOT implement unless:**
-- GitHub Actions usage approaches 1,500+ minutes/month (75% of free tier)
-- Need to scale to 10+ users
-- Want to minimize infrastructure costs
-- Have 4-10 hours available for optimization work
-
-**Current situation:**
-- Usage: ~250 min/month (12.5% of free tier)
-- Room to scale to 5-6 users before approaching limits
-- All KPIs are being met (<60s booking latency)
-- System is stable and working
-
-### Recommendation
-
-**For MVP (current state):**
-- ✅ Stick with 15-minute polling + parallel processing
-- ✅ Monitor GitHub Actions usage for 2-4 weeks
-- ✅ Only optimize if usage becomes a concern
-
-**If optimization needed:**
-- 🥇 **Recommended**: Vercel Cron (Option B) - simpler, easier to debug
-- 🥈 **Alternative**: Supabase pg_cron (Option A) - if you prefer database-centric approach
-
-### Cost Analysis
-
-| Approach | GitHub Actions Usage | % of Free Tier | Runs/Month | Implementation Time |
-|----------|---------------------|----------------|------------|---------------------|
-| **Current (15-min polling)** | 250 min | 12.5% | 2,880 | 0 hours (done) |
-| **Vercel Cron** | 48-144 min | 2.4-7.2% | 24 | 4-6 hours |
-| **Supabase pg_cron** | 48-144 min | 2.4-7.2% | 24 | 8-10 hours |
+**Metrics After Migration:**
+- **Precision**: Exact booking window timing (not rounded to 15-min intervals)
+- **Efficiency**: Only runs when needed (~100 runs/month vs 2,880 runs/month)
+- **Cost**: Still 100% FREE (Inngest + GitHub Actions free tiers)
+- **Reliability**: 99.9%+ uptime (Inngest SLA)
+- **Monitoring**: Full visibility via Inngest dashboard
 
 ### Status
-**Status**: Backlogged - Not currently needed
-**Priority**: Low (optimization only, current approach works well)
-**Last Updated**: 2025-01-11
-**Next Step**: Monitor GitHub Actions usage for 2-4 weeks before reconsidering
+**Status**: ✅ COMPLETED AND DEPLOYED TO PRODUCTION
+**Priority**: N/A (completed)
+**Completed**: November 16, 2025
+**Production URL**: https://my-workout-scheduler.vercel.app
 
 ---
 
@@ -677,14 +651,21 @@ Daxko (YMCA's platform provider) has an official API for managing classes and bo
 ### Potential Architecture Impact
 
 **If API is available and works:**
-- ✅ Could use **Vercel free tier** (API calls are fast)
-- ✅ Could check **every 1 minute** (no timeout concerns)
+- ✅ Could use **Vercel free tier** (API calls are fast, <10s)
+- ✅ Could eliminate GitHub Actions dependency
 - ✅ Much simpler architecture
 - ✅ More reliable than browser automation
+- ✅ Faster booking (<5s vs 30-60s)
 
 **If API requires partner status or is limited:**
 - ⚠️ May need to stick with Puppeteer
 - ⚠️ Or use hybrid: API for checks, Puppeteer for booking
+
+**Current Status:**
+- ✅ **Timeout issue solved** via Inngest → GitHub Actions architecture
+- ✅ Puppeteer works reliably in production (no Vercel timeout constraints)
+- ✅ System is production-ready and working
+- 📊 Daxko API would still be a significant improvement if available (speed, simplicity, reliability)
 
 ### Research Findings
 

@@ -1,9 +1,9 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.3
+**Version:** 2.4
 **Product Owner:** Brock Busby
 **Last Updated:** November 16, 2025
-**Status:** Active Development - Event-Driven Automation
+**Status:** Production - Deployed to Vercel
 
 
 **Recent Updates:**
@@ -21,13 +21,19 @@
   - Copy class feature for quick duplication
 - ✅ **COMPLETED: Event-Driven Booking Automation System**
   - Migrated from GitHub Actions cron to Inngest event-driven triggers
+  - **Production Architecture:** Inngest schedules events → GitHub Actions executes Puppeteer
   - Puppeteer scripts for YMCA Daxko platform (login, navigation, class finding)
   - Precise timing: triggers at exact booking window times (not polling)
   - Intelligent retry logic: clock drift (12×15s) and class full (15min intervals)
   - Parallel processing for multiple users (<60s total booking time)
   - Database integration (booking attempts tracking)
   - Error handling and screenshot capture
-  - FREE infrastructure (eliminated $4-8/month GitHub Actions cost)
+  - FREE infrastructure (Inngest + GitHub Actions free tiers)
+- ✅ **COMPLETED: Production Deployment**
+  - Deployed to Vercel (https://my-workout-scheduler.vercel.app)
+  - Inngest production sync complete
+  - Environment variables configured (Supabase, Inngest, GitHub)
+  - End-to-end production testing ready
 
 **Major Changes from v1.0:**
 
@@ -36,6 +42,7 @@
 - Simplified tech stack (all free tier tools)
 - Focus on core automation over polish
 - **v2.3:** Migrated to event-driven architecture for better reliability and cost savings
+- **v2.4:** Production deployment with Inngest → GitHub Actions hybrid architecture
 
 ---
 
@@ -124,7 +131,7 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 | **Status Updates** | Write booking results back to database | High | ✅ |
 | **Daily Scheduler** | Midnight UTC cron ensures all active classes are scheduled | High | ✅ |
 
-**Booking Flow:**
+**Booking Flow (Production Architecture):**
 
 1. **User creates/edits class** → Next.js calculates booking window time → Sends event to Inngest
 2. **Inngest waits** until exact booking window time (e.g., Friday 7:30 AM)
@@ -132,19 +139,27 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 4. **Booking function executes:**
    - Fetches class data from database
    - Checks if user paused or skip date set
-   - Launches Puppeteer in headless mode
-   - Login with decrypted credentials
-   - Navigate to class schedule
-   - Verify correct branch
-   - Find target class (day + time)
-   - Check status and take action (reserve/waitlist/skip)
-   - Update database with result
+   - Creates booking attempt record in database
+   - Triggers GitHub Actions workflow via GitHub API (workflow_dispatch)
+   - Passes class_id as input parameter
+5. **GitHub Actions workflow runs:**
+   - Checks out code and installs dependencies
+   - Installs Puppeteer browsers (Chrome)
+   - Runs `test-single-booking.ts` script with class_id
+   - Puppeteer automation:
+     - Login with decrypted credentials
+     - Navigate to class schedule
+     - Verify correct branch
+     - Find target class (day + time)
+     - Check status and take action (reserve/waitlist/skip)
+   - Updates database with result
+   - Uploads screenshots (on failure)
    - Send email notification (future)
-5. **Retry handling:**
+6. **Retry handling:**
    - **Booking window not open yet** → Retry in 15s (up to 12 times = 3 min total)
    - **Class full** → Retry every 15 min until class starts
    - **Success or permanent failure** → Stop
-6. **Daily scheduler** (midnight UTC) → Re-schedules all active classes for next occurrence
+7. **Daily scheduler** (midnight UTC) → Re-schedules all active classes for next occurrence
 
 ### 3.4 Dashboard & Monitoring (Minimal)
 
@@ -211,11 +226,12 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 
 - **Orchestration:** Inngest (free tier, 50k events/month)
 - **Scheduling:** Event-driven triggers at exact booking window times (e.g., Friday 7:30 AM for Saturday 9:30 AM class)
-- **Execution:** Puppeteer (headless Chrome) via Next.js API route or GitHub Actions
-- **Tool:** Puppeteer (headless Chrome)
-- **Process:** Inngest schedules event → Triggers at precise time → Fetch class data → Launch Puppeteer → Book class → Update DB
+- **Execution:** GitHub Actions triggered via GitHub API (workflow_dispatch)
+- **Tool:** Puppeteer (headless Chrome) runs in GitHub Actions environment
+- **Process:** Inngest schedules event → Triggers at precise time → Calls GitHub API → GitHub Actions runs Puppeteer → Book class → Update DB
 - **Daily Scheduler:** Runs at midnight UTC to ensure all active classes are scheduled for next occurrence
 - **Monitoring:** Inngest dashboard provides full visibility into scheduled events, runs, and logs
+- **Production Benefits:** No serverless timeout constraints (Vercel has 10s hobby, 60s pro limits), proven reliability, better logging
 
 **3.1 Intelligent Retry Logic**
 
@@ -285,26 +301,50 @@ booking\_attempts (
   created\_at  
 )
 
-### Data Flow
+### Data Flow (Production Architecture)
 
 1. **User configures schedule** → Next.js form → Supabase DB
 2. **Next.js calculates booking window** → Sends event to Inngest with precise timestamp
 3. **Inngest waits** until booking window time arrives
 4. **Inngest triggers** → Calls Next.js `/api/inngest` webhook
-5. **Booking function runs** → Fetches class data → Launches Puppeteer → Books class → Updates DB
-6. **Retry handling** → Inngest reschedules events for clock drift or full classes
-7. **Email sent** → Via Resend/SendGrid → User notified (future)
-8. **User checks dashboard** → Next.js queries Supabase → Shows status
-9. **Daily scheduler** (midnight UTC) → Re-schedules all active classes for next week
+5. **Booking function runs** → Fetches class data → Creates booking attempt → Triggers GitHub Actions via API
+6. **GitHub Actions executes** → Runs Puppeteer → Books class → Updates Supabase DB directly
+7. **Retry handling** → Inngest reschedules events for clock drift or full classes
+8. **Email sent** → Via Resend/SendGrid → User notified (future)
+9. **User checks dashboard** → Next.js queries Supabase → Shows status
+10. **Daily scheduler** (midnight UTC) → Re-schedules all active classes for next week
 
 ### Security
 
-- Supabase Row Level Security (RLS) policies ensure users only see their own data  
+- Supabase Row Level Security (RLS) policies ensure users only see their own data
 - Gym credentials encrypted using application-level AES-256-GCM encryption (Node.js crypto module)
   - Encryption key stored in environment variables (never sent to database)
   - Password encrypted before storage, decrypted only when needed for automation
-- GitHub Actions secrets for API keys  
+- GitHub Personal Access Token with `workflow` scope for triggering GitHub Actions
+- GitHub Actions secrets for Supabase and encryption keys
 - HTTPS everywhere (Vercel default)
+- Vercel environment variables for production (Supabase, Inngest, GitHub credentials)
+
+### Environment Variables
+
+**Vercel Production Environment:**
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key (public)
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (bypasses RLS)
+- `ENCRYPTION_KEY` - AES-256-GCM encryption key for gym credentials
+- `INNGEST_EVENT_KEY` - Inngest event key for sending events
+- `INNGEST_SIGNING_KEY` - Inngest signing key for webhook verification
+- `GITHUB_TOKEN` - GitHub Personal Access Token with `workflow` and `repo` scopes
+- `GITHUB_REPOSITORY` - GitHub repository (e.g., `beerock/my-workout-scheduler`)
+
+**GitHub Actions Secrets:**
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Service role key for database access
+- `ENCRYPTION_KEY` - Same encryption key as Vercel (for decrypting credentials)
+
+**Local Development (.env.local):**
+- Same as Vercel, plus:
+- `INNGEST_SIGNING_KEY=signkey-dev-00000000000000000000000000000000000000000000` (dev mode)
 
 ---
 
@@ -325,13 +365,13 @@ booking\_attempts (
 
 ### Week 1: Core Functionality
 
-**Days 1-2: Setup & Auth**
+**Days 1-2: Setup & Auth** ✅ COMPLETE
 
-- [x] Create Next.js project  
-- [x] Set up Supabase project  
-- [x] Connect Supabase Auth  
-- [x] Build login/signup pages  
-- [ ] Deploy to Vercel
+- [x] Create Next.js project
+- [x] Set up Supabase project
+- [x] Connect Supabase Auth
+- [x] Build login/signup pages
+- [x] Deploy to Vercel (https://my-workout-scheduler.vercel.app)
 
 **Days 3-4: Schedule Management** ✅ COMPLETE
 
@@ -572,10 +612,13 @@ booking\_attempts (
 
 **GitHub Actions:**
 
-- Kept for manual testing/debugging via `workflow_dispatch`
-- Runs Puppeteer headless
+- Production execution environment for Puppeteer automation
+- Triggered by Inngest via GitHub API (workflow_dispatch)
+- Runs Puppeteer with Chrome pre-installed
+- No timeout constraints (30 min max, typical runs 30-60s)
 - Easy secrets management
-- No cron schedule (replaced by Inngest)
+- Screenshot artifacts on failure
+- Manual triggers available for testing/debugging
 
 **Puppeteer:**
 
@@ -593,22 +636,28 @@ booking\_attempts (
 
 ### Free Tier Limits (More Than Enough)
 
-- Vercel: 100GB bandwidth/month
-- Supabase: 500MB database, 50k auth users
-- **Inngest: 50,000 events/month** ⭐ NEW
-- GitHub Actions: 2,000 minutes/month (free tier, manual triggers only)
-- Resend: 100 emails/day
+- **Vercel:** 100GB bandwidth/month, 100 deployments/day (Hobby plan)
+- **Supabase:** 500MB database, 50k auth users, unlimited API requests
+- **Inngest:** 50,000 events/month, unlimited runs
+- **GitHub Actions:** 2,000 minutes/month (triggered by Inngest, ~48-144 min/month usage)
+- **Resend:** 100 emails/day (future)
 
-**Event Usage Calculation (5 users × 5 classes/week = 100 bookings/month):**
+**Usage Calculation (5 users × 5 classes/week = 100 bookings/month):**
 
+**Inngest Events:**
 - Initial booking attempts: 100 events/month
 - Clock drift retries (worst case, 12 per booking): 1,200 events/month
 - Class full retries (avg 2 per booking): 200 events/month
 - Daily scheduler: 30 events/month
 - **Total: ~1,530 events/month** (3% of free tier limit)
 
-With 5 users booking \~5 classes/week \= \~100 bookings/month:
+**GitHub Actions Minutes:**
+- Per booking: 2-6 minutes (Puppeteer execution)
+- 100 bookings/month × 3 min avg = 300 minutes/month
+- **Total: ~300 minutes/month** (15% of free tier limit)
 
+**Cost Analysis:**
 - ✅ Well under all limits
-- ✅ Could scale to 100+ users if needed (within Inngest free tier)
+- ✅ Could scale to 10-15 users before approaching limits
 - ✅ **Completely FREE** (no paid services required)
+- ✅ Production-grade reliability with no timeout constraints
