@@ -121,68 +121,73 @@ User creates/edits class in Next.js
 
 ---
 
-## Retry Logic for Full Classes
+## Retry Logic for Full Classes ✅ COMPLETED
 
 ### Overview
-When a class shows "Class Full" but still has a booking button available, implement retry logic that continuously attempts to book the class until the class start time. This handles cases where spots open up due to cancellations.
+**STATUS: ✅ COMPLETED**
 
-### Requirements
+Successfully implemented intelligent retry logic that handles both clock drift and class full scenarios. The system now automatically retries bookings when classes are full, checking every 15 minutes until the class starts or a spot becomes available.
 
-1. **Immediate Booking Attempt**
-   - When a class shows "Class Full" but has a RESERVE button, attempt to book immediately
-   - The button might work and add user to waitlist
+### Implementation Details
 
-2. **Retry Loop**
-   - If immediate attempt doesn't succeed, retry every 3 minutes until class start time
-   - Calculate class start datetime from `dayOfWeek` and `classTime`
-   - Stop retrying when class starts
+**Two-Tier Retry Strategy:**
 
-3. **Page Refresh and Re-navigation**
-   - On each retry:
-     - Refresh the page to get updated class status
-     - Re-select the branch
-     - Re-navigate to the correct day
-     - Re-search for the class
+1. **Clock Drift Retries (Short-term, within Puppeteer)**
+   - **Scenario**: Booking window not open yet due to time differences between system and gym website
+   - **Retry Logic**: 12 attempts × 15 seconds = 3 minutes total
+   - **Location**: `scripts/booking-automation.ts` lines 148-215
+   - **Behavior**: Page refresh, re-navigation, re-attempt booking
+   - **Completed**: November 16, 2025
 
-4. **Status Detection**
-   - If class becomes available → book immediately
-   - If still full but has booking button → continue retrying
-   - If booking button disappears → stop retrying (truly full)
+2. **Class Full Retries (Long-term, orchestrated by Inngest)**
+   - **Scenario**: Class is full but spots may open up due to cancellations
+   - **Retry Logic**: Every 15 minutes until class starts
+   - **Max Retries**: 20 attempts (5 hours maximum)
+   - **Location**: `lib/inngest/functions.ts` lines 159-219
+   - **Architecture**:
+     - Inngest function triggers GitHub Actions
+     - GitHub Actions runs Puppeteer and sends result event back to Inngest
+     - Inngest receives result via `step.waitForEvent()`
+     - If class is full, Inngest sleeps 15 minutes and triggers new booking attempt
+     - Continues until success, class starts, or max retries reached
+   - **Completed**: November 16, 2025
 
-### Implementation Notes
+### Technical Implementation
 
-- **Retry Interval**: 3 minutes
-- **Maximum Retries**: 100 (safety limit)
-- **Stop Conditions**: 
-  - Class starts
-  - Booking button disappears
-  - Booking succeeds
-  - Maximum retries reached
+**Files Modified:**
+- `scripts/booking-automation.ts` - Fixed clock drift retry parameters (12 × 15s)
+- `scripts/test-single-booking.ts` - Added Inngest result event sending
+- `lib/inngest/functions.ts` - Implemented class full retry orchestration
+- `.github/workflows/booking-automation.yml` - Added INNGEST_EVENT_KEY environment variable
 
-### Helper Functions Needed
+**Event Flow:**
+1. Inngest triggers booking at exact booking window time
+2. GitHub Actions runs Puppeteer automation
+3. Puppeteer sends result event back to Inngest (attemptId, status, errorMessage)
+4. Inngest receives result and evaluates:
+   - ✅ Confirmed/Waitlisted → Done
+   - ❌ Failed (not full) → Done
+   - 🔁 Failed (class full) → Calculate time until class starts
+   - If > 15 min remaining → Sleep 15 min, retry
+   - If < 15 min remaining → Done (too late)
+   - If max retries reached → Done (prevent infinite loops)
 
-1. `calculateClassStartTime(dayOfWeek: number, hours: number, minutes: number): Date`
-   - Calculates the class start datetime from day of week and time
-   - Handles same-day vs next-week logic
+### Stop Conditions
+- ✅ Booking confirmed
+- ✅ Added to waitlist
+- ✅ Class starts (< 15 minutes remaining)
+- ✅ Max retries reached (20 attempts = 5 hours)
+- ✅ Non-full failure (login error, class not found, etc.)
 
-2. `attemptBookingButtonClick(page: Page, classType: string, targetTime12: string): Promise<{ success: boolean; error?: string }>`
-   - Already exists in codebase
-   - Reusable function to click booking buttons
-
-### Code Location
-- Main logic should be added in `scripts/booking-automation.ts` in the `findAndBookClass()` function
-- Should be triggered when `searchResult.status === 'full'` but class has a booking button
-
-### Testing Considerations
-- Test with classes that are full but have waitlist options
-- Test retry behavior when class becomes available during retry loop
-- Test that retries stop when class starts
-- Test that retries stop if booking button disappears
+### Environment Variables Required
+- **GitHub Actions**: `INNGEST_EVENT_KEY` (for sending result events back to Inngest)
+- **Vercel**: Already configured with `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY`
 
 ### Status
-**Status**: Backlogged - Not currently implemented
-**Priority**: Medium
-**Last Updated**: 2025-01-10
+**Status**: ✅ COMPLETED AND DEPLOYED
+**Priority**: High (was missing, now complete)
+**Completed**: November 16, 2025
+**Next Steps**: Test in production with actual full classes to verify retry behavior
 
 ---
 

@@ -233,20 +233,28 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 - **Monitoring:** Inngest dashboard provides full visibility into scheduled events, runs, and logs
 - **Production Benefits:** No serverless timeout constraints (Vercel has 10s hobby, 60s pro limits), proven reliability, better logging
 
-**3.1 Intelligent Retry Logic**
+**3.1 Intelligent Retry Logic** ✅ FULLY IMPLEMENTED
 
 The system handles two types of failures with different retry strategies:
 
 **Clock Drift (Booking Window Not Open Yet):**
 - **Detection:** "Booking window not open yet" error or disabled RESERVE button with tooltip
 - **Retry Logic:** 12 attempts × 15 seconds = 3 minutes total
+- **Implementation:** Within Puppeteer script (`booking-automation.ts`)
+- **Behavior:** Page refresh, re-navigation, re-attempt booking
 - **Reason:** Gym website clock may be 1-2 minutes off from our system clock
 - **Outcome:** Catches booking window as soon as it opens
 
 **Class Full (No Spots Available):**
-- **Detection:** "Class Full" pill visible or "Class is full" error
-- **Retry Logic:** Every 15 minutes until class start time
-- **Reason:** Someone may cancel, creating an opening
+- **Detection:** "Class Full" pill visible or "Class is full" error message
+- **Retry Logic:** Every 15 minutes until class start time (max 20 attempts = 5 hours)
+- **Implementation:** Orchestrated by Inngest (`lib/inngest/functions.ts`)
+- **Architecture:**
+  - Puppeteer sends result event back to Inngest after each attempt
+  - Inngest receives result via `step.waitForEvent()`
+  - If class full, Inngest sleeps 15 minutes and triggers new booking attempt
+  - Continues until success, class starts, or max retries reached
+- **Reason:** Someone may cancel their reservation, creating an opening
 - **Outcome:** Automatically books if a spot becomes available
 
 **Technical Errors:**
