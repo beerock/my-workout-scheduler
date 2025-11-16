@@ -576,7 +576,7 @@ export async function createBookingAttempt(
 ): Promise<string> {
   const supabase = getSupabaseClient()
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase
     .from('booking_attempts')
     .insert({
       recurring_class_id: recurringClassId,
@@ -584,9 +584,9 @@ export async function createBookingAttempt(
       status,
       branch_used: branchUsed,
       error_message: errorMessage,
-    } as any)
+    })
     .select('id')
-    .single()
+    .single() as any)
 
   if (error || !data) {
     throw new Error(`Failed to create booking attempt: ${error?.message || 'No data'}`)
@@ -608,10 +608,10 @@ export async function updateBookingAttempt(
 ): Promise<void> {
   const supabase = getSupabaseClient()
 
-  const { error } = await supabase
+  const { error } = await (supabase
     .from('booking_attempts')
-    .update(updates as any)
-    .eq('id', attemptId)
+    .update(updates)
+    .eq('id', attemptId) as any)
 
   if (error) {
     throw new Error(`Failed to update booking attempt: ${error.message}`)
@@ -624,10 +624,10 @@ export async function updateBookingAttempt(
 export async function clearSkipDate(recurringClassId: string): Promise<void> {
   const supabase = getSupabaseClient()
 
-  const { error } = await supabase
+  const { error } = await (supabase
     .from('recurring_classes')
-    .update({ next_skip_date: null } as any)
-    .eq('id', recurringClassId)
+    .update({ next_skip_date: null })
+    .eq('id', recurringClassId) as any)
 
   if (error) {
     throw new Error(`Failed to clear skip date: ${error.message}`)
