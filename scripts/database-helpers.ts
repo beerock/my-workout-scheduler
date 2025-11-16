@@ -199,6 +199,7 @@ export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]>
 /**
  * Check if booking window is open for a class
  * Booking window opens when: current time >= class datetime - booking_window_hours
+ * Uses gym's timezone for accurate calculations
  */
 function isBookingWindowOpen(
   dayOfWeek: number,
@@ -208,15 +209,36 @@ function isBookingWindowOpen(
   now: Date
 ): boolean {
   try {
-    // Get the next occurrence of this class
+    // Get the next occurrence of this class (timezone-aware)
     const nextClassDate = getNextClassDate(dayOfWeek, classTime, timezone, now)
 
-    // Calculate when booking window opens
-    const bookingWindowOpens = new Date(nextClassDate)
-    bookingWindowOpens.setHours(bookingWindowOpens.getHours() - bookingWindowHours)
+    // Calculate when booking window opens (subtract hours from class time)
+    // Since nextClassDate is already a proper Date object, we can subtract hours directly
+    const bookingWindowOpens = new Date(nextClassDate.getTime() - (bookingWindowHours * 60 * 60 * 1000))
+
+    // Format dates in gym's timezone for logging
+    const tzFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+    
+    const windowOpenStr = tzFormatter.format(bookingWindowOpens)
+    const classDateStr = tzFormatter.format(nextClassDate)
+    const nowStr = tzFormatter.format(now)
+    
+    const isOpen = now >= bookingWindowOpens
+    if (!isOpen) {
+      console.log(`⏰ Booking window not yet open for class (${timezone}): window opens at ${windowOpenStr}, class at ${classDateStr}, now: ${nowStr}`)
+    }
 
     // Check if current time is past the booking window open time
-    return now >= bookingWindowOpens
+    // Both now and bookingWindowOpens are Date objects (UTC internally), so comparison is correct
+    return isOpen
   } catch (error) {
     console.error('Error calculating booking window:', error)
     return false
@@ -226,6 +248,7 @@ function isBookingWindowOpen(
 /**
  * Get the next occurrence date for a class
  * Returns the next date when this class occurs (considering day of week and time)
+ * Uses gym's timezone for accurate date calculations
  */
 function getNextClassDate(
   dayOfWeek: number,
@@ -236,36 +259,107 @@ function getNextClassDate(
   // Parse class time (format: "HH:MM" or "HH:MM:SS")
   const [hours, minutes] = classTime.split(':').map(Number)
 
-  // Create a date object for today in the specified timezone
-  // Note: This is a simplified calculation. For production, use a proper timezone library like date-fns-tz
-  const today = new Date(now)
-  const currentDayOfWeek = today.getUTCDay() // 0 = Sunday, 6 = Saturday
-
-  // Calculate days until next occurrence
+  // Calculate "today" in the gym's timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  })
+  
+  const parts = formatter.formatToParts(now)
+  const gymDate = {
+    year: parseInt(parts.find(p => p.type === 'year')!.value),
+    month: parseInt(parts.find(p => p.type === 'month')!.value),
+    day: parseInt(parts.find(p => p.type === 'day')!.value),
+    hour: parseInt(parts.find(p => p.type === 'hour')!.value),
+    minute: parseInt(parts.find(p => p.type === 'minute')!.value),
+  }
+  
+  // Create a date object representing "today" in gym's timezone
+  // Note: This creates a Date object in local time, but we'll convert it properly
+  const todayInGymTz = new Date(gymDate.year, gymDate.month - 1, gymDate.day, gymDate.hour, gymDate.minute)
+  const currentDayOfWeek = todayInGymTz.getDay() // 0 = Sunday, 6 = Saturday
+  
   let daysUntilNext = dayOfWeek - currentDayOfWeek
-  if (daysUntilNext < 0) {
-    daysUntilNext += 7 // Next week
-  }
+  
+  // Handle same-day classes: check if class time has passed
   if (daysUntilNext === 0) {
-    // Same day - check if time has passed
-    const currentHour = today.getUTCHours()
-    const currentMinute = today.getUTCMinutes()
-    if (currentHour > hours || (currentHour === hours && currentMinute >= minutes)) {
-      daysUntilNext = 7 // Next week
+    // Same day - check if class time has passed
+    const [classHour, classMinute] = classTime.split(':').map(Number)
+    const currentTimeMinutes = gymDate.hour * 60 + gymDate.minute
+    const classTimeMinutes = classHour * 60 + classMinute
+    
+    if (currentTimeMinutes >= classTimeMinutes) {
+      // Class time has passed today, look for next week
+      daysUntilNext = 7
+    } else {
+      // Class time hasn't passed, use today
+      daysUntilNext = 0
     }
+  } else if (daysUntilNext < 0) {
+    // Past day this week, look for next week
+    daysUntilNext += 7
   }
 
-  // Create date for next occurrence
-  const nextDate = new Date(today)
-  nextDate.setUTCDate(today.getUTCDate() + daysUntilNext)
-  nextDate.setUTCHours(hours, minutes, 0, 0)
-
-  return nextDate
+  // Calculate target date components in gym's timezone
+  const targetDate = new Date(gymDate.year, gymDate.month - 1, gymDate.day, hours, minutes, 0, 0)
+  targetDate.setDate(targetDate.getDate() + daysUntilNext)
+  
+  const targetYear = targetDate.getFullYear()
+  const targetMonth = targetDate.getMonth() + 1
+  const targetDay = targetDate.getDate()
+  
+  // Create a Date object that represents this moment in the gym's timezone
+  // Method: Create a date string and use timezone offset calculation
+  // We'll find the UTC time that, when formatted in the gym's timezone, gives us our target time
+  
+  // Step 1: Create a date string for our target (as if it were UTC)
+  const dateStr = `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+  let candidateDate = new Date(dateStr + 'Z') // Parse as UTC
+  
+  // Step 2: Calculate the timezone offset for this date in the gym's timezone
+  // The offset is the difference between UTC and the gym's timezone
+  const utcTime = candidateDate.getTime()
+  
+  // Format the candidate date in the gym's timezone to see what time it represents there
+  const tzFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  
+  // Get what time this UTC date represents in the gym's timezone
+  const tzParts = tzFormatter.formatToParts(candidateDate)
+  const tzYear = parseInt(tzParts.find(p => p.type === 'year')!.value)
+  const tzMonth = parseInt(tzParts.find(p => p.type === 'month')!.value)
+  const tzDay = parseInt(tzParts.find(p => p.type === 'day')!.value)
+  const tzHour = parseInt(tzParts.find(p => p.type === 'hour')!.value)
+  const tzMinute = parseInt(tzParts.find(p => p.type === 'minute')!.value)
+  
+  // Calculate the difference between what we want and what we have
+  // Create Date objects for comparison (these are in local time, but we just need the difference)
+  const targetLocal = new Date(targetYear, targetMonth - 1, targetDay, hours, minutes, 0, 0)
+  const tzLocal = new Date(tzYear, tzMonth - 1, tzDay, tzHour, tzMinute, 0, 0)
+  const diffMs = targetLocal.getTime() - tzLocal.getTime()
+  
+  // Adjust the candidate date by the difference
+  candidateDate = new Date(utcTime + diffMs)
+  
+  return candidateDate
 }
 
 /**
  * Calculate which class occurrence a booking attempt was for
  * Returns the class date/time that the attempt was trying to book
+ * Uses gym's timezone for accurate calculations
  * 
  * Logic: If attempt happened at time T, find the class occurrence C where:
  *   T >= (C - booking_window_hours) AND T < C
@@ -280,27 +374,80 @@ function calculateClassOccurrenceFromAttempt(
   // Parse class time
   const [hours, minutes] = classTime.split(':').map(Number)
   
-  // Start from the attempt timestamp and work backwards/forwards to find the matching class
-  // The class must be within [attempt_time, attempt_time + booking_window_hours + 7 days]
+  // Get the attempt time in the gym's timezone
   const attemptTime = new Date(attemptTimestamp)
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  })
+  
+  const attemptParts = formatter.formatToParts(attemptTime)
+  const attemptGymDate = {
+    year: parseInt(attemptParts.find(p => p.type === 'year')!.value),
+    month: parseInt(attemptParts.find(p => p.type === 'month')!.value),
+    day: parseInt(attemptParts.find(p => p.type === 'day')!.value),
+    hour: parseInt(attemptParts.find(p => p.type === 'hour')!.value),
+    minute: parseInt(attemptParts.find(p => p.type === 'minute')!.value),
+  }
+  
+  // Create a date object representing the attempt time in gym's timezone
+  const attemptInGymTz = new Date(attemptGymDate.year, attemptGymDate.month - 1, attemptGymDate.day, attemptGymDate.hour, attemptGymDate.minute)
+  const attemptDayOfWeek = attemptInGymTz.getDay()
   
   // Check the next 14 days (2 weeks) to find which class occurrence this attempt was for
-  for (let daysOffset = 0; daysOffset < 14; daysOffset++) {
-    const candidateDate = new Date(attemptTime)
-    candidateDate.setUTCDate(attemptTime.getUTCDate() + daysOffset)
-    candidateDate.setUTCHours(hours, minutes, 0, 0)
+  // We'll check from the attempt date backwards and forwards
+  for (let daysOffset = -7; daysOffset < 14; daysOffset++) {
+    const candidateDate = new Date(attemptGymDate.year, attemptGymDate.month - 1, attemptGymDate.day, hours, minutes, 0, 0)
+    candidateDate.setDate(candidateDate.getDate() + daysOffset)
     
-    const candidateDayOfWeek = candidateDate.getUTCDay()
+    const candidateDayOfWeek = candidateDate.getDay()
     
     // Check if this date matches the day of week
     if (candidateDayOfWeek === dayOfWeek) {
+      // Calculate the candidate date as a proper Date object in UTC
+      const candidateYear = candidateDate.getFullYear()
+      const candidateMonth = candidateDate.getMonth() + 1
+      const candidateDay = candidateDate.getDate()
+      
+      // Create a Date object representing this moment in the gym's timezone
+      const dateStr = `${candidateYear}-${String(candidateMonth).padStart(2, '0')}-${String(candidateDay).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+      let candidateDateUtc = new Date(dateStr + 'Z')
+      
+      // Adjust for timezone offset (same method as getNextClassDate)
+      const tzFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+      
+      const tzParts = tzFormatter.formatToParts(candidateDateUtc)
+      const tzYear = parseInt(tzParts.find(p => p.type === 'year')!.value)
+      const tzMonth = parseInt(tzParts.find(p => p.type === 'month')!.value)
+      const tzDay = parseInt(tzParts.find(p => p.type === 'day')!.value)
+      const tzHour = parseInt(tzParts.find(p => p.type === 'hour')!.value)
+      const tzMinute = parseInt(tzParts.find(p => p.type === 'minute')!.value)
+      
+      const targetLocal = new Date(candidateYear, candidateMonth - 1, candidateDay, hours, minutes, 0, 0)
+      const tzLocal = new Date(tzYear, tzMonth - 1, tzDay, tzHour, tzMinute, 0, 0)
+      const diffMs = targetLocal.getTime() - tzLocal.getTime()
+      
+      candidateDateUtc = new Date(candidateDateUtc.getTime() + diffMs)
+      
       // Calculate booking window for this class occurrence
-      const bookingWindowOpens = new Date(candidateDate)
-      bookingWindowOpens.setUTCHours(bookingWindowOpens.getUTCHours() - bookingWindowHours)
+      const bookingWindowOpens = new Date(candidateDateUtc.getTime() - (bookingWindowHours * 60 * 60 * 1000))
       
       // Check if attempt timestamp falls within this booking window
-      if (attemptTime >= bookingWindowOpens && attemptTime < candidateDate) {
-        return candidateDate
+      if (attemptTime >= bookingWindowOpens && attemptTime < candidateDateUtc) {
+        return candidateDateUtc
       }
     }
   }
@@ -367,12 +514,16 @@ async function hasSuccessfulBookingForOccurrence(
     
     if (attemptClassDateStr === upcomingClassDateStr) {
       // Found a successful booking for this occurrence
-      // Check if the class time has passed
+      // Check if the class time has passed (both dates are timezone-aware Date objects)
+      // upcomingClassDate is calculated using getNextClassDate which uses gym's timezone
+      // now is the current moment in UTC, but comparison is correct since both are Date objects
       if (now < upcomingClassDate) {
         // Class hasn't passed yet - skip booking
+        console.log(`⏭️  Skipping class - already booked/waitlisted for upcoming occurrence (class time: ${upcomingClassDate.toISOString()}, now: ${now.toISOString()})`)
         return true
       } else {
-        // Class has passed - allow booking for next week
+        // Class has passed - allow booking for next week (reset logic)
+        console.log(`✅ Class time has passed - allowing booking for next week (class time: ${upcomingClassDate.toISOString()}, now: ${now.toISOString()})`)
         return false
       }
     }

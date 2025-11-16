@@ -1,0 +1,557 @@
+# CLAUDE.md
+
+**Project Context Guide for Claude Code**
+
+This document provides Claude with essential context about the My Workout Scheduler project to enable effective assistance with development, debugging, and feature implementation.
+
+---
+
+## Project Overview
+
+**My Workout Scheduler** is a web application that automates class reservations for recurring fitness sessions at YMCA gyms. It eliminates manual booking by using browser automation to reserve classes the instant registration opens.
+
+**Primary Use Case:** Users configure their recurring gym classes (e.g., "Monday 4:15 PM BODYPUMP @ Downtown YMCA") and the system automatically books them when the registration window opens (typically 26 hours before class time).
+
+**MVP Scope:** 5 users, 2-5 classes per user, free tier services (GitHub Actions paid tier exception for frequent scheduling)
+
+---
+
+## Tech Stack
+
+- **Frontend/Backend:** Next.js 14 (App Router) with TypeScript
+- **Styling:** Tailwind CSS
+- **Database & Auth:** Supabase (PostgreSQL + built-in auth)
+- **Automation:** GitHub Actions + Puppeteer (headless Chrome)
+- **Hosting:** Vercel
+- **Notifications:** Resend or SendGrid (planned)
+
+---
+
+## Architecture Overview
+
+### Key Components
+
+1. **Next.js Web Application** (`/app`)
+   - Authentication pages (login/signup)
+   - Protected dashboard with schedule management
+   - Gym credentials storage form
+   - Booking history and status views
+
+2. **Supabase Database**
+   - `users` - Auth (managed by Supabase Auth)
+   - `gym_credentials` - User's gym login info (encrypted)
+   - `recurring_classes` - User's class schedule configuration
+   - `booking_attempts` - Log of all booking attempts and results
+   - `user_settings` - Global settings (pause toggle, etc.)
+
+3. **Automation Scripts** (`/scripts`)
+   - `booking-automation.ts` - Core Puppeteer booking logic
+   - `run-booking-automation.ts` - Main entry point for automation
+   - `database-helpers.ts` - Database query utilities
+   - `test-*.ts` - Various testing scripts
+
+4. **GitHub Actions** (`.github/workflows`)
+   - `booking-automation.yml` - Runs every 15 minutes, triggers booking script
+   - Queries database for classes with open booking windows
+   - Executes Puppeteer scripts in parallel for all due bookings
+
+### Data Flow
+
+```
+User configures schedule
+    ↓
+Next.js → Supabase DB (recurring_classes)
+    ↓
+GitHub Actions (every 15 min) → Query Supabase
+    ↓
+Puppeteer script → Login to gym site → Book class
+    ↓
+Write result → Supabase (booking_attempts)
+    ↓
+Email notification → User
+    ↓
+User views status → Next.js dashboard
+```
+
+---
+
+## Project Structure
+
+```
+my-workout-scheduler/
+├── app/
+│   ├── (auth)/              # Auth pages (login, signup)
+│   │   ├── login/
+│   │   └── signup/
+│   ├── dashboard/           # Protected dashboard
+│   │   ├── page.tsx         # Main dashboard with credentials form
+│   │   └── schedule/        # Schedule management pages
+│   ├── layout.tsx           # Root layout
+│   ├── page.tsx             # Landing page
+│   └── globals.css          # Global styles
+├── components/              # Reusable React components
+├── lib/
+│   ├── supabase/           # Supabase client configuration
+│   │   ├── client.ts       # Browser client
+│   │   ├── server.ts       # Server client
+│   │   └── database.ts     # Database helper functions
+│   ├── database.types.ts   # TypeScript types for database
+│   └── encryption.ts       # AES-256-GCM encryption utilities
+├── scripts/
+│   ├── booking-automation.ts       # Core Puppeteer logic
+│   ├── run-booking-automation.ts   # Main automation entry point
+│   ├── database-helpers.ts         # Database utilities
+│   └── test-*.ts                   # Testing scripts
+├── supabase/
+│   └── migrations/         # SQL migration files
+│       ├── 001_initial_schema.sql
+│       ├── 002_rls_policies.sql
+│       └── 003_schedule_management.sql
+├── .github/
+│   └── workflows/
+│       └── booking-automation.yml  # GitHub Actions workflow
+├── docs/                   # Comprehensive documentation
+│   ├── My Workout Scheduler PRD.md
+│   ├── BOOKING_AUTOMATION.md
+│   ├── GITHUB_ACTIONS_SETUP.md
+│   └── [more docs...]
+└── middleware.ts           # Route protection middleware
+```
+
+---
+
+## Key Files and Their Purpose
+
+### Critical Application Files
+
+- **`app/dashboard/page.tsx`** - Main dashboard with gym credentials form
+- **`app/dashboard/schedule/page.tsx`** - Schedule list view with CRUD operations
+- **`lib/encryption.ts`** - Handles AES-256-GCM encryption for gym credentials
+- **`lib/supabase/database.ts`** - Database query helpers (CRUD operations)
+- **`middleware.ts`** - Protects routes, redirects unauthenticated users to login
+
+### Critical Automation Files
+
+- **`scripts/booking-automation.ts`** - Core booking logic
+  - Login to gym website
+  - Navigate to class schedule
+  - Find target class (fuzzy matching)
+  - Two-step booking flow (class list → description page with checkbox)
+  - Duplicate prevention (checks if already booked/waitlisted)
+  - Booking window detection (verifies window is open)
+  - Error handling and screenshot capture
+
+- **`scripts/run-booking-automation.ts`** - Orchestrates automation
+  - Queries database for classes with open booking windows
+  - Processes users in parallel (<60s total)
+  - Writes results back to database
+
+- **`.github/workflows/booking-automation.yml`** - Scheduler
+  - Runs every 15 minutes: `schedule: - cron: '*/15 * * * *'`
+  - Note: GitHub Actions cron may be unreliable for frequent intervals
+  - Manual triggers work and may help "prime" the schedule
+
+### Database Migrations
+
+- **`001_initial_schema.sql`** - Users, gym_credentials, recurring_classes, booking_attempts
+- **`002_rls_policies.sql`** - Row Level Security policies (users see only their own data)
+- **`003_schedule_management.sql`** - user_settings table (global pause toggle)
+
+---
+
+## Important Concepts
+
+### 1. Encryption Strategy
+
+**Application-level encryption** (NOT database-level):
+- Gym passwords encrypted using AES-256-GCM in Node.js
+- Encryption key stored in environment variable (`ENCRYPTION_KEY`)
+- Key never sent to database (more secure than database-level encryption)
+- Works on free tier (no paid Supabase Vault needed)
+
+**Files:** `lib/encryption.ts`
+
+### 2. Booking Window Logic
+
+Classes book at a specific time before the class starts (e.g., 26 hours prior):
+
+**Example:**
+- Class: Monday 4:15 PM
+- Booking window: 26 hours prior
+- Booking opens: Sunday 2:15 PM
+
+**Window Detection:**
+- Check if "RESERVE" button is disabled
+- Check for tooltip: "Reservation starts at [DATE] at [TIME]"
+- If window not open, skip booking attempt
+
+**Files:** `scripts/booking-automation.ts`
+
+### 3. Two-Step Booking Flow (YMCA Daxko Platform)
+
+**Critical for automation:**
+
+1. **Step 1:** Click "RESERVE" button on class list page
+2. **Step 2:** Navigate to class description page
+3. **Step 3:** Select checkbox next to user's name in "Active Members" section
+4. **Step 4:** Determine if class is full (look for "Accepting Spot in WaitList" text)
+5. **Step 5:** Click final "RESERVE" or "WAITLIST" button
+6. **Step 6:** Wait for confirmation page:
+   - Confirmed: "Now that reservation is complete"
+   - Waitlisted: "Now that you are in waitlist"
+
+**Files:** `scripts/booking-automation.ts`, `docs/YMCA_BOOKING_FLOW_CONFIRMED.md`
+
+### 4. Duplicate Prevention
+
+Before attempting to book, system checks database for existing booking attempts with status "confirmed" or "waitlisted" for the same class occurrence.
+
+**Logic:**
+- Query `booking_attempts` table
+- Filter by `recurring_class_id`, `class_date`, and `status`
+- If found, skip booking (prevents re-booking already secured spots)
+
+**Files:** `scripts/booking-automation.ts:checkIfAlreadyBooked()`
+
+### 5. Fuzzy Matching
+
+Class names on gym website may have minor spelling variations. System uses case-insensitive matching and handles variations.
+
+**Example:**
+- Database: "BODYPUMP"
+- Website: "Body Pump" or "BodyPump"
+- Match: ✓
+
+**Files:** `scripts/booking-automation.ts:findClassElement()`
+
+### 6. Timezone Handling
+
+Each recurring class has a timezone setting (e.g., "America/New_York"). System uses gym's local timezone for all date calculations.
+
+**Critical for accuracy:**
+- Booking window calculations use class timezone
+- Class occurrence dates use class timezone
+- System handles DST transitions
+
+**Files:** `scripts/booking-automation.ts`, uses `date-fns-tz` library
+
+---
+
+## Common Development Tasks
+
+### Adding a New Feature
+
+1. Check if database schema changes needed → Add migration in `supabase/migrations/`
+2. Update TypeScript types in `lib/database.types.ts`
+3. Add UI components in `app/dashboard/`
+4. Add database helpers in `lib/supabase/database.ts`
+5. Test locally with `npm run dev`
+
+### Testing Booking Automation
+
+**Available test scripts:**
+
+```bash
+# Test database query (no booking)
+npm run test:booking-query
+
+# Test database helpers
+npm run test:database-helpers
+
+# Dry-run test (no actual bookings, shows what would happen)
+npm run test:booking-dry-run
+
+# Test single booking (makes real booking!)
+npm run test:single-booking
+
+# Run full automation (makes real bookings!)
+npm run automation:run
+```
+
+**Important:** Always use dry-run tests first!
+
+### Debugging GitHub Actions
+
+1. Check workflow runs: GitHub repo → Actions tab
+2. View logs for specific run
+3. Check screenshots artifact (if booking failed)
+4. Verify secrets are set: Settings → Secrets and variables → Actions
+5. Manual trigger: Actions → booking-automation → Run workflow
+
+**Common issues:**
+- Cron schedule not triggering: Manual trigger may help "prime" it
+- Puppeteer timeout: Check gym website is accessible
+- Login failure: Verify credentials are correct
+
+### Database Operations
+
+**Local development:**
+```bash
+# Test encryption
+npx tsx test-encryption.ts
+```
+
+**Supabase Dashboard:**
+- View data: Database → Table Editor
+- Run SQL: SQL Editor
+- Check logs: Database → Logs
+
+**Migration workflow:**
+1. Write SQL in `supabase/migrations/00X_name.sql`
+2. Run in Supabase Dashboard → SQL Editor
+3. Verify in Table Editor
+4. Update TypeScript types if schema changed
+
+---
+
+## Security Considerations
+
+### Row Level Security (RLS)
+
+**Critical:** All tables (except `users`) have RLS policies ensuring users only see their own data.
+
+**Policy pattern:**
+```sql
+CREATE POLICY "Users can view own records"
+ON table_name FOR SELECT
+USING (auth.uid() = user_id);
+```
+
+**Files:** `supabase/migrations/002_rls_policies.sql`
+
+### Environment Variables
+
+**Local development (`.env.local`):**
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+ENCRYPTION_KEY=...  # Generate with: openssl rand -base64 32
+```
+
+**GitHub Actions secrets:**
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` (NOT anon key!)
+- `ENCRYPTION_KEY` (same as local)
+
+**Vercel environment variables:**
+- Same as local `.env.local`
+- Set in Vercel Dashboard → Settings → Environment Variables
+
+### Credential Storage
+
+**Never commit:**
+- `.env.local` (gitignored)
+- Actual gym credentials
+- Encryption keys
+
+**Always encrypt:**
+- Gym passwords before storing in database
+- Use `lib/encryption.ts` utilities
+
+---
+
+## Known Issues and Gotchas
+
+### GitHub Actions Cron Reliability
+
+**Issue:** Cron schedules may not auto-trigger reliably for frequent intervals (every 15 minutes).
+
+**Workaround:** Manual triggers work and may help "prime" the schedule.
+
+**Long-term solution (backlogged):** Event-driven trigger architecture based on booking window times.
+
+**Reference:** `docs/My Workout Scheduler PRD.md` (section on GitHub Actions)
+
+### Booking Window Edge Cases
+
+**Clock drift:** System clock may differ from gym website clock.
+
+**Mitigation:** Retry logic (6 attempts, 30-second intervals) if booking button not found.
+
+**Files:** `scripts/booking-automation.ts:attemptBooking()`
+
+### Timezone Calculations
+
+**Critical:** Always use the class's timezone for calculations, not system timezone.
+
+**Common mistake:** Using `new Date()` without timezone context.
+
+**Correct approach:** Use `date-fns-tz` library with explicit timezone.
+
+**Files:** `scripts/booking-automation.ts:calculateBookingTime()`
+
+---
+
+## Testing Strategy
+
+### Manual Testing Checklist
+
+1. **Authentication:**
+   - [ ] Sign up new user
+   - [ ] Log in existing user
+   - [ ] Protected routes redirect to login
+   - [ ] Logout works
+
+2. **Gym Credentials:**
+   - [ ] Save credentials (verify encryption)
+   - [ ] Edit credentials
+   - [ ] Password show/hide toggle works
+   - [ ] Password confirmation validation
+
+3. **Schedule Management:**
+   - [ ] Add recurring class
+   - [ ] Edit class
+   - [ ] Delete class (with confirmation)
+   - [ ] Copy class
+   - [ ] Global pause toggle
+   - [ ] Per-class active toggle
+   - [ ] Skip next occurrence
+
+4. **Booking Automation:**
+   - [ ] Dry-run test shows correct classes
+   - [ ] Single booking test succeeds
+   - [ ] Duplicate prevention works
+   - [ ] Fuzzy matching finds classes
+   - [ ] Booking window detection works
+   - [ ] Waitlist handling works
+   - [ ] Screenshots captured on failure
+
+### Automated Testing (Future)
+
+Currently relies on manual testing. Consider adding:
+- Unit tests for utilities (`lib/encryption.ts`, `lib/supabase/database.ts`)
+- Integration tests for booking flow
+- E2E tests for critical user flows
+
+---
+
+## Documentation
+
+**Essential reading:**
+- `README.md` - Quick start and setup
+- `docs/My Workout Scheduler PRD.md` - Full product spec
+- `docs/BOOKING_AUTOMATION.md` - Automation system details
+- `docs/GITHUB_ACTIONS_SETUP.md` - GitHub Actions setup guide
+- `docs/YMCA_BOOKING_FLOW_CONFIRMED.md` - Confirmed booking flow
+
+**Helpful references:**
+- `docs/DATABASE_SETUP.md` - Database setup guide
+- `docs/TESTING_BOOKINGS.md` - Testing instructions
+- `docs/BACKLOG.md` - Future enhancements
+
+---
+
+## Development Guidelines
+
+### Code Style
+
+- TypeScript strict mode enabled
+- Use async/await (not callbacks)
+- Prefer named exports over default exports
+- Use descriptive variable names (avoid abbreviations)
+- Comment complex logic (especially booking flow)
+
+### Git Workflow
+
+- Develop on feature branches: `claude/write-cl-*`
+- Commit messages: Descriptive, present tense (e.g., "Add fuzzy matching for class names")
+- Push to designated branch before creating PR
+
+### Error Handling
+
+- Always catch Puppeteer errors
+- Log errors with context (user ID, class ID, timestamp)
+- Save screenshots on booking failures
+- Write errors to `booking_attempts` table
+- Never swallow errors silently
+
+### Database Queries
+
+- Always use parameterized queries (prevent SQL injection)
+- Filter by `user_id` (enforce RLS in application logic too)
+- Handle null/undefined cases
+- Use TypeScript types for type safety
+
+---
+
+## Quick Reference
+
+### Environment Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Test encryption
+npx tsx test-encryption.ts
+
+# Test booking automation (dry-run)
+npm run test:booking-dry-run
+
+# Run booking automation (real bookings!)
+npm run automation:run
+```
+
+### Database Access
+
+**Supabase Dashboard:**
+- URL: https://supabase.com/dashboard
+- Project: [Your project name]
+
+**Local connection:**
+```typescript
+import { createClient } from '@/lib/supabase/server'
+const supabase = createClient()
+```
+
+### Common Queries
+
+```typescript
+// Get user's recurring classes
+const { data: classes } = await supabase
+  .from('recurring_classes')
+  .select('*')
+  .eq('user_id', userId)
+  .order('day_of_week')
+
+// Get booking attempts for a class
+const { data: attempts } = await supabase
+  .from('booking_attempts')
+  .select('*')
+  .eq('recurring_class_id', classId)
+  .order('attempt_timestamp', { ascending: false })
+
+// Check if class already booked
+const { data: existing } = await supabase
+  .from('booking_attempts')
+  .select('*')
+  .eq('recurring_class_id', classId)
+  .eq('class_date', classDate)
+  .in('status', ['confirmed', 'waitlisted'])
+```
+
+---
+
+## Contact and Support
+
+**Project Owner:** Brock Busby
+**Repository:** https://github.com/beerock/my-workout-scheduler
+
+**For issues:**
+- Check documentation in `docs/`
+- Review logs in Supabase Dashboard or GitHub Actions
+- Check screenshots artifact for booking failures
+
+---
+
+## Version History
+
+- **v1.0** (Initial) - Project setup, auth, schedule management
+- **v1.1** - Booking automation with Puppeteer
+- **v1.2** - GitHub Actions integration, parallel processing
+- **v1.3** - Duplicate prevention, fuzzy matching, booking window detection
+
+**Last Updated:** November 15, 2025
