@@ -554,13 +554,14 @@ export async function getGymCredentials(userId: string): Promise<{
     throw new Error(`Failed to get gym credentials: ${error?.message || 'No data'}`)
   }
 
-  const password = decryptPassword(data.encrypted_password)
+  const typedData = data as any
+  const password = decryptPassword(typedData.encrypted_password)
 
   return {
-    gym_url: data.gym_url,
-    username: data.username,
+    gym_url: typedData.gym_url,
+    username: typedData.username,
     password,
-    default_branch: data.default_branch,
+    default_branch: typedData.default_branch,
   }
 }
 
@@ -591,7 +592,7 @@ export async function createBookingAttempt(
     throw new Error(`Failed to create booking attempt: ${error?.message || 'No data'}`)
   }
 
-  return data.id
+  return (data as any).id
 }
 
 /**
@@ -652,49 +653,55 @@ export async function getClassById(classId: string): Promise<ClassNeedingBooking
     return null
   }
 
+  const typedClassData = classData as any
+
   // Get gym credentials
   const { data: credentials, error: credsError } = await supabase
     .from('gym_credentials')
     .select('user_id, gym_url, username, encrypted_password, default_branch')
-    .eq('user_id', classData.user_id)
+    .eq('user_id', typedClassData.user_id)
     .single()
 
   if (credsError || !credentials) {
     return null
   }
 
+  const typedCredentials = credentials as any
+
   // Get user settings to check if paused
   const { data: settings, error: settingsError } = await supabase
     .from('user_settings')
     .select('schedule_paused')
-    .eq('user_id', classData.user_id)
+    .eq('user_id', typedClassData.user_id)
     .single()
 
   if (settingsError) {
     // Settings might not exist - treat as not paused
-    console.warn(`No settings found for user ${classData.user_id}`)
+    console.warn(`No settings found for user ${typedClassData.user_id}`)
   }
 
+  const typedSettings = settings as any
+
   // If user is paused, return null (don't book)
-  if (settings?.schedule_paused === true) {
+  if (typedSettings?.schedule_paused === true) {
     return null
   }
 
   return {
-    id: classData.id,
-    user_id: classData.user_id,
-    day_of_week: classData.day_of_week,
-    class_time: classData.class_time,
-    class_type: classData.class_type,
-    branch: classData.branch,
-    booking_window_hours: classData.booking_window_hours,
-    timezone: classData.timezone,
-    active: classData.active,
-    next_skip_date: classData.next_skip_date,
-    gym_url: credentials.gym_url,
-    username: credentials.username,
-    encrypted_password: credentials.encrypted_password,
-    default_branch: credentials.default_branch,
+    id: typedClassData.id,
+    user_id: typedClassData.user_id,
+    day_of_week: typedClassData.day_of_week,
+    class_time: typedClassData.class_time,
+    class_type: typedClassData.class_type,
+    branch: typedClassData.branch,
+    booking_window_hours: typedClassData.booking_window_hours,
+    timezone: typedClassData.timezone,
+    active: typedClassData.active,
+    next_skip_date: typedClassData.next_skip_date,
+    gym_url: typedCredentials.gym_url,
+    username: typedCredentials.username,
+    encrypted_password: typedCredentials.encrypted_password,
+    default_branch: typedCredentials.default_branch,
   }
 }
 
