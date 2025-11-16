@@ -9,6 +9,25 @@ import { decryptPassword } from '../lib/encryption'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
+// Type aliases for partial selects
+type GymCredentialsPartial = {
+  user_id: string
+  gym_url: string
+  username: string
+  encrypted_password: string
+  default_branch: string | null
+}
+
+type UserSettingsPartial = {
+  user_id: string
+  schedule_paused: boolean
+}
+
+type BookingAttemptPartial = {
+  attempt_timestamp: string
+  status: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped'
+}
+
 let supabaseClient: SupabaseClient | null = null
 
 /**
@@ -74,7 +93,7 @@ export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]>
   const { data: classes, error: classesError } = await supabase
     .from('recurring_classes')
     .select('*')
-    .eq('active', true)
+    .eq('active', true) as { data: Database['public']['Tables']['recurring_classes']['Row'][] | null, error: any }
 
   if (classesError) {
     throw new Error(`Failed to fetch classes: ${classesError.message}`)
@@ -91,7 +110,7 @@ export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]>
   const { data: credentials, error: credsError } = await supabase
     .from('gym_credentials')
     .select('user_id, gym_url, username, encrypted_password, default_branch')
-    .in('user_id', userIds)
+    .in('user_id', userIds) as { data: GymCredentialsPartial[] | null, error: any }
 
   if (credsError) {
     throw new Error(`Failed to fetch credentials: ${credsError.message}`)
@@ -101,7 +120,7 @@ export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]>
   const { data: settings, error: settingsError } = await supabase
     .from('user_settings')
     .select('user_id, schedule_paused')
-    .in('user_id', userIds)
+    .in('user_id', userIds) as { data: UserSettingsPartial[] | null, error: any }
 
   if (settingsError) {
     throw new Error(`Failed to fetch user settings: ${settingsError.message}`)
@@ -477,8 +496,8 @@ async function hasSuccessfulBookingForOccurrence(
     .select('attempt_timestamp, status')
     .eq('recurring_class_id', recurringClassId)
     .in('status', ['confirmed', 'waitlisted'])
-    .order('attempt_timestamp', { ascending: false })
-  
+    .order('attempt_timestamp', { ascending: false }) as { data: BookingAttemptPartial[] | null, error: any }
+
   if (error) {
     console.error(`Error checking for existing bookings: ${error.message}`)
     // On error, allow booking (fail open)
@@ -548,7 +567,7 @@ export async function getGymCredentials(userId: string): Promise<{
     .from('gym_credentials')
     .select('gym_url, username, encrypted_password, default_branch')
     .eq('user_id', userId)
-    .single()
+    .single() as { data: {gym_url: string, username: string, encrypted_password: string, default_branch: string | null} | null, error: any }
 
   if (error || !data) {
     throw new Error(`Failed to get gym credentials: ${error?.message || 'No data'}`)
@@ -575,15 +594,17 @@ export async function createBookingAttempt(
 ): Promise<string> {
   const supabase = getSupabaseClient()
 
+  const insertData: any = {
+    recurring_class_id: recurringClassId,
+    attempt_timestamp: new Date().toISOString(),
+    status,
+    branch_used: branchUsed,
+    error_message: errorMessage,
+  }
+
   const { data, error } = await supabase
     .from('booking_attempts')
-    .insert({
-      recurring_class_id: recurringClassId,
-      attempt_timestamp: new Date().toISOString(),
-      status,
-      branch_used: branchUsed,
-      error_message: errorMessage,
-    })
+    .insert(insertData)
     .select('id')
     .single()
 
@@ -591,7 +612,7 @@ export async function createBookingAttempt(
     throw new Error(`Failed to create booking attempt: ${error?.message || 'No data'}`)
   }
 
-  return data.id
+  return (data as any).id
 }
 
 /**
@@ -609,6 +630,7 @@ export async function updateBookingAttempt(
 
   const { error } = await supabase
     .from('booking_attempts')
+    // @ts-ignore - Supabase client type inference issue
     .update(updates)
     .eq('id', attemptId)
 
@@ -625,6 +647,7 @@ export async function clearSkipDate(recurringClassId: string): Promise<void> {
 
   const { error } = await supabase
     .from('recurring_classes')
+    // @ts-ignore - Supabase client type inference issue
     .update({ next_skip_date: null })
     .eq('id', recurringClassId)
 
@@ -646,7 +669,7 @@ export async function getClassById(classId: string): Promise<ClassNeedingBooking
     .select('*')
     .eq('id', classId)
     .eq('active', true)
-    .single()
+    .single() as { data: Database['public']['Tables']['recurring_classes']['Row'] | null, error: any }
 
   if (classError || !classData) {
     return null
@@ -657,7 +680,7 @@ export async function getClassById(classId: string): Promise<ClassNeedingBooking
     .from('gym_credentials')
     .select('user_id, gym_url, username, encrypted_password, default_branch')
     .eq('user_id', classData.user_id)
-    .single()
+    .single() as { data: GymCredentialsPartial | null, error: any }
 
   if (credsError || !credentials) {
     return null
@@ -668,7 +691,7 @@ export async function getClassById(classId: string): Promise<ClassNeedingBooking
     .from('user_settings')
     .select('schedule_paused')
     .eq('user_id', classData.user_id)
-    .single()
+    .single() as { data: {schedule_paused: boolean} | null, error: any }
 
   if (settingsError) {
     // Settings might not exist - treat as not paused
@@ -709,7 +732,7 @@ export async function getAllActiveClasses(): Promise<ClassNeedingBooking[]> {
   const { data: classes, error: classesError } = await supabase
     .from('recurring_classes')
     .select('*')
-    .eq('active', true)
+    .eq('active', true) as { data: Database['public']['Tables']['recurring_classes']['Row'][] | null, error: any }
 
   if (classesError || !classes || classes.length === 0) {
     return []
@@ -722,7 +745,7 @@ export async function getAllActiveClasses(): Promise<ClassNeedingBooking[]> {
   const { data: credentials, error: credsError } = await supabase
     .from('gym_credentials')
     .select('user_id, gym_url, username, encrypted_password, default_branch')
-    .in('user_id', userIds)
+    .in('user_id', userIds) as { data: GymCredentialsPartial[] | null, error: any }
 
   if (credsError) {
     throw new Error(`Failed to fetch credentials: ${credsError.message}`)
@@ -732,7 +755,7 @@ export async function getAllActiveClasses(): Promise<ClassNeedingBooking[]> {
   const { data: settings, error: settingsError } = await supabase
     .from('user_settings')
     .select('user_id, schedule_paused')
-    .in('user_id', userIds)
+    .in('user_id', userIds) as { data: UserSettingsPartial[] | null, error: any }
 
   if (settingsError) {
     console.warn(`Failed to fetch user settings: ${settingsError.message}`)
