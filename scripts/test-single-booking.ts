@@ -180,8 +180,12 @@ async function testSingleBooking() {
       delete process.env.PUPPETEER_HEADLESS
     }
 
-    // Keep browser open for inspection
-    process.env.KEEP_BROWSER_OPEN = 'true'
+    // Keep browser open for inspection (only in local development, not in CI)
+    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
+    if (!isCI && !headless) {
+      process.env.KEEP_BROWSER_OPEN = 'true'
+      console.log('🔍 Browser will remain open for inspection after booking\n')
+    }
 
     const bookingResult = await bookClass(bookingParams)
 
