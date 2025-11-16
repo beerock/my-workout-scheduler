@@ -490,7 +490,7 @@ async function hasSuccessfulBookingForOccurrence(
   }
   
   // Check each successful booking attempt to see if it was for the upcoming class occurrence
-  for (const attempt of attempts) {
+  for (const attempt of attempts as any[]) {
     const attemptTimestamp = new Date(attempt.attempt_timestamp)
     
     // Calculate which class occurrence this attempt was for
