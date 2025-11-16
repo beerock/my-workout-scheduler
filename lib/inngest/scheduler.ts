@@ -2,7 +2,7 @@
  * Scheduling helper functions for calculating booking window times
  * Handles timezone conversions to ensure accurate booking triggers
  */
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { inngest } from './client';
 
 /**
@@ -21,7 +21,7 @@ export function calculateBookingWindowOpen(
   timezone: string          // IANA timezone (e.g., "America/New_York")
 ): Date {
   // Get current time in the class's timezone
-  const nowInClassTz = utcToZonedTime(new Date(), timezone);
+  const nowInClassTz = toZonedTime(new Date(), timezone);
   const todayInClassTz = nowInClassTz.getDay(); // 0-6
 
   // Calculate days until next occurrence
@@ -56,7 +56,7 @@ export function calculateBookingWindowOpen(
   );
 
   // Convert to UTC for Inngest (Inngest expects UTC timestamps)
-  return zonedTimeToUtc(bookingWindowOpensInTz, timezone);
+  return fromZonedTime(bookingWindowOpensInTz, timezone);
 }
 
 /**
@@ -68,7 +68,7 @@ export function calculateClassStartTime(
   timezone: string
 ): Date {
   // Get current time in the class's timezone
-  const nowInClassTz = utcToZonedTime(new Date(), timezone);
+  const nowInClassTz = toZonedTime(new Date(), timezone);
   const todayInClassTz = nowInClassTz.getDay();
 
   // Calculate days until class
@@ -95,7 +95,7 @@ export function calculateClassStartTime(
   classDate.setHours(hours, minutes, 0, 0);
 
   // Convert to UTC
-  return zonedTimeToUtc(classDate, timezone);
+  return fromZonedTime(classDate, timezone);
 }
 
 /**
