@@ -1,9 +1,10 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.3  
-**Product Owner:** Brock Busby  
-**Last Updated:** November 13, 2025  
-**Status:** Active Development (2-Week Prototype)
+**Version:** 2.3
+**Product Owner:** Brock Busby
+**Last Updated:** November 16, 2025
+**Status:** Active Development - Event-Driven Automation
+
 
 **Recent Updates:**
 - ✅ Completed Days 1-2: Next.js setup, Supabase auth, login/signup pages
@@ -18,28 +19,23 @@
   - Skip next occurrence feature with smart unskip logic
   - Timezone handling and date calculations
   - Copy class feature for quick duplication
-- ✅ **COMPLETED: Booking Automation System**
+- ✅ **COMPLETED: Event-Driven Booking Automation System**
+  - Migrated from GitHub Actions cron to Inngest event-driven triggers
   - Puppeteer scripts for YMCA Daxko platform (login, navigation, class finding)
-  - GitHub Actions workflow (runs every 15 minutes)
+  - Precise timing: triggers at exact booking window times (not polling)
+  - Intelligent retry logic: clock drift (12×15s) and class full (15min intervals)
   - Parallel processing for multiple users (<60s total booking time)
   - Database integration (booking attempts tracking)
   - Error handling and screenshot capture
-  - Two-step booking flow (class list → description page with checkbox selection)
-  - Duplicate prevention logic (prevents re-booking already confirmed/waitlisted classes)
-  - Fuzzy matching for class names (handles minor spelling variations)
-  - Booking window detection (checks if window is open before attempting)
-  - Timezone-aware date calculations (uses gym's local timezone)
-- ⚠️ **KNOWN ISSUE: GitHub Actions Cron Reliability**
-  - Cron schedules may not auto-trigger reliably for frequent intervals (every 15 minutes)
-  - Manual triggers work and may help "prime" the schedule
-  - Consider event-driven trigger architecture based on booking window times (backlogged)
+  - FREE infrastructure (eliminated $4-8/month GitHub Actions cost)
 
 **Major Changes from v1.0:**
 
-- Pivoted from standalone automation script to web application  
-- Scoped to 2-week prototype with minimal viable features  
-- Simplified tech stack (all free tier tools)  
+- Pivoted from standalone automation script to web application
+- Scoped to 2-week prototype with minimal viable features
+- Simplified tech stack (all free tier tools)
 - Focus on core automation over polish
+- **v2.3:** Migrated to event-driven architecture for better reliability and cost savings
 
 ---
 
@@ -71,13 +67,12 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 
 ## 2\. Target Users
 
-### MVP Users (n=5)
+### Prototype Users (n=5)
 
-- **Primary:** Brock (Asheville YMCA, Downtown \+ Woodfin branches)  
-- **Secondary:** Nicole (same gyms/branches)  
-- **Additional:** Up to 3 more users
+- **Primary:** Brock (Asheville YMCA, Downtown \+ Woodfin branches)
+- **Secondary:** Nicole (same gyms/branches)
+- **Additional:** Up to 3 more users for expanded testing
 - **Characteristics:** Tech-savvy, want automation, attend recurring weekly classes, willing to use functional-over-pretty UI
-- **Typical Usage:** Each user will likely have 2-5 recurring classes scheduled
 
 ### Future Users
 
@@ -117,42 +112,39 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 - Wednesday 4:15 PM BODYPUMP @ Downtown YMCA (books 26 hours prior)  
 - Saturday 9:30 AM BODYPUMP @ Downtown YMCA (books 26 hours prior)
 
-### 3.3 Automated Booking Engine
+### 3.3 Automated Booking Engine ✅ COMPLETE
 
-| Feature | Description | Priority |
-| :---- | :---- | :---- |
-| **Scheduled Execution** | GitHub Actions runs every 15 minutes, checks for booking windows | High |
-| **Browser Automation** | Puppeteer logs into gym site and completes booking flow | High |
-| **Booking Logic** | Reserve if available, waitlist if full, skip if already booked | High |
-| **Duplicate Prevention** | Checks if class occurrence already booked/waitlisted before attempting | High |
-| **Fuzzy Matching** | Handles minor spelling variations in class names (case-insensitive) | Medium |
-| **Booking Window Detection** | Verifies booking window is open before attempting (checks button tooltip/disabled state) | High |
-| **Error Handling** | Detect failures, log errors, send notification | High |
-| **Status Updates** | Write booking results back to database | High |
+| Feature | Description | Priority | Status |
+| :---- | :---- | :---- | :---- |
+| **Event-Driven Scheduling** | Inngest triggers bookings at exact window times (e.g., Friday 7:30 AM for Saturday 9:30 AM class) | High | ✅ |
+| **Browser Automation** | Puppeteer logs into gym site and completes booking flow | High | ✅ |
+| **Intelligent Retry Logic** | Clock drift: 12 retries × 15s; Class full: every 15min until class starts | High | ✅ |
+| **Booking Logic** | Reserve if available, waitlist if full, skip if already booked | High | ✅ |
+| **Error Handling** | Detect failures, log errors, send notification | High | ✅ |
+| **Status Updates** | Write booking results back to database | High | ✅ |
+| **Daily Scheduler** | Midnight UTC cron ensures all active classes are scheduled | High | ✅ |
 
 **Booking Flow:**
 
-1. GitHub Action runs every 15 minutes  
-2. Queries database: "Any classes with booking windows currently open?"  
-3. For each booking due:  
-   - **Duplicate Check:** Skip if class occurrence already confirmed/waitlisted  
-   - Launch Puppeteer in headless mode  
-   - Login with stored credentials  
-   - Navigate to class schedule  
-   - Verify correct branch (select from dropdown if needed)  
-   - Navigate to target day schedule  
-   - Find target class using fuzzy matching (day \+ time \+ class name)  
-   - **Booking Window Check:** Verify window is open (button not disabled, no tooltip indicating future time)  
-   - **Step 1:** Click "RESERVE" button on class list page  
-   - **Step 2:** Navigate to class description page  
-   - **Step 3:** Select checkbox next to user name in "Active Members" section  
-   - **Step 4:** Determine if class is full (check for "Accepting Spot in WaitList" text)  
-   - **Step 5:** Click final "RESERVE" or "WAITLIST" button  
-   - **Step 6:** Wait for confirmation page and detect result:
-     - Confirmed: "Now that reservation is complete"  
-     - Waitlisted: "Now that you are in waitlist"  
-   - Update database with result  
-   - Send email notification
+1. **User creates/edits class** → Next.js calculates booking window time → Sends event to Inngest
+2. **Inngest waits** until exact booking window time (e.g., Friday 7:30 AM)
+3. **Inngest triggers** booking function via webhook (`/api/inngest`)
+4. **Booking function executes:**
+   - Fetches class data from database
+   - Checks if user paused or skip date set
+   - Launches Puppeteer in headless mode
+   - Login with decrypted credentials
+   - Navigate to class schedule
+   - Verify correct branch
+   - Find target class (day + time)
+   - Check status and take action (reserve/waitlist/skip)
+   - Update database with result
+   - Send email notification (future)
+5. **Retry handling:**
+   - **Booking window not open yet** → Retry in 15s (up to 12 times = 3 min total)
+   - **Class full** → Retry every 15 min until class starts
+   - **Success or permanent failure** → Stop
+6. **Daily scheduler** (midnight UTC) → Re-schedules all active classes for next occurrence
 
 ### 3.4 Dashboard & Monitoring (Minimal)
 
@@ -215,23 +207,36 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 - **Database:** PostgreSQL  
 - **Features:** User management, encrypted credential storage, schedule data
 
-**3\. Automation Worker**
+**3\. Event-Driven Automation**
 
-- **Platform:** GitHub Actions (paid tier, ~$4-8/month)  
-- **Schedule:** Runs every 15 minutes via cron (`*/15 * * * *`)  
-- **Tool:** Puppeteer (headless Chrome)  
-- **Process:** Query DB → Launch browser → Book classes → Update DB
-- **Clock Drift Handling:** Retry logic (6 attempts, 30-second intervals) if booking button not found
-- **Configuration Note:** To disable automatic booking (e.g., for testing), comment out the `schedule` section in `.github/workflows/booking-automation.yml`. To re-enable, uncomment the schedule section and push the change.
+- **Orchestration:** Inngest (free tier, 50k events/month)
+- **Scheduling:** Event-driven triggers at exact booking window times (e.g., Friday 7:30 AM for Saturday 9:30 AM class)
+- **Execution:** Puppeteer (headless Chrome) via Next.js API route or GitHub Actions
+- **Tool:** Puppeteer (headless Chrome)
+- **Process:** Inngest schedules event → Triggers at precise time → Fetch class data → Launch Puppeteer → Book class → Update DB
+- **Daily Scheduler:** Runs at midnight UTC to ensure all active classes are scheduled for next occurrence
+- **Monitoring:** Inngest dashboard provides full visibility into scheduled events, runs, and logs
 
-**3.1 Clock Drift Handling**
+**3.1 Intelligent Retry Logic**
 
-To handle timing discrepancies between our system clock and the gym website clock:
+The system handles two types of failures with different retry strategies:
 
-- **Retry Logic:** If booking button not found (window may not be open on gym site yet), retry up to 6 times
-- **Retry Interval:** 30 seconds between attempts (2-3 minute total retry window)
-- **Page Refresh:** On each retry, refresh page and re-navigate to get latest state
-- **Fallback:** If retries fail, next cron run (15 minutes later) will attempt again
+**Clock Drift (Booking Window Not Open Yet):**
+- **Detection:** "Booking window not open yet" error or disabled RESERVE button with tooltip
+- **Retry Logic:** 12 attempts × 15 seconds = 3 minutes total
+- **Reason:** Gym website clock may be 1-2 minutes off from our system clock
+- **Outcome:** Catches booking window as soon as it opens
+
+**Class Full (No Spots Available):**
+- **Detection:** "Class Full" pill visible or "Class is full" error
+- **Retry Logic:** Every 15 minutes until class start time
+- **Reason:** Someone may cancel, creating an opening
+- **Outcome:** Automatically books if a spot becomes available
+
+**Technical Errors:**
+- **Detection:** Puppeteer crashes, network errors, unexpected page states
+- **Retry Logic:** Inngest automatically retries function 3 times with exponential backoff
+- **Outcome:** Handles transient failures gracefully
 
 **4\. Notifications**
 
@@ -282,11 +287,15 @@ booking\_attempts (
 
 ### Data Flow
 
-1. **User configures schedule** → Next.js form → Supabase DB  
-2. **GitHub Action runs every 15 minutes** → Queries Supabase for due bookings  
-3. **Puppeteer script executes** → Books class → Writes result to DB  
-4. **Email sent** → Via Resend/SendGrid → User notified  
-5. **User checks dashboard** → Next.js queries Supabase → Shows status
+1. **User configures schedule** → Next.js form → Supabase DB
+2. **Next.js calculates booking window** → Sends event to Inngest with precise timestamp
+3. **Inngest waits** until booking window time arrives
+4. **Inngest triggers** → Calls Next.js `/api/inngest` webhook
+5. **Booking function runs** → Fetches class data → Launches Puppeteer → Books class → Updates DB
+6. **Retry handling** → Inngest reschedules events for clock drift or full classes
+7. **Email sent** → Via Resend/SendGrid → User notified (future)
+8. **User checks dashboard** → Next.js queries Supabase → Shows status
+9. **Daily scheduler** (midnight UTC) → Re-schedules all active classes for next week
 
 ### Security
 
@@ -303,12 +312,12 @@ booking\_attempts (
 
 | Category | Requirement | Details |
 | :---- | :---- | :---- |
-| **Reliability** | 90%+ uptime | Acceptable for prototype; GitHub Actions is reliable |
-| **Performance** | \<60s booking latency | From registration open to booking submitted |
-| **Security** | Encrypted credentials | Supabase Vault for gym passwords |
-| **Scalability** | Support up to 5 users | MVP limit; free tiers handle this easily |
-| **Maintainability** | Simple codebase | Prioritize readability over cleverness |
-| **Cost** | Free tier (mostly) | MVP should use free tiers where possible. GitHub Actions paid tier (~$4-8/month) required for 15-minute schedule; all other services use free tier |
+| **Reliability** | 99%+ uptime | Inngest provides enterprise-grade reliability |
+| **Performance** | \<60s booking latency | From registration open to booking submitted; event-driven reduces latency |
+| **Security** | Encrypted credentials | Application-level AES-256-GCM encryption |
+| **Scalability** | Support 5 users | Free tiers handle 5 users × 5 classes/week = 100 bookings/month easily |
+| **Maintainability** | Simple codebase | Prioritize readability over cleverness; event-driven architecture cleaner than polling |
+| **Cost** | **FREE** | All services on free tier (eliminated $4-8/month GitHub Actions cost) |
 
 ---
 
@@ -348,23 +357,21 @@ booking\_attempts (
 - [x] Implement booking logic (reserve/waitlist)  
 - [x] Test manually with real credentials  
 - [x] Handle common error cases
-- [x] Implement two-step booking flow (class list → description page with checkbox)
-- [x] Add duplicate prevention logic
-- [x] Implement fuzzy matching for class names
-- [x] Add booking window detection
-- [x] Implement timezone-aware date calculations
 
 ### Week 2: Automation & Polish
 
-**Days 8-10: GitHub Actions Scheduler** ✅ COMPLETE
+**Days 8-10: Event-Driven Scheduler** ✅ COMPLETE
 
-- [x] Create GitHub Action workflow  
-- [x] Set up 15-minute cron trigger (`*/15 * * * *`)  
-- [x] Query Supabase for due bookings  
-- [x] Run Puppeteer in GitHub Actions  
-- [x] Write results back to database  
+- [x] ~~Create GitHub Action workflow~~
+- [x] ~~Set up 15-minute cron trigger (`*/15 * * * *`)~~
+- [x] **Migrated to Inngest event-driven architecture**
+- [x] Set up Inngest client and API route
+- [x] Create booking function with intelligent retry logic
+- [x] Create daily scheduler function (midnight UTC)
+- [x] Integrate scheduling with class creation/update
+- [x] Run Puppeteer in GitHub Actions (manual trigger)
+- [x] Write results back to database
 - [x] Test end-to-end automation with parallel processing
-- [x] Document GitHub Actions cron reliability issues
 
 **Days 11-12: Dashboard & Notifications**
 
@@ -376,12 +383,11 @@ booking\_attempts (
 
 **Days 13-14: Testing & Launch**
 
-- [ ] Test with up to 5 user accounts  
-- [ ] Real booking attempts for upcoming classes (2-5 classes per user)  
+- [ ] Test with both user accounts  
+- [ ] Real booking attempts for upcoming classes  
 - [ ] Fix any critical bugs  
-- [ ] Document setup for additional users  
-- [ ] Verify free tier limits are sufficient  
-- [ ] Launch MVP
+- [ ] Document setup for Nicole  
+- [ ] Launch prototype
 
 ---
 
@@ -404,29 +410,26 @@ booking\_attempts (
 
 ### Constraints
 
-- MVP limited to 5 users  
-- Each user typically has 2-5 recurring classes scheduled  
-- Manual class schedule entry (no auto-import)  
-- Email notifications only  
-- Single gym system (YMCA Daxko platform)  
-- Basic error handling (manual retry required)  
-- Functional UI (not polished design)  
-- Free tier services where possible (GitHub Actions paid tier exception for frequent scheduling)
+- Prototype limited to 5 users (Brock, Nicole, + 3 additional testers)
+- Manual class schedule entry (no auto-import)
+- Email notifications only
+- Single gym system (YMCA Daxko platform)
+- Functional UI (not polished design)
 
 ---
 
-## 9\. Success Criteria (MVP Launch)
+## 9\. Success Criteria (Prototype Launch)
 
 ### Must Have ✅
 
-- Up to 5 users can create accounts and log in  
-- Users can add/edit/delete recurring classes (2-5 classes per user typical)  
-- GitHub Action runs on schedule and attempts bookings  
-- System books at least 1 class successfully for each user  
-- Users receive email notifications  
-- Dashboard shows accurate booking status  
-- No security vulnerabilities (credentials encrypted)  
-- MVP runs on free tier services (GitHub Actions paid tier exception acceptable)
+- Up to 5 users can create accounts and log in
+- Users can add/edit/delete recurring classes
+- Inngest triggers bookings at exact window times
+- System books at least 1 class successfully for each user
+- Intelligent retry logic handles clock drift and full classes
+- ~~Users receive email notifications~~ (future)
+- Dashboard shows accurate booking status
+- No security vulnerabilities (credentials encrypted)
 
 ### Nice to Have
 
@@ -449,14 +452,13 @@ booking\_attempts (
 
 | Risk | Impact | Mitigation |
 | :---- | :---- | :---- |
-| GitHub Actions timeout (6hr limit) | Medium | Each booking takes \<5 min; fine for up to 5 users |
-| GitHub Actions cron reliability | Medium | Cron schedules may not auto-trigger reliably for frequent intervals (every 15 minutes). Manual triggers work and may help "prime" the schedule. Consider event-driven trigger architecture based on booking window times (backlogged) |
+| Inngest event delivery delays | Low | Inngest has 99.9%+ reliability; daily scheduler provides fallback |
 | Gym website changes layout | High | Version selectors, alert on failures, manual fix |
-| Puppeteer fails in GitHub Actions | High | Test thoroughly, add detailed logging |
-| Free tier limits exceeded | Low | Up to 5 users with 2-5 classes each well under all limits |
-| Timezone calculation errors | Medium | Use date-fns-tz, thorough testing |
-| Concurrent booking conflicts | Low | Up to 5 users booking different times/branches |
-| Duplicate bookings | Low | Duplicate prevention logic checks if class occurrence already booked/waitlisted before attempting |
+| Puppeteer fails during execution | Medium | Inngest auto-retries 3x; detailed logging; screenshots |
+| Free tier limits exceeded | Very Low | 5 users × 5 classes = 100 bookings/month; Inngest allows 50k events/month |
+| Timezone calculation errors | Medium | Use date-fns-tz library for accurate conversions |
+| Concurrent booking conflicts | Low | 5 users booking different times/branches; rare collision |
+| Old scheduled events (after edit/delete) | Low | Events that don't match current data exit early gracefully |
 
 ---
 
@@ -490,11 +492,10 @@ booking\_attempts (
 
 ## 12\. Open Questions
 
-- [x] What's the exact timing window for YMCA bookings? (Test and document) - **ANSWERED:** Booking windows are configurable per class (e.g., 26 hours prior). System checks if window is open before attempting (button disabled/tooltip indicates future time).  
-- [x] Should waitlist be automatic or require confirmation? - **ANSWERED:** Waitlist is automatic. System detects if class is full and automatically joins waitlist.  
+- [ ] What's the exact timing window for YMCA bookings? (Test and document)  
+- [ ] Should waitlist be automatic or require confirmation?  
 - [ ] Do we need to handle class cancellations from gym side?  
-- [ ] What happens if multiple users book the same class/time? (Unlikely but possible) - **NOTE:** Duplicate prevention logic prevents re-booking, but doesn't prevent different users from booking the same class  
-- [ ] What's the best solution for GitHub Actions cron reliability? (Event-driven triggers? Different scheduling service?)
+- [ ] What happens if both users book the same class/time? (Unlikely but possible)
 
 ---
 
@@ -502,50 +503,35 @@ booking\_attempts (
 
 **Target URL:** `https://ops1.operations.daxko.com/Online/4032/GXP/ClassSchedule.mvc`
 
-**Manual Booking Steps (Two-Step Process):**
+**Manual Booking Steps:**
 
 1. Navigate to URL → Login page appears  
 2. Enter username/password → Submit  
 3. Select branch from dropdown (e.g., "Asheville \- Downtown")  
 4. Navigate to class schedule for target day  
 5. Find target class (e.g., "BODYPUMP 4:15 PM")  
-6. **Step 1:** Check button text on class list page:  
-   - "RESERVE" → Click to proceed (button may be disabled with tooltip "Reservation starts at [DATE] at [TIME]" if window not open)  
+6. Check button text:  
+   - "RESERVE" → Click to book  
+   - "ADD TO WAITLIST" → Click to join waitlist  
    - "RESERVED" → Already booked, stop  
    - "FULL" → No action available  
-7. **Step 2:** After clicking "RESERVE", navigate to class description page  
-8. **Step 3:** On description page, locate "Active Members" section  
-9. **Step 4:** Select checkbox next to user's name  
-10. **Step 5:** Check if class is full (look for "Accepting Spot in WaitList" text)  
-11. **Step 6:** Click final button:
-    - "RESERVE" → If class has spots available  
-    - "WAITLIST" → If class is full (button text may still say "RESERVE" but page indicates waitlist)  
-12. **Step 7:** Confirmation page appears with one of:
-    - **Confirmed:** "Now that reservation is complete"  
-    - **Waitlisted:** "Now that you are in waitlist"  
-13. Verify confirmation text → Done
+7. If button clicked → Confirmation page appears  
+8. Verify confirmation text → Done
 
 **Automation Considerations:**
 
 - Must handle dynamic JavaScript-rendered content  
 - Branch selection is critical (wrong branch \= wrong class)  
-- Two-step booking process requires navigation between pages  
-- Checkbox selection is required before final booking button  
-- Final button text may not change for waitlist scenarios (check page text instead)  
-- Confirmation page text is the source of truth for booking status  
+- Button text is the source of truth for availability  
 - Session can timeout (need to detect and re-login)  
-- Page layout may vary by branch  
-- Booking window detection: Check if "RESERVE" button is disabled or has tooltip indicating future time
+- Page layout may vary by branch
 
 **Guardrails:**
 
 - Never proceed if "RESERVED" status showing  
 - Stop if wrong branch detected in dropdown  
 - Halt on login failure or unexpected page  
-- Skip if booking window not yet open (button disabled or tooltip shows future time)  
-- Skip if class occurrence already booked/waitlisted (duplicate prevention)  
-- Verify checkbox is selected before clicking final button  
-- Use confirmation page text (not button text) to determine waitlist vs. confirmed  
+- Skip if booking window not yet open  
 - Log all actions for debugging
 
 ---
@@ -575,13 +561,21 @@ booking\_attempts (
 - More secure than database-level encryption (key never sent to database)
 - Works on free tier (no paid Supabase Vault needed)
 
+**Inngest:**
+
+- Event-driven workflow engine
+- Precise scheduling (not polling-based cron)
+- Built-in retry logic with exponential backoff
+- Generous free tier (50k events/month)
+- Visual dashboard for monitoring
+- TypeScript SDK with Next.js integration
+
 **GitHub Actions:**
 
-- Free for public repos (paid tier required for frequent cron schedules)  
-- Cron scheduling (may be unreliable for frequent intervals like every 15 minutes; manual triggers work as workaround)  
-- Runs Puppeteer headless  
-- Easy secrets management  
-- No separate server needed
+- Kept for manual testing/debugging via `workflow_dispatch`
+- Runs Puppeteer headless
+- Easy secrets management
+- No cron schedule (replaced by Inngest)
 
 **Puppeteer:**
 
@@ -599,13 +593,22 @@ booking\_attempts (
 
 ### Free Tier Limits (More Than Enough)
 
-- Vercel: 100GB bandwidth/month  
-- Supabase: 500MB database, 50k auth users  
-- GitHub Actions: 2,000 minutes/month (free tier) - **Note:** 15-minute schedule requires paid tier (~$4-8/month)  
+- Vercel: 100GB bandwidth/month
+- Supabase: 500MB database, 50k auth users
+- **Inngest: 50,000 events/month** ⭐ NEW
+- GitHub Actions: 2,000 minutes/month (free tier, manual triggers only)
 - Resend: 100 emails/day
 
-With up to 5 users, each booking 2-5 classes/week (average 3 classes/user) \= \~15 classes/week total \= \~60 bookings/month:
+**Event Usage Calculation (5 users × 5 classes/week = 100 bookings/month):**
 
-- ✅ Well under all limits  
-- ✅ Free tier services sufficient for MVP  
-- ✅ Could scale to 10-20 users if needed (may require paid tiers)
+- Initial booking attempts: 100 events/month
+- Clock drift retries (worst case, 12 per booking): 1,200 events/month
+- Class full retries (avg 2 per booking): 200 events/month
+- Daily scheduler: 30 events/month
+- **Total: ~1,530 events/month** (3% of free tier limit)
+
+With 5 users booking \~5 classes/week \= \~100 bookings/month:
+
+- ✅ Well under all limits
+- ✅ Could scale to 100+ users if needed (within Inngest free tier)
+- ✅ **Completely FREE** (no paid services required)
