@@ -7,6 +7,9 @@ import puppeteer, { Browser, Page } from 'puppeteer'
 import * as fs from 'fs'
 import * as path from 'path'
 
+// Detect production environment (GitHub Actions)
+const IS_PRODUCTION = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
+
 export type BookingResult = {
   status: 'confirmed' | 'waitlisted' | 'failed' | 'skipped'
   branchUsed: string | null
@@ -967,43 +970,46 @@ async function findAndBookClass(
         fs.mkdirSync(debugDir, { recursive: true })
       }
       
-      const debugFile = path.join(debugDir, `class-list-debug-${Date.now()}.json`)
-      fs.writeFileSync(debugFile, JSON.stringify({
-        searchFor: {
-          classType,
-          classTime,
-          targetTime,
-          targetTime12,
-        },
-        foundClasses: classes,
-        totalClasses: classes.length,
-      }, null, 2))
-      console.log(`💾 Saved class list debug info to: ${debugFile}`)
+      // Save debug files only in development
+      if (!IS_PRODUCTION) {
+        const debugFile = path.join(debugDir, `class-list-debug-${Date.now()}.json`)
+        fs.writeFileSync(debugFile, JSON.stringify({
+          searchFor: {
+            classType,
+            classTime,
+            targetTime,
+            targetTime12,
+          },
+          foundClasses: classes,
+          totalClasses: classes.length,
+        }, null, 2))
+        console.log(`💾 Saved class list debug info to: ${debugFile}`)
 
-      // Also save a sample of the HTML
-      const htmlSample = await page.evaluate(() => {
-        // Try to find the main schedule container
-        const scheduleContainer = document.querySelector('[class*="schedule"], [id*="schedule"], table, [class*="class-list"]') || document.body
-        return scheduleContainer.outerHTML.substring(0, 50000) // First 50KB
-      })
-      const htmlFile = path.join(debugDir, `page-html-sample-${Date.now()}.html`)
-      fs.writeFileSync(htmlFile, htmlSample)
-      console.log(`💾 Saved HTML sample to: ${htmlFile}`)
-
-      // Log summary of found classes
-      console.log(`\n📋 Found ${classes.length} potential class containers`)
-      if (classes.length > 0) {
-        console.log('Sample classes found:')
-        classes.slice(0, 5).forEach((c, i) => {
-          console.log(`  ${i + 1}. ${c.tagName}${c.className ? '.' + c.className.split(' ')[0] : ''}${c.id ? '#' + c.id : ''}`)
-          console.log(`     Text preview: ${c.text.substring(0, 100).replace(/\n/g, ' ')}...`)
-          if (c.timePatterns.length > 0) {
-            console.log(`     Times found: ${c.timePatterns.join(', ')}`)
-          }
-          if (c.classNameMatch) {
-            console.log(`     Class name match: ${c.classNameMatch}`)
-          }
+        // Also save a sample of the HTML
+        const htmlSample = await page.evaluate(() => {
+          // Try to find the main schedule container
+          const scheduleContainer = document.querySelector('[class*="schedule"], [id*="schedule"], table, [class*="class-list"]') || document.body
+          return scheduleContainer.outerHTML.substring(0, 50000) // First 50KB
         })
+        const htmlFile = path.join(debugDir, `page-html-sample-${Date.now()}.html`)
+        fs.writeFileSync(htmlFile, htmlSample)
+        console.log(`💾 Saved HTML sample to: ${htmlFile}`)
+
+        // Log summary of found classes
+        console.log(`\n📋 Found ${classes.length} potential class containers`)
+        if (classes.length > 0) {
+          console.log('Sample classes found:')
+          classes.slice(0, 5).forEach((c, i) => {
+            console.log(`  ${i + 1}. ${c.tagName}${c.className ? '.' + c.className.split(' ')[0] : ''}${c.id ? '#' + c.id : ''}`)
+            console.log(`     Text preview: ${c.text.substring(0, 100).replace(/\n/g, ' ')}...`)
+            if (c.timePatterns.length > 0) {
+              console.log(`     Times found: ${c.timePatterns.join(', ')}`)
+            }
+            if (c.classNameMatch) {
+              console.log(`     Class name match: ${c.classNameMatch}`)
+            }
+          })
+        }
       }
 
       // Find class matching type and time
