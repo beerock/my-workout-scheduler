@@ -17,6 +17,20 @@ import { createBookingAttempt, updateBookingAttempt } from './database-helpers'
 
 dotenv.config({ path: '.env.local' })
 
+// Detect production environment (GitHub Actions)
+const IS_PRODUCTION = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
+
+// Logging utility - verbose in dev, concise in production
+const log = {
+  // Always shown (errors and critical info)
+  error: (...args: any[]) => console.error(...args),
+  success: (...args: any[]) => console.log(...args),
+
+  // Only shown in development
+  info: (...args: any[]) => !IS_PRODUCTION && console.log(...args),
+  debug: (...args: any[]) => !IS_PRODUCTION && console.log(...args),
+}
+
 // Parse command line arguments
 const args = process.argv.slice(2)
 const classId = args.find(arg => !arg.startsWith('--'))
@@ -53,16 +67,16 @@ if (!process.env.ENCRYPTION_KEY) {
 const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey)
 
 async function testSingleBooking() {
-  console.log('🧪 Testing Single Class Booking\n')
-  console.log('='.repeat(60))
-  console.log(`Class ID: ${classId}`)
-  console.log(`Mode: ${isDryRun ? 'DRY RUN (no actual booking)' : 'LIVE (will make real booking)'}`)
-  console.log(`Headless: ${headless ? 'Yes' : 'No (browser visible)'}`)
-  console.log('='.repeat(60) + '\n')
+  log.info('🧪 Testing Single Class Booking\n')
+  log.info('='.repeat(60))
+  log.info(`Class ID: ${classId}`)
+  log.info(`Mode: ${isDryRun ? 'DRY RUN (no actual booking)' : 'LIVE (will make real booking)'}`)
+  log.info(`Headless: ${headless ? 'Yes' : 'No (browser visible)'}`)
+  log.info('='.repeat(60) + '\n')
 
   try {
     // Fetch the class
-    console.log('📋 Fetching class from database...')
+    log.debug('📋 Fetching class from database...')
     const { data: classData, error: classError } = await supabase
       .from('recurring_classes')
       .select('*')
@@ -70,23 +84,21 @@ async function testSingleBooking() {
       .single() as { data: Database['public']['Tables']['recurring_classes']['Row'] | null, error: any }
 
     if (classError || !classData) {
-      console.error('❌ Class not found:', classError?.message || 'No data')
+      log.error('❌ Class not found:', classError?.message || 'No data')
       process.exit(1)
     }
 
-    console.log(`✅ Found class: ${classData.class_type}`)
-    console.log(`   Day: ${getDayName(classData.day_of_week)}, Time: ${classData.class_time}`)
-    console.log(`   Branch: ${classData.branch}`)
-    console.log(`   Active: ${classData.active}`)
-    console.log(`   Skip Date: ${classData.next_skip_date || 'None'}\n`)
+    log.success(`✅ Booking: ${classData.class_type} - ${getDayName(classData.day_of_week)} ${classData.class_time} @ ${classData.branch}`)
+    log.debug(`   Active: ${classData.active}`)
+    log.debug(`   Skip Date: ${classData.next_skip_date || 'None'}\n`)
 
     if (!classData.active) {
-      console.error('❌ Class is not active. Enable it in the dashboard first.')
+      log.error('❌ Class is not active. Enable it in the dashboard first.')
       process.exit(1)
     }
 
     // Check user settings
-    console.log('👤 Checking user settings...')
+    log.debug('👤 Checking user settings...')
     const { data: settings } = await supabase
       .from('user_settings')
       .select('schedule_paused')
@@ -94,12 +106,12 @@ async function testSingleBooking() {
       .single() as { data: {schedule_paused: boolean} | null, error: any }
 
     if (settings?.schedule_paused) {
-      console.error('❌ User schedule is paused. Unpause in the dashboard first.')
+      log.error('❌ User schedule is paused. Unpause in the dashboard first.')
       process.exit(1)
     }
 
     // Get gym credentials
-    console.log('🔐 Fetching gym credentials...')
+    log.debug('🔐 Fetching gym credentials...')
     const { data: credentials, error: credsError } = await supabase
       .from('gym_credentials')
       .select('gym_url, username, encrypted_password, default_branch')
@@ -107,20 +119,20 @@ async function testSingleBooking() {
       .single() as { data: {gym_url: string, username: string, encrypted_password: string, default_branch: string | null} | null, error: any }
 
     if (credsError || !credentials) {
-      console.error('❌ Credentials not found:', credsError?.message || 'No data')
+      log.error('❌ Credentials not found:', credsError?.message || 'No data')
       process.exit(1)
     }
 
-    console.log(`✅ Found credentials for: ${credentials.username}`)
-    console.log(`   Gym URL: ${credentials.gym_url}\n`)
+    log.debug(`✅ Found credentials for: ${credentials.username}`)
+    log.debug(`   Gym URL: ${credentials.gym_url}\n`)
 
     // Decrypt password
     let password: string
     try {
       password = decryptPassword(credentials.encrypted_password)
-      console.log('✅ Password decrypted successfully\n')
+      log.debug('✅ Password decrypted successfully\n')
     } catch (error) {
-      console.error('❌ Password decryption failed:', error)
+      log.error('❌ Password decryption failed:', error)
       process.exit(1)
     }
 
@@ -138,40 +150,38 @@ async function testSingleBooking() {
     }
 
     if (isDryRun) {
-      console.log('⚠️  DRY RUN MODE - No actual booking will be made\n')
-      console.log('Would attempt to:')
-      console.log(`  1. Navigate to: ${bookingParams.gymUrl}`)
-      console.log(`  2. Login as: ${bookingParams.username}`)
-      console.log(`  3. Select branch: ${bookingParams.branch}`)
-      console.log(`  4. Find class: ${bookingParams.classType} at ${bookingParams.classTime}`)
-      console.log(`  5. Click booking button`)
-      console.log('\n✅ Dry-run complete!')
-      console.log('\nTo make a real booking, run without --dry-run flag:')
-      console.log(`  npx tsx scripts/test-single-booking.ts ${classId}`)
+      log.info('⚠️  DRY RUN MODE - No actual booking will be made\n')
+      log.info('Would attempt to:')
+      log.info(`  1. Navigate to: ${bookingParams.gymUrl}`)
+      log.info(`  2. Login as: ${bookingParams.username}`)
+      log.info(`  3. Select branch: ${bookingParams.branch}`)
+      log.info(`  4. Find class: ${bookingParams.classType} at ${bookingParams.classTime}`)
+      log.info(`  5. Click booking button`)
+      log.success('\n✅ Dry-run complete!')
+      log.info('\nTo make a real booking, run without --dry-run flag:')
+      log.info(`  npx tsx scripts/test-single-booking.ts ${classId}`)
       return
     }
 
     // Create booking attempt record
-    console.log('📝 Creating booking attempt record...')
+    log.debug('📝 Creating booking attempt record...')
     let attemptId: string
     try {
       attemptId = await createBookingAttempt(classId!, 'pending', classData.branch)
-      console.log(`✅ Created attempt record: ${attemptId}\n`)
+      log.debug(`✅ Created attempt record: ${attemptId}\n`)
     } catch (error) {
-      console.error('❌ Failed to create attempt record:', error)
+      log.error('❌ Failed to create attempt record:', error)
       process.exit(1)
     }
 
     // Modify booking function to use non-headless if requested
     if (!headless) {
-      console.log('👀 Running in non-headless mode (browser will be visible)\n')
-      // We'll need to modify the bookClass function call
-      // For now, we'll create a wrapper that modifies the launch options
+      log.info('👀 Running in non-headless mode (browser will be visible)\n')
     }
 
     // Execute booking
-    console.log('🚀 Starting booking process...\n')
-    console.log('⚠️  WARNING: This will make a REAL booking on the gym website!\n')
+    log.debug('🚀 Starting booking process...\n')
+    log.debug('⚠️  WARNING: This will make a REAL booking on the gym website!\n')
 
     // Set environment variable to control headless mode
     if (!headless) {
@@ -181,51 +191,52 @@ async function testSingleBooking() {
     }
 
     // Keep browser open for inspection (only in local development, not in CI)
-    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
-    if (!isCI && !headless) {
+    if (!IS_PRODUCTION && !headless) {
       process.env.KEEP_BROWSER_OPEN = 'true'
-      console.log('🔍 Browser will remain open for inspection after booking\n')
+      log.info('🔍 Browser will remain open for inspection after booking\n')
     }
 
     const bookingResult = await bookClass(bookingParams)
 
     // Update attempt record
-    console.log('\n📝 Updating booking attempt record...')
+    log.debug('\n📝 Updating booking attempt record...')
     await updateBookingAttempt(attemptId, {
       status: bookingResult.status,
       branch_used: bookingResult.branchUsed,
       error_message: bookingResult.errorMessage,
     })
 
-    // Display results
-    console.log('\n' + '='.repeat(60))
-    console.log('📊 Booking Result')
-    console.log('='.repeat(60))
-    console.log(`Status: ${bookingResult.status.toUpperCase()}`)
-    console.log(`Branch Used: ${bookingResult.branchUsed || 'N/A'}`)
+    // Display results (always show in production)
+    log.success('\n' + '='.repeat(60))
+    log.success('📊 Booking Result')
+    log.success('='.repeat(60))
+    log.success(`Status: ${bookingResult.status.toUpperCase()}`)
+    log.success(`Branch: ${bookingResult.branchUsed || 'N/A'}`)
     if (bookingResult.errorMessage) {
-      console.log(`Error: ${bookingResult.errorMessage}`)
+      log.error(`Error: ${bookingResult.errorMessage}`)
     }
     if (bookingResult.screenshotPath) {
-      console.log(`Screenshot: ${bookingResult.screenshotPath}`)
+      log.info(`Screenshot: ${bookingResult.screenshotPath}`)
     }
-    console.log('='.repeat(60))
+    log.success('='.repeat(60))
 
     if (bookingResult.status === 'confirmed') {
-      console.log('\n✅ Booking confirmed! Check the gym website to verify.')
+      log.success('\n✅ Booking confirmed!')
     } else if (bookingResult.status === 'waitlisted') {
-      console.log('\n⏳ Added to waitlist. You\'ll be notified if a spot opens.')
+      log.success('\n⏳ Added to waitlist.')
     } else if (bookingResult.status === 'failed') {
-      console.log('\n❌ Booking failed. Check the error message and screenshot above.')
-      console.log('   Review the screenshot to see what went wrong.')
+      log.error('\n❌ Booking failed.')
+      if (bookingResult.screenshotPath) {
+        log.error(`   Screenshot saved: ${bookingResult.screenshotPath}`)
+      }
     }
 
-    console.log('\n💡 Tip: Check the booking_attempts table in Supabase to see the full record.')
+    log.info('\n💡 Tip: Check the booking_attempts table in Supabase to see the full record.')
   } catch (error) {
-    console.error('\n❌ Test failed:', error)
+    log.error('\n❌ Test failed:', error)
     if (error instanceof Error) {
-      console.error('Error message:', error.message)
-      console.error('Stack:', error.stack)
+      log.error('Error message:', error.message)
+      log.debug('Stack:', error.stack)
     }
     process.exit(1)
   }
