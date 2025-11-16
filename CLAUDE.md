@@ -46,9 +46,9 @@ This document provides Claude with essential context about the My Workout Schedu
 2. **Supabase Database**
    - `users` - Auth (managed by Supabase Auth)
    - `gym_credentials` - User's gym login info (encrypted)
-   - `recurring_classes` - User's class schedule configuration
-   - `booking_attempts` - Log of all booking attempts and results
-   - `user_settings` - Global settings (pause toggle, etc.)
+   - `recurring_classes` - User's class schedule configuration (includes `next_skip_date`)
+   - `booking_attempts` - Log of all booking attempts (status: pending, confirmed, waitlisted, failed, skipped)
+   - `user_settings` - Global settings (`schedule_paused` toggle)
 
 3. **Automation Scripts** (`/scripts`)
    - `booking-automation.ts` - Core Puppeteer booking logic
@@ -170,9 +170,9 @@ my-workout-scheduler/
 
 ### Database Migrations
 
-- **`001_initial_schema.sql`** - Users, gym_credentials, recurring_classes, booking_attempts
+- **`001_initial_schema.sql`** - Core tables: gym_credentials, recurring_classes, booking_attempts
 - **`002_rls_policies.sql`** - Row Level Security policies (users see only their own data)
-- **`003_schedule_management.sql`** - user_settings table (global pause toggle)
+- **`003_schedule_management.sql`** - Adds `next_skip_date` field, user_settings table, 'skipped' status
 
 ---
 
@@ -237,7 +237,20 @@ Classes book at a specific time before the class starts (e.g., 26 hours prior):
 
 **Files:** `scripts/booking-automation.ts`, `docs/YMCA_BOOKING_FLOW_CONFIRMED.md`
 
-### 5. Duplicate Prevention
+### 5. Skip Next Occurrence Feature
+
+Users can skip the next single occurrence of a recurring class using the `next_skip_date` field.
+
+**How it works:**
+- User clicks "Skip Next" on a class
+- System calculates next occurrence date and stores in `next_skip_date`
+- Automation skips booking when `class_date` matches `next_skip_date`
+- After skipping, `next_skip_date` is automatically cleared (smart unskip)
+- If booking window already passed, skip is cleared immediately
+
+**Files:** `app/actions/recurring-classes.ts:skipNextOccurrence()`, `scripts/booking-automation.ts`
+
+### 6. Duplicate Prevention
 
 Before attempting to book, system checks database for existing booking attempts with status "confirmed" or "waitlisted" for the same class occurrence.
 
@@ -248,7 +261,7 @@ Before attempting to book, system checks database for existing booking attempts 
 
 **Files:** `scripts/booking-automation.ts:checkIfAlreadyBooked()`
 
-### 6. Fuzzy Matching
+### 7. Fuzzy Matching
 
 Class names on gym website may have minor spelling variations. System uses case-insensitive matching and handles variations.
 
@@ -259,7 +272,7 @@ Class names on gym website may have minor spelling variations. System uses case-
 
 **Files:** `scripts/booking-automation.ts:findClassElement()`
 
-### 7. Timezone Handling
+### 8. Timezone Handling
 
 Each recurring class has a timezone setting (e.g., "America/New_York"). System uses gym's local timezone for all date calculations.
 
@@ -275,6 +288,27 @@ Each recurring class has a timezone setting (e.g., "America/New_York"). System u
 - Arizona Time (MST - No DST), Alaska Time (AKT), Hawaii Time (HST)
 
 **Files:** `lib/date-utils.ts` (primary), `scripts/booking-automation.ts`
+
+---
+
+## Operational Notes
+
+### Enable/Disable Automatic Booking Schedule
+
+**To disable automatic booking (e.g., for testing):**
+1. Edit `.github/workflows/booking-automation.yml`
+2. Comment out the `schedule` section (cron trigger)
+3. Commit and push the change
+4. The workflow will stop running automatically but can still be triggered manually
+
+**To re-enable automatic booking:**
+1. Uncomment the `schedule` section in `.github/workflows/booking-automation.yml`
+2. Commit and push the change
+3. The workflow will resume running every 15 minutes automatically
+
+**Current Status:** Schedule is enabled (runs every 15 minutes automatically)
+
+**Reference:** `docs/BACKLOG.md` for event-driven trigger architecture optimization (future)
 
 ---
 
@@ -592,6 +626,13 @@ const { data: classes } = await supabase
   .eq('user_id', userId)
   .order('day_of_week')
 
+// Get user settings (pause toggle)
+const { data: settings } = await supabase
+  .from('user_settings')
+  .select('*')
+  .eq('user_id', userId)
+  .single()
+
 // Get booking attempts for a class
 const { data: attempts } = await supabase
   .from('booking_attempts')
@@ -606,6 +647,12 @@ const { data: existing } = await supabase
   .eq('recurring_class_id', classId)
   .eq('class_date', classDate)
   .in('status', ['confirmed', 'waitlisted'])
+
+// Skip next occurrence
+await supabase
+  .from('recurring_classes')
+  .update({ next_skip_date: '2025-11-20' })
+  .eq('id', classId)
 ```
 
 ---
