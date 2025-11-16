@@ -147,8 +147,8 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
     
     // Retry logic for clock drift: if booking button not found, retry a few times
     // This handles cases where gym website clock is slightly off from our system clock
-    const maxRetries = 6 // 2-3 minutes of retries (6 × 30 seconds)
-    const retryDelay = 30000 // 30 seconds between retries
+    const maxRetries = 12 // 3 minutes of retries (12 × 15 seconds)
+    const retryDelay = 15000 // 15 seconds between retries
     let bookingResult: {
       status: 'confirmed' | 'waitlisted' | 'failed'
       errorMessage?: string

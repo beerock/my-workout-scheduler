@@ -14,6 +14,7 @@ import type { Database } from '../lib/database.types'
 import { decryptPassword } from '../lib/encryption'
 import { bookClass, type BookingParams } from './booking-automation'
 import { createBookingAttempt, updateBookingAttempt } from './database-helpers'
+import { inngest } from '../lib/inngest/client'
 
 dotenv.config({ path: '.env.local' })
 
@@ -206,6 +207,27 @@ async function testSingleBooking() {
       error_message: bookingResult.errorMessage,
     })
 
+    // Send result event back to Inngest (for retry orchestration)
+    if (process.env.INNGEST_EVENT_KEY) {
+      log.debug('📤 Sending result event to Inngest...')
+      try {
+        await inngest.send({
+          name: 'booking/result',
+          data: {
+            attemptId,
+            classId: classId!,
+            status: bookingResult.status,
+            branchUsed: bookingResult.branchUsed,
+            errorMessage: bookingResult.errorMessage,
+          },
+        })
+        log.debug('✅ Result event sent to Inngest\n')
+      } catch (error) {
+        log.error('⚠️  Failed to send result event to Inngest:', error)
+        // Don't fail the entire booking if event sending fails
+      }
+    }
+
     // Display results (always show in production)
     log.success('\n' + '='.repeat(60))
     log.success('📊 Booking Result')
@@ -238,6 +260,25 @@ async function testSingleBooking() {
       log.error('Error message:', error.message)
       log.debug('Stack:', error.stack)
     }
+
+    // Send failure event to Inngest if we have the attempt ID
+    if (process.env.INNGEST_EVENT_KEY && typeof attemptId !== 'undefined') {
+      try {
+        await inngest.send({
+          name: 'booking/result',
+          data: {
+            attemptId,
+            classId: classId!,
+            status: 'failed' as const,
+            branchUsed: null,
+            errorMessage: error instanceof Error ? error.message : String(error),
+          },
+        })
+      } catch (inngestError) {
+        log.error('⚠️  Failed to send failure event to Inngest:', inngestError)
+      }
+    }
+
     process.exit(1)
   }
 }

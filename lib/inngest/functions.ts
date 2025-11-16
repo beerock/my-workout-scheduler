@@ -12,6 +12,7 @@ import {
   type ClassNeedingBooking,
 } from '@/scripts/database-helpers';
 import { calculateClassStartTime, scheduleBooking } from './scheduler';
+import { differenceInMinutes } from 'date-fns';
 
 /**
  * Main booking function - triggered at exact booking window time
@@ -131,32 +132,99 @@ export const bookClassFunction = inngest.createFunction(
 
     console.log(`[Inngest] Workflow trigger result:`, workflowResult);
 
-    // Step 4: Wait briefly and return
-    // Note: The actual booking happens in GitHub Actions asynchronously
-    // Results will be written directly to Supabase by the GitHub Actions workflow
-    const result = {
-      status: 'pending' as const,
-      message: 'Booking initiated via GitHub Actions',
-    };
+    // Step 4: Wait for booking result from GitHub Actions
+    console.log(`[Inngest] Waiting for booking result...`);
+    const bookingResult = await step.waitForEvent('wait-for-result', {
+      event: 'booking/result',
+      timeout: '5m', // GitHub Actions typically completes in 2-4 minutes
+      match: 'data.attemptId',
+    });
 
-    console.log(
-      `[Inngest] Booking initiated via GitHub Actions for class ${classId}`
-    );
+    if (!bookingResult) {
+      console.log(`[Inngest] ⚠️  Timeout waiting for booking result`);
+      return {
+        classId,
+        attemptId,
+        status: 'timeout',
+        message: 'Timeout waiting for GitHub Actions result',
+      };
+    }
 
-    // Note: GitHub Actions will handle:
-    // - Running Puppeteer automation
-    // - Retrying for clock drift (if needed)
-    // - Writing results to Supabase
-    // - Uploading screenshots
+    const { status, errorMessage } = bookingResult.data;
+    console.log(`[Inngest] Booking result: ${status}`);
+    if (errorMessage) {
+      console.log(`[Inngest] Error message: ${errorMessage}`);
+    }
 
-    // The booking attempt record will be updated by GitHub Actions workflow
-    // when the booking completes
+    // Step 5: Handle retry logic for class full scenarios
+    // If class is full, retry every 15 minutes until class starts
+    if (status === 'failed' && errorMessage?.toLowerCase().includes('full')) {
+      console.log(`[Inngest] Class is full - checking if we should retry...`);
 
+      // Calculate time until class starts
+      const classStartTime = calculateClassStartTime(
+        classData.day_of_week,
+        classData.class_time,
+        classData.timezone
+      );
+      const now = new Date();
+      const minutesUntilClass = differenceInMinutes(classStartTime, now);
+
+      console.log(
+        `[Inngest] Minutes until class starts: ${minutesUntilClass}`
+      );
+
+      // Only retry if:
+      // 1. Class hasn't started yet (minutesUntilClass > 0)
+      // 2. We have at least 15 minutes before class starts
+      // 3. We haven't exceeded max retries (prevent infinite loops)
+      const MAX_RETRIES = 20; // Max 5 hours of retries (20 × 15 min)
+      if (
+        minutesUntilClass > 15 &&
+        attemptNumber < MAX_RETRIES
+      ) {
+        console.log(
+          `[Inngest] Scheduling retry in 15 minutes (attempt #${attemptNumber + 1})`
+        );
+
+        // Sleep for 15 minutes, then trigger another booking attempt
+        await step.sleep('wait-before-retry', '15m');
+
+        await step.run('send-retry-event', async () => {
+          await inngest.send({
+            name: 'booking/attempt',
+            data: {
+              classId,
+              attemptNumber: attemptNumber + 1,
+            },
+          });
+        });
+
+        return {
+          classId,
+          attemptId,
+          status: 'retrying',
+          message: `Class full - scheduled retry #${attemptNumber + 1} in 15 minutes`,
+          nextAttemptNumber: attemptNumber + 1,
+        };
+      } else if (minutesUntilClass <= 15) {
+        console.log(
+          `[Inngest] Not retrying - class starts in ${minutesUntilClass} minutes (too soon)`
+        );
+      } else if (attemptNumber >= MAX_RETRIES) {
+        console.log(
+          `[Inngest] Not retrying - max retries reached (${MAX_RETRIES})`
+        );
+      }
+    }
+
+    // Final result (success, waitlisted, or permanent failure)
     return {
       classId,
       attemptId,
-      message: 'GitHub Actions workflow triggered successfully',
-      workflowTriggered: true,
+      status,
+      errorMessage,
+      message: 'Booking completed',
     };
   }
 );
