@@ -66,8 +66,8 @@ async function testSingleBooking() {
     const { data: classData, error: classError } = await supabase
       .from('recurring_classes')
       .select('*')
-      .eq('id', classId)
-      .single()
+      .eq('id', classId!)
+      .single() as { data: Database['public']['Tables']['recurring_classes']['Row'] | null, error: any }
 
     if (classError || !classData) {
       console.error('❌ Class not found:', classError?.message || 'No data')
@@ -91,7 +91,7 @@ async function testSingleBooking() {
       .from('user_settings')
       .select('schedule_paused')
       .eq('user_id', classData.user_id)
-      .single()
+      .single() as { data: {schedule_paused: boolean} | null, error: any }
 
     if (settings?.schedule_paused) {
       console.error('❌ User schedule is paused. Unpause in the dashboard first.')
@@ -104,7 +104,7 @@ async function testSingleBooking() {
       .from('gym_credentials')
       .select('gym_url, username, encrypted_password, default_branch')
       .eq('user_id', classData.user_id)
-      .single()
+      .single() as { data: {gym_url: string, username: string, encrypted_password: string, default_branch: string | null} | null, error: any }
 
     if (credsError || !credentials) {
       console.error('❌ Credentials not found:', credsError?.message || 'No data')
@@ -133,6 +133,7 @@ async function testSingleBooking() {
       dayOfWeek: classData.day_of_week,
       classTime: classData.class_time,
       classType: classData.class_type,
+      timezone: classData.timezone,
       nextSkipDate: classData.next_skip_date,
     }
 
@@ -154,7 +155,7 @@ async function testSingleBooking() {
     console.log('📝 Creating booking attempt record...')
     let attemptId: string
     try {
-      attemptId = await createBookingAttempt(classId, 'pending', classData.branch)
+      attemptId = await createBookingAttempt(classId!, 'pending', classData.branch)
       console.log(`✅ Created attempt record: ${attemptId}\n`)
     } catch (error) {
       console.error('❌ Failed to create attempt record:', error)
