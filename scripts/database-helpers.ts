@@ -85,7 +85,7 @@ export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]>
   }
 
   // Get unique user IDs
-  const userIds = [...new Set(classes.map((c) => c.user_id))]
+  const userIds = [...new Set(classes.map((c: any) => c.user_id))]
 
   // Get gym credentials for all users
   const { data: credentials, error: credsError } = await supabase
@@ -716,7 +716,7 @@ export async function getAllActiveClasses(): Promise<ClassNeedingBooking[]> {
   }
 
   // Get unique user IDs
-  const userIds = [...new Set(classes.map((c) => c.user_id))]
+  const userIds = [...new Set(classes.map((c: any) => c.user_id))]
 
   // Get gym credentials for all users
   const { data: credentials, error: credsError } = await supabase
