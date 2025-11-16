@@ -14,6 +14,12 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, free tier services (GitHub Actions paid tier exception for frequent scheduling)
 
+**Recent Updates (v1.4):**
+- Fixed timezone-related bugs in booking window and reset logic
+- Centralized all date/time utilities in `lib/date-utils.ts`
+- Refactored form submissions to use Next.js Server Actions
+- Improved local date parsing to prevent UTC offset issues
+
 ---
 
 ## Tech Stack
@@ -83,8 +89,13 @@ my-workout-scheduler/
 │   ├── (auth)/              # Auth pages (login, signup)
 │   │   ├── login/
 │   │   └── signup/
+│   ├── actions/             # Server actions for form submissions
+│   │   ├── gym-credentials.ts      # Gym credential CRUD operations
+│   │   ├── recurring-classes.ts    # Schedule CRUD operations
+│   │   └── user-settings.ts        # User settings operations
 │   ├── dashboard/           # Protected dashboard
-│   │   ├── page.tsx         # Main dashboard with credentials form
+│   │   ├── page.tsx         # Main dashboard landing
+│   │   ├── credentials/     # Gym credentials management
 │   │   └── schedule/        # Schedule management pages
 │   ├── layout.tsx           # Root layout
 │   ├── page.tsx             # Landing page
@@ -96,7 +107,8 @@ my-workout-scheduler/
 │   │   ├── server.ts       # Server client
 │   │   └── database.ts     # Database helper functions
 │   ├── database.types.ts   # TypeScript types for database
-│   └── encryption.ts       # AES-256-GCM encryption utilities
+│   ├── encryption.ts       # AES-256-GCM encryption utilities
+│   └── date-utils.ts       # Date/time calculation utilities
 ├── scripts/
 │   ├── booking-automation.ts       # Core Puppeteer logic
 │   ├── run-booking-automation.ts   # Main automation entry point
@@ -124,9 +136,14 @@ my-workout-scheduler/
 
 ### Critical Application Files
 
-- **`app/dashboard/page.tsx`** - Main dashboard with gym credentials form
+- **`app/dashboard/page.tsx`** - Main dashboard landing page
+- **`app/dashboard/credentials/page.tsx`** - Gym credentials management form
 - **`app/dashboard/schedule/page.tsx`** - Schedule list view with CRUD operations
+- **`app/actions/recurring-classes.ts`** - Server actions for schedule CRUD operations
+- **`app/actions/gym-credentials.ts`** - Server actions for credential management
+- **`app/actions/user-settings.ts`** - Server actions for user settings (pause toggle)
 - **`lib/encryption.ts`** - Handles AES-256-GCM encryption for gym credentials
+- **`lib/date-utils.ts`** - Date/time utilities (booking window calculations, timezone handling)
 - **`lib/supabase/database.ts`** - Database query helpers (CRUD operations)
 - **`middleware.ts`** - Protects routes, redirects unauthenticated users to login
 
@@ -171,7 +188,25 @@ my-workout-scheduler/
 
 **Files:** `lib/encryption.ts`
 
-### 2. Booking Window Logic
+### 2. Date and Time Utilities
+
+**Centralized date/time handling** in `lib/date-utils.ts`:
+- Booking window calculations (`calculateBookingWindowOpen`, `hasBookingWindowOpened`)
+- Next occurrence calculations (`calculateNextOccurrence`)
+- Date formatting utilities (`formatDate`, `formatTime12Hour`)
+- Timezone-aware date comparisons
+- Day name utilities (`getDayName`, `getShortDayName`)
+- Common timezone definitions with DST support
+
+**Critical for consistency:**
+- All date calculations should use utilities from `lib/date-utils.ts`
+- Utilities handle timezone conversions and DST automatically
+- Local date parsing prevents timezone offset issues
+- Always parse YYYY-MM-DD dates as local dates to avoid timezone bugs
+
+**Files:** `lib/date-utils.ts`, used throughout the application
+
+### 3. Booking Window Logic
 
 Classes book at a specific time before the class starts (e.g., 26 hours prior):
 
@@ -185,9 +220,9 @@ Classes book at a specific time before the class starts (e.g., 26 hours prior):
 - Check for tooltip: "Reservation starts at [DATE] at [TIME]"
 - If window not open, skip booking attempt
 
-**Files:** `scripts/booking-automation.ts`
+**Files:** `scripts/booking-automation.ts`, `lib/date-utils.ts:calculateBookingWindowOpen()`
 
-### 3. Two-Step Booking Flow (YMCA Daxko Platform)
+### 4. Two-Step Booking Flow (YMCA Daxko Platform)
 
 **Critical for automation:**
 
@@ -202,7 +237,7 @@ Classes book at a specific time before the class starts (e.g., 26 hours prior):
 
 **Files:** `scripts/booking-automation.ts`, `docs/YMCA_BOOKING_FLOW_CONFIRMED.md`
 
-### 4. Duplicate Prevention
+### 5. Duplicate Prevention
 
 Before attempting to book, system checks database for existing booking attempts with status "confirmed" or "waitlisted" for the same class occurrence.
 
@@ -213,7 +248,7 @@ Before attempting to book, system checks database for existing booking attempts 
 
 **Files:** `scripts/booking-automation.ts:checkIfAlreadyBooked()`
 
-### 5. Fuzzy Matching
+### 6. Fuzzy Matching
 
 Class names on gym website may have minor spelling variations. System uses case-insensitive matching and handles variations.
 
@@ -224,16 +259,22 @@ Class names on gym website may have minor spelling variations. System uses case-
 
 **Files:** `scripts/booking-automation.ts:findClassElement()`
 
-### 6. Timezone Handling
+### 7. Timezone Handling
 
 Each recurring class has a timezone setting (e.g., "America/New_York"). System uses gym's local timezone for all date calculations.
 
 **Critical for accuracy:**
 - Booking window calculations use class timezone
 - Class occurrence dates use class timezone
-- System handles DST transitions
+- System handles DST transitions automatically
+- Uses IANA timezone identifiers (e.g., "America/New_York")
+- Date utilities parse YYYY-MM-DD strings as local dates to prevent timezone offset bugs
 
-**Files:** `scripts/booking-automation.ts`, uses `date-fns-tz` library
+**Common timezones available:**
+- Eastern Time (ET), Central Time (CT), Mountain Time (MT), Pacific Time (PT)
+- Arizona Time (MST - No DST), Alaska Time (AKT), Hawaii Time (HST)
+
+**Files:** `lib/date-utils.ts` (primary), `scripts/booking-automation.ts`
 
 ---
 
@@ -374,11 +415,17 @@ ENCRYPTION_KEY=...  # Generate with: openssl rand -base64 32
 
 **Critical:** Always use the class's timezone for calculations, not system timezone.
 
-**Common mistake:** Using `new Date()` without timezone context.
+**Common mistakes:**
+- Using `new Date()` without timezone context
+- Parsing YYYY-MM-DD dates as UTC (causes off-by-one-day bugs)
+- Not accounting for DST transitions
 
-**Correct approach:** Use `date-fns-tz` library with explicit timezone.
+**Correct approach:**
+- Use utilities from `lib/date-utils.ts` for all date/time calculations
+- Parse YYYY-MM-DD dates as local dates: `new Date(year, month - 1, day)`
+- Use IANA timezone identifiers for automatic DST handling
 
-**Files:** `scripts/booking-automation.ts:calculateBookingTime()`
+**Files:** `lib/date-utils.ts`, `scripts/booking-automation.ts`
 
 ---
 
@@ -450,6 +497,34 @@ Currently relies on manual testing. Consider adding:
 - Prefer named exports over default exports
 - Use descriptive variable names (avoid abbreviations)
 - Comment complex logic (especially booking flow)
+
+### Server Actions Pattern
+
+**All form submissions use Next.js Server Actions** (`app/actions/`):
+- Mark functions with `'use server'` directive
+- Return structured results: `{ success: boolean, error?: string, ... }`
+- Validate authentication before any operation
+- Revalidate paths after mutations (`revalidatePath`)
+- Use TypeScript types for form data and results
+
+**Example pattern:**
+```typescript
+'use server'
+import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+
+export async function saveData(data: FormData): Promise<Result> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  // Perform operation...
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+```
+
+**Files:** `app/actions/recurring-classes.ts`, `app/actions/gym-credentials.ts`, `app/actions/user-settings.ts`
 
 ### Git Workflow
 
@@ -553,5 +628,6 @@ const { data: existing } = await supabase
 - **v1.1** - Booking automation with Puppeteer
 - **v1.2** - GitHub Actions integration, parallel processing
 - **v1.3** - Duplicate prevention, fuzzy matching, booking window detection
+- **v1.4** - Timezone bug fixes, centralized date utilities, server actions refactor
 
-**Last Updated:** November 15, 2025
+**Last Updated:** November 16, 2025
