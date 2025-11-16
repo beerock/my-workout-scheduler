@@ -81,18 +81,18 @@ npx inngest-cli@latest dev
 
 This will:
 - Start a local dev server on http://localhost:8288
-- Automatically generate a development Signing Key for you
-- Show you the key in the terminal output
+- Show output like: "Inngest Dev Server online at 0.0.0.0:8288"
 
-Look for output like this:
+You should see output similar to:
 ```
-✓ Dev server online at http://localhost:8288
-✓ Signing key: signkey-dev-abc123...
+[INFO] starting server addr=0.0.0.0:8288
+Inngest Dev Server online at 0.0.0.0:8288
+- http://127.0.0.1:8288 (http://localhost:8288)
 ```
-
-**Copy the Signing Key** (the part that starts with `signkey-dev-`)
 
 **Keep this terminal window open** - you'll need the dev server running.
+
+**Note:** The newer versions of Inngest CLI don't display the signing key in the terminal. We'll use the standard dev key in the next step.
 
 ---
 
@@ -105,17 +105,18 @@ Look for output like this:
 # Inngest Event Key (from Step 3)
 INNGEST_EVENT_KEY=paste_your_event_key_here
 
-# Inngest Signing Key (from Step 4.2)
-INNGEST_SIGNING_KEY=paste_your_signing_key_here
+# Inngest Signing Key (standard dev key for local development)
+INNGEST_SIGNING_KEY=signkey-dev-00000000000000000000000000000000000000000000
 ```
 
-3. Replace the placeholder values with your actual keys
-4. Save the file
+3. Replace `paste_your_event_key_here` with your actual Event Key from Step 3
+4. Keep the Signing Key exactly as shown above (this is the standard dev key)
+5. Save the file
 
 **Example `.env.local` file:**
 ```bash
 INNGEST_EVENT_KEY=a1b2c3d4-e5f6-7890-abcd-ef1234567890
-INNGEST_SIGNING_KEY=signkey-dev-a1b2c3d4e5f67890abcdef1234567890
+INNGEST_SIGNING_KEY=signkey-dev-00000000000000000000000000000000000000000000
 ```
 
 **Verify `.env.local` is in `.gitignore`:**
@@ -365,6 +366,11 @@ Now connect Inngest to your production deployment:
 - Check if port 8288 is already in use: `lsof -i :8288`
 - Kill any process using that port: `kill -9 <PID>`
 - Try running again: `npx inngest-cli@latest dev`
+
+### "I don't see the Signing Key in the dev server output"
+- This is normal! Newer versions of Inngest CLI don't display the signing key
+- Use the standard dev key shown in Step 5: `signkey-dev-00000000000000000000000000000000000000000000`
+- This key works for all local development with the Inngest dev server
 
 ### "Functions not showing in Dev UI"
 - Make sure both Inngest dev server AND Next.js dev server are running
