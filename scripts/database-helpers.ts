@@ -121,7 +121,7 @@ export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]>
   // Filter classes that need booking
   const classesNeedingBooking: ClassNeedingBooking[] = []
 
-  for (const classItem of classes) {
+  for (const classItem of classes as any[]) {
     // Check if user has credentials
     const credentials = credentialsMap.get(classItem.user_id)
     if (!credentials) {
@@ -749,7 +749,7 @@ export async function getAllActiveClasses(): Promise<ClassNeedingBooking[]> {
   // Build result array
   const result: ClassNeedingBooking[] = []
 
-  for (const classItem of classes) {
+  for (const classItem of classes as any[]) {
     // Check if user has credentials
     const creds = credentialsMap.get(classItem.user_id)
     if (!creds) {
