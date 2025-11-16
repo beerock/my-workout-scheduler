@@ -584,7 +584,7 @@ export async function createBookingAttempt(
       status,
       branch_used: branchUsed,
       error_message: errorMessage,
-    })
+    } as any)
     .select('id')
     .single()
 
@@ -610,7 +610,7 @@ export async function updateBookingAttempt(
 
   const { error } = await supabase
     .from('booking_attempts')
-    .update(updates)
+    .update(updates as any)
     .eq('id', attemptId)
 
   if (error) {
@@ -626,7 +626,7 @@ export async function clearSkipDate(recurringClassId: string): Promise<void> {
 
   const { error } = await supabase
     .from('recurring_classes')
-    .update({ next_skip_date: null })
+    .update({ next_skip_date: null } as any)
     .eq('id', recurringClassId)
 
   if (error) {
