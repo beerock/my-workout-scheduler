@@ -1,15 +1,13 @@
 name: Booking Automation
 
 on:
-  # REMOVED: Cron schedule (replaced with Inngest event-driven triggers)
-  # The booking automation is now triggered by Inngest at precise times
-  # when each class's booking window opens (e.g., Friday 7:30 AM for Saturday 9:30 AM class)
-  #
-  # Old schedule (for reference):
-  # schedule:
-  #   - cron: '*/15 * * * *'  # Every 15 minutes
-
-  workflow_dispatch: # Allow manual triggering for testing/debugging
+  # Triggered by Inngest when booking window opens
+  workflow_dispatch:
+    inputs:
+      class_id:
+        description: 'Class ID to book (if not provided, books all classes)'
+        required: false
+        type: string
 
 jobs:
   book-classes:
@@ -32,7 +30,16 @@ jobs:
       - name: Install Puppeteer browsers
         run: npx puppeteer browsers install chrome
 
-      - name: Run booking automation
+      - name: Run booking automation (single class)
+        if: ${{ inputs.class_id != '' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: npx tsx scripts/test-single-booking.ts ${{ inputs.class_id }}
+
+      - name: Run booking automation (all classes)
+        if: ${{ inputs.class_id == '' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -53,7 +60,12 @@ jobs:
         run: |
           echo "## Booking Automation Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Automation completed" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ inputs.class_id }}" ]; then
+            echo "✅ Single class booking completed (ID: ${{ inputs.class_id }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Automation completed for all classes" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Check the logs above for detailed results." >> $GITHUB_STEP_SUMMARY
+
 
