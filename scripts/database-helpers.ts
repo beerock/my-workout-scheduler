@@ -109,10 +109,10 @@ export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]>
 
   // Create lookup maps
   const credentialsMap = new Map(
-    (credentials || []).map((c) => [c.user_id, c])
+    (credentials || []).map((c: any) => [c.user_id, c])
   )
   const settingsMap = new Map(
-    (settings || []).map((s) => [s.user_id, s])
+    (settings || []).map((s: any) => [s.user_id, s])
   )
 
   // Get today's date in UTC (YYYY-MM-DD format)
@@ -740,10 +740,10 @@ export async function getAllActiveClasses(): Promise<ClassNeedingBooking[]> {
 
   // Create lookup maps
   const credentialsMap = new Map(
-    (credentials || []).map((c) => [c.user_id, c])
+    (credentials || []).map((c: any) => [c.user_id, c])
   )
   const settingsMap = new Map(
-    (settings || []).map((s) => [s.user_id, s])
+    (settings || []).map((s: any) => [s.user_id, s])
   )
 
   // Build result array
