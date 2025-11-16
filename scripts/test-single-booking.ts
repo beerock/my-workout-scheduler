@@ -75,6 +75,8 @@ async function testSingleBooking() {
   log.info(`Headless: ${headless ? 'Yes' : 'No (browser visible)'}`)
   log.info('='.repeat(60) + '\n')
 
+  let attemptId: string | undefined
+
   try {
     // Fetch the class
     log.debug('📋 Fetching class from database...')
@@ -166,7 +168,6 @@ async function testSingleBooking() {
 
     // Create booking attempt record
     log.debug('📝 Creating booking attempt record...')
-    let attemptId: string
     try {
       attemptId = await createBookingAttempt(classId!, 'pending', classData.branch)
       log.debug(`✅ Created attempt record: ${attemptId}\n`)
