@@ -123,14 +123,14 @@ export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]>
 
   for (const classItem of classes as any[]) {
     // Check if user has credentials
-    const credentials = credentialsMap.get(classItem.user_id)
+    const credentials = credentialsMap.get(classItem.user_id) as any
     if (!credentials) {
       console.warn(`No credentials found for user ${classItem.user_id}, class ${classItem.id}`)
       continue
     }
 
     // Check if user is paused
-    const userSettings = settingsMap.get(classItem.user_id)
+    const userSettings = settingsMap.get(classItem.user_id) as any
     if (userSettings?.schedule_paused === true) {
       continue
     }
@@ -758,14 +758,14 @@ export async function getAllActiveClasses(): Promise<ClassNeedingBooking[]> {
 
   for (const classItem of classes as any[]) {
     // Check if user has credentials
-    const creds = credentialsMap.get(classItem.user_id)
+    const creds = credentialsMap.get(classItem.user_id) as any
     if (!creds) {
       console.warn(`No credentials found for user ${classItem.user_id}, class ${classItem.id}`)
       continue
     }
 
     // Check if user is paused
-    const userSettings = settingsMap.get(classItem.user_id)
+    const userSettings = settingsMap.get(classItem.user_id) as any
     if (userSettings?.schedule_paused === true) {
       continue
     }
