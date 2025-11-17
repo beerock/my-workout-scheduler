@@ -12,7 +12,17 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **Primary Use Case:** Users configure their recurring gym classes (e.g., "Monday 4:15 PM BODYPUMP @ Downtown YMCA") and the system automatically books them when the registration window opens (typically 26 hours before class time).
 
-**MVP Scope:** 5 users, 2-5 classes per user, free tier services (GitHub Actions paid tier exception for frequent scheduling)
+**MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
+
+**Recent Updates (v2.0):**
+- **Migrated to Inngest event-driven architecture** (from GitHub Actions cron)
+- Precise timing: triggers at exact booking window times (no polling)
+- Intelligent retry logic: clock drift (12×15s) and class full (15min intervals)
+- Daily scheduler (midnight UTC) ensures all classes are scheduled
+- FREE infrastructure (eliminated $4-8/month GitHub Actions cost)
+- Fixed timezone-related bugs in booking window and reset logic
+- Centralized all date/time utilities in `lib/date-utils.ts`
+- Refactored form submissions to use Next.js Server Actions
 
 ---
 
@@ -21,7 +31,8 @@ This document provides Claude with essential context about the My Workout Schedu
 - **Frontend/Backend:** Next.js 14 (App Router) with TypeScript
 - **Styling:** Tailwind CSS
 - **Database & Auth:** Supabase (PostgreSQL + built-in auth)
-- **Automation:** GitHub Actions + Puppeteer (headless Chrome)
+- **Automation:** Inngest (event-driven orchestration) + Puppeteer (headless Chrome)
+- **Date/Time:** date-fns and date-fns-tz for timezone handling
 - **Hosting:** Vercel
 - **Notifications:** Resend or SendGrid (planned)
 
@@ -40,37 +51,42 @@ This document provides Claude with essential context about the My Workout Schedu
 2. **Supabase Database**
    - `users` - Auth (managed by Supabase Auth)
    - `gym_credentials` - User's gym login info (encrypted)
-   - `recurring_classes` - User's class schedule configuration
-   - `booking_attempts` - Log of all booking attempts and results
-   - `user_settings` - Global settings (pause toggle, etc.)
+   - `recurring_classes` - User's class schedule configuration (includes `next_skip_date`)
+   - `booking_attempts` - Log of all booking attempts (status: pending, confirmed, waitlisted, failed, skipped)
+   - `user_settings` - Global settings (`schedule_paused` toggle)
 
-3. **Automation Scripts** (`/scripts`)
-   - `booking-automation.ts` - Core Puppeteer booking logic
-   - `run-booking-automation.ts` - Main entry point for automation
-   - `database-helpers.ts` - Database query utilities
+3. **Inngest Functions** (`/inngest`)
+   - `bookClass.ts` - Core booking function with intelligent retry logic
+   - `scheduleBookings.ts` - Daily scheduler (midnight UTC) for all active classes
+   - Event-driven: triggers at exact booking window times
+
+4. **Legacy Scripts** (`/scripts`)
+   - `booking-automation.ts` - Core Puppeteer booking logic (still used by Inngest)
    - `test-*.ts` - Various testing scripts
-
-4. **GitHub Actions** (`.github/workflows`)
-   - `booking-automation.yml` - Runs every 15 minutes, triggers booking script
-   - Queries database for classes with open booking windows
-   - Executes Puppeteer scripts in parallel for all due bookings
+   - GitHub Actions kept for manual testing via `workflow_dispatch`
 
 ### Data Flow
 
 ```
 User configures schedule
     ↓
-Next.js → Supabase DB (recurring_classes)
+Next.js calculates booking window → Sends event to Inngest
     ↓
-GitHub Actions (every 15 min) → Query Supabase
+Inngest waits until exact booking window time
     ↓
-Puppeteer script → Login to gym site → Book class
+Inngest triggers → Calls /api/inngest webhook
+    ↓
+Booking function → Fetch class data → Launch Puppeteer
+    ↓
+Puppeteer → Login to gym site → Book class
     ↓
 Write result → Supabase (booking_attempts)
     ↓
-Email notification → User
+Email notification → User (planned)
     ↓
 User views status → Next.js dashboard
+    ↓
+Daily scheduler (midnight UTC) → Re-schedules all active classes
 ```
 
 ---
@@ -83,8 +99,15 @@ my-workout-scheduler/
 │   ├── (auth)/              # Auth pages (login, signup)
 │   │   ├── login/
 │   │   └── signup/
+│   ├── actions/             # Server actions for form submissions
+│   │   ├── gym-credentials.ts      # Gym credential CRUD operations
+│   │   ├── recurring-classes.ts    # Schedule CRUD operations
+│   │   └── user-settings.ts        # User settings operations
+│   ├── api/
+│   │   └── inngest/         # Inngest webhook endpoint
 │   ├── dashboard/           # Protected dashboard
-│   │   ├── page.tsx         # Main dashboard with credentials form
+│   │   ├── page.tsx         # Main dashboard landing
+│   │   ├── credentials/     # Gym credentials management
 │   │   └── schedule/        # Schedule management pages
 │   ├── layout.tsx           # Root layout
 │   ├── page.tsx             # Landing page
@@ -96,11 +119,14 @@ my-workout-scheduler/
 │   │   ├── server.ts       # Server client
 │   │   └── database.ts     # Database helper functions
 │   ├── database.types.ts   # TypeScript types for database
-│   └── encryption.ts       # AES-256-GCM encryption utilities
+│   ├── encryption.ts       # AES-256-GCM encryption utilities
+│   └── date-utils.ts       # Date/time calculation utilities
+├── inngest/
+│   ├── bookClass.ts        # Core booking function with retry logic
+│   ├── scheduleBookings.ts # Daily scheduler (midnight UTC)
+│   └── client.ts           # Inngest client configuration
 ├── scripts/
-│   ├── booking-automation.ts       # Core Puppeteer logic
-│   ├── run-booking-automation.ts   # Main automation entry point
-│   ├── database-helpers.ts         # Database utilities
+│   ├── booking-automation.ts       # Core Puppeteer logic (used by Inngest)
 │   └── test-*.ts                   # Testing scripts
 ├── supabase/
 │   └── migrations/         # SQL migration files
@@ -109,7 +135,7 @@ my-workout-scheduler/
 │       └── 003_schedule_management.sql
 ├── .github/
 │   └── workflows/
-│       └── booking-automation.yml  # GitHub Actions workflow
+│       └── booking-automation.yml  # Manual testing only (no cron)
 ├── docs/                   # Comprehensive documentation
 │   ├── My Workout Scheduler PRD.md
 │   ├── BOOKING_AUTOMATION.md
@@ -124,15 +150,35 @@ my-workout-scheduler/
 
 ### Critical Application Files
 
-- **`app/dashboard/page.tsx`** - Main dashboard with gym credentials form
+- **`app/dashboard/page.tsx`** - Main dashboard landing page
+- **`app/dashboard/credentials/page.tsx`** - Gym credentials management form
 - **`app/dashboard/schedule/page.tsx`** - Schedule list view with CRUD operations
+- **`app/actions/recurring-classes.ts`** - Server actions for schedule CRUD operations
+- **`app/actions/gym-credentials.ts`** - Server actions for credential management
+- **`app/actions/user-settings.ts`** - Server actions for user settings (pause toggle)
 - **`lib/encryption.ts`** - Handles AES-256-GCM encryption for gym credentials
+- **`lib/date-utils.ts`** - Date/time utilities (booking window calculations, timezone handling)
 - **`lib/supabase/database.ts`** - Database query helpers (CRUD operations)
 - **`middleware.ts`** - Protects routes, redirects unauthenticated users to login
 
 ### Critical Automation Files
 
-- **`scripts/booking-automation.ts`** - Core booking logic
+- **`inngest/bookClass.ts`** - Event-driven booking function
+  - Triggered by Inngest at exact booking window time
+  - Fetches class data and validates skip/pause status
+  - Calls Puppeteer automation script
+  - Intelligent retry logic:
+    - Clock drift: 12 retries × 15s (booking window not open yet)
+    - Class full: retry every 15min until class starts
+  - Updates database with results
+
+- **`inngest/scheduleBookings.ts`** - Daily scheduler
+  - Runs at midnight UTC via Inngest cron
+  - Queries all active recurring classes
+  - Schedules booking events for next occurrence
+  - Ensures no classes are missed
+
+- **`scripts/booking-automation.ts`** - Core Puppeteer logic
   - Login to gym website
   - Navigate to class schedule
   - Find target class (fuzzy matching)
@@ -141,21 +187,16 @@ my-workout-scheduler/
   - Booking window detection (verifies window is open)
   - Error handling and screenshot capture
 
-- **`scripts/run-booking-automation.ts`** - Orchestrates automation
-  - Queries database for classes with open booking windows
-  - Processes users in parallel (<60s total)
-  - Writes results back to database
-
-- **`.github/workflows/booking-automation.yml`** - Scheduler
-  - Runs every 15 minutes: `schedule: - cron: '*/15 * * * *'`
-  - Note: GitHub Actions cron may be unreliable for frequent intervals
-  - Manual triggers work and may help "prime" the schedule
+- **`app/api/inngest/route.ts`** - Inngest webhook endpoint
+  - Receives event triggers from Inngest
+  - Executes booking and scheduler functions
+  - Returns results to Inngest for logging/monitoring
 
 ### Database Migrations
 
-- **`001_initial_schema.sql`** - Users, gym_credentials, recurring_classes, booking_attempts
+- **`001_initial_schema.sql`** - Core tables: gym_credentials, recurring_classes, booking_attempts
 - **`002_rls_policies.sql`** - Row Level Security policies (users see only their own data)
-- **`003_schedule_management.sql`** - user_settings table (global pause toggle)
+- **`003_schedule_management.sql`** - Adds `next_skip_date` field, user_settings table, 'skipped' status
 
 ---
 
@@ -171,7 +212,25 @@ my-workout-scheduler/
 
 **Files:** `lib/encryption.ts`
 
-### 2. Booking Window Logic
+### 2. Date and Time Utilities
+
+**Centralized date/time handling** in `lib/date-utils.ts`:
+- Booking window calculations (`calculateBookingWindowOpen`, `hasBookingWindowOpened`)
+- Next occurrence calculations (`calculateNextOccurrence`)
+- Date formatting utilities (`formatDate`, `formatTime12Hour`)
+- Timezone-aware date comparisons
+- Day name utilities (`getDayName`, `getShortDayName`)
+- Common timezone definitions with DST support
+
+**Critical for consistency:**
+- All date calculations should use utilities from `lib/date-utils.ts`
+- Utilities handle timezone conversions and DST automatically
+- Local date parsing prevents timezone offset issues
+- Always parse YYYY-MM-DD dates as local dates to avoid timezone bugs
+
+**Files:** `lib/date-utils.ts`, used throughout the application
+
+### 3. Booking Window Logic
 
 Classes book at a specific time before the class starts (e.g., 26 hours prior):
 
@@ -185,9 +244,9 @@ Classes book at a specific time before the class starts (e.g., 26 hours prior):
 - Check for tooltip: "Reservation starts at [DATE] at [TIME]"
 - If window not open, skip booking attempt
 
-**Files:** `scripts/booking-automation.ts`
+**Files:** `scripts/booking-automation.ts`, `lib/date-utils.ts:calculateBookingWindowOpen()`
 
-### 3. Two-Step Booking Flow (YMCA Daxko Platform)
+### 4. Two-Step Booking Flow (YMCA Daxko Platform)
 
 **Critical for automation:**
 
@@ -202,7 +261,20 @@ Classes book at a specific time before the class starts (e.g., 26 hours prior):
 
 **Files:** `scripts/booking-automation.ts`, `docs/YMCA_BOOKING_FLOW_CONFIRMED.md`
 
-### 4. Duplicate Prevention
+### 5. Skip Next Occurrence Feature
+
+Users can skip the next single occurrence of a recurring class using the `next_skip_date` field.
+
+**How it works:**
+- User clicks "Skip Next" on a class
+- System calculates next occurrence date and stores in `next_skip_date`
+- Automation skips booking when `class_date` matches `next_skip_date`
+- After skipping, `next_skip_date` is automatically cleared (smart unskip)
+- If booking window already passed, skip is cleared immediately
+
+**Files:** `app/actions/recurring-classes.ts:skipNextOccurrence()`, `scripts/booking-automation.ts`
+
+### 6. Duplicate Prevention
 
 Before attempting to book, system checks database for existing booking attempts with status "confirmed" or "waitlisted" for the same class occurrence.
 
@@ -213,7 +285,7 @@ Before attempting to book, system checks database for existing booking attempts 
 
 **Files:** `scripts/booking-automation.ts:checkIfAlreadyBooked()`
 
-### 5. Fuzzy Matching
+### 7. Fuzzy Matching
 
 Class names on gym website may have minor spelling variations. System uses case-insensitive matching and handles variations.
 
@@ -224,16 +296,49 @@ Class names on gym website may have minor spelling variations. System uses case-
 
 **Files:** `scripts/booking-automation.ts:findClassElement()`
 
-### 6. Timezone Handling
+### 8. Timezone Handling
 
 Each recurring class has a timezone setting (e.g., "America/New_York"). System uses gym's local timezone for all date calculations.
 
 **Critical for accuracy:**
 - Booking window calculations use class timezone
 - Class occurrence dates use class timezone
-- System handles DST transitions
+- System handles DST transitions automatically
+- Uses IANA timezone identifiers (e.g., "America/New_York")
+- Uses `date-fns` and `date-fns-tz` libraries for precise timezone conversions
+- Date utilities parse YYYY-MM-DD strings as local dates to prevent timezone offset bugs
 
-**Files:** `scripts/booking-automation.ts`, uses `date-fns-tz` library
+**Common timezones available:**
+- Eastern Time (ET), Central Time (CT), Mountain Time (MT), Pacific Time (PT)
+- Arizona Time (MST - No DST), Alaska Time (AKT), Hawaii Time (HST)
+
+**Files:** `lib/date-utils.ts` (primary), `scripts/booking-automation.ts`, `inngest/bookClass.ts`
+
+---
+
+## Operational Notes
+
+### Event-Driven Architecture (Inngest)
+
+**How it works:**
+- When a user creates/edits a class, Next.js calculates the booking window time and sends an event to Inngest
+- Inngest waits until the exact booking window time (e.g., Friday 7:30 AM for Saturday 9:30 AM class)
+- At the precise moment, Inngest triggers the booking function via webhook
+- Daily scheduler (midnight UTC) re-schedules all active classes for their next occurrence
+
+**Monitoring:**
+- View scheduled events, runs, and logs in Inngest dashboard
+- Each event shows status: pending, running, completed, or failed
+- Failed events automatically retry up to 3 times with exponential backoff
+
+**Pause/Resume Automation:**
+- **Per-user:** Use the global pause toggle in dashboard settings
+- **Per-class:** Use the active toggle on individual classes
+- **Single occurrence:** Use the "Skip Next" button
+
+**Manual Testing:**
+- GitHub Actions workflow still available for manual testing via `workflow_dispatch`
+- No cron schedule (replaced by Inngest event-driven triggers)
 
 ---
 
@@ -325,17 +430,22 @@ USING (auth.uid() = user_id);
 ```env
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
 ENCRYPTION_KEY=...  # Generate with: openssl rand -base64 32
+INNGEST_EVENT_KEY=...
+INNGEST_SIGNING_KEY=...
+PUPPETEER_SKIP_DOWNLOAD=true  # For Vercel deployment
 ```
 
-**GitHub Actions secrets:**
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY` (NOT anon key!)
-- `ENCRYPTION_KEY` (same as local)
+**Inngest configuration:**
+- Sign up at https://inngest.com
+- Create new app, copy Event Key and Signing Key
+- Set both keys in `.env.local` and Vercel
 
 **Vercel environment variables:**
 - Same as local `.env.local`
 - Set in Vercel Dashboard → Settings → Environment Variables
+- **Critical:** Add `PUPPETEER_SKIP_DOWNLOAD=true` to prevent build failures
 
 ### Credential Storage
 
@@ -352,33 +462,38 @@ ENCRYPTION_KEY=...  # Generate with: openssl rand -base64 32
 
 ## Known Issues and Gotchas
 
-### GitHub Actions Cron Reliability
+### ~~GitHub Actions Cron Reliability~~ ✅ RESOLVED
 
-**Issue:** Cron schedules may not auto-trigger reliably for frequent intervals (every 15 minutes).
+**Previous Issue:** Cron schedules were unreliable for frequent intervals (every 15 minutes).
 
-**Workaround:** Manual triggers work and may help "prime" the schedule.
-
-**Long-term solution (backlogged):** Event-driven trigger architecture based on booking window times.
-
-**Reference:** `docs/My Workout Scheduler PRD.md` (section on GitHub Actions)
+**Solution:** Migrated to Inngest event-driven architecture in v2.0
+- Triggers at exact booking window times (no polling)
+- 99.9%+ reliability with built-in retry logic
+- Daily scheduler provides fallback for missed events
 
 ### Booking Window Edge Cases
 
 **Clock drift:** System clock may differ from gym website clock.
 
-**Mitigation:** Retry logic (6 attempts, 30-second intervals) if booking button not found.
+**Mitigation:** Intelligent retry logic in Inngest (12 retries × 15s = 3min total) catches booking window as soon as it opens.
 
-**Files:** `scripts/booking-automation.ts:attemptBooking()`
+**Files:** `inngest/bookClass.ts`, `scripts/booking-automation.ts`
 
 ### Timezone Calculations
 
 **Critical:** Always use the class's timezone for calculations, not system timezone.
 
-**Common mistake:** Using `new Date()` without timezone context.
+**Common mistakes:**
+- Using `new Date()` without timezone context
+- Parsing YYYY-MM-DD dates as UTC (causes off-by-one-day bugs)
+- Not accounting for DST transitions
 
-**Correct approach:** Use `date-fns-tz` library with explicit timezone.
+**Correct approach:**
+- Use utilities from `lib/date-utils.ts` for all date/time calculations
+- Parse YYYY-MM-DD dates as local dates: `new Date(year, month - 1, day)`
+- Use IANA timezone identifiers for automatic DST handling
 
-**Files:** `scripts/booking-automation.ts:calculateBookingTime()`
+**Files:** `lib/date-utils.ts`, `scripts/booking-automation.ts`
 
 ---
 
@@ -451,6 +566,34 @@ Currently relies on manual testing. Consider adding:
 - Use descriptive variable names (avoid abbreviations)
 - Comment complex logic (especially booking flow)
 
+### Server Actions Pattern
+
+**All form submissions use Next.js Server Actions** (`app/actions/`):
+- Mark functions with `'use server'` directive
+- Return structured results: `{ success: boolean, error?: string, ... }`
+- Validate authentication before any operation
+- Revalidate paths after mutations (`revalidatePath`)
+- Use TypeScript types for form data and results
+
+**Example pattern:**
+```typescript
+'use server'
+import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+
+export async function saveData(data: FormData): Promise<Result> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  // Perform operation...
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+```
+
+**Files:** `app/actions/recurring-classes.ts`, `app/actions/gym-credentials.ts`, `app/actions/user-settings.ts`
+
 ### Git Workflow
 
 - Develop on feature branches: `claude/write-cl-*`
@@ -517,6 +660,13 @@ const { data: classes } = await supabase
   .eq('user_id', userId)
   .order('day_of_week')
 
+// Get user settings (pause toggle)
+const { data: settings } = await supabase
+  .from('user_settings')
+  .select('*')
+  .eq('user_id', userId)
+  .single()
+
 // Get booking attempts for a class
 const { data: attempts } = await supabase
   .from('booking_attempts')
@@ -531,6 +681,12 @@ const { data: existing } = await supabase
   .eq('recurring_class_id', classId)
   .eq('class_date', classDate)
   .in('status', ['confirmed', 'waitlisted'])
+
+// Skip next occurrence
+await supabase
+  .from('recurring_classes')
+  .update({ next_skip_date: '2025-11-20' })
+  .eq('id', classId)
 ```
 
 ---
@@ -553,5 +709,7 @@ const { data: existing } = await supabase
 - **v1.1** - Booking automation with Puppeteer
 - **v1.2** - GitHub Actions integration, parallel processing
 - **v1.3** - Duplicate prevention, fuzzy matching, booking window detection
+- **v1.4** - Timezone bug fixes, centralized date utilities, server actions refactor
+- **v2.0** - Inngest migration: event-driven architecture, intelligent retry logic, 100% free tier
 
-**Last Updated:** November 15, 2025
+**Last Updated:** November 16, 2025
