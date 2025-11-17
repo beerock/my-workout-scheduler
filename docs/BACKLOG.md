@@ -220,6 +220,29 @@ Successfully implemented intelligent retry logic that handles both clock drift a
 **Tested**: November 16-17, 2025
 **Result**: All retry scenarios working correctly in production
 
+### v2.7 Enhancements (November 17, 2025)
+
+**Enhanced Class Status Detection:**
+- ✅ Added detection for 6 class states (available, window not open, reserved, full, cancelled, not reservable)
+- ✅ Case-insensitive pill/badge detection for "Class Full", "Cancelled", "Not Reservable"
+- ✅ Independent booking button detection (doesn't depend on full status flag)
+- ✅ Defensive pre-click check for race conditions
+- ✅ Priority-based status determination (reserved > cancelled > not reservable > full > available)
+- ✅ Smart retry logic: only retries "Class Full" (temporary), not cancelled/not reservable (permanent)
+
+**Duplicate Booking Prevention:**
+- ✅ Run-level duplicate detection (checks pending attempts within 5 minutes)
+- ✅ Idempotency keys for retry events (`book-retry-{classId}-{date}-{attempt}`)
+- ✅ Inngest-level deduplication (same event ID = single execution)
+- ✅ Prevents race conditions when retries trigger simultaneously
+
+**Related PRs:**
+- #14: Enhanced class full detection
+- #15: Duplicate prevention with idempotency keys
+
+**Testing Guide:**
+- See `docs/PRODUCTION_TESTING.md` for comprehensive test plan
+
 ---
 
 ## GitHub Actions Automation Delay After Completion
@@ -797,6 +820,161 @@ Daxko (YMCA's platform provider) has an official API for managing classes and bo
 **Priority**: High (could fundamentally change architecture)
 **Last Updated**: 2025-01-XX
 **Next Step**: Contact Daxko to determine API access eligibility
+
+---
+
+## Gym Management and Timezone Inheritance
+
+### Overview
+Refactor the data model to support proper gym management where gyms are first-class entities with locations and timezones, and classes inherit timezone from their gym. This eliminates repetitive timezone selection and ensures consistency across classes at the same gym.
+
+### Current Implementation (MVP)
+- ✅ Timezone is set per class
+- ✅ Users select timezone for each class individually
+- ⚠️ Can lead to inconsistencies if user selects wrong timezone for same gym
+
+### Proposed Implementation
+
+#### Requirements
+
+1. **Gym Entity Management**
+   - As a user, I want to add my gym or gyms to my workout profile
+   - Gym attributes:
+     - Name (e.g., "YMCA of Greater Cincinnati")
+     - City and State (e.g., "Cincinnati, OH")
+     - Timezone (e.g., "America/New_York") - **set once per gym location**
+     - One or more branches (e.g., "Downtown", "West Side", "Anderson")
+   - Store gym as reusable entity that can be referenced by multiple classes
+
+2. **Class-to-Gym Relationship**
+   - Classes belong to a gym (foreign key relationship)
+   - Classes inherit timezone from their gym
+   - Timezone field removed from class form (no longer needed)
+   - Branch selection is dropdown from gym's branch list
+
+3. **Classes Without a Gym**
+   - As a user, I want to be able to add classes that do not belong to a gym
+   - For standalone classes (not associated with a gym):
+     - User selects timezone directly on the class
+     - No branch selection needed
+   - Use case: Private training sessions, outdoor classes, etc.
+
+#### Benefits
+- **Consistency**: Timezone automatically correct for all classes at same gym
+- **Simplified UX**: Don't repeat timezone selection for each class
+- **Data integrity**: Single source of truth for gym timezone
+- **Scalability**: Easy to add new branches to existing gym
+- **Flexibility**: Still supports standalone classes without a gym
+
+#### Database Schema Changes
+
+**New Table: `gyms`**
+```sql
+CREATE TABLE gyms (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  city TEXT NOT NULL,
+  state TEXT NOT NULL,
+  timezone TEXT NOT NULL,
+  branches TEXT[] NOT NULL, -- Array of branch names
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**Updated Table: `recurring_classes`**
+```sql
+ALTER TABLE recurring_classes
+  ADD COLUMN gym_id UUID REFERENCES gyms(id) ON DELETE SET NULL,
+  ALTER COLUMN timezone DROP NOT NULL, -- Make optional
+  ALTER COLUMN branch DROP NOT NULL; -- Make optional
+
+-- Timezone is required only if gym_id is NULL (standalone class)
+-- Branch is required only if gym_id is NOT NULL (gym class)
+```
+
+**Migration Strategy:**
+1. Create new `gyms` table
+2. Add `gym_id` column to `recurring_classes` (nullable)
+3. Migrate existing classes:
+   - Group classes by (user, gym_url, branch, timezone)
+   - Create gym entities for each unique combination
+   - Update classes to reference gym_id
+4. Make timezone optional on classes (required only if gym_id is NULL)
+
+#### UI Changes
+
+**New: Gym Management Page** (`/dashboard/gyms`)
+- List of user's gyms
+- Add/Edit/Delete gym
+- Manage branches per gym
+- Shows how many classes use each gym
+
+**Updated: Add/Edit Class Form**
+- Step 1: "Does this class belong to a gym?"
+  - Yes → Select gym from dropdown (or "Add New Gym")
+  - No → Standalone class (show timezone field)
+- Step 2 (if gym selected):
+  - Branch dropdown populated from selected gym
+  - Timezone inherited (shown as read-only)
+- Step 2 (if standalone):
+  - Branch field hidden
+  - Timezone selector shown
+
+**Gym Form Fields:**
+- Gym Name
+- City
+- State
+- Timezone (dropdown)
+- Branches (multi-input, add/remove)
+
+#### Implementation Notes
+
+**Code Location:**
+- Database migration: `supabase/migrations/00X_gym_management.sql`
+- Types: Update `lib/database.types.ts`
+- Database helpers: `lib/supabase/database.ts` - Add gym CRUD operations
+- Actions: `app/actions/gyms.ts` - Server actions for gym management
+- UI: `app/dashboard/gyms/page.tsx` - Gym management page
+- UI: Update `app/dashboard/schedule/` forms to use gym selection
+
+**Timezone Logic:**
+```typescript
+// When booking, resolve timezone:
+const timezone = class.gym_id
+  ? class.gym.timezone  // Inherited from gym
+  : class.timezone;     // Standalone class timezone
+```
+
+**Validation:**
+```typescript
+// On class create/update:
+if (gymId) {
+  // Gym class: require gymId and branch
+  assert(gymId && branch, 'Gym and branch required')
+  // Timezone inherited, should be null/undefined
+} else {
+  // Standalone class: require timezone
+  assert(timezone, 'Timezone required for standalone class')
+  // Branch should be null/undefined
+}
+```
+
+### Testing Considerations
+- Test gym CRUD operations
+- Test class creation with gym (timezone inherited)
+- Test standalone class creation (timezone required)
+- Test migration from old schema
+- Test booking automation with both gym and standalone classes
+- Verify timezone resolution logic
+- Test branch dropdown population
+
+### Status
+**Status**: Backlogged - Not currently implemented
+**Priority**: Medium (improves UX and data model, but MVP works without it)
+**Last Updated**: November 17, 2025
+**Note**: Current MVP correctly sets timezone per class, which works but is less user-friendly
 
 ---
 
