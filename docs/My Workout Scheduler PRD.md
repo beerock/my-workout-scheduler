@@ -1,6 +1,6 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.5
+**Version:** 2.7
 **Product Owner:** Brock Busby
 **Last Updated:** November 17, 2025
 **Status:** Production - Deployed and Testing
@@ -42,6 +42,21 @@
   - Daily scheduler: Tested (correctly schedules next occurrences, skips open windows)
   - Duplicate prevention: Tested (correctly detects already-booked classes)
   - Class full retry: Currently testing (15-minute intervals until class starts)
+- ✅ **COMPLETED: Enhanced Class Status Detection (v2.7)**
+  - Case-insensitive detection for multiple "full" variations
+  - Explicit pill/badge element detection (orange "Class Full", red "Not Reservable")
+  - Cancelled class detection (permanent failure, no retry)
+  - Not Reservable class detection (permanent failure, no retry)
+  - Independent booking button detection (handles edge cases)
+  - Defensive pre-click check for race conditions
+  - Priority-based status determination (reserved > cancelled > not reservable > full > available)
+  - Smart retry logic: only retries for temporary failures (class full)
+- ✅ **COMPLETED: Duplicate Booking Prevention (v2.7)**
+  - Duplicate run detection (checks for pending attempts within 5 minutes)
+  - Idempotency keys for retry events (format: `book-retry-{classId}-{date}-{attempt}`)
+  - Prevents race conditions when retries trigger simultaneously
+  - Inngest-level deduplication (same event ID = single execution)
+  - Clean database (no orphaned pending attempts)
 
 **Major Changes from v1.0:**
 
