@@ -1047,24 +1047,41 @@ async function findAndBookClass(
           console.log(`   Time patterns found: ${classItem.timePatterns.join(', ')}`)
           
           // Check status - look for reserved, full, waitlist indicators
-          // NOTE: If it says "Class Full", there's no booking button - class is truly full
-          
+          // IMPORTANT: Check for "Class Full" indicator FIRST before checking buttons
+
           // Check if already reserved
-          const isReserved = 
+          const isReserved =
             classText.includes('reserved') ||
             classItem.buttonTexts.some((btn) => btn.toUpperCase().includes('RESERVED'))
-          
-          // Check for "Class Full" - if it says this, there's no booking button
-          const isFull = 
-            classText.includes('full') || classText.includes('class full')
-          
+
+          // Enhanced "Class Full" detection with multiple variations (case-insensitive)
+          // Check for common full class indicators:
+          // - "Full", "Class Full", "FULL"
+          // - "Spots Full", "No Spots Available", "No Spots"
+          // - Pill/badge elements with "full" text
+          const classTextLower = classText.toLowerCase()
+          const isFull =
+            classTextLower.includes('full') ||
+            classTextLower.includes('class full') ||
+            classTextLower.includes('spots full') ||
+            classTextLower.includes('no spots available') ||
+            classTextLower.includes('no spots') ||
+            // Check HTML for pill/badge elements with "full" text
+            (classItem.html.toLowerCase().includes('class="pill') &&
+             classItem.html.toLowerCase().includes('full')) ||
+            (classItem.html.toLowerCase().includes('class="badge') &&
+             classItem.html.toLowerCase().includes('full')) ||
+            // Check for status indicators
+            (classItem.html.toLowerCase().includes('status') &&
+             classItem.html.toLowerCase().includes('full'))
+
           // Check for booking buttons (RESERVE, BOOK, WAITLIST)
-          // Only check if class is not full (if full, there's no button)
-          const hasBookingButton = !isFull && (
+          // Check independently of isFull (buttons may exist even when full)
+          const hasBookingButton = (
             classItem.buttonTexts.some((btn) => {
               const btnUpper = btn.toUpperCase()
-              return btnUpper.includes('RESERVE') || 
-                     btnUpper.includes('BOOK') || 
+              return btnUpper.includes('RESERVE') ||
+                     btnUpper.includes('BOOK') ||
                      btnUpper.includes('WAITLIST') ||
                      btnUpper.includes('ADD TO WAITLIST')
             }) ||
@@ -1073,24 +1090,34 @@ async function findAndBookClass(
               return btnClass.includes('btn-primary')
             }) ||
             // Also check HTML for button patterns (in case button text wasn't captured)
-            (classItem.html.toLowerCase().includes('btn-primary') && 
-             (classItem.html.toLowerCase().includes('reserve') || 
+            (classItem.html.toLowerCase().includes('btn-primary') &&
+             (classItem.html.toLowerCase().includes('reserve') ||
               classItem.html.toLowerCase().includes('book') ||
               classItem.html.toLowerCase().includes('waitlist')))
           )
 
-          // Determine status
+          // Determine status with improved logic
           let status: 'reserved' | 'available' | 'full'
           if (isReserved) {
             status = 'reserved'
-          } else if (isFull) {
+          } else if (isFull && !hasBookingButton) {
+            // Class is full and no booking button = truly full
             status = 'full'
-          } else {
-            // Has booking button = available
+          } else if (isFull && hasBookingButton) {
+            // Class appears full but has booking button = likely waitlist available
+            // Let the booking attempt proceed to handle waitlist
+            console.log(`   ⚠️  Class appears FULL but has booking button - may be waitlist available`)
             status = 'available'
+          } else if (hasBookingButton) {
+            // Has booking button and not marked as full = available
+            status = 'available'
+          } else {
+            // No booking button and not explicitly marked as full = assume full
+            status = 'full'
           }
-          
+
           console.log(`   Status check: isReserved=${isReserved}, isFull=${isFull}, hasBookingButton=${hasBookingButton}`)
+          console.log(`   Determined status: ${status}`)
           console.log(`   Button texts: ${classItem.buttonTexts.join(', ')}`)
 
           return {
@@ -1226,17 +1253,35 @@ async function findAndBookClass(
     }
 
     if (searchResult.status === 'full') {
-      // If it says "Class Full", there's no booking button - class is truly full
+      // Class is full - this should trigger the 15-minute retry logic in Inngest
+      // IMPORTANT: Error message MUST contain "full" to trigger retry logic
       return {
         status: 'failed',
-        errorMessage: 'Class is full and no waitlist option available',
+        errorMessage: 'Class is full - no waitlist option available. Will retry in case spots open up.',
         selectedBranch: branchUsed,
       }
     }
 
     // Class found and available - now find and click the booking button
     console.log('Class found! Looking for booking button...')
-    
+
+    // DEFENSIVE CHECK: Re-check for "Class Full" indicators on the page before clicking
+    // This catches cases where the class becomes full between initial detection and button click
+    const pageContent = await page.content()
+    const pageContentLower = pageContent.toLowerCase()
+    const hasFullIndicatorOnPage =
+      pageContentLower.includes('class full') ||
+      pageContentLower.includes('spots full') ||
+      pageContentLower.includes('no spots available') ||
+      // Check for pill/badge with "full"
+      (pageContentLower.includes('class="pill') && pageContentLower.includes('full')) ||
+      (pageContentLower.includes('class="badge') && pageContentLower.includes('full'))
+
+    if (hasFullIndicatorOnPage) {
+      console.log('⚠️  DEFENSIVE CHECK: Detected "Class Full" indicator on page before clicking RESERVE button')
+      console.log('   This may indicate the class is full. Proceeding with caution - may end up on waitlist.')
+    }
+
     // Use the helper function to attempt booking
     const bookingResult = await attemptBookingButtonClick(page, classType, targetTime12)
     let clicked = bookingResult.success
