@@ -120,23 +120,35 @@ export async function saveRecurringClass(
 
       const isBookingWindowOpen = bookingTime.getTime() <= Date.now()
 
-      // Always schedule the booking with Inngest
-      // If window is already open, Inngest will execute immediately
-      // If window is in the future, Inngest will execute at the scheduled time
-      await scheduleBooking({
-        id: resultId,
-        day_of_week: data.day_of_week,
-        class_time: data.class_time,
-        booking_window_hours: data.booking_window_hours || 26,
-        timezone: data.timezone || 'America/New_York',
-      })
+      if (isBookingWindowOpen) {
+        // Booking window is already open
+        // Don't schedule anything yet - let the user decide via dialog
+        // If they click "Book Now", /api/trigger-booking will handle it
+        // If they click "Skip", the daily scheduler will schedule next week's occurrence
+        revalidatePath('/dashboard/schedule')
+        return {
+          success: true,
+          id: resultId,
+          bookingWindowAlreadyOpen: true,
+          bookingTime,
+        }
+      } else {
+        // Booking window is in the future - schedule it normally
+        await scheduleBooking({
+          id: resultId,
+          day_of_week: data.day_of_week,
+          class_time: data.class_time,
+          booking_window_hours: data.booking_window_hours || 26,
+          timezone: data.timezone || 'America/New_York',
+        })
 
-      revalidatePath('/dashboard/schedule')
-      return {
-        success: true,
-        id: resultId,
-        bookingWindowAlreadyOpen: isBookingWindowOpen,
-        bookingTime,
+        revalidatePath('/dashboard/schedule')
+        return {
+          success: true,
+          id: resultId,
+          bookingWindowAlreadyOpen: false,
+          bookingTime,
+        }
       }
     } catch (schedulingError) {
       // If scheduling fails, still return success (class was saved)
