@@ -229,15 +229,6 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
       }
     }
 
-    // Clean up screenshot after a delay (for debugging)
-    // In production, you might want to keep screenshots or upload them to storage
-    setTimeout(() => {
-      if (screenshotPath && fs.existsSync(screenshotPath)) {
-        // Optionally delete screenshot after processing
-        // fs.unlinkSync(screenshotPath)
-      }
-    }, 60000) // Keep for 1 minute
-
     return {
       status: bookingResult.status,
       branchUsed: (bookingResult.selectedBranch || null) as string | null,
