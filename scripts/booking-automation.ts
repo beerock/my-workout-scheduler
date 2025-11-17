@@ -1054,12 +1054,14 @@ async function findAndBookClass(
             classText.includes('reserved') ||
             classItem.buttonTexts.some((btn) => btn.toUpperCase().includes('RESERVED'))
 
-          // Enhanced "Class Full" detection with multiple variations (case-insensitive)
-          // Check for common full class indicators:
+          // Enhanced status detection with multiple variations (case-insensitive)
+          const classTextLower = classText.toLowerCase()
+          const htmlLower = classItem.html.toLowerCase()
+
+          // Check for "Class Full" indicators:
           // - "Full", "Class Full", "FULL"
           // - "Spots Full", "No Spots Available", "No Spots"
           // - Pill/badge elements with "full" text
-          const classTextLower = classText.toLowerCase()
           const isFull =
             classTextLower.includes('full') ||
             classTextLower.includes('class full') ||
@@ -1067,13 +1069,25 @@ async function findAndBookClass(
             classTextLower.includes('no spots available') ||
             classTextLower.includes('no spots') ||
             // Check HTML for pill/badge elements with "full" text
-            (classItem.html.toLowerCase().includes('class="pill') &&
-             classItem.html.toLowerCase().includes('full')) ||
-            (classItem.html.toLowerCase().includes('class="badge') &&
-             classItem.html.toLowerCase().includes('full')) ||
+            (htmlLower.includes('class="pill') && htmlLower.includes('full')) ||
+            (htmlLower.includes('class="badge') && htmlLower.includes('full')) ||
             // Check for status indicators
-            (classItem.html.toLowerCase().includes('status') &&
-             classItem.html.toLowerCase().includes('full'))
+            (htmlLower.includes('status') && htmlLower.includes('full'))
+
+          // Check for "Cancelled" class (permanent failure - don't retry)
+          const isCancelled =
+            classTextLower.includes('cancelled') ||
+            classTextLower.includes('class cancelled') ||
+            // Check HTML for pill/badge elements with "cancel" text
+            (htmlLower.includes('class="pill') && htmlLower.includes('cancel')) ||
+            (htmlLower.includes('class="badge') && htmlLower.includes('cancel'))
+
+          // Check for "Not Reservable" class (permanent failure - don't retry)
+          const isNotReservable =
+            classTextLower.includes('not reservable') ||
+            // Check HTML for pill/badge elements with "not reservable" text
+            (htmlLower.includes('class="pill') && htmlLower.includes('not reservable')) ||
+            (htmlLower.includes('class="badge') && htmlLower.includes('not reservable'))
 
           // Check for booking buttons (RESERVE, BOOK, WAITLIST)
           // Check independently of isFull (buttons may exist even when full)
@@ -1097,9 +1111,19 @@ async function findAndBookClass(
           )
 
           // Determine status with improved logic
+          // Priority order: reserved > cancelled > not reservable > full > available
           let status: 'reserved' | 'available' | 'full'
           if (isReserved) {
             status = 'reserved'
+          } else if (isCancelled || isNotReservable) {
+            // Cancelled or Not Reservable = permanent failure (don't retry)
+            status = 'full'
+            if (isCancelled) {
+              console.log(`   ⚠️  Class is CANCELLED - booking not possible`)
+            }
+            if (isNotReservable) {
+              console.log(`   ⚠️  Class is NOT RESERVABLE - booking not possible`)
+            }
           } else if (isFull && !hasBookingButton) {
             // Class is full and no booking button = truly full
             status = 'full'
@@ -1116,7 +1140,7 @@ async function findAndBookClass(
             status = 'full'
           }
 
-          console.log(`   Status check: isReserved=${isReserved}, isFull=${isFull}, hasBookingButton=${hasBookingButton}`)
+          console.log(`   Status check: isReserved=${isReserved}, isFull=${isFull}, isCancelled=${isCancelled}, isNotReservable=${isNotReservable}, hasBookingButton=${hasBookingButton}`)
           console.log(`   Determined status: ${status}`)
           console.log(`   Button texts: ${classItem.buttonTexts.join(', ')}`)
 
@@ -1253,7 +1277,27 @@ async function findAndBookClass(
     }
 
     if (searchResult.status === 'full') {
-      // Class is full - this should trigger the 15-minute retry logic in Inngest
+      // Check if it's a permanent failure (cancelled or not reservable)
+      // These should NOT trigger retry logic (no "full" in error message)
+      const debugText = searchResult.debugInfo?.text?.toLowerCase() || ''
+
+      if (debugText.includes('cancelled')) {
+        return {
+          status: 'failed',
+          errorMessage: 'Class is cancelled - booking not possible',
+          selectedBranch: branchUsed,
+        }
+      }
+
+      if (debugText.includes('not reservable')) {
+        return {
+          status: 'failed',
+          errorMessage: 'Class is not reservable - booking not possible',
+          selectedBranch: branchUsed,
+        }
+      }
+
+      // Class is full (temporary) - this should trigger the 15-minute retry logic in Inngest
       // IMPORTANT: Error message MUST contain "full" to trigger retry logic
       return {
         status: 'failed',
