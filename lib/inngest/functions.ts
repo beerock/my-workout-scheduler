@@ -11,8 +11,9 @@ import {
   clearSkipDate,
   type ClassNeedingBooking,
 } from '@/scripts/database-helpers';
-import { calculateClassStartTime, scheduleBooking } from './scheduler';
+import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
 import { differenceInMinutes } from 'date-fns';
+import { createClient } from '@/lib/supabase/server';
 
 /**
  * Main booking function - triggered at exact booking window time
@@ -47,6 +48,43 @@ export const bookClassFunction = inngest.createFunction(
     console.log(
       `[Inngest] Found class: ${classData.class_type} on ${getDayName(classData.day_of_week)} at ${classData.class_time}`
     );
+
+    // Check for duplicate runs - if another booking attempt is already in progress, exit
+    const hasDuplicateRun = await step.run('check-duplicate-runs', async () => {
+      const supabase = await createClient();
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+      const { data: pendingAttempts, error } = await supabase
+        .from('booking_attempts')
+        .select('id, attempt_timestamp')
+        .eq('recurring_class_id', classId)
+        .eq('status', 'pending')
+        .gte('attempt_timestamp', fiveMinutesAgo)
+        .limit(10);
+
+      if (error) {
+        console.error('[Inngest] Error checking for duplicate runs:', error);
+        return false; // Proceed with caution
+      }
+
+      if (pendingAttempts && pendingAttempts.length > 0) {
+        console.log(
+          `[Inngest] Found ${pendingAttempts.length} recent pending attempt(s) - potential duplicate run detected`
+        );
+        return true;
+      }
+
+      return false;
+    });
+
+    if (hasDuplicateRun) {
+      console.log('[Inngest] Exiting to avoid duplicate booking');
+      return {
+        classId,
+        status: 'duplicate',
+        message: 'Another booking run already in progress - exiting to prevent duplicate',
+      };
+    }
 
     // Check if we should skip today
     const today = new Date().toISOString().split('T')[0];
@@ -185,8 +223,16 @@ export const bookClassFunction = inngest.createFunction(
         await step.sleep('wait-before-retry', '15m');
 
         await step.run('send-retry-event', async () => {
+          // Calculate class date for idempotency key (prevents duplicate retries)
+          const classDate = calculateNextClassDate(
+            classData.day_of_week,
+            classData.class_time,
+            classData.timezone
+          );
+
           await inngest.send({
             name: 'booking/attempt',
+            id: `book-retry-${classId}-${classDate}-${attemptNumber + 1}`, // Unique per retry attempt
             data: {
               classId,
               attemptNumber: attemptNumber + 1,
