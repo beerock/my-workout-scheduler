@@ -136,7 +136,7 @@ export const bookClassFunction = inngest.createFunction(
     console.log(`[Inngest] Waiting for booking result...`);
     const bookingResult = await step.waitForEvent('wait-for-result', {
       event: 'booking/result',
-      timeout: '5m', // GitHub Actions typically completes in 2-4 minutes
+      timeout: '10m', // GitHub Actions can take 6-7 min with clock drift retries (12 × 15s = 3 min)
       match: 'data.attemptId',
     });
 
