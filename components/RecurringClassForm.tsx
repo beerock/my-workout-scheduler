@@ -348,10 +348,10 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            ⏰ Booking Window Open!
+            ⏰ Booking Window Already Open!
           </h3>
           <p className="text-gray-700 mb-6">
-            The booking window for this class is already open. Would you like to book it <strong>immediately</strong>, or let it be booked automatically in the background?
+            The booking window for this class is already open. Would you like to book this week's class now, or skip it and start automatic booking next week?
           </p>
 
           {error && (
@@ -366,20 +366,20 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
               disabled={bookingClass}
               className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              {bookingClass ? 'Booking...' : '✅ Book Now'}
+              {bookingClass ? 'Booking...' : '✅ Yes, Book Now'}
             </button>
             <button
               onClick={handleSkipBooking}
               disabled={bookingClass}
               className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              Book Automatically
+              No, Skip This Week
             </button>
           </div>
 
           <p className="mt-3 text-xs text-gray-500">
-            <strong>Book Now:</strong> Book immediately and see the result right away.<br />
-            <strong>Book Automatically:</strong> The class will be booked in the background within a few minutes.
+            <strong>Book Now:</strong> Books this week's class immediately.<br />
+            <strong>Skip This Week:</strong> Saves the class and automatic booking starts next week.
           </p>
         </div>
       </div>
