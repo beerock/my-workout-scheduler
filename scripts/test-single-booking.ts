@@ -257,6 +257,11 @@ async function testSingleBooking() {
     }
 
     log.info('\n💡 Tip: Check the booking_attempts table in Supabase to see the full record.')
+
+    // Exit cleanly in production to avoid waiting for connection pools to drain
+    if (IS_PRODUCTION) {
+      process.exit(0)
+    }
   } catch (error) {
     log.error('\n❌ Test failed:', error)
     if (error instanceof Error) {
