@@ -1006,15 +1006,32 @@ async function findAndBookClass(
       // Find class matching type and time
       for (const classItem of classes) {
         const classText = classItem.text.toLowerCase()
-        
+
         // Use fuzzy matching for class type to handle minor spelling differences
         // Extract potential class names from the text
         const words = classText.split(/\s+/)
-        const matchesType = 
-          classText.includes(classType.toLowerCase()) || // Exact substring match (fast path)
+        const classTypeLower = classType.toLowerCase()
+        const matchesType =
+          classText.includes(classTypeLower) || // Exact substring match (fast path)
           fuzzyMatch(classText, classType, 0.75) ||       // Fuzzy match on full text (lower threshold)
           words.some(word => fuzzyMatch(word, classType, 0.8)) || // Fuzzy match on individual words
-          (classItem.classNameMatch && fuzzyMatch(classItem.classNameMatch, classType, 0.8)) // Fuzzy match on extracted class name
+          (classItem.classNameMatch && fuzzyMatch(classItem.classNameMatch, classType, 0.8)) || // Fuzzy match on extracted class name
+          // Check if any word STARTS with a fuzzy match (handles concatenated words like "RacquetballAsheville")
+          words.some(word => {
+            // For each word, check if the beginning of the word fuzzy matches the class type
+            // This handles cases where class names are concatenated with other text without spaces
+            // Check multiple prefix lengths to account for spelling differences (e.g., "Raquetball" vs "Racquetball")
+            const minLength = Math.max(3, classTypeLower.length - 2) // Allow 2 chars shorter
+            const maxLength = classTypeLower.length + 3 // Allow up to 3 chars longer
+
+            for (let len = minLength; len <= maxLength && len <= word.length; len++) {
+              const wordPrefix = word.substring(0, len)
+              if (fuzzyMatch(wordPrefix, classType, 0.8)) {
+                return true
+              }
+            }
+            return false
+          })
         
         // Try multiple time formats - check both text content and time patterns
         // The time format on the page is typically "4:15 PM - 5:15 PM" (start - end)
