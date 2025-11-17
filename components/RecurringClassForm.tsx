@@ -27,6 +27,9 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [showBookNowDialog, setShowBookNowDialog] = useState(false)
+  const [savedClassId, setSavedClassId] = useState<string | null>(null)
+  const [bookingClass, setBookingClass] = useState(false)
   const [formData, setFormData] = useState<RecurringClassFormData>({
     day_of_week: initialClass?.day_of_week ?? 1,
     class_time: initialClass?.class_time ? initialClass.class_time.substring(0, 5) : '',
@@ -90,15 +93,24 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
 
       if (result.success) {
         setSuccess(true)
-        if (onSuccess) {
-          onSuccess()
+
+        // Check if booking window is already open (server-side check)
+        if (result.bookingWindowAlreadyOpen && result.id) {
+          // Booking window is open - show dialog asking if user wants to book now
+          setSavedClassId(result.id)
+          setShowBookNowDialog(true)
         } else {
-          router.push('/dashboard/schedule')
-          router.refresh()
+          // Booking window not open - just redirect/refresh
+          if (onSuccess) {
+            onSuccess()
+          } else {
+            router.push('/dashboard/schedule')
+            router.refresh()
+          }
+
+          // Clear success message after 3 seconds
+          setTimeout(() => setSuccess(false), 3000)
         }
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccess(false), 3000)
       } else {
         setError(result.error || 'Failed to save class')
       }
@@ -109,20 +121,70 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
     }
   }
 
+  const handleBookNow = async () => {
+    if (!savedClassId) return
+
+    setBookingClass(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/trigger-booking', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ classId: savedClassId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to trigger booking')
+      }
+
+      // Success! Close dialog and redirect
+      setShowBookNowDialog(false)
+      setSuccess(true)
+
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        router.push('/dashboard/schedule')
+        router.refresh()
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to trigger booking')
+    } finally {
+      setBookingClass(false)
+    }
+  }
+
+  const handleSkipBooking = () => {
+    setShowBookNowDialog(false)
+
+    if (onSuccess) {
+      onSuccess()
+    } else {
+      router.push('/dashboard/schedule')
+      router.refresh()
+    }
+  }
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'day_of_week' || name === 'booking_window_hours' 
+      [name]: name === 'day_of_week' || name === 'booking_window_hours'
         ? parseInt(value, 10) 
         : value,
     }))
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <>
+      <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label htmlFor="day_of_week" className="block text-sm font-medium text-gray-700 mb-1">
           Day of Week <span className="text-red-500">*</span>
@@ -280,6 +342,49 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         )}
       </div>
     </form>
+
+    {/* Book Now Dialog */}
+    {showBookNowDialog && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            ⏰ Booking Window Already Open!
+          </h3>
+          <p className="text-gray-700 mb-6">
+            The booking window for this class is already open. Would you like to book this week's class now, or skip it and start automatic booking next week?
+          </p>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleBookNow}
+              disabled={bookingClass}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              {bookingClass ? 'Booking...' : '✅ Yes, Book Now'}
+            </button>
+            <button
+              onClick={handleSkipBooking}
+              disabled={bookingClass}
+              className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              No, Skip This Week
+            </button>
+          </div>
+
+          <p className="mt-3 text-xs text-gray-500">
+            <strong>Book Now:</strong> Books this week's class immediately.<br />
+            <strong>Skip This Week:</strong> Saves the class and automatic booking starts next week.
+          </p>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 
