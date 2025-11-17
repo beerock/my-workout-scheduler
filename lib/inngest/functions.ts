@@ -136,8 +136,8 @@ export const bookClassFunction = inngest.createFunction(
     console.log(`[Inngest] Waiting for booking result...`);
     const bookingResult = await step.waitForEvent('wait-for-result', {
       event: 'booking/result',
-      timeout: '5m', // GitHub Actions typically completes in 2-4 minutes
-      match: 'data.attemptId',
+      timeout: '10m', // GitHub Actions can take 6-7 min with clock drift retries (12 × 15s = 3 min)
+      match: 'data.classId',  // Match on classId (present in both original and result events)
     });
 
     if (!bookingResult) {
@@ -174,15 +174,9 @@ export const bookClassFunction = inngest.createFunction(
         `[Inngest] Minutes until class starts: ${minutesUntilClass}`
       );
 
-      // Only retry if:
-      // 1. Class hasn't started yet (minutesUntilClass > 0)
-      // 2. We have at least 15 minutes before class starts
-      // 3. We haven't exceeded max retries (prevent infinite loops)
-      const MAX_RETRIES = 20; // Max 5 hours of retries (20 × 15 min)
-      if (
-        minutesUntilClass > 15 &&
-        attemptNumber < MAX_RETRIES
-      ) {
+      // Only retry if we have at least 15 minutes before class starts
+      // No max attempts limit - keep trying until class starts
+      if (minutesUntilClass > 15) {
         console.log(
           `[Inngest] Scheduling retry in 15 minutes (attempt #${attemptNumber + 1})`
         );
@@ -207,13 +201,9 @@ export const bookClassFunction = inngest.createFunction(
           message: `Class full - scheduled retry #${attemptNumber + 1} in 15 minutes`,
           nextAttemptNumber: attemptNumber + 1,
         };
-      } else if (minutesUntilClass <= 15) {
+      } else {
         console.log(
           `[Inngest] Not retrying - class starts in ${minutesUntilClass} minutes (too soon)`
-        );
-      } else if (attemptNumber >= MAX_RETRIES) {
-        console.log(
-          `[Inngest] Not retrying - max retries reached (${MAX_RETRIES})`
         );
       }
     }

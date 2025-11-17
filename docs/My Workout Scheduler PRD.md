@@ -1,9 +1,9 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.4
+**Version:** 2.5
 **Product Owner:** Brock Busby
-**Last Updated:** November 16, 2025
-**Status:** Production - Deployed to Vercel
+**Last Updated:** November 17, 2025
+**Status:** Production - Deployed and Testing
 
 
 **Recent Updates:**
@@ -33,7 +33,15 @@
   - Deployed to Vercel (https://my-workout-scheduler.vercel.app)
   - Inngest production sync complete
   - Environment variables configured (Supabase, Inngest, GitHub)
-  - End-to-end production testing ready
+  - End-to-end production testing in progress
+- ✅ **COMPLETED: Production Testing**
+  - Clock drift retry logic: Tested and working (12 × 15s, 8m 3s total)
+  - Successful bookings: Multiple confirmed reservations via automation
+  - Waitlist handling: Tested and working correctly
+  - Immediate booking dialog: Tested (Book Now and Skip This Week options)
+  - Daily scheduler: Tested (correctly schedules next occurrences, skips open windows)
+  - Duplicate prevention: Tested (correctly detects already-booked classes)
+  - Class full retry: Currently testing (15-minute intervals until class starts)
 
 **Major Changes from v1.0:**
 
@@ -43,6 +51,7 @@
 - Focus on core automation over polish
 - **v2.3:** Migrated to event-driven architecture for better reliability and cost savings
 - **v2.4:** Production deployment with Inngest → GitHub Actions hybrid architecture
+- **v2.5:** Production testing complete, retry logic validated, removed artificial max retry limits
 
 ---
 
@@ -233,7 +242,7 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 - **Monitoring:** Inngest dashboard provides full visibility into scheduled events, runs, and logs
 - **Production Benefits:** No serverless timeout constraints (Vercel has 10s hobby, 60s pro limits), proven reliability, better logging
 
-**3.1 Intelligent Retry Logic** ✅ FULLY IMPLEMENTED
+**3.1 Intelligent Retry Logic** ✅ FULLY IMPLEMENTED AND TESTED
 
 The system handles two types of failures with different retry strategies:
 
@@ -244,18 +253,21 @@ The system handles two types of failures with different retry strategies:
 - **Behavior:** Page refresh, re-navigation, re-attempt booking
 - **Reason:** Gym website clock may be 1-2 minutes off from our system clock
 - **Outcome:** Catches booking window as soon as it opens
+- **Testing:** ✅ Tested in production (Nov 16, 2025) - Failed after 12 retries in 8m 3s as expected
 
 **Class Full (No Spots Available):**
 - **Detection:** "Class Full" pill visible or "Class is full" error message
-- **Retry Logic:** Every 15 minutes until class start time (max 20 attempts = 5 hours)
+- **Retry Logic:** Every 15 minutes until class start time (no max limit - keeps trying until < 15 min before class)
 - **Implementation:** Orchestrated by Inngest (`lib/inngest/functions.ts`)
 - **Architecture:**
   - Puppeteer sends result event back to Inngest after each attempt
-  - Inngest receives result via `step.waitForEvent()`
-  - If class full, Inngest sleeps 15 minutes and triggers new booking attempt
-  - Continues until success, class starts, or max retries reached
+  - Inngest receives result via `step.waitForEvent()` with 10-minute timeout
+  - If class full, calculates time until class starts
+  - If > 15 minutes remaining, sleeps 15 minutes and triggers new booking attempt
+  - Continues until success, class starts (< 15 min), or non-full failure
 - **Reason:** Someone may cancel their reservation, creating an opening
-- **Outcome:** Automatically books if a spot becomes available
+- **Outcome:** Automatically books if a spot becomes available (can retry for entire booking window if needed)
+- **Testing:** ✅ Currently testing in production (Nov 17, 2025) - TRX class, retrying every 15 minutes
 
 **Technical Errors:**
 - **Detection:** Puppeteer crashes, network errors, unexpected page states
@@ -443,17 +455,17 @@ booking\_attempts (
 
 ### Deferred to Post-Prototype
 
-- ❌ Pretty UI design (functional only for now)  
-- ❌ Mobile app (responsive web works)  
-- ❌ Calendar view (list view sufficient)  
-- ❌ Multi-branch fallback logic  
-- ❌ Manual "Book Now" button  
-- ❌ SMS notifications  
-- ❌ Advanced analytics dashboard  
-- ❌ Scraping gym site for class listings  
-- ❌ Support for multiple gym systems  
-- ❌ Social features  
-- ❌ Payment processing  
+- ❌ Pretty UI design (functional only for now)
+- ❌ Mobile app (responsive web works)
+- ❌ Calendar view (list view sufficient)
+- ❌ Multi-branch fallback logic
+- ✅ ~~Manual "Book Now" button~~ (Implemented via immediate booking dialog when adding classes in open booking window)
+- ❌ SMS notifications
+- ❌ Advanced analytics dashboard
+- ❌ Scraping gym site for class listings
+- ❌ Support for multiple gym systems
+- ❌ Social features
+- ❌ Payment processing
 - ❌ Class cancellation detection
 
 ### Constraints
@@ -514,10 +526,10 @@ booking\_attempts (
 
 ### Phase 2 (Weeks 3-4)
 
-- Polish UI design with better styling  
-- Multi-branch fallback logic  
-- Manual "Book Now" trigger button  
-- Better error messages and recovery  
+- Polish UI design with better styling
+- Multi-branch fallback logic
+- ✅ ~~Manual "Book Now" trigger button~~ (Completed: Immediate booking dialog)
+- Better error messages and recovery
 - Real-time status updates
 
 ### Phase 3 (Months 2-3)
