@@ -99,6 +99,48 @@ export function calculateClassStartTime(
 }
 
 /**
+ * Calculate the next class date in YYYY-MM-DD format
+ * Used for generating unique idempotency keys
+ */
+export function calculateNextClassDate(
+  dayOfWeek: number,
+  classTime: string,
+  timezone: string
+): string {
+  // Get current time in the class's timezone
+  const nowInClassTz = toZonedTime(new Date(), timezone);
+  const todayInClassTz = nowInClassTz.getDay();
+
+  // Calculate days until class
+  let daysUntil = dayOfWeek - todayInClassTz;
+
+  if (daysUntil === 0) {
+    const [classHour, classMinute] = classTime.split(':').map(Number);
+    const currentHour = nowInClassTz.getHours();
+    const currentMinute = nowInClassTz.getMinutes();
+    const currentTimeMinutes = currentHour * 60 + currentMinute;
+    const classTimeMinutes = classHour * 60 + classMinute;
+
+    if (currentTimeMinutes >= classTimeMinutes) {
+      daysUntil = 7;
+    }
+  } else if (daysUntil < 0) {
+    daysUntil += 7;
+  }
+
+  // Create class date in timezone
+  const classDate = new Date(nowInClassTz);
+  classDate.setDate(nowInClassTz.getDate() + daysUntil);
+
+  // Format as YYYY-MM-DD
+  const year = classDate.getFullYear();
+  const month = String(classDate.getMonth() + 1).padStart(2, '0');
+  const day = String(classDate.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Schedule a booking attempt for a recurring class
  * Sends event to Inngest to trigger at the exact booking window time
  */
