@@ -191,6 +191,81 @@ Successfully implemented intelligent retry logic that handles both clock drift a
 
 ---
 
+## GitHub Actions Automation Delay After Completion
+
+### Overview
+**STATUS: BACKLOGGED (Low Priority)**
+
+GitHub Actions workflow experiences a ~60 second delay after the booking script completes before moving to the next step. While the booking succeeds and result events are sent to Inngest correctly, the workflow waits unnecessarily before continuing.
+
+### Current Behavior
+
+**Timeline observed in production:**
+1. "Run booking automation (single class)" step starts
+2. Booking completes successfully (class booked, result sent to Inngest)
+3. Script appears to complete
+4. ~60 seconds of delay
+5. "Upload screenshots" step begins
+
+**Example timing:**
+- Script completes: ~1m 2s
+- Next step starts: ~2m 2s
+- Delay: ~60 seconds
+
+### Investigation Findings
+
+**Attempted fixes:**
+1. ✅ Removed 60s setTimeout from `booking-automation.ts` (was keeping process alive)
+2. ✅ Added `process.exit(0)` to `test-single-booking.ts` for clean exit
+3. ⚠️ Delay persists despite these changes
+
+**Likely root cause:**
+- Supabase client connection pools not closing immediately
+- Inngest client maintaining open connections
+- Node.js waiting for connection pools to drain before exit
+- `process.exit(0)` should force exit but may not be triggering properly
+
+**Why it's not MVP-breaking:**
+- Bookings succeed correctly
+- Result events reach Inngest successfully
+- Only impacts workflow run time (adds ~1 minute)
+- GitHub Actions has 30-minute timeout (plenty of buffer)
+- No functional impact on end-user experience
+
+### Potential Solutions
+
+**Option 1: Force immediate exit with timeout**
+```typescript
+setTimeout(() => {
+  console.error('Force exiting after 2s timeout')
+  process.exit(1)
+}, 2000).unref()
+process.exit(0)
+```
+- Attempted but may not have taken effect (promoted build was from old commit)
+
+**Option 2: Explicitly close all connections**
+```typescript
+await supabase.removeAllChannels()
+await supabase.auth.signOut()
+// Close Inngest client connections
+process.exit(0)
+```
+
+**Option 3: Accept the delay**
+- 60 seconds is not significant for overnight scheduled runs
+- Adds buffer time for connection cleanup
+- May be safer than forcing immediate exit
+
+### Status
+**Status**: Backlogged - Not actively being addressed
+**Priority**: Low (not MVP-blocking)
+**Impact**: Adds ~60 seconds to workflow run time
+**Last Updated**: November 16, 2025
+**Decision**: Accept current behavior, may revisit post-MVP if it becomes problematic
+
+---
+
 ## Multi-Branch Fallback Logic
 
 ### Overview

@@ -73,7 +73,6 @@ async function testSingleBooking() {
   log.info(`Class ID: ${classId}`)
   log.info(`Mode: ${isDryRun ? 'DRY RUN (no actual booking)' : 'LIVE (will make real booking)'}`)
   log.info(`Headless: ${headless ? 'Yes' : 'No (browser visible)'}`)
-  log.success(`Environment: ${IS_PRODUCTION ? 'PRODUCTION (GitHub Actions)' : 'DEVELOPMENT (local)'}`)
   log.info('='.repeat(60) + '\n')
 
   let attemptId: string | undefined
@@ -261,12 +260,6 @@ async function testSingleBooking() {
 
     // Exit cleanly in production to avoid waiting for connection pools to drain
     if (IS_PRODUCTION) {
-      log.success('🚪 Exiting cleanly (production mode)')
-      // Force immediate exit - don't wait for connection pools
-      setTimeout(() => {
-        console.error('Force exiting after 2s timeout')
-        process.exit(1)
-      }, 2000).unref() // unref so it doesn't keep process alive
       process.exit(0)
     }
   } catch (error) {
