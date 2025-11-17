@@ -366,7 +366,7 @@ Class names on gym website may have minor spelling variations. System uses case-
 
 ### 9. Timezone Handling
 
-Each recurring class has a timezone setting (e.g., "America/New_York"). System uses gym's local timezone for all date calculations.
+Each recurring class has a timezone setting (e.g., "America/New_York"). System uses the class's timezone for all date calculations.
 
 **Critical for accuracy:**
 - Booking window calculations use class timezone
