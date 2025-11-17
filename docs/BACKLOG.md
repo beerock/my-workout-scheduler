@@ -220,6 +220,29 @@ Successfully implemented intelligent retry logic that handles both clock drift a
 **Tested**: November 16-17, 2025
 **Result**: All retry scenarios working correctly in production
 
+### v2.7 Enhancements (November 17, 2025)
+
+**Enhanced Class Status Detection:**
+- ✅ Added detection for 6 class states (available, window not open, reserved, full, cancelled, not reservable)
+- ✅ Case-insensitive pill/badge detection for "Class Full", "Cancelled", "Not Reservable"
+- ✅ Independent booking button detection (doesn't depend on full status flag)
+- ✅ Defensive pre-click check for race conditions
+- ✅ Priority-based status determination (reserved > cancelled > not reservable > full > available)
+- ✅ Smart retry logic: only retries "Class Full" (temporary), not cancelled/not reservable (permanent)
+
+**Duplicate Booking Prevention:**
+- ✅ Run-level duplicate detection (checks pending attempts within 5 minutes)
+- ✅ Idempotency keys for retry events (`book-retry-{classId}-{date}-{attempt}`)
+- ✅ Inngest-level deduplication (same event ID = single execution)
+- ✅ Prevents race conditions when retries trigger simultaneously
+
+**Related PRs:**
+- #14: Enhanced class full detection
+- #15: Duplicate prevention with idempotency keys
+
+**Testing Guide:**
+- See `docs/PRODUCTION_TESTING.md` for comprehensive test plan
+
 ---
 
 ## GitHub Actions Automation Delay After Completion
