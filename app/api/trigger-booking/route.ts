@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Verify the class belongs to the authenticated user
     const { data: classData, error: classError } = await supabase
       .from('recurring_classes')
-      .select('id, user_id')
+      .select('id, user_id, class_type')
       .eq('id', classId)
       .single();
 
@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
       name: 'booking/attempt',
       data: {
         classId,
+        className: classData.class_type,
         attemptNumber: 1,
       },
     });

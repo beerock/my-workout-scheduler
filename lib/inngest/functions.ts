@@ -29,10 +29,10 @@ export const bookClassFunction = inngest.createFunction(
   },
   { event: 'booking/attempt' },
   async ({ event, step }) => {
-    const { classId, attemptNumber = 1 } = event.data;
+    const { classId, className, attemptNumber = 1 } = event.data;
 
     console.log(
-      `[Inngest] Booking attempt #${attemptNumber} for class ${classId}`
+      `[Inngest] Booking attempt #${attemptNumber} for class "${className}" (${classId})`
     );
 
     // Step 1: Fetch class data from database
@@ -41,8 +41,8 @@ export const bookClassFunction = inngest.createFunction(
     });
 
     if (!classData) {
-      console.log(`[Inngest] Class ${classId} not found (may have been deleted)`);
-      return { error: 'Class not found', classId };
+      console.log(`[Inngest] Class "${className}" (${classId}) not found (may have been deleted)`);
+      return { error: 'Class not found', classId, className };
     }
 
     console.log(
@@ -78,9 +78,10 @@ export const bookClassFunction = inngest.createFunction(
     });
 
     if (hasDuplicateRun) {
-      console.log('[Inngest] Exiting to avoid duplicate booking');
+      console.log(`[Inngest] Exiting to avoid duplicate booking for "${className}"`);
       return {
         classId,
+        className,
         status: 'duplicate',
         message: 'Another booking run already in progress - exiting to prevent duplicate',
       };
@@ -89,7 +90,7 @@ export const bookClassFunction = inngest.createFunction(
     // Check if we should skip today
     const today = new Date().toISOString().split('T')[0];
     if (classData.next_skip_date === today) {
-      console.log(`[Inngest] Skipping class (next_skip_date = today)`);
+      console.log(`[Inngest] Skipping class "${className}" (next_skip_date = today)`);
 
       const attemptId = await step.run('create-skip-attempt', async () => {
         return await createBookingAttempt(
@@ -119,7 +120,7 @@ export const bookClassFunction = inngest.createFunction(
     console.log(`[Inngest] Created booking attempt record: ${attemptId}`);
 
     // Step 3: Trigger GitHub Actions workflow
-    console.log(`[Inngest] Triggering GitHub Actions workflow for class ${classId}...`);
+    console.log(`[Inngest] Triggering GitHub Actions workflow for class "${className}" (${classId})...`);
     const workflowResult = await step.run('trigger-github-actions', async () => {
       const githubToken = process.env.GITHUB_TOKEN;
       const githubRepo = process.env.GITHUB_REPOSITORY || 'beerock/my-workout-scheduler';
@@ -179,9 +180,10 @@ export const bookClassFunction = inngest.createFunction(
     });
 
     if (!bookingResult) {
-      console.log(`[Inngest] ⚠️  Timeout waiting for booking result`);
+      console.log(`[Inngest] ⚠️  Timeout waiting for booking result for "${className}"`);
       return {
         classId,
+        className: classData.class_type,
         attemptId,
         status: 'timeout',
         message: 'Timeout waiting for GitHub Actions result',
@@ -235,6 +237,7 @@ export const bookClassFunction = inngest.createFunction(
             id: `book-retry-${classId}-${classDate}-${attemptNumber + 1}`, // Unique per retry attempt
             data: {
               classId,
+              className: classData.class_type,
               attemptNumber: attemptNumber + 1,
             },
           });
@@ -242,6 +245,7 @@ export const bookClassFunction = inngest.createFunction(
 
         return {
           classId,
+          className: classData.class_type,
           attemptId,
           status: 'retrying',
           message: `Class full - scheduled retry #${attemptNumber + 1} in 15 minutes`,
@@ -257,6 +261,7 @@ export const bookClassFunction = inngest.createFunction(
     // Final result (success, waitlisted, or permanent failure)
     return {
       classId,
+      className: classData.class_type,
       attemptId,
       status,
       errorMessage,
@@ -292,13 +297,13 @@ export const dailySchedulerFunction = inngest.createFunction(
       for (const classData of activeClasses) {
         try {
           const bookingTime = await scheduleBooking(classData);
-          results.push({ classId: classData.id, bookingTime });
+          results.push({ classId: classData.id, className: classData.class_type, bookingTime });
         } catch (error) {
           console.error(
-            `[Scheduler] Error scheduling class ${classData.id}:`,
+            `[Scheduler] Error scheduling class "${classData.class_type}" (${classData.id}):`,
             error
           );
-          results.push({ classId: classData.id, bookingTime: null, error });
+          results.push({ classId: classData.id, className: classData.class_type, bookingTime: null, error });
         }
       }
       return results;
