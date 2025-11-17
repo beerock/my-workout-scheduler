@@ -121,7 +121,10 @@ export async function saveRecurringClass(
       const isBookingWindowOpen = bookingTime.getTime() <= Date.now()
 
       if (isBookingWindowOpen) {
-        // Booking window is already open - return flag for client to handle
+        // Booking window is already open
+        // Don't schedule anything yet - let the user decide via dialog
+        // If they click "Book Now", /api/trigger-booking will handle it
+        // If they click "Skip", the daily scheduler will schedule next week's occurrence
         revalidatePath('/dashboard/schedule')
         return {
           success: true,
@@ -130,7 +133,7 @@ export async function saveRecurringClass(
           bookingTime,
         }
       } else {
-        // Schedule booking for future time
+        // Booking window is in the future - schedule it normally
         await scheduleBooking({
           id: resultId,
           day_of_week: data.day_of_week,
