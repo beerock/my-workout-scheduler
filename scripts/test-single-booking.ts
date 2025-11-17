@@ -210,7 +210,7 @@ async function testSingleBooking() {
 
     // Send result event back to Inngest (for retry orchestration)
     if (process.env.INNGEST_EVENT_KEY) {
-      log.debug('📤 Sending result event to Inngest...')
+      log.success('📤 Sending result event to Inngest...')
       try {
         await inngest.send({
           name: 'booking/result',
@@ -222,11 +222,13 @@ async function testSingleBooking() {
             errorMessage: bookingResult.errorMessage,
           },
         })
-        log.debug('✅ Result event sent to Inngest\n')
+        log.success('✅ Result event sent to Inngest')
       } catch (error) {
         log.error('⚠️  Failed to send result event to Inngest:', error)
         // Don't fail the entire booking if event sending fails
       }
+    } else {
+      log.error('⚠️  INNGEST_EVENT_KEY not set - cannot send result to Inngest')
     }
 
     // Display results (always show in production)
