@@ -351,7 +351,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
             ⏰ Booking Window Open!
           </h3>
           <p className="text-gray-700 mb-6">
-            The booking window for this class is already open. Would you like to book it now?
+            The booking window for this class is already open. Would you like to book it <strong>immediately</strong>, or let it be booked automatically in the background?
           </p>
 
           {error && (
@@ -366,19 +366,20 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
               disabled={bookingClass}
               className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              {bookingClass ? 'Booking...' : '✅ Yes, Book Now'}
+              {bookingClass ? 'Booking...' : '✅ Book Now'}
             </button>
             <button
               onClick={handleSkipBooking}
               disabled={bookingClass}
               className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              No, Skip
+              Book Automatically
             </button>
           </div>
 
           <p className="mt-3 text-xs text-gray-500">
-            If you skip, the class will be automatically booked when the daily scheduler runs at midnight.
+            <strong>Book Now:</strong> Book immediately and see the result right away.<br />
+            <strong>Book Automatically:</strong> The class will be booked in the background within a few minutes.
           </p>
         </div>
       </div>
