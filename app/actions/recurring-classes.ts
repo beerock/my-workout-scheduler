@@ -136,6 +136,7 @@ export async function saveRecurringClass(
         // Booking window is in the future - schedule it normally
         await scheduleBooking({
           id: resultId,
+          class_type: data.class_type,
           day_of_week: data.day_of_week,
           class_time: data.class_time,
           booking_window_hours: data.booking_window_hours || 26,

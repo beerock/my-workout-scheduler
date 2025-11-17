@@ -146,6 +146,7 @@ export function calculateNextClassDate(
  */
 export async function scheduleBooking(classData: {
   id: string;
+  class_type: string;
   day_of_week: number;
   class_time: string;
   booking_window_hours: number;
@@ -167,13 +168,14 @@ export async function scheduleBooking(classData: {
   }
 
   console.log(
-    `[Scheduler] Scheduling booking for class ${classData.id} at ${bookingTime.toISOString()}`
+    `[Scheduler] Scheduling booking for class "${classData.class_type}" (${classData.id}) at ${bookingTime.toISOString()}`
   );
 
   await inngest.send({
     name: 'booking/attempt',
     data: {
       classId: classData.id,
+      className: classData.class_type,
       attemptNumber: 1,
     },
     ts: bookingTime.getTime(),
