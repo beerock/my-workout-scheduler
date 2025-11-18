@@ -1581,13 +1581,19 @@ async function findAndBookClass(
       }
     }
 
-    // STEP 6: Click RESERVE button (will book or waitlist depending on availability)
+    // STEP 6: Click RESERVE button and wait for navigation to confirmation page
     console.log('Clicking RESERVE button on class description page...')
-    await secondButton.click()
-
-    // STEP 7: Wait for final confirmation page
-    console.log('Waiting for confirmation page...')
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    try {
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 10000 }),
+        secondButton.click()
+      ])
+      console.log('Navigation to confirmation page complete')
+    } catch (navError) {
+      // If navigation times out, wait a bit and continue anyway (page might have loaded)
+      console.log('Navigation wait timed out or failed, continuing anyway...')
+      await new Promise(resolve => setTimeout(resolve, 2000))
+    }
 
     // Take screenshot of confirmation
     await takeScreenshot(page, '06-final-confirmation')
