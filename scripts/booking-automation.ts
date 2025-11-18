@@ -823,21 +823,41 @@ async function attemptBookingButtonClick(
           buttonTextLower.includes('add to waitlist')) {
 
         // Extract row text for fuzzy matching in Node.js context
+        // Try to find a suitable container (div.row, tr, or any ancestor with content)
         const rowText = await page.evaluate((el) => {
           let current: HTMLElement | null = el.parentElement
           let depth = 0
+          let fallbackText = ''
+
           while (current && depth < 6) {
-            // Check if we're in a div.row
-            if (current.tagName === 'DIV' && current.className.includes('row')) {
-              return (current.textContent || '').toLowerCase()
+            const currentText = (current.textContent || '').toLowerCase()
+
+            // Save first parent with substantial content as fallback
+            if (!fallbackText && currentText.length > 20) {
+              fallbackText = currentText
             }
+
+            // Prefer specific containers: div.row, tr, or divs with class/schedule keywords
+            if (
+              (current.tagName === 'DIV' && current.className.includes('row')) ||
+              current.tagName === 'TR' ||
+              (current.tagName === 'DIV' && (current.className.includes('class') || current.className.includes('schedule') || current.className.includes('item')))
+            ) {
+              return currentText
+            }
+
             current = current.parentElement
             depth++
           }
-          return ''
+
+          // Return fallback text if we found any
+          return fallbackText
         }, button)
 
-        if (!rowText) continue
+        if (!rowText) {
+          console.log(`  Skipping button "${buttonText}" - no row text found`)
+          continue
+        }
 
         // Check if row matches using fuzzy matching (handles typos like "Raquetball" vs "Racquetball")
         const rowWords = rowText.split(/\s+/)
@@ -864,6 +884,12 @@ async function attemptBookingButtonClick(
         const matchesTime =
           rowText.includes(targetTime12.toLowerCase()) ||
           rowText.includes(targetTime12.replace(' ', '').toLowerCase())
+
+        // Debug logging
+        if (buttonTextLower.includes('reserve')) {
+          console.log(`  Checking Reserve button - matchesClass: ${matchesClass}, matchesTime: ${matchesTime}`)
+          console.log(`  Row text preview: ${rowText.substring(0, 150)}`)
+        }
 
         if (matchesClass && matchesTime) {
           console.log(`Found booking button: "${buttonText}" (fuzzy matched class type)`)
