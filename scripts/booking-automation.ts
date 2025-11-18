@@ -811,38 +811,94 @@ async function attemptBookingButtonClick(
   try {
     // Find and click the button - search for all buttons and match by parent row
     const allButtons = await page.$$('a.btn.btn-primary, a[role="button"], button.btn-primary, button[class*="btn"], a[class*="btn"]')
-    
+
+    console.log(`[Helper] Found ${allButtons.length} potential buttons to check`)
+
     for (const button of allButtons) {
       const buttonText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || '', button)
       const buttonTextLower = buttonText.toLowerCase()
-      
+
       // Check if this is a booking button
-      if (buttonTextLower.includes('reserve') || 
-          buttonTextLower.includes('book') || 
+      if (buttonTextLower.includes('reserve') ||
+          buttonTextLower.includes('book') ||
           buttonTextLower.includes('waitlist') ||
           buttonTextLower.includes('add to waitlist')) {
-        
-        // Check if button is in the matching class row
-        const isInMatchingRow = await page.evaluate((el, classType, targetTime12) => {
+
+        console.log(`[Helper] Found potential booking button: "${buttonText}", extracting row text...`)
+
+        // Extract row text for fuzzy matching in Node.js context
+        // Try to find a suitable container (div.row, tr, or any ancestor with content)
+        const rowText = await page.evaluate((el) => {
           let current: HTMLElement | null = el.parentElement
           let depth = 0
+          let fallbackText = ''
+
           while (current && depth < 6) {
-            // Check if we're in a div.row
-            if (current.tagName === 'DIV' && current.className.includes('row')) {
-              const rowText = (current.textContent || '').toLowerCase()
-              if (rowText.includes(classType.toLowerCase()) && 
-                  rowText.includes(targetTime12.toLowerCase())) {
-                return true
-              }
+            const currentText = (current.textContent || '').toLowerCase()
+
+            // Save first parent with substantial content as fallback
+            if (!fallbackText && currentText.length > 20) {
+              fallbackText = currentText
             }
+
+            // Prefer specific containers: div.row, tr, or divs with class/schedule keywords
+            if (
+              (current.tagName === 'DIV' && current.className.includes('row')) ||
+              current.tagName === 'TR' ||
+              (current.tagName === 'DIV' && (current.className.includes('class') || current.className.includes('schedule') || current.className.includes('item')))
+            ) {
+              return currentText
+            }
+
             current = current.parentElement
             depth++
           }
-          return false
-        }, button, classType, targetTime12)
-        
-        if (isInMatchingRow) {
-          console.log(`Found booking button: "${buttonText}"`)
+
+          // Return fallback text if we found any
+          return fallbackText
+        }, button)
+
+        if (!rowText) {
+          console.log(`[Helper] ⚠️  No row text found for button "${buttonText}", skipping`)
+          continue
+        }
+
+        console.log(`[Helper] Extracted row text (first 150 chars): "${rowText.substring(0, 150)}..."`)
+
+        // Check if row matches using fuzzy matching (handles typos like "Raquetball" vs "Racquetball")
+        const rowWords = rowText.split(/\s+/)
+        const classTypeLower = classType.toLowerCase()
+
+        console.log(`  Checking button row text: "${rowText.substring(0, 100)}..."`)
+        console.log(`  Looking for class type: "${classType}"`)
+
+        // Use same fuzzy matching logic as class finding
+        const matchesClass =
+          rowText.includes(classTypeLower) || // Exact match (fast path)
+          fuzzyMatch(rowText, classType, 0.75) || // Fuzzy match on full text
+          rowWords.some(word => fuzzyMatch(word, classType, 0.8)) || // Fuzzy match on individual words
+          // Check word prefixes (handles concatenated words like "RacquetballAsheville")
+          rowWords.some(word => {
+            const minLength = Math.max(3, classTypeLower.length - 2)
+            const maxLength = classTypeLower.length + 3
+            for (let len = minLength; len <= maxLength && len <= word.length; len++) {
+              const wordPrefix = word.substring(0, len)
+              if (fuzzyMatch(wordPrefix, classType, 0.8)) {
+                console.log(`  ✓ Fuzzy matched prefix: "${wordPrefix}" matches "${classType}"`)
+                return true
+              }
+            }
+            return false
+          })
+
+        const matchesTime =
+          rowText.includes(targetTime12.toLowerCase()) ||
+          rowText.includes(targetTime12.replace(' ', '').toLowerCase())
+
+        console.log(`  Match results: class=${matchesClass}, time=${matchesTime}`)
+
+        if (matchesClass && matchesTime) {
+          console.log(`Found booking button: "${buttonText}" (fuzzy matched class type)`)
 
           // Scroll button into view before clicking (important for dynamically loaded classes)
           await page.evaluate((el) => {
@@ -864,12 +920,12 @@ async function attemptBookingButtonClick(
         }
       }
     }
-    
+
     return { success: false, error: 'Could not find booking button' }
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     }
   }
 }
@@ -1360,11 +1416,14 @@ async function findAndBookClass(
     }
 
     // Use the helper function to attempt booking
+    console.log(`[Main] Calling attemptBookingButtonClick with classType="${classType}", targetTime12="${targetTime12}"`)
     const bookingResult = await attemptBookingButtonClick(page, classType, targetTime12)
+    console.log(`[Main] Helper function returned: success=${bookingResult.success}, error="${bookingResult.error || 'none'}"`)
     let clicked = bookingResult.success
-    
+
     // Fallback: Get all buttons and find the one in the class row
     if (!clicked) {
+      console.log(`[Main] Helper failed, trying fallback button detection`)
       const allButtons = await page.$$('button, a[role="button"], a.btn, input[type="button"]')
       
       for (const button of allButtons) {
@@ -1387,20 +1446,42 @@ async function findAndBookClass(
         )
         
         const buttonTextLower = buttonText.toLowerCase()
-        const isBookingButton = 
+        const isBookingButton =
           buttonTextLower.includes('reserve') ||
           buttonTextLower.includes('book') ||
           buttonTextLower.includes('waitlist') ||
           buttonTextLower.includes('add to waitlist') ||
           (buttonClass.includes('btn-primary') && (buttonTextLower.includes('reserve') || buttonTextLower === ''))
 
-        // Check if this button is in the matching class row
-        const matchesClass = 
-          parentText.includes(classType.toLowerCase()) &&
-          (parentText.includes(targetTime) ||
-           parentText.includes(classTime) ||
-           parentText.includes(targetTime12.toLowerCase()) ||
-           parentText.includes(targetTime12.replace(' ', '').toLowerCase()))
+        // Check if this button is in the matching class row using fuzzy matching
+        const parentWords = parentText.split(/\s+/)
+        const classTypeLower = classType.toLowerCase()
+
+        // Use same fuzzy matching logic as class finding
+        const matchesClassType =
+          parentText.includes(classTypeLower) || // Exact match (fast path)
+          fuzzyMatch(parentText, classType, 0.75) || // Fuzzy match on full text
+          parentWords.some(word => fuzzyMatch(word, classType, 0.8)) || // Fuzzy match on individual words
+          // Check word prefixes (handles concatenated words like "RacquetballAsheville")
+          parentWords.some(word => {
+            const minLength = Math.max(3, classTypeLower.length - 2)
+            const maxLength = classTypeLower.length + 3
+            for (let len = minLength; len <= maxLength && len <= word.length; len++) {
+              const wordPrefix = word.substring(0, len)
+              if (fuzzyMatch(wordPrefix, classType, 0.8)) {
+                return true
+              }
+            }
+            return false
+          })
+
+        const matchesTime =
+          parentText.includes(targetTime) ||
+          parentText.includes(classTime) ||
+          parentText.includes(targetTime12.toLowerCase()) ||
+          parentText.includes(targetTime12.replace(' ', '').toLowerCase())
+
+        const matchesClass = matchesClassType && matchesTime
 
         if (isBookingButton && matchesClass) {
           console.log(`Found booking button: "${buttonText}" (class: ${buttonClass})`)
