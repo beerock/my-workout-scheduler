@@ -57,6 +57,18 @@
   - Prevents race conditions when retries trigger simultaneously
   - Inngest-level deduplication (same event ID = single execution)
   - Clean database (no orphaned pending attempts)
+- ✅ **COMPLETED: Fuzzy Matching for Class Names (v2.7)**
+  - Handles typos and spelling variations in class names (e.g., "Raquetball" → "Racquetball")
+  - Uses Levenshtein distance algorithm with 0.75-0.8 similarity threshold
+  - Applies to both class finding (schedule search) and booking button detection
+  - Handles concatenated words (e.g., "RacquetballAsheville")
+  - Case-insensitive matching
+  - Improves user experience by being more forgiving of input errors
+- ✅ **COMPLETED: scrollIntoView for Dynamically Loaded Classes (v2.7)**
+  - Scrolls booking buttons into viewport before clicking
+  - Critical for classes that appear after "Load more results"
+  - Prevents click failures on elements outside viewport
+  - Smooth scrolling with 500ms animation delay
 
 **Major Changes from v1.0:**
 

@@ -812,8 +812,6 @@ async function attemptBookingButtonClick(
     // Find and click the button - search for all buttons and match by parent row
     const allButtons = await page.$$('a.btn.btn-primary, a[role="button"], button.btn-primary, button[class*="btn"], a[class*="btn"]')
 
-    console.log(`[Helper] Found ${allButtons.length} potential buttons to check`)
-
     for (const button of allButtons) {
       const buttonText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || '', button)
       const buttonTextLower = buttonText.toLowerCase()
@@ -823,8 +821,6 @@ async function attemptBookingButtonClick(
           buttonTextLower.includes('book') ||
           buttonTextLower.includes('waitlist') ||
           buttonTextLower.includes('add to waitlist')) {
-
-        console.log(`[Helper] Found potential booking button: "${buttonText}", extracting row text...`)
 
         // Extract row text for fuzzy matching in Node.js context
         // Try to find a suitable container (div.row, tr, or any ancestor with content)
@@ -859,18 +855,12 @@ async function attemptBookingButtonClick(
         }, button)
 
         if (!rowText) {
-          console.log(`[Helper] ⚠️  No row text found for button "${buttonText}", skipping`)
           continue
         }
-
-        console.log(`[Helper] Extracted row text (first 150 chars): "${rowText.substring(0, 150)}..."`)
 
         // Check if row matches using fuzzy matching (handles typos like "Raquetball" vs "Racquetball")
         const rowWords = rowText.split(/\s+/)
         const classTypeLower = classType.toLowerCase()
-
-        console.log(`  Checking button row text: "${rowText.substring(0, 100)}..."`)
-        console.log(`  Looking for class type: "${classType}"`)
 
         // Use same fuzzy matching logic as class finding
         const matchesClass =
@@ -884,7 +874,6 @@ async function attemptBookingButtonClick(
             for (let len = minLength; len <= maxLength && len <= word.length; len++) {
               const wordPrefix = word.substring(0, len)
               if (fuzzyMatch(wordPrefix, classType, 0.8)) {
-                console.log(`  ✓ Fuzzy matched prefix: "${wordPrefix}" matches "${classType}"`)
                 return true
               }
             }
@@ -894,8 +883,6 @@ async function attemptBookingButtonClick(
         const matchesTime =
           rowText.includes(targetTime12.toLowerCase()) ||
           rowText.includes(targetTime12.replace(' ', '').toLowerCase())
-
-        console.log(`  Match results: class=${matchesClass}, time=${matchesTime}`)
 
         if (matchesClass && matchesTime) {
           console.log(`Found booking button: "${buttonText}" (fuzzy matched class type)`)
@@ -1416,14 +1403,11 @@ async function findAndBookClass(
     }
 
     // Use the helper function to attempt booking
-    console.log(`[Main] Calling attemptBookingButtonClick with classType="${classType}", targetTime12="${targetTime12}"`)
     const bookingResult = await attemptBookingButtonClick(page, classType, targetTime12)
-    console.log(`[Main] Helper function returned: success=${bookingResult.success}, error="${bookingResult.error || 'none'}"`)
     let clicked = bookingResult.success
 
     // Fallback: Get all buttons and find the one in the class row
     if (!clicked) {
-      console.log(`[Main] Helper failed, trying fallback button detection`)
       const allButtons = await page.$$('button, a[role="button"], a.btn, input[type="button"]')
       
       for (const button of allButtons) {
