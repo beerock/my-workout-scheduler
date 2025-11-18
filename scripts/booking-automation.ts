@@ -860,6 +860,9 @@ async function attemptBookingButtonClick(
         const rowWords = rowText.split(/\s+/)
         const classTypeLower = classType.toLowerCase()
 
+        console.log(`  Checking button row text: "${rowText.substring(0, 100)}..."`)
+        console.log(`  Looking for class type: "${classType}"`)
+
         // Use same fuzzy matching logic as class finding
         const matchesClass =
           rowText.includes(classTypeLower) || // Exact match (fast path)
@@ -872,6 +875,7 @@ async function attemptBookingButtonClick(
             for (let len = minLength; len <= maxLength && len <= word.length; len++) {
               const wordPrefix = word.substring(0, len)
               if (fuzzyMatch(wordPrefix, classType, 0.8)) {
+                console.log(`  ✓ Fuzzy matched prefix: "${wordPrefix}" matches "${classType}"`)
                 return true
               }
             }
@@ -881,6 +885,8 @@ async function attemptBookingButtonClick(
         const matchesTime =
           rowText.includes(targetTime12.toLowerCase()) ||
           rowText.includes(targetTime12.replace(' ', '').toLowerCase())
+
+        console.log(`  Match results: class=${matchesClass}, time=${matchesTime}`)
 
         if (matchesClass && matchesTime) {
           console.log(`Found booking button: "${buttonText}" (fuzzy matched class type)`)
