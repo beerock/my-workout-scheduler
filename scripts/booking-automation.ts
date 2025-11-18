@@ -1416,11 +1416,14 @@ async function findAndBookClass(
     }
 
     // Use the helper function to attempt booking
+    console.log(`[Main] Calling attemptBookingButtonClick with classType="${classType}", targetTime12="${targetTime12}"`)
     const bookingResult = await attemptBookingButtonClick(page, classType, targetTime12)
+    console.log(`[Main] Helper function returned: success=${bookingResult.success}, error="${bookingResult.error || 'none'}"`)
     let clicked = bookingResult.success
-    
+
     // Fallback: Get all buttons and find the one in the class row
     if (!clicked) {
+      console.log(`[Main] Helper failed, trying fallback button detection`)
       const allButtons = await page.$$('button, a[role="button"], a.btn, input[type="button"]')
       
       for (const button of allButtons) {
