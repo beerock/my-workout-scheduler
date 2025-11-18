@@ -62,14 +62,14 @@ export function getSiteUrl(): string {
  * @example
  * const { fromEmail, fromName } = getEmailConfig()
  * // Production: { fromEmail: 'noreply@yourdomain.com', fromName: 'My Workout Scheduler' }
- * // Development: { fromEmail: 'dev@localhost', fromName: 'My Workout Scheduler (Dev)' }
+ * // Development: { fromEmail: 'onboarding@resend.dev', fromName: 'My Workout Scheduler' }
  */
 export function getEmailConfig() {
   const isDevelopment = process.env.NODE_ENV === 'development'
 
   return {
-    fromEmail: process.env.RESEND_FROM_EMAIL || (isDevelopment ? 'dev@localhost' : 'noreply@localhost'),
-    fromName: process.env.RESEND_FROM_NAME || (isDevelopment ? 'My Workout Scheduler (Dev)' : 'My Workout Scheduler'),
+    fromEmail: process.env.RESEND_FROM_EMAIL || (isDevelopment ? 'onboarding@resend.dev' : 'onboarding@resend.dev'),
+    fromName: process.env.RESEND_FROM_NAME || 'My Workout Scheduler',
   }
 }
 
