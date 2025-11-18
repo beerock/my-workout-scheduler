@@ -1421,8 +1421,17 @@ async function findAndBookClass(
             clicked = false
             break
           }
-          
-          await button.click()
+
+          // Click button and wait for navigation to class description page
+          try {
+            await Promise.all([
+              page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 10000 }),
+              button.click()
+            ])
+            console.log('Successfully navigated to class description page')
+          } catch (navError) {
+            console.log('Navigation timeout, but continuing to check if page loaded...')
+          }
           clicked = true
           break
         }
@@ -1433,11 +1442,11 @@ async function findAndBookClass(
       // Check if we failed due to booking window or just couldn't find button
       const pageContent = await page.content()
       const pageContentLower = pageContent.toLowerCase()
-      const hasBookingWindowText = 
+      const hasBookingWindowText =
         pageContentLower.includes('reservation starts at') ||
         pageContentLower.includes('reservations open') ||
         pageContentLower.includes('booking opens')
-      
+
       if (hasBookingWindowText) {
         return {
           status: 'failed',
@@ -1445,7 +1454,7 @@ async function findAndBookClass(
           selectedBranch: branchUsed,
         }
       }
-      
+
       return {
         status: 'failed',
         errorMessage: 'Could not find or click booking button for the class',
@@ -1454,14 +1463,7 @@ async function findAndBookClass(
     }
 
     // STEP 2: Handle class description page (two-step booking process)
-    console.log('Clicked first RESERVE button, waiting for class description page...')
-    
-    // Wait for navigation to class description page
-    try {
-      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 })
-    } catch (e) {
-      console.log('Navigation timeout or no navigation detected, checking current page...')
-    }
+    console.log('Checking class description page...')
 
     // Verify we're on class description page and take screenshot
     const descriptionUrl = page.url()
