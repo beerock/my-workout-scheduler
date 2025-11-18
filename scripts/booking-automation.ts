@@ -843,7 +843,15 @@ async function attemptBookingButtonClick(
         
         if (isInMatchingRow) {
           console.log(`Found booking button: "${buttonText}"`)
-          await button.click()
+          try {
+            await Promise.all([
+              page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 10000 }),
+              button.click()
+            ])
+            console.log('Successfully navigated to class description page')
+          } catch (navError) {
+            console.log('Navigation timeout in helper, but continuing...')
+          }
           return { success: true }
         }
       }
