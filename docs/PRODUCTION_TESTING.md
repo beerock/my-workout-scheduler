@@ -14,6 +14,8 @@ Recent updates (v2.7) introduce:
 - ✅ Enhanced class status detection (full, cancelled, not reservable)
 - ✅ Duplicate booking prevention with idempotency keys
 - ✅ Improved retry logic (15-minute intervals for full classes)
+- ✅ Fuzzy matching for class names (handles typos like "Raquetball" → "Racquetball")
+- ✅ scrollIntoView for dynamically loaded classes (after "Load more results")
 
 This guide ensures all scenarios are properly validated in production.
 
