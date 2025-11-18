@@ -209,6 +209,25 @@ Test with classes in different states:
 - Already reserved (RESERVED status)
 - Full without waitlist (FULL status)
 
+### Scenario 5: Test Fuzzy Matching
+
+Test with intentional typos in class names to verify fuzzy matching:
+- Enter "Raquetball" (misspelled) → Should match "Racquetball" on website ✓
+- Enter "BodyBalance" (no space) → Should match "Body Balance" ✓
+- Enter "BODYPUMP" (all caps) → Should match "BodyPump" or "Body Pump" ✓
+
+**How it works:**
+- System uses Levenshtein distance algorithm
+- Similarity threshold: 0.75-0.8 required for match
+- Applies to both class finding and booking button detection
+- Case-insensitive and handles concatenated words
+
+**To test:**
+1. Create a class with a slight misspelling of the actual class name
+2. Run booking test with `--headless=false` to watch it work
+3. Check logs for "Found booking button" message confirming match
+4. Verify booking succeeds despite the typo
+
 ## Next Steps After Testing
 
 Once testing is successful:
