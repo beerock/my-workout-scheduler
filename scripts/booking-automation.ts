@@ -843,6 +843,14 @@ async function attemptBookingButtonClick(
         
         if (isInMatchingRow) {
           console.log(`Found booking button: "${buttonText}"`)
+
+          // Scroll button into view before clicking (important for dynamically loaded classes)
+          await page.evaluate((el) => {
+            (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }, button)
+          await new Promise(resolve => setTimeout(resolve, 500)) // Wait for scroll animation
+          console.log('Scrolled button into view')
+
           try {
             await Promise.all([
               page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 10000 }),
@@ -1429,6 +1437,13 @@ async function findAndBookClass(
             clicked = false
             break
           }
+
+          // Scroll button into view before clicking (important for dynamically loaded classes)
+          await page.evaluate((el) => {
+            (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }, button)
+          await new Promise(resolve => setTimeout(resolve, 500)) // Wait for scroll animation
+          console.log('Scrolled button into view')
 
           // Click button and wait for navigation to class description page
           try {
