@@ -812,6 +812,8 @@ async function attemptBookingButtonClick(
     // Find and click the button - search for all buttons and match by parent row
     const allButtons = await page.$$('a.btn.btn-primary, a[role="button"], button.btn-primary, button[class*="btn"], a[class*="btn"]')
 
+    console.log(`[Helper] Found ${allButtons.length} potential buttons to check`)
+
     for (const button of allButtons) {
       const buttonText = await page.evaluate((el) => (el as HTMLElement).textContent?.trim() || '', button)
       const buttonTextLower = buttonText.toLowerCase()
@@ -821,6 +823,8 @@ async function attemptBookingButtonClick(
           buttonTextLower.includes('book') ||
           buttonTextLower.includes('waitlist') ||
           buttonTextLower.includes('add to waitlist')) {
+
+        console.log(`[Helper] Found potential booking button: "${buttonText}", extracting row text...`)
 
         // Extract row text for fuzzy matching in Node.js context
         // Try to find a suitable container (div.row, tr, or any ancestor with content)
@@ -854,7 +858,12 @@ async function attemptBookingButtonClick(
           return fallbackText
         }, button)
 
-        if (!rowText) continue
+        if (!rowText) {
+          console.log(`[Helper] ⚠️  No row text found for button "${buttonText}", skipping`)
+          continue
+        }
+
+        console.log(`[Helper] Extracted row text (first 150 chars): "${rowText.substring(0, 150)}..."`)
 
         // Check if row matches using fuzzy matching (handles typos like "Raquetball" vs "Racquetball")
         const rowWords = rowText.split(/\s+/)
