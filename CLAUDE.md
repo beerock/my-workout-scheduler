@@ -18,6 +18,8 @@ This document provides Claude with essential context about the My Workout Schedu
 - **Enhanced class status detection** (6 states: available, window not open, reserved, full, cancelled, not reservable)
 - **Duplicate booking prevention** with idempotency keys and pending attempt checks
 - **Smart retry logic**: Only retries temporary failures (class full), not permanent ones (cancelled, not reservable)
+- **Fuzzy matching for class names**: Handles typos in class names (e.g., "Raquetball" → "Racquetball") using Levenshtein distance algorithm with 0.75-0.8 similarity threshold
+- **scrollIntoView for dynamically loaded classes**: Ensures buttons outside viewport can be clicked after "Load more results"
 - Case-insensitive pill/badge detection for "Class Full", "Cancelled", "Not Reservable"
 - Defensive pre-click check for race conditions
 - Inngest-level deduplication for retry events (`book-retry-{classId}-{date}-{attempt}`)
@@ -355,14 +357,27 @@ reserved > cancelled > not reservable > full > available
 
 ### 8. Fuzzy Matching
 
-Class names on gym website may have minor spelling variations. System uses case-insensitive matching and handles variations.
+Class names on gym website may have minor spelling variations or typos. System uses fuzzy matching with Levenshtein distance algorithm to handle variations.
 
-**Example:**
-- Database: "BODYPUMP"
-- Website: "Body Pump" or "BodyPump"
-- Match: ✓
+**How it works:**
+- Uses Levenshtein distance to measure similarity between strings
+- Threshold: 0.75-0.8 similarity required for match
+- Applies to both class finding (schedule search) and button detection
+- Handles concatenated words (e.g., "RacquetballAsheville")
+- Case-insensitive matching
 
-**Files:** `scripts/booking-automation.ts:findClassElement()`
+**Examples:**
+- User types: "Raquetball" → Matches: "Racquetball" ✓
+- Database: "BODYPUMP" → Website: "Body Pump" or "BodyPump" ✓
+- User types: "BodyBalance" → Matches: "BODYBALANCE" ✓
+
+**Implementation:**
+- Class finding: Lines 1070-1106 in `booking-automation.ts`
+- Button detection: Lines 866-881 in `booking-automation.ts` (helper function)
+- Button detection: Lines 1449-1464 in `booking-automation.ts` (fallback)
+- Helper function: `attemptBookingButtonClick()` at line 802
+
+**Files:** `scripts/booking-automation.ts`
 
 ### 9. Timezone Handling
 
