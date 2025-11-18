@@ -462,10 +462,11 @@ booking\_attempts (
 
 **Days 11-12: Dashboard & Notifications**
 
-- [ ] Build status dashboard page  
-- [ ] Show booking history (last 30 days)  
-- [ ] Set up email service (Resend/SendGrid)  
-- [ ] Send booking confirmation emails  
+- [ ] Build status dashboard page
+- [ ] Show booking history (last 30 days)
+- [x] Set up email service (Resend) - ✅ Completed (using `onboarding@resend.dev` for development)
+- [ ] **PRODUCTION**: Verify custom domain in Resend and update `RESEND_FROM_EMAIL` to `noreply@yourdomain.com`
+- [ ] Send booking confirmation emails
 - [ ] Send failure alert emails
 
 **Days 13-14: Testing & Launch**
