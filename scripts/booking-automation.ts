@@ -817,30 +817,32 @@ async function attemptBookingButtonClick(
       const buttonTextLower = buttonText.toLowerCase()
       
       // Check if this is a booking button
-      if (buttonTextLower.includes('reserve') || 
-          buttonTextLower.includes('book') || 
+      if (buttonTextLower.includes('reserve') ||
+          buttonTextLower.includes('book') ||
           buttonTextLower.includes('waitlist') ||
           buttonTextLower.includes('add to waitlist')) {
-        
-        // Check if button is in the matching class row
-        const isInMatchingRow = await page.evaluate((el, classType, targetTime12) => {
+
+        // Check if button is in the matching class row - use fuzzy matching for class type
+        const rowData = await page.evaluate((el, targetTime12) => {
           let current: HTMLElement | null = el.parentElement
           let depth = 0
           while (current && depth < 6) {
             // Check if we're in a div.row
             if (current.tagName === 'DIV' && current.className.includes('row')) {
               const rowText = (current.textContent || '').toLowerCase()
-              if (rowText.includes(classType.toLowerCase()) && 
-                  rowText.includes(targetTime12.toLowerCase())) {
-                return true
+              if (rowText.includes(targetTime12.toLowerCase())) {
+                return rowText // Return row text for fuzzy matching in Node context
               }
             }
             current = current.parentElement
             depth++
           }
-          return false
-        }, button, classType, targetTime12)
-        
+          return null
+        }, button, targetTime12)
+
+        // Use fuzzy matching to check if class type matches (handles "Raquetball" vs "Racquetball")
+        const isInMatchingRow = rowData && fuzzyMatch(rowData, classType, 0.8)
+
         if (isInMatchingRow) {
           console.log(`Found booking button: "${buttonText}"`)
 
@@ -1394,13 +1396,14 @@ async function findAndBookClass(
           buttonTextLower.includes('add to waitlist') ||
           (buttonClass.includes('btn-primary') && (buttonTextLower.includes('reserve') || buttonTextLower === ''))
 
-        // Check if this button is in the matching class row
-        const matchesClass = 
-          parentText.includes(classType.toLowerCase()) &&
-          (parentText.includes(targetTime) ||
-           parentText.includes(classTime) ||
-           parentText.includes(targetTime12.toLowerCase()) ||
-           parentText.includes(targetTime12.replace(' ', '').toLowerCase()))
+        // Check if this button is in the matching class row - use fuzzy matching for class type
+        const hasMatchingTime =
+          parentText.includes(targetTime) ||
+          parentText.includes(classTime) ||
+          parentText.includes(targetTime12.toLowerCase()) ||
+          parentText.includes(targetTime12.replace(' ', '').toLowerCase())
+
+        const matchesClass = hasMatchingTime && fuzzyMatch(parentText, classType, 0.8)
 
         if (isBookingButton && matchesClass) {
           console.log(`Found booking button: "${buttonText}" (class: ${buttonClass})`)
