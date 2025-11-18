@@ -854,10 +854,7 @@ async function attemptBookingButtonClick(
           return fallbackText
         }, button)
 
-        if (!rowText) {
-          console.log(`  Skipping button "${buttonText}" - no row text found`)
-          continue
-        }
+        if (!rowText) continue
 
         // Check if row matches using fuzzy matching (handles typos like "Raquetball" vs "Racquetball")
         const rowWords = rowText.split(/\s+/)
@@ -884,12 +881,6 @@ async function attemptBookingButtonClick(
         const matchesTime =
           rowText.includes(targetTime12.toLowerCase()) ||
           rowText.includes(targetTime12.replace(' ', '').toLowerCase())
-
-        // Debug logging
-        if (buttonTextLower.includes('reserve')) {
-          console.log(`  Checking Reserve button - matchesClass: ${matchesClass}, matchesTime: ${matchesTime}`)
-          console.log(`  Row text preview: ${rowText.substring(0, 150)}`)
-        }
 
         if (matchesClass && matchesTime) {
           console.log(`Found booking button: "${buttonText}" (fuzzy matched class type)`)
