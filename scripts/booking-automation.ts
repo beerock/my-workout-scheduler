@@ -1599,6 +1599,22 @@ async function findAndBookClass(
     console.log(`Final URL: ${finalUrl}`)
     console.log(`Checking for confirmation keywords...`)
 
+    // Check for concurrent booking conflict (user already has a class at this time)
+    // Message: "Reservation for [user name] could not be completed, as they already have an existing reservation during this time."
+    const hasConcurrentConflict =
+      finalContent.includes('already have an existing reservation during this time') ||
+      finalContent.includes('already have a reservation during this time') ||
+      (finalContent.includes('could not be completed') && finalContent.includes('existing reservation'))
+
+    if (hasConcurrentConflict) {
+      console.log('⚠️  Concurrent booking conflict detected - user already has a class at this time')
+      return {
+        status: 'failed',
+        errorMessage: 'Cannot book - you already have a class scheduled at this time (conflicts with existing reservation)',
+        selectedBranch: branchUsed,
+      }
+    }
+
     // Detect waitlist vs booking using ACTUAL YMCA confirmation page text
     // Waitlist: "Awesome! ... Now that you are in waitlist, you can..."
     // Booking: "Awesome! ... Now that reservation is complete, you can..."
