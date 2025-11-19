@@ -1,6 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
-import { type NextRequest, NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
+/**
+ * Proxy for authentication and session management
+ *
+ * Responsibilities:
+ * 1. Refresh auth sessions on every request
+ * 2. Protect /dashboard routes (redirect to /login if not authenticated)
+ * 3. Handle auth callback for token exchange
+ */
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -15,7 +23,9 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value)
+          )
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -27,8 +37,33 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired - required for Server Components
-  await supabase.auth.getUser()
+  // Refresh session if expired
+  // This is critical for maintaining user sessions across page loads
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // Protected routes: /dashboard/*
+  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+    if (!user) {
+      // User is not authenticated, redirect to login
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/login'
+      redirectUrl.searchParams.set('redirectedFrom', request.nextUrl.pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
+  }
+
+  // Auth routes: redirect to dashboard if already logged in
+  const authRoutes = ['/login', '/signup']
+  if (authRoutes.includes(request.nextUrl.pathname)) {
+    if (user) {
+      // User is already authenticated, redirect to dashboard
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/dashboard'
+      return NextResponse.redirect(redirectUrl)
+    }
+  }
 
   return supabaseResponse
 }
@@ -36,13 +71,13 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
+     * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     * - public folder
+     * - api routes (handled separately)
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
-
