@@ -137,11 +137,49 @@ Confirm your My Workout Scheduler account
 </p>
 
 <p style="color: #666; font-size: 12px;">
-  Questions? Reply to this email or contact support@beerock.com
+  Questions? Reply to this email or contact help@beerock.com
 </p>
 ```
 
-### 3.3 Customize "Reset Password" Template
+### 3.3 Customize "Change Email Address" Template
+
+**Subject:**
+```
+Confirm your new email address
+```
+
+**Message Body (HTML):**
+```html
+<h2>Confirm Your New Email Address</h2>
+
+<p>You requested to change your email address for My Workout Scheduler. Click the button below to confirm your new email address:</p>
+
+<p style="margin: 30px 0;">
+  <a href="{{ .ConfirmationURL }}"
+     style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+    Confirm New Email
+  </a>
+</p>
+
+<p>Or copy and paste this link into your browser:</p>
+<p style="word-break: break-all; color: #666;">{{ .ConfirmationURL }}</p>
+
+<p style="margin-top: 30px; color: #666; font-size: 14px;">
+  This link expires in 24 hours.
+</p>
+
+<hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+
+<p style="color: #666; font-size: 12px;">
+  If you didn't request this email change, please contact us immediately at help@beerock.com to secure your account.
+</p>
+
+<p style="color: #666; font-size: 12px;">
+  Questions? Reply to this email or contact help@beerock.com
+</p>
+```
+
+### 3.4 Customize "Reset Password" Template
 
 **Subject:**
 ```
@@ -175,7 +213,7 @@ Reset your My Workout Scheduler password
 </p>
 
 <p style="color: #666; font-size: 12px;">
-  Questions? Reply to this email or contact support@beerock.com
+  Questions? Reply to this email or contact help@beerock.com
 </p>
 ```
 
