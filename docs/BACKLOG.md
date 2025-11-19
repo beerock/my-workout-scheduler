@@ -1251,3 +1251,169 @@ Our implementation requires **password verification** before email changes:
 **Reference Session**: See other email session for related work
 
 ---
+
+## "Stay Logged In" Checkbox on Login Page
+
+### Overview
+**STATUS: BACKLOGGED**
+
+Add a "Keep me logged in" checkbox to the login page that allows users to control session persistence. Currently, users stay logged in indefinitely with no indication or control over this behavior.
+
+### Current Behavior
+- Users stay logged in indefinitely (session persists across browser restarts)
+- No user control over session persistence
+- No indication to users about login behavior
+
+### Expected Behavior
+
+**Checkbox Checked (Stay logged in):**
+- Session persists indefinitely (across browser restarts)
+- User remains logged in until they explicitly sign out
+
+**Checkbox Unchecked (Default):**
+- Session ends when browser closes
+- User must log in again on next browser session
+
+### Requirements
+
+1. **Login Page UI**
+   - Add checkbox below password field on login page
+   - Label: "Keep me logged in"
+   - Default state: **Unchecked**
+   - Only appears on login page (NOT on signup page)
+
+2. **Session Persistence Logic**
+   - Checked: Use Supabase persistent session storage (localStorage)
+   - Unchecked: Use Supabase temporary session storage (sessionStorage)
+   - Supabase supports this via `storage` option in `createBrowserClient()`
+
+3. **User Experience**
+   - Clear indication of what "Keep me logged in" means
+   - Checkbox state remembered if login fails (don't reset form)
+   - Consider adding tooltip or help text explaining behavior
+
+### Implementation Notes
+
+**Supabase Session Storage:**
+
+Supabase client supports session persistence configuration:
+
+```typescript
+// lib/supabase/client.ts or login action
+import { createBrowserClient } from '@supabase/ssr'
+
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    cookies: {
+      // ... existing cookie config
+    },
+    auth: {
+      storage: rememberMe ? window.localStorage : window.sessionStorage,
+      // or use storageKey to differentiate
+    }
+  }
+)
+```
+
+**Alternative Approach:**
+
+Use Supabase's built-in session configuration:
+
+```typescript
+// When user logs in
+await supabase.auth.signInWithPassword({
+  email,
+  password,
+  options: {
+    // This isn't a direct option, but session persistence is controlled by storage type
+  }
+})
+```
+
+**Recommended Implementation:**
+
+1. **Client-side approach (simplest):**
+   - Create separate Supabase clients based on "remember me" choice
+   - Use localStorage for persistent sessions
+   - Use sessionStorage for temporary sessions
+
+2. **Server Action approach:**
+   - Pass `rememberMe` boolean to login server action
+   - Configure cookie options based on preference
+   - Set appropriate cookie maxAge (indefinite vs session)
+
+### Code Location
+
+**Files to modify:**
+- `app/(auth)/login/page.tsx` - Add checkbox to login form
+- `lib/supabase/client.ts` - Support configurable session storage (optional)
+- Login form component - Handle checkbox state
+- May need to modify Supabase middleware if using cookie-based approach
+
+**UI Updates:**
+```tsx
+// app/(auth)/login/page.tsx
+<div className="flex items-center">
+  <input
+    id="remember-me"
+    name="remember-me"
+    type="checkbox"
+    className="h-4 w-4 rounded border-gray-300"
+  />
+  <label htmlFor="remember-me" className="ml-2 text-sm text-gray-700">
+    Keep me logged in
+  </label>
+</div>
+```
+
+### Testing Considerations
+
+1. **Checked checkbox:**
+   - [ ] User logs in with "Keep me logged in" checked
+   - [ ] Close browser completely
+   - [ ] Reopen browser and navigate to app
+   - [ ] Verify user is still logged in
+
+2. **Unchecked checkbox (default):**
+   - [ ] User logs in without checking "Keep me logged in"
+   - [ ] Close browser tab (session should persist in same browser window)
+   - [ ] Close browser completely
+   - [ ] Reopen browser and navigate to app
+   - [ ] Verify user is logged out (redirected to login)
+
+3. **Login failure:**
+   - [ ] Check "Keep me logged in"
+   - [ ] Enter wrong password
+   - [ ] Verify checkbox state is preserved after error
+
+4. **Manual logout:**
+   - [ ] Verify logout works regardless of checkbox state
+   - [ ] Session cleared properly in both cases
+
+### Security Considerations
+
+- **Indefinite sessions**: Consider if indefinite sessions pose security risk
+- **Shared computers**: Users on shared computers should NOT check "Keep me logged in"
+- **Session hijacking**: Ensure session tokens are still secure with persistent storage
+- **Consider**: Adding help text warning about shared computer usage
+
+### Alternative Enhancements (Future)
+
+- Add "Remember me for 30 days" option (middle ground)
+- Add session timeout for inactive users (even with "Keep me logged in")
+- Show last login time in user profile
+- Add "Active sessions" management page
+
+### Status
+**Status**: Backlogged - Not currently implemented
+**Priority**: Medium (UX improvement, security consideration)
+**Last Updated**: November 19, 2025
+**Next Steps**:
+1. Research Supabase session storage configuration options
+2. Decide on client-side vs server-side implementation
+3. Implement checkbox UI on login page
+4. Test session persistence behavior
+
+---
