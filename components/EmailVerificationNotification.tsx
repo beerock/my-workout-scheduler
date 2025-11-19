@@ -15,10 +15,6 @@ export default function EmailVerificationNotification() {
     // Check for email verification success or error in URL hash
     const hash = window.location.hash
 
-    // Debug: Log what we're seeing
-    console.log('EmailVerificationNotification - Hash:', hash)
-    console.log('EmailVerificationNotification - SearchParams:', searchParams.toString())
-
     // Parse hash parameters
     const hashParams = new URLSearchParams(hash.substring(1)) // Remove leading #
     const hashType = hashParams.get('type')
@@ -26,12 +22,6 @@ export default function EmailVerificationNotification() {
     const hashMessage = hashParams.get('message')
     const hashError = hashParams.get('error')
     const hashErrorDescription = hashParams.get('error_description')
-
-    console.log('EmailVerificationNotification - Type:', hashType)
-    console.log('EmailVerificationNotification - Message:', hashMessage)
-    console.log('EmailVerificationNotification - Error:', hashError)
-    console.log('EmailVerificationNotification - Error Description:', hashErrorDescription)
-    console.log('EmailVerificationNotification - Has access token:', !!accessToken)
 
     // Check for errors first
     if (hashError || hashErrorDescription) {
@@ -65,8 +55,6 @@ export default function EmailVerificationNotification() {
       (hashMessage && hashMessage.toLowerCase().includes('confirmation link accepted')) ||
       searchParams.get('email_verified') === 'true' ||
       (hash.includes('access_token') && hash.includes('type='))
-
-    console.log('EmailVerificationNotification - Is verified:', isEmailVerified)
 
     if (isEmailVerified) {
       setNotification('success')
