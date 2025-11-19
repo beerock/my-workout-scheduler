@@ -14,7 +14,17 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Recent Updates (v2.7):**
+**Recent Updates (v2.8):**
+- **User Profile Management** - Complete profile settings page
+  - Email update with password verification and email confirmation
+  - Password change with current password verification
+  - Account deletion with two-step confirmation
+  - Email verification notifications (success/error messages)
+  - Support for Supabase "Double Confirm Email Changes" setting
+  - Hash parameter detection for email verification callbacks
+  - Comprehensive error handling for expired verification links
+
+**Previous Updates (v2.7):**
 - **Enhanced class status detection** (6 states: available, window not open, reserved, full, cancelled, not reservable)
 - **Duplicate booking prevention** with idempotency keys and pending attempt checks
 - **Smart retry logic**: Only retries temporary failures (class full), not permanent ones (cancelled, not reservable)
@@ -112,17 +122,21 @@ my-workout-scheduler/
 │   ├── actions/             # Server actions for form submissions
 │   │   ├── gym-credentials.ts      # Gym credential CRUD operations
 │   │   ├── recurring-classes.ts    # Schedule CRUD operations
-│   │   └── user-settings.ts        # User settings operations
+│   │   ├── user-settings.ts        # User settings operations
+│   │   └── profile.ts              # Profile management operations
 │   ├── api/
 │   │   └── inngest/         # Inngest webhook endpoint
 │   ├── dashboard/           # Protected dashboard
 │   │   ├── page.tsx         # Main dashboard landing
 │   │   ├── credentials/     # Gym credentials management
-│   │   └── schedule/        # Schedule management pages
+│   │   ├── schedule/        # Schedule management pages
+│   │   └── profile/         # User profile management
 │   ├── layout.tsx           # Root layout
 │   ├── page.tsx             # Landing page
 │   └── globals.css          # Global styles
 ├── components/              # Reusable React components
+│   ├── EmailVerificationNotification.tsx  # Email verification notifications
+│   └── ProfileForm.tsx      # Profile management form
 ├── lib/
 │   ├── supabase/           # Supabase client configuration
 │   │   ├── client.ts       # Browser client
@@ -163,9 +177,13 @@ my-workout-scheduler/
 - **`app/dashboard/page.tsx`** - Main dashboard landing page
 - **`app/dashboard/credentials/page.tsx`** - Gym credentials management form
 - **`app/dashboard/schedule/page.tsx`** - Schedule list view with CRUD operations
+- **`app/dashboard/profile/page.tsx`** - User profile management page
 - **`app/actions/recurring-classes.ts`** - Server actions for schedule CRUD operations
 - **`app/actions/gym-credentials.ts`** - Server actions for credential management
 - **`app/actions/user-settings.ts`** - Server actions for user settings (pause toggle)
+- **`app/actions/profile.ts`** - Server actions for profile management (email, password, account deletion)
+- **`components/ProfileForm.tsx`** - Profile management form component
+- **`components/EmailVerificationNotification.tsx`** - Email verification notification component
 - **`lib/encryption.ts`** - Handles AES-256-GCM encryption for gym credentials
 - **`lib/date-utils.ts`** - Date/time utilities (booking window calculations, timezone handling)
 - **`lib/env-utils.ts`** - Environment utilities (URL resolution, email config, environment detection)
@@ -435,6 +453,57 @@ Each recurring class has a timezone setting (e.g., "America/New_York"). System u
 - `test-resend-email.ts` - Email sending test script
 
 **Files:** `lib/env-utils.ts`, `docs/ENVIRONMENT_VARIABLES_STRATEGY.md`, `docs/ENV_QUICK_REFERENCE.md`, `docs/PRODUCTION_EMAIL_SETUP.md`
+
+### 11. User Profile Management
+
+Users can manage their account settings through the profile page at `/dashboard/profile`.
+
+**Features:**
+
+**Email Update:**
+- Requires current password verification (proves user identity)
+- Sends confirmation email to new address
+- Supabase "Double Confirm Email Changes" setting determines email flow:
+  - **Disabled**: One email to new address only (recommended with password verification)
+  - **Enabled**: Two emails - one to old address, one to new address (requires both confirmations)
+- Email verification notifications show success/error messages on dashboard
+
+**Password Change:**
+- Requires current password verification
+- Validates new password strength (minimum 6 characters)
+- Immediate effect after successful change
+
+**Account Deletion:**
+- Two-step confirmation process (checkbox + password)
+- Requires password verification
+- Uses service role client for admin deletion
+- Automatically cascades to related data (if RLS policies configured)
+
+**Email Verification Flow:**
+
+1. **User updates email** → Enters password → Submits form
+2. **Server verifies password** → Calls Supabase `updateUser()` → Email sent
+3. **User clicks link in email** → Redirected to dashboard with hash parameters
+4. **EmailVerificationNotification component** detects hash parameters:
+   - Success: `#type=email_change` or `#message=Confirmation+link+accepted`
+   - Error: `#error=...` or `#error_description=...`
+5. **Notification shown** → Auto-dismisses after 10 seconds
+
+**Hash Parameter Detection:**
+
+The system detects email verification in multiple ways:
+- `type=email_change` (email update when double confirm disabled)
+- `type=signup` (initial signup verification)
+- `message=Confirmation link accepted` (when double confirm enabled)
+- `error` or `error_description` (for expired/invalid links)
+- `access_token` presence with `type` parameter
+
+**Configuration Documentation:**
+- `docs/SUPABASE_EMAIL_SETTINGS.md` - Complete guide for configuring Supabase email settings
+- Explains security considerations of password verification vs double confirm
+- Step-by-step instructions for finding and toggling the setting
+
+**Files:** `app/actions/profile.ts`, `components/ProfileForm.tsx`, `components/EmailVerificationNotification.tsx`, `app/dashboard/profile/page.tsx`, `docs/SUPABASE_EMAIL_SETTINGS.md`
 
 ---
 
@@ -865,6 +934,6 @@ await supabase
 - **v1.4** - Timezone bug fixes, centralized date utilities, server actions refactor
 - **v2.0** - Inngest migration: event-driven architecture, intelligent retry logic, 100% free tier
 - **v2.7** - Enhanced class status detection (6 states), duplicate prevention with idempotency keys, smart retry logic
-- **v2.8** - Environment variable strategy, production email setup (Resend with beerock.com domain, DKIM signing)
+- **v2.8** - User profile management (email/password update, account deletion), email verification notifications, environment variable strategy, production email setup (Resend with beerock.com domain, DKIM signing)
 
 **Last Updated:** November 19, 2025
