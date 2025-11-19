@@ -12,9 +12,32 @@ export default function EmailVerificationNotification() {
     // Check for email verification success in URL hash
     const hash = window.location.hash
 
-    // Supabase redirects with hash fragments after email verification
-    // Format: #access_token=...&type=email_change or type=signup
-    if (hash.includes('type=email_change') || searchParams.get('email_verified') === 'true') {
+    // Debug: Log what we're seeing
+    console.log('EmailVerificationNotification - Hash:', hash)
+    console.log('EmailVerificationNotification - SearchParams:', searchParams.toString())
+
+    // Parse hash parameters
+    const hashParams = new URLSearchParams(hash.substring(1)) // Remove leading #
+    const hashType = hashParams.get('type')
+    const accessToken = hashParams.get('access_token')
+
+    console.log('EmailVerificationNotification - Type:', hashType)
+    console.log('EmailVerificationNotification - Has access token:', !!accessToken)
+
+    // Check for email verification success in multiple ways:
+    // 1. Hash contains type=email_change (email update verification)
+    // 2. Hash contains type=signup (initial signup verification)
+    // 3. Query param email_verified=true
+    // 4. Hash contains access_token (successful auth after verification)
+    const isEmailVerified =
+      hashType === 'email_change' ||
+      hashType === 'signup' ||
+      searchParams.get('email_verified') === 'true' ||
+      (hash.includes('access_token') && hash.includes('type='))
+
+    console.log('EmailVerificationNotification - Is verified:', isEmailVerified)
+
+    if (isEmailVerified) {
       setShowSuccess(true)
 
       // Clear the hash after showing the message
