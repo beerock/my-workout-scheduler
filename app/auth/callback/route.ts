@@ -14,6 +14,8 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
+  const tokenHash = searchParams.get('token_hash')
+  const type = searchParams.get('type')
   const next = searchParams.get('next') ?? '/dashboard'
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
@@ -26,47 +28,65 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  // Code is required for token exchange
-  if (!code) {
-    console.error('No code provided in auth callback')
-    return NextResponse.redirect(
-      new URL('/login?error=No verification code provided', request.url)
-    )
-  }
-
   try {
     const supabase = await createClient()
 
-    // Exchange the code for a session
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    // Handle PKCE flow (code parameter)
+    if (code) {
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (exchangeError) {
-      console.error('Error exchanging code for session:', exchangeError)
+      if (exchangeError) {
+        console.error('Error exchanging code for session:', exchangeError)
 
-      // Handle specific error cases
-      if (exchangeError.message.includes('expired')) {
+        // Handle specific error cases
+        if (exchangeError.message.includes('expired')) {
+          return NextResponse.redirect(
+            new URL('/login?error=Link expired. Please request a new password reset.', request.url)
+          )
+        }
+
+        if (exchangeError.message.includes('already been used')) {
+          return NextResponse.redirect(
+            new URL('/login?message=Link already used. Please log in or request a new reset.', request.url)
+          )
+        }
+
         return NextResponse.redirect(
-          new URL('/login?error=Verification link expired. Please sign up again or request a new link.', request.url)
+          new URL(`/login?error=${encodeURIComponent(exchangeError.message)}`, request.url)
         )
       }
 
-      if (exchangeError.message.includes('already been used')) {
-        return NextResponse.redirect(
-          new URL('/login?message=Email already verified. Please log in.', request.url)
-        )
+      // Success - redirect to next page
+      const redirectUrl = new URL(next, request.url)
+      if (type !== 'recovery') {
+        redirectUrl.searchParams.set('message', 'Email verified successfully!')
       }
-
-      return NextResponse.redirect(
-        new URL(`/login?error=${encodeURIComponent(exchangeError.message)}`, request.url)
-      )
+      return NextResponse.redirect(redirectUrl)
     }
 
-    // Success - redirect to dashboard or specified next page
-    // Add success message as query param
-    const redirectUrl = new URL(next, request.url)
-    redirectUrl.searchParams.set('message', 'Email verified successfully!')
+    // Handle legacy token hash flow (for password reset)
+    if (tokenHash && type) {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: type as any,
+      })
 
-    return NextResponse.redirect(redirectUrl)
+      if (verifyError) {
+        console.error('Error verifying token:', verifyError)
+        return NextResponse.redirect(
+          new URL(`/login?error=${encodeURIComponent(verifyError.message)}`, request.url)
+        )
+      }
+
+      // Success - redirect to next page (usually /reset-password for recovery)
+      return NextResponse.redirect(new URL(next, request.url))
+    }
+
+    // No valid parameters provided
+    console.error('No valid auth parameters (code or token_hash) in callback')
+    return NextResponse.redirect(
+      new URL('/login?error=Invalid verification link', request.url)
+    )
   } catch (error) {
     console.error('Unexpected error in auth callback:', error)
     return NextResponse.redirect(
