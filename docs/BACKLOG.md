@@ -1165,3 +1165,89 @@ RESEND_FROM_NAME=My Workout Scheduler     # Optional: customize
 4. Update production environment variables
 
 ---
+
+## User Profile Management - Email Verification Notifications
+
+### Overview
+**STATUS: ✅ COMPLETED** (November 19, 2025)
+
+Email verification success notifications are now displayed on both the dashboard and profile pages. When users click the email verification link sent to their new email address, they see a prominent success message confirming the update.
+
+### Implementation Details
+
+**Email Verification Detection:**
+- Detects multiple Supabase redirect patterns:
+  - `type=email_change` (when double confirm is disabled)
+  - `type=signup` (initial signup verification)
+  - `message=Confirmation link accepted` (when double confirm is enabled)
+- Works with both Supabase configuration modes
+- Shows success message on dashboard AND profile pages
+- Auto-dismisses after 10 seconds
+
+**Component Location:**
+- `components/EmailVerificationNotification.tsx` - Success notification component
+- `app/dashboard/page.tsx` - Dashboard displays notification
+- `app/dashboard/profile/page.tsx` - Profile page displays notification
+
+**Related Features:**
+- Email update requires password verification (security)
+- Only ONE email sent when properly configured (see below)
+
+### Status
+**Status**: ✅ COMPLETED
+**Priority**: High (better UX)
+**Completed**: November 19, 2025
+
+---
+
+## Supabase "Double Confirm Email Changes" Configuration
+
+### Overview
+**STATUS: BACKLOGGED** - Requires Supabase configuration change
+
+By default, Supabase sends emails to BOTH the old and new email addresses when users change their email. This can be disabled to send only ONE email (to the new address), since our app already requires password verification for security.
+
+### Issue
+- Users currently receive TWO emails when changing email:
+  1. Notification to old email: "Your email is being changed"
+  2. Verification link to new email: "Confirm your new email"
+- This is confusing and unnecessary since password verification already proves identity
+
+### Solution
+Disable "Secure Email Change" (aka "Double Confirm Email Changes") in Supabase settings:
+
+**Steps:**
+1. Go to Supabase Dashboard → Authentication → Settings
+2. Find **"Secure email change (require verification from both emails)"** setting
+3. **Toggle OFF** (disable)
+4. Save changes
+
+**After disabling:**
+- ✅ Only ONE email sent (to new address with verification link)
+- ✅ Password verification still required (security maintained)
+- ✅ Better user experience (simpler flow)
+
+### Documentation
+- Comprehensive guide: `docs/SUPABASE_EMAIL_SETTINGS.md`
+- Includes step-by-step instructions, security considerations, troubleshooting
+
+### Why It's Secure Without Double Confirmation
+Our implementation requires **password verification** before email changes:
+- User must enter current password in profile form
+- Server verifies password is correct (`app/actions/profile.ts`)
+- This proves user identity before any email is sent
+- Double confirmation adds no additional security in this case
+
+### Code References
+- Password verification: `app/actions/profile.ts:80-93`
+- Profile form: `components/ProfileForm.tsx:180-215`
+- Configuration guide: `docs/SUPABASE_EMAIL_SETTINGS.md`
+
+### Status
+**Status**: Backlogged - Pending Supabase configuration
+**Priority**: Medium (UX improvement, not critical)
+**Last Updated**: November 19, 2025
+**Action Required**: Toggle off "Secure email change" in Supabase dashboard
+**Reference Session**: See other email session for related work
+
+---

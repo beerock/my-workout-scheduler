@@ -20,18 +20,22 @@ export default function EmailVerificationNotification() {
     const hashParams = new URLSearchParams(hash.substring(1)) // Remove leading #
     const hashType = hashParams.get('type')
     const accessToken = hashParams.get('access_token')
+    const hashMessage = hashParams.get('message')
 
     console.log('EmailVerificationNotification - Type:', hashType)
+    console.log('EmailVerificationNotification - Message:', hashMessage)
     console.log('EmailVerificationNotification - Has access token:', !!accessToken)
 
     // Check for email verification success in multiple ways:
-    // 1. Hash contains type=email_change (email update verification)
+    // 1. Hash contains type=email_change (email update verification - when double confirm is disabled)
     // 2. Hash contains type=signup (initial signup verification)
-    // 3. Query param email_verified=true
-    // 4. Hash contains access_token (successful auth after verification)
+    // 3. Hash contains message=Confirmation link accepted (when double confirm is enabled)
+    // 4. Query param email_verified=true
+    // 5. Hash contains access_token (successful auth after verification)
     const isEmailVerified =
       hashType === 'email_change' ||
       hashType === 'signup' ||
+      (hashMessage && hashMessage.toLowerCase().includes('confirmation link accepted')) ||
       searchParams.get('email_verified') === 'true' ||
       (hash.includes('access_token') && hash.includes('type='))
 
