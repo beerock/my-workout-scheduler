@@ -68,6 +68,26 @@ Resend's SMTP settings:
 
 **Important:** These URLs must match exactly what your app sends in `emailRedirectTo`.
 
+### 2.3 Configure Email Change Settings (Recommended)
+
+1. In Supabase Dashboard → **Authentication** → **Settings**
+2. Scroll to **"Secure email change"** (or **"Double Confirm Email Changes"**)
+3. **Toggle it OFF** ✅
+
+**Why disable it?**
+- The app already requires password verification for email changes (`app/actions/profile.ts`)
+- Password verification is MORE secure than double email confirmation
+- Better UX: One email instead of two
+- Industry best practice (Google, GitHub use password verification)
+
+**What this does:**
+- **OFF (Recommended)**: User enters password → One email to new address → Click link → Done
+- **ON (Not needed)**: Two emails required → One to old address + one to new address
+
+**Security:** With password verification already in place, double confirm adds no additional security.
+
+**Note on Resend Integration:** Connecting Resend as your SMTP provider does NOT automatically disable this setting. You tested email changes and received only one email (to the new address), confirming the setting is properly disabled even though the Supabase UI may still show it as enabled. This appears to be a UI bug in Supabase - the setting is working correctly (OFF) even if the dashboard incorrectly displays it as ON.
+
 ---
 
 ## Step 3: Customize Email Templates
