@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { getAuthCallbackUrl } from '@/lib/env'
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
@@ -21,14 +22,17 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: getAuthCallbackUrl(),
+      },
     })
 
     if (error) {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/dashboard')
-      router.refresh()
+      // Redirect to verify email page with email in URL
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`)
     }
   }
 
@@ -62,9 +66,12 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={8}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Minimum 8 characters
+            </p>
           </div>
 
           {error && (
