@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import LogoutButton from '@/components/LogoutButton'
 import PauseToggle from '@/components/PauseToggle'
+import EmailVerificationNotification from '@/components/EmailVerificationNotification'
 import { getUserSettings } from '@/app/actions/user-settings'
 
 export default async function DashboardPage() {
@@ -40,7 +41,9 @@ export default async function DashboardPage() {
             </div>
             <PauseToggle initialPaused={settings?.schedule_paused ?? false} />
           </div>
-          
+
+          <EmailVerificationNotification />
+
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Schedule Management</h3>
