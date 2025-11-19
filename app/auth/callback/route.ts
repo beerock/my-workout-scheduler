@@ -59,7 +59,8 @@ export async function GET(request: NextRequest) {
       // Success - redirect to next page
       const redirectUrl = new URL(next, request.url)
       if (type !== 'recovery') {
-        redirectUrl.searchParams.set('message', 'Email verified successfully!')
+        // Set email_verified for signup flow (detected by EmailVerificationNotification component)
+        redirectUrl.searchParams.set('email_verified', 'true')
       }
       return NextResponse.redirect(redirectUrl)
     }
