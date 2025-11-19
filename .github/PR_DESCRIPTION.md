@@ -1,6 +1,6 @@
 ## Summary
 
-This PR adds three new feature specifications to the backlog documentation, including two post-MVP enhancements and one critical pre-MVP security requirement.
+This PR adds four new feature specifications to the backlog documentation, including one post-MVP enhancement and three critical pre-MVP requirements that block MVP launch.
 
 ## Features Added
 
@@ -36,15 +36,27 @@ This PR adds three new feature specifications to the backlog documentation, incl
 - **Migration:** Force password reset for existing users with weak passwords on next login
 - **Future:** Password strength meter (post-MVP)
 
+### 4. Contact/Support Form ⚠️
+**Status:** Pre-MVP - **BLOCKS MVP LAUNCH**
+**Priority:** High (user support and trust)
+
+- **Contact page:** Dedicated `/contact` page with form
+- **Form fields:** Name, Email, Subject dropdown, Message (pre-filled if logged in)
+- **Email:** Sends to `help@beerock.com` via Resend
+- **Footer:** Add "Contact" link throughout site
+- **Confirmation:** On-page success message (no email confirmation for MVP)
+- **Email setup:** Use existing beerock.com domain (same as noreply@)
+
 ## Documentation Changes
 
 **File Modified:**
-- `docs/BACKLOG.md` (+1,038 lines)
+- `docs/BACKLOG.md` (+1,614 lines)
 
 **Commits:**
 - `f811a17` - docs: add 'Stay Logged In' checkbox feature to backlog
 - `2e31c6c` - docs: add OAuth login (Google/Apple) feature to backlog
 - `8f5d0a6` - docs: add password security requirements to backlog (pre-MVP)
+- `5bbebcb` - docs: add contact/support form to backlog (pre-MVP)
 
 **Detailed Specifications Include:**
 - Complete requirements and user stories
@@ -75,12 +87,27 @@ This PR adds three new feature specifications to the backlog documentation, incl
 - Industry best practice even for casual sites
 - **Must be completed before MVP launch**
 
+**Contact/Support Form:**
+- Users need a way to get help and report issues
+- Builds trust and professionalism
+- Required for legal/compliance (contact info)
+- Critical support channel for user retention
+- **Must be completed before MVP launch**
+
+## Pre-MVP Requirements Summary
+
+These features **BLOCK MVP LAUNCH** and must be completed:
+
+1. ✅ **Password Security Requirements** - Enforce password complexity
+2. ✅ **Contact/Support Form** - Allow users to reach out for help
+
 ## Next Steps
 
 After this PR is merged:
 1. **Pre-MVP (blocks launch):** Implement password security requirements
-2. **Post-MVP:** Consider OAuth implementation (high priority for UX)
-3. **Post-MVP:** Implement "Stay Logged In" checkbox (medium priority)
+2. **Pre-MVP (blocks launch):** Implement contact/support form
+3. **Post-MVP:** Consider OAuth implementation (high priority for UX)
+4. **Post-MVP:** Implement "Stay Logged In" checkbox (medium priority)
 
 ## Related Issues
 
