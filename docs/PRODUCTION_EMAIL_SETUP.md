@@ -1,6 +1,6 @@
 # Production Email Setup Guide - beerock.com
 
-**Status:** In Progress
+**Status:** ✅ Completed - Ready for Production Testing
 **Domain:** beerock.com
 **Production Email:** noreply@beerock.com
 **Date:** November 18, 2025
@@ -10,21 +10,23 @@
 ## ✅ Checklist
 
 ### Step 1: Resend Domain Verification
-- [ ] Added domain `beerock.com` in Resend Dashboard
-- [ ] Copied DNS records from Resend
-- [ ] Added TXT record for verification
-- [ ] Added CNAME records for DKIM signing
-- [ ] (Optional) Added MX records for bounce handling
-- [ ] Waited for DNS propagation (5-60 minutes)
-- [ ] Domain shows "Verified" in Resend Dashboard
+- [x] Added domain `beerock.com` in Resend Dashboard
+- [x] Copied DNS records from Resend
+- [x] Added TXT record for verification
+- [x] Added CNAME records for DKIM signing
+- [x] (Optional) Added MX records for bounce handling
+- [x] Waited for DNS propagation (5-60 minutes)
+- [x] Domain shows "Verified" in Resend Dashboard
 
 ### Step 2: Update Vercel Production Environment Variables
-- [ ] Opened Vercel Dashboard → Your Project → Settings → Environment Variables
-- [ ] Updated `RESEND_FROM_EMAIL` to `noreply@beerock.com` (Production only)
-- [ ] Saved changes
+- [x] Opened Vercel Dashboard → Your Project → Settings → Environment Variables
+- [x] Updated `RESEND_FROM_EMAIL` to `noreply@beerock.com` (Production only)
+- [x] Updated `RESEND_FROM_NAME` to `My Workout Scheduler` (all environments)
+- [x] Set `RESEND_FROM_EMAIL` to `onboarding@resend.dev` for Development/Preview
+- [x] Saved changes
 
 ### Step 3: Test Production Email
-- [ ] Deployed to production (or waited for auto-deploy)
+- [x] Deployed to production (triggered redeploy in Vercel)
 - [ ] Sent test email from production
 - [ ] Verified email arrived in inbox (not spam)
 - [ ] Checked email headers for DKIM signature
