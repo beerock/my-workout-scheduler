@@ -1064,3 +1064,190 @@ scripts/
 **Last Updated**: 2025-11-13
 **Dependencies**: Complete YMCA implementation and test in production first
 
+
+## Production Email Configuration
+
+### Overview
+Configure production email sending with verified domain to replace the development test email address (`onboarding@resend.dev`) with a custom domain email.
+
+### Current Status
+- ✅ Resend SDK installed and working
+- ✅ Development testing complete with `onboarding@resend.dev`
+- ✅ Email utilities created (`lib/env-utils.ts`)
+- ✅ Environment variables configured
+- ✅ Production domain `beerock.com` verified in Resend
+- ✅ Production `RESEND_FROM_EMAIL` set to `noreply@beerock.com`
+- ✅ DKIM signing enabled
+- ✅ Production email tested and working
+
+### Requirements
+
+1. **Domain Verification in Resend**
+   - Go to Resend Dashboard → Domains
+   - Add domain (e.g., `yourworkoutscheduler.com` or `busby.dev`)
+   - Add DNS records (TXT, MX, CNAME) to domain provider
+   - Wait for verification (usually < 1 hour)
+   - Verify domain is showing as "Verified" in Resend
+
+2. **Update Production Environment Variables**
+   - Update `RESEND_FROM_EMAIL` in Vercel production environment
+   - Change from: `onboarding@resend.dev`
+   - Change to: `noreply@yourdomain.com` (or your preferred sender)
+   - Optionally update `RESEND_FROM_NAME` if desired
+
+3. **Test Production Email Sending**
+   - Deploy changes to production
+   - Run test email script in production environment
+   - Verify emails are delivered from custom domain
+   - Check spam scores and deliverability
+
+### Implementation Notes
+
+**Resend Domain Setup Steps:**
+1. Login to Resend Dashboard: https://resend.com/domains
+2. Click "Add Domain"
+3. Enter your domain (e.g., `yourdomain.com`)
+4. Copy DNS records provided by Resend
+5. Add DNS records to your domain provider:
+   - **TXT record**: For domain verification
+   - **MX records**: For receiving bounces (optional but recommended)
+   - **CNAME records**: For DKIM signing (required for deliverability)
+6. Wait for DNS propagation and verification
+7. Test sending from `noreply@yourdomain.com`
+
+**Environment Variable Update:**
+```env
+# Vercel Production Environment Variables
+RESEND_FROM_EMAIL=noreply@yourdomain.com  # Change from onboarding@resend.dev
+RESEND_FROM_NAME=My Workout Scheduler     # Optional: customize
+```
+
+**Email Best Practices:**
+- Use `noreply@` or `notifications@` for automated emails
+- Don't use personal email addresses (better deliverability)
+- Enable DKIM signing (automatic with Resend domain verification)
+- Monitor bounce rates in Resend dashboard
+- Keep sender name consistent across all emails
+
+### Testing
+
+**Test checklist after domain verification:**
+- [x] Verify domain shows "Verified" in Resend dashboard
+- [x] Update `RESEND_FROM_EMAIL` in Vercel production
+- [x] Deploy to production
+- [x] Send test email from production
+- [x] Verify email arrives in inbox (not spam)
+- [x] DKIM signature enabled
+- [ ] Test booking confirmation email (pending implementation)
+- [ ] Test failure notification email (pending implementation)
+
+### Code Location
+- Environment config: `.env.example` (already configured)
+- Email utilities: `lib/env-utils.ts` (already implemented)
+- Vercel env vars: Vercel Dashboard → Settings → Environment Variables
+- Resend setup: https://resend.com/domains
+
+### Benefits
+- **Professional emails**: Send from your own domain instead of test address
+- **Better deliverability**: Custom domain with DKIM improves inbox placement
+- **Brand consistency**: Emails come from your application domain
+- **Production ready**: Meets email sending best practices
+
+### Status
+**Status**: Backlogged - Pending domain verification
+**Priority**: Medium (required before sending production notifications)
+**Blocked by**: Domain selection and DNS access
+**Last Updated**: November 18, 2025
+**Next Steps**:
+1. Decide on domain to use (purchase if needed)
+2. Access DNS settings for domain
+3. Complete Resend domain verification
+4. Update production environment variables
+
+---
+
+## User Profile Management - Email Verification Notifications
+
+### Overview
+**STATUS: ✅ COMPLETED** (November 19, 2025)
+
+Email verification success notifications are now displayed on both the dashboard and profile pages. When users click the email verification link sent to their new email address, they see a prominent success message confirming the update.
+
+### Implementation Details
+
+**Email Verification Detection:**
+- Detects multiple Supabase redirect patterns:
+  - `type=email_change` (when double confirm is disabled)
+  - `type=signup` (initial signup verification)
+  - `message=Confirmation link accepted` (when double confirm is enabled)
+- Works with both Supabase configuration modes
+- Shows success message on dashboard AND profile pages
+- Auto-dismisses after 10 seconds
+
+**Component Location:**
+- `components/EmailVerificationNotification.tsx` - Success notification component
+- `app/dashboard/page.tsx` - Dashboard displays notification
+- `app/dashboard/profile/page.tsx` - Profile page displays notification
+
+**Related Features:**
+- Email update requires password verification (security)
+- Only ONE email sent when properly configured (see below)
+
+### Status
+**Status**: ✅ COMPLETED
+**Priority**: High (better UX)
+**Completed**: November 19, 2025
+
+---
+
+## Supabase "Double Confirm Email Changes" Configuration
+
+### Overview
+**STATUS: BACKLOGGED** - Requires Supabase configuration change
+
+By default, Supabase sends emails to BOTH the old and new email addresses when users change their email. This can be disabled to send only ONE email (to the new address), since our app already requires password verification for security.
+
+### Issue
+- Users currently receive TWO emails when changing email:
+  1. Notification to old email: "Your email is being changed"
+  2. Verification link to new email: "Confirm your new email"
+- This is confusing and unnecessary since password verification already proves identity
+
+### Solution
+Disable "Secure Email Change" (aka "Double Confirm Email Changes") in Supabase settings:
+
+**Steps:**
+1. Go to Supabase Dashboard → Authentication → Settings
+2. Find **"Secure email change (require verification from both emails)"** setting
+3. **Toggle OFF** (disable)
+4. Save changes
+
+**After disabling:**
+- ✅ Only ONE email sent (to new address with verification link)
+- ✅ Password verification still required (security maintained)
+- ✅ Better user experience (simpler flow)
+
+### Documentation
+- Comprehensive guide: `docs/SUPABASE_EMAIL_SETTINGS.md`
+- Includes step-by-step instructions, security considerations, troubleshooting
+
+### Why It's Secure Without Double Confirmation
+Our implementation requires **password verification** before email changes:
+- User must enter current password in profile form
+- Server verifies password is correct (`app/actions/profile.ts`)
+- This proves user identity before any email is sent
+- Double confirmation adds no additional security in this case
+
+### Code References
+- Password verification: `app/actions/profile.ts:80-93`
+- Profile form: `components/ProfileForm.tsx:180-215`
+- Configuration guide: `docs/SUPABASE_EMAIL_SETTINGS.md`
+
+### Status
+**Status**: Backlogged - Pending Supabase configuration
+**Priority**: Medium (UX improvement, not critical)
+**Last Updated**: November 19, 2025
+**Action Required**: Toggle off "Secure email change" in Supabase dashboard
+**Reference Session**: See other email session for related work
+
+---
