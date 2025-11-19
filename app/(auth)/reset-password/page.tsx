@@ -51,9 +51,13 @@ export default function ResetPasswordPage() {
         setError(error.message)
       } else {
         setSuccess(true)
+
+        // Sign out the user after password reset (security best practice)
+        await supabase.auth.signOut()
+
         // Redirect to login after 3 seconds
         setTimeout(() => {
-          router.push('/login?message=Password updated successfully! Please log in.')
+          router.push('/login?message=Password updated successfully! Please log in with your new password.')
         }, 3000)
       }
     } catch (error) {
