@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import LogoutButton from '@/components/LogoutButton'
 import ProfileForm from '@/components/ProfileForm'
+import EmailVerificationNotification from '@/components/EmailVerificationNotification'
 import Link from 'next/link'
 
 export default async function ProfilePage() {
@@ -37,6 +38,8 @@ export default async function ProfilePage() {
               Manage your account settings, update your email and password
             </p>
           </div>
+
+          <EmailVerificationNotification />
 
           <div className="mb-6 p-4 bg-gray-50 rounded-md border border-gray-200">
             <div className="text-sm">
