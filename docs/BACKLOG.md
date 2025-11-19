@@ -1864,3 +1864,428 @@ APPLE_PRIVATE_KEY=... (or path to .p8 file)
 7. Document OAuth setup process
 
 ---
+
+## Password Security Requirements (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - MUST COMPLETE BEFORE LAUNCH**
+
+Implement industry-standard password security requirements to protect user accounts. Currently, passwords only require 8 characters with no complexity requirements. While this is a casual site without highly sensitive data, basic password security is essential.
+
+### Current Behavior
+- Minimum password length: 8 characters (enforced programmatically)
+- No complexity requirements (no uppercase, digits, or symbols required)
+- No password strength indicator
+- No validation for existing weak passwords
+
+### Expected Behavior
+
+**Password Requirements:**
+- **Minimum length**: 8 characters (keep current)
+- **Complexity**: Must contain at least:
+  - Lowercase letters (a-z)
+  - Uppercase letters (A-Z)
+  - Digits (0-9)
+  - Symbols NOT required (better mobile UX)
+
+**Enforcement:**
+- **App-level validation only** (client-side + server-side)
+- Skip Supabase auth settings (to avoid complex error handling)
+- Clear, user-friendly error messages
+
+**Existing Users:**
+- **Force password reset on next login** if password doesn't meet new requirements
+- Show message: "We've updated our password requirements. Please create a new password."
+- Redirect to password reset flow
+
+**Password Strength Indicator (Post-MVP):**
+- Visual feedback while typing (Weak/Medium/Strong)
+- Helpful but not critical for MVP
+- Can be added after launch
+
+### Requirements
+
+#### 1. Password Validation Logic
+
+**Validation Rules:**
+```typescript
+function validatePassword(password: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = []
+
+  if (password.length < 8) {
+    errors.push('Password must be at least 8 characters')
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter')
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter')
+  }
+
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one digit')
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  }
+}
+```
+
+**Where to Enforce:**
+- ✅ Signup page (client + server)
+- ✅ Password change in profile (client + server)
+- ✅ Password reset flow (client + server)
+- ✅ OAuth users adding password (client + server)
+
+#### 2. User Interface Updates
+
+**Signup Page:**
+- Add password requirements text below password field:
+  ```
+  Password must contain:
+  • At least 8 characters
+  • Lowercase and uppercase letters
+  • At least one digit
+  ```
+- Show inline validation errors if password doesn't meet requirements
+- Disable submit button until password is valid (optional, or allow submit with clear error)
+
+**Profile Password Change:**
+- Same requirements text as signup
+- Validate new password meets requirements
+- Show clear error messages if validation fails
+
+**Error Messages:**
+- Clear, specific messages for each missing requirement
+- Example: "Password must contain at least one uppercase letter"
+- Group errors in a list if multiple requirements missing
+
+#### 3. Existing User Migration
+
+**Force Password Reset Flow:**
+
+**Option A: Check on login (Recommended)**
+1. User logs in with email/password
+2. After successful auth, check if password meets new requirements
+3. If password is weak:
+   - Set flag in session or database: `requires_password_reset: true`
+   - Redirect to password reset page (not dashboard)
+   - Show message: "We've updated our password requirements for better security. Please create a new password that meets the requirements."
+4. User must reset password before accessing dashboard
+5. After successful reset, clear flag and allow dashboard access
+
+**Option B: Background migration with soft deadline**
+1. Show banner on dashboard: "Your password doesn't meet our updated security requirements. Please update it in your profile."
+2. Allow continued use for 30 days
+3. After 30 days, force password reset on login
+4. More user-friendly but adds complexity
+
+**Recommended: Option A** (simpler, immediate security improvement)
+
+**Implementation:**
+```typescript
+// After successful login
+const passwordMeetsRequirements = await checkPasswordStrength(userId)
+
+if (!passwordMeetsRequirements) {
+  // Set flag requiring password reset
+  await setRequiresPasswordReset(userId, true)
+
+  // Redirect to forced password reset page
+  redirect('/auth/reset-password?reason=security_update')
+}
+```
+
+**Database Changes (Optional):**
+```sql
+-- Add flag to track users requiring password reset
+ALTER TABLE auth.users
+ADD COLUMN requires_password_reset BOOLEAN DEFAULT FALSE;
+
+-- Or use user_metadata:
+-- auth.users.user_metadata.requires_password_reset = true
+```
+
+**Challenge: Detecting Weak Passwords**
+- Supabase stores password hashes, not plaintext
+- **Cannot directly check existing password strength**
+- **Solution**: Check on next login attempt:
+  - User enters password
+  - Before hashing, validate against new requirements
+  - If weak, force reset after successful login
+
+#### 4. Client-Side Validation
+
+**Real-time Feedback:**
+- Validate as user types (debounced, e.g., 500ms delay)
+- Show green checkmarks for met requirements
+- Show red X or grey text for unmet requirements
+
+**Visual Design:**
+```
+Password must contain:
+✓ At least 8 characters
+✓ Lowercase letters
+✗ Uppercase letters
+✓ At least one digit
+```
+
+**Code Example:**
+```tsx
+// components/PasswordInput.tsx
+const [password, setPassword] = useState('')
+const validation = validatePassword(password)
+
+<input
+  type="password"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+/>
+
+<ul className="text-sm mt-2">
+  <li className={password.length >= 8 ? 'text-green-600' : 'text-gray-500'}>
+    {password.length >= 8 ? '✓' : '○'} At least 8 characters
+  </li>
+  <li className={/[a-z]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
+    {/[a-z]/.test(password) ? '✓' : '○'} Lowercase letters
+  </li>
+  <li className={/[A-Z]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
+    {/[A-Z]/.test(password) ? '✓' : '○'} Uppercase letters
+  </li>
+  <li className={/[0-9]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
+    {/[0-9]/.test(password) ? '✓' : '○'} At least one digit
+  </li>
+</ul>
+```
+
+#### 5. Server-Side Validation
+
+**Validate in Server Actions:**
+- Always validate on server even if client validates
+- Never trust client-side validation alone
+- Return clear error messages to client
+
+**Code Example:**
+```typescript
+// app/actions/auth.ts (or similar)
+'use server'
+
+import { validatePassword } from '@/lib/password-validation'
+
+export async function signup(email: string, password: string) {
+  const validation = validatePassword(password)
+
+  if (!validation.valid) {
+    return {
+      success: false,
+      errors: validation.errors
+    }
+  }
+
+  // Proceed with signup
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password
+  })
+
+  // ...
+}
+```
+
+### Implementation Notes
+
+**Files to Create/Modify:**
+
+**New Files:**
+- `lib/password-validation.ts` - Password validation utility functions
+- `components/PasswordRequirements.tsx` - Visual requirements checklist component (optional)
+
+**Modified Files:**
+- `app/(auth)/signup/page.tsx` - Add password requirements, validation
+- `app/(auth)/login/page.tsx` - Check for weak password after login, force reset if needed
+- `app/actions/profile.ts` - Add password validation to password change action
+- `components/ProfileForm.tsx` - Add password requirements to password change form
+- Server actions for signup/password reset - Add validation
+
+**Password Validation Utility:**
+```typescript
+// lib/password-validation.ts
+export interface PasswordValidation {
+  valid: boolean
+  errors: string[]
+  checks: {
+    minLength: boolean
+    hasLowercase: boolean
+    hasUppercase: boolean
+    hasDigit: boolean
+  }
+}
+
+export function validatePassword(password: string): PasswordValidation {
+  const checks = {
+    minLength: password.length >= 8,
+    hasLowercase: /[a-z]/.test(password),
+    hasUppercase: /[A-Z]/.test(password),
+    hasDigit: /[0-9]/.test(password)
+  }
+
+  const errors: string[] = []
+
+  if (!checks.minLength) {
+    errors.push('Password must be at least 8 characters')
+  }
+  if (!checks.hasLowercase) {
+    errors.push('Password must contain at least one lowercase letter')
+  }
+  if (!checks.hasUppercase) {
+    errors.push('Password must contain at least one uppercase letter')
+  }
+  if (!checks.hasDigit) {
+    errors.push('Password must contain at least one digit')
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    checks
+  }
+}
+```
+
+### Code Location
+
+**New Files:**
+- `lib/password-validation.ts` - Validation logic
+- `components/PasswordRequirements.tsx` - Visual checklist (optional)
+- `app/auth/reset-password/page.tsx` - Forced password reset page (may already exist)
+
+**Modified Files:**
+- `app/(auth)/signup/page.tsx` - Add requirements and validation
+- `app/(auth)/login/page.tsx` - Check weak password, force reset
+- `app/actions/profile.ts` - Validate password on change
+- `components/ProfileForm.tsx` - Show requirements
+- Any password reset flows
+
+### Testing Considerations
+
+#### Password Validation:
+- [ ] Try password "password" → Rejected (no uppercase, no digit)
+- [ ] Try password "Password" → Rejected (no digit)
+- [ ] Try password "Password1" → Accepted ✓
+- [ ] Try password "Pass123" → Rejected (less than 8 characters)
+- [ ] Try password "PASSWORD123" → Rejected (no lowercase)
+
+#### Client-Side Validation:
+- [ ] Type weak password → See error messages
+- [ ] Type strong password → See green checkmarks
+- [ ] Submit with weak password → Blocked or show error
+- [ ] Client-side validation matches server-side
+
+#### Server-Side Validation:
+- [ ] Bypass client validation (direct API call) → Server rejects weak password
+- [ ] Server returns clear error messages
+- [ ] Error messages displayed in UI
+
+#### Existing User Migration:
+- [ ] User with weak password (e.g., "password") logs in
+- [ ] Successful login, but redirected to password reset page
+- [ ] Message shown: "Please create a new password..."
+- [ ] User creates strong password → Allowed to dashboard
+- [ ] User tries weak password again → Validation error
+
+- [ ] User with strong password (e.g., "Password123") logs in
+- [ ] No interruption, goes straight to dashboard
+
+#### All Password Entry Points:
+- [ ] Signup with weak password → Rejected
+- [ ] Signup with strong password → Accepted
+- [ ] Change password in profile with weak password → Rejected
+- [ ] Change password in profile with strong password → Accepted
+- [ ] OAuth user adding password with weak password → Rejected
+- [ ] OAuth user adding password with strong password → Accepted
+- [ ] Password reset with weak password → Rejected
+- [ ] Password reset with strong password → Accepted
+
+### Security Considerations
+
+**Why These Requirements:**
+- **8 characters minimum**: Industry baseline, good balance of security and usability
+- **Lowercase + Uppercase + Digits**: Increases password complexity significantly
+- **No symbols required**: Better mobile UX, still secure with other requirements
+- **Force reset for weak passwords**: Immediate security improvement for existing users
+
+**Why NOT Supabase Settings:**
+- Avoids complex error handling between Supabase and app
+- Gives us full control over error messages and UX
+- Simpler to test and debug
+- Can customize validation logic if needed
+
+**Additional Security (Future):**
+- Password strength meter (visual indicator)
+- Check against common password databases (Have I Been Pwned API)
+- Enforce password rotation (change every 90 days)
+- Rate limiting on password attempts
+- Two-factor authentication (2FA)
+
+### Why This Matters (Even for Casual Site)
+
+**User Data at Risk:**
+- Gym login credentials (stored encrypted)
+- Email address
+- Booking history
+- Personal schedule information
+
+**Attack Vectors:**
+- Weak passwords enable brute-force attacks
+- Credential stuffing (reused passwords from other breaches)
+- Unauthorized access to gym account credentials
+
+**Industry Standard:**
+- Even casual sites should enforce basic password security
+- Users expect minimum security standards
+- Protects both user and application reputation
+
+### Alternative Enhancements (Post-MVP)
+
+**Password Strength Meter:**
+- Visual indicator: Weak (red) / Medium (yellow) / Strong (green)
+- Real-time feedback as user types
+- More engaging UX than just checkboxes
+
+**Breach Detection:**
+- Integrate with Have I Been Pwned API
+- Check if password appears in known breaches
+- Warn user if password is compromised
+
+**Passphrase Support:**
+- Allow longer passwords (passphrases) without complexity requirements
+- Example: "correct horse battery staple" (4 random words)
+- More secure and easier to remember
+
+**Password Manager Integration:**
+- Auto-generate secure passwords
+- Browser password manager compatibility
+- "Suggest Strong Password" button
+
+### Status
+**Status**: Pre-MVP - Must be completed before launch
+**Priority**: High (security requirement)
+**Last Updated**: November 19, 2025
+**Blocks**: MVP launch
+**Next Steps**:
+1. Create password validation utility (`lib/password-validation.ts`)
+2. Update signup page with requirements and validation
+3. Update profile password change with validation
+4. Implement forced password reset for existing users with weak passwords
+5. Add server-side validation to all password entry points
+6. Test all password flows thoroughly
+7. Document password requirements for users
+
+**Timeline:** Should be completed before MVP ships to production users
+
+---
