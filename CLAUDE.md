@@ -43,8 +43,8 @@ This document provides Claude with essential context about the My Workout Schedu
 - **Database & Auth:** Supabase (PostgreSQL + built-in auth)
 - **Automation:** Inngest (event-driven orchestration) + Puppeteer (headless Chrome)
 - **Date/Time:** date-fns and date-fns-tz for timezone handling
+- **Email Service:** Resend (production domain: beerock.com with DKIM)
 - **Hosting:** Vercel
-- **Notifications:** Resend or SendGrid (planned)
 
 ---
 
@@ -168,6 +168,7 @@ my-workout-scheduler/
 - **`app/actions/user-settings.ts`** - Server actions for user settings (pause toggle)
 - **`lib/encryption.ts`** - Handles AES-256-GCM encryption for gym credentials
 - **`lib/date-utils.ts`** - Date/time utilities (booking window calculations, timezone handling)
+- **`lib/env-utils.ts`** - Environment utilities (URL resolution, email config, environment detection)
 - **`lib/supabase/database.ts`** - Database query helpers (CRUD operations)
 - **`middleware.ts`** - Protects routes, redirects unauthenticated users to login
 
@@ -397,6 +398,44 @@ Each recurring class has a timezone setting (e.g., "America/New_York"). System u
 
 **Files:** `lib/date-utils.ts` (primary), `scripts/booking-automation.ts`, `inngest/bookClass.ts`
 
+### 10. Environment Variable Strategy
+
+**Comprehensive environment management** implemented with multi-environment support:
+
+**Environment Utilities (`lib/env-utils.ts`):**
+- `getSiteUrl()` - Dynamic URL resolution with priority order:
+  1. NEXT_PUBLIC_SITE_URL (explicit override, production only)
+  2. VERCEL_URL (auto-injected by Vercel for preview/production)
+  3. http://localhost:3000 (local development fallback)
+- `getEmailConfig()` - Environment-aware email sender configuration
+- `getEnvironment()` - Detects current environment (development/preview/production)
+- `getResendApiKey()` - Validates and returns Resend API key
+- `validateEnv()` - Validates all required environment variables
+
+**Email Configuration:**
+- **Production:** `noreply@beerock.com` (custom domain with DKIM signing)
+- **Preview:** `onboarding@resend.dev` (Resend test sender) + "(Preview)" in name
+- **Development:** `onboarding@resend.dev` (Resend test sender) + "(Local)" in name
+
+**Security Best Practices:**
+- Separate API keys for production vs development/preview
+- Production keys restricted to specific domain (beerock.com)
+- "Sending Access" permissions only (not Full Access)
+- Different encryption keys per environment
+- All sensitive variables marked as "Sensitive" in Vercel
+
+**Documentation:**
+- `docs/ENVIRONMENT_VARIABLES_STRATEGY.md` - Comprehensive strategy (360 lines)
+- `docs/ENV_QUICK_REFERENCE.md` - Quick reference guide (310 lines)
+- `docs/PRODUCTION_EMAIL_SETUP.md` - Production email setup (completed ✅)
+- `.env.example` - Documented template with 8 organized sections
+
+**Testing:**
+- `test-env-setup.ts` - Environment validation test script
+- `test-resend-email.ts` - Email sending test script
+
+**Files:** `lib/env-utils.ts`, `docs/ENVIRONMENT_VARIABLES_STRATEGY.md`, `docs/ENV_QUICK_REFERENCE.md`, `docs/PRODUCTION_EMAIL_SETUP.md`
+
 ---
 
 ## Operational Notes
@@ -509,26 +548,46 @@ USING (auth.uid() = user_id);
 
 ### Environment Variables
 
-**Local development (`.env.local`):**
+**Comprehensive environment variable strategy implemented** - See `docs/ENVIRONMENT_VARIABLES_STRATEGY.md` and `docs/ENV_QUICK_REFERENCE.md` for full details.
+
+**Required variables (`.env.local`):**
 ```env
+# Core Application
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+
+# Security
 ENCRYPTION_KEY=...  # Generate with: openssl rand -base64 32
+
+# Event Automation
 INNGEST_EVENT_KEY=...
 INNGEST_SIGNING_KEY=...
-PUPPETEER_SKIP_DOWNLOAD=true  # For Vercel deployment
+
+# Email Service (Resend)
+RESEND_API_KEY=...  # Get from https://resend.com/api-keys
+RESEND_FROM_EMAIL=onboarding@resend.dev  # Dev: use test sender
+RESEND_FROM_NAME=My Workout Scheduler
+
+# Deployment
+PUPPETEER_SKIP_DOWNLOAD=true  # Required for Vercel builds
 ```
 
-**Inngest configuration:**
-- Sign up at https://inngest.com
-- Create new app, copy Event Key and Signing Key
-- Set both keys in `.env.local` and Vercel
+**Multi-environment configuration:**
+- **Production:** Custom domain email (`noreply@beerock.com`), domain-restricted API key
+- **Preview:** Test sender (`onboarding@resend.dev`), unrestricted API key
+- **Development:** Test sender (`onboarding@resend.dev`), unrestricted API key
 
-**Vercel environment variables:**
-- Same as local `.env.local`
+**Vercel setup:**
 - Set in Vercel Dashboard → Settings → Environment Variables
-- **Critical:** Add `PUPPETEER_SKIP_DOWNLOAD=true` to prevent build failures
+- Use different secrets for each environment (especially `ENCRYPTION_KEY`)
+- Mark sensitive variables with "Sensitive" checkbox
+- Set `NEXT_PUBLIC_SITE_URL` only in Production environment
+
+**For setup instructions:**
+- Environment variables: `docs/ENVIRONMENT_VARIABLES_STRATEGY.md`, `docs/ENV_QUICK_REFERENCE.md`
+- Production email: `docs/PRODUCTION_EMAIL_SETUP.md`
+- Template with comments: `.env.example`
 
 ### Credential Storage
 
@@ -630,6 +689,9 @@ Currently relies on manual testing. Consider adding:
 - `docs/My Workout Scheduler PRD.md` - Full product spec
 - `docs/BOOKING_AUTOMATION.md` - Automation system details
 - `docs/PRODUCTION_TESTING.md` - Production testing guide (v2.7+)
+- `docs/ENVIRONMENT_VARIABLES_STRATEGY.md` - Environment variable strategy (comprehensive)
+- `docs/ENV_QUICK_REFERENCE.md` - Environment variables quick reference
+- `docs/PRODUCTION_EMAIL_SETUP.md` - Production email setup guide (completed ✅)
 - `docs/GITHUB_ACTIONS_SETUP.md` - GitHub Actions setup guide
 - `docs/YMCA_BOOKING_FLOW_CONFIRMED.md` - Confirmed booking flow
 
@@ -637,6 +699,7 @@ Currently relies on manual testing. Consider adding:
 - `docs/DATABASE_SETUP.md` - Database setup guide
 - `docs/TESTING_BOOKINGS.md` - Testing instructions
 - `docs/BACKLOG.md` - Future enhancements
+- `.env.example` - Environment variables template
 
 ---
 
@@ -711,6 +774,12 @@ npm install
 
 # Run development server
 npm run dev
+
+# Test environment variables
+npx tsx test-env-setup.ts
+
+# Test email sending
+npx tsx test-resend-email.ts your@email.com
 
 # Test encryption
 npx tsx test-encryption.ts
@@ -796,5 +865,6 @@ await supabase
 - **v1.4** - Timezone bug fixes, centralized date utilities, server actions refactor
 - **v2.0** - Inngest migration: event-driven architecture, intelligent retry logic, 100% free tier
 - **v2.7** - Enhanced class status detection (6 states), duplicate prevention with idempotency keys, smart retry logic
+- **v2.8** - Environment variable strategy, production email setup (Resend with beerock.com domain, DKIM signing)
 
-**Last Updated:** November 17, 2025
+**Last Updated:** November 19, 2025

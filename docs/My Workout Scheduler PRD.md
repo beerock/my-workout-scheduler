@@ -464,8 +464,9 @@ booking\_attempts (
 
 - [ ] Build status dashboard page
 - [ ] Show booking history (last 30 days)
-- [x] Set up email service (Resend) - ✅ Completed (using `onboarding@resend.dev` for development)
-- [ ] **PRODUCTION**: Verify custom domain in Resend and update `RESEND_FROM_EMAIL` to `noreply@yourdomain.com`
+- [x] Set up email service (Resend) - ✅ Completed
+  - Development: `onboarding@resend.dev`
+  - Production: `noreply@beerock.com` (domain verified, DKIM enabled)
 - [ ] Send booking confirmation emails
 - [ ] Send failure alert emails
 

@@ -1075,8 +1075,10 @@ Configure production email sending with verified domain to replace the developme
 - ✅ Development testing complete with `onboarding@resend.dev`
 - ✅ Email utilities created (`lib/env-utils.ts`)
 - ✅ Environment variables configured
-- ⏳ Production domain verification pending
-- ⏳ Production `RESEND_FROM_EMAIL` update needed
+- ✅ Production domain `beerock.com` verified in Resend
+- ✅ Production `RESEND_FROM_EMAIL` set to `noreply@beerock.com`
+- ✅ DKIM signing enabled
+- ✅ Production email tested and working
 
 ### Requirements
 
@@ -1130,14 +1132,14 @@ RESEND_FROM_NAME=My Workout Scheduler     # Optional: customize
 ### Testing
 
 **Test checklist after domain verification:**
-- [ ] Verify domain shows "Verified" in Resend dashboard
-- [ ] Update `RESEND_FROM_EMAIL` in Vercel production
-- [ ] Deploy to production
-- [ ] Send test email from production
-- [ ] Verify email arrives in inbox (not spam)
-- [ ] Check email headers for DKIM signature
-- [ ] Test booking confirmation email
-- [ ] Test failure notification email
+- [x] Verify domain shows "Verified" in Resend dashboard
+- [x] Update `RESEND_FROM_EMAIL` in Vercel production
+- [x] Deploy to production
+- [x] Send test email from production
+- [x] Verify email arrives in inbox (not spam)
+- [x] DKIM signature enabled
+- [ ] Test booking confirmation email (pending implementation)
+- [ ] Test failure notification email (pending implementation)
 
 ### Code Location
 - Environment config: `.env.example` (already configured)
