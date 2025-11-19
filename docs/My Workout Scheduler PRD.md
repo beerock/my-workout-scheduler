@@ -69,6 +69,13 @@
   - Critical for classes that appear after "Load more results"
   - Prevents click failures on elements outside viewport
   - Smooth scrolling with 500ms animation delay
+- ✅ **COMPLETED: User Profile Management (v2.8)**
+  - Email update with password verification and email confirmation
+  - Password change with current password verification
+  - Account deletion with two-step confirmation
+  - Email verification notifications (success/error messages)
+  - Support for Supabase "Double Confirm Email Changes" setting
+  - Comprehensive documentation for email configuration
 
 **Major Changes from v1.0:**
 
@@ -129,12 +136,17 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 
 ### 3.1 User Management
 
-| Feature | Description | Priority |
-| :---- | :---- | :---- |
-| **Account Creation** | Email/password registration via Supabase Auth | High |
-| **Login** | Basic login page | High |
-| **Credential Storage** | Securely store gym website login credentials (Supabase encrypted) | High |
-| **Gym Configuration** | Set gym URL and default branch | High |
+| Feature | Description | Priority | Status |
+| :---- | :---- | :---- | :---- |
+| **Account Creation** | Email/password registration via Supabase Auth | High | ✅ |
+| **Login** | Basic login page | High | ✅ |
+| **Credential Storage** | Securely store gym website login credentials (Supabase encrypted) | High | ✅ |
+| **Gym Configuration** | Set gym URL and default branch | High | ✅ |
+| **Profile Management** | Update email, password, and account settings | High | ✅ |
+| **Email Update** | Change email with password verification and email confirmation | High | ✅ |
+| **Password Update** | Change password with current password verification | High | ✅ |
+| **Account Deletion** | Delete account with two-step confirmation and password verification | Medium | ✅ |
+| **Email Verification Notifications** | Show success/error messages after email verification | Medium | ✅ |
 
 ### 3.2 Schedule Management ✅ COMPLETE
 
