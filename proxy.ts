@@ -2,14 +2,14 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
- * Middleware for authentication and session management
+ * Proxy for authentication and session management
  *
  * Responsibilities:
  * 1. Refresh auth sessions on every request
  * 2. Protect /dashboard routes (redirect to /login if not authenticated)
  * 3. Handle auth callback for token exchange
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
