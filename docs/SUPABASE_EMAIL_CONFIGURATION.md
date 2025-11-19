@@ -86,6 +86,8 @@ Resend's SMTP settings:
 
 **Security:** With password verification already in place, double confirm adds no additional security.
 
+**Note on Resend Integration:** Connecting Resend as your SMTP provider does NOT automatically disable this setting. You tested email changes and received only one email (to the new address), confirming the setting is properly disabled even though the Supabase UI may still show it as enabled. This appears to be a UI bug in Supabase - the setting is working correctly (OFF) even if the dashboard incorrectly displays it as ON.
+
 ---
 
 ## Step 3: Customize Email Templates
