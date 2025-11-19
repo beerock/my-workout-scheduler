@@ -1417,3 +1417,450 @@ await supabase.auth.signInWithPassword({
 4. Test session persistence behavior
 
 ---
+
+## OAuth Login (Google and Apple Sign-In)
+
+### Overview
+**STATUS: BACKLOGGED**
+
+Add Google and Apple OAuth authentication as the **preferred login method**, allowing users to sign up and log in with their existing Google or Apple accounts. Users can also link multiple OAuth providers to their account and manage these connections in their profile settings.
+
+### Current Behavior
+- Only email/password authentication available
+- Users must create and remember a password
+- No social login options
+
+### Expected Behavior
+
+**OAuth as Preferred Method:**
+- Google and Apple OAuth buttons prominently displayed on login/signup pages
+- Unified experience: OAuth can create new account if user doesn't exist
+- Email/password still available as alternative method
+- Users can add password later via profile management
+
+**Account Linking:**
+- Users who sign up with email/password can later add Google/Apple OAuth
+- Users who sign up with OAuth can later add password
+- Users can link multiple OAuth providers to one account (both Google AND Apple)
+- Profile page shows all connected authentication methods
+
+**Account Security:**
+- Users must have at least ONE login method at all times
+- Can disconnect OAuth providers only if another method exists (password or other OAuth)
+- Can convert from OAuth-only to email/password by adding password in profile
+- OAuth emails are pre-verified (skip email verification step)
+
+### Requirements
+
+#### 1. OAuth Providers Setup
+
+**Google OAuth:**
+- Configure Google Cloud Console OAuth 2.0 credentials
+- Set authorized redirect URIs for Supabase
+- Request scopes: email, profile, openid
+- Pull: email, name, profile photo
+
+**Apple OAuth:**
+- Configure Apple Developer account OAuth credentials
+- Set up Sign in with Apple service ID
+- Request scopes: email, name
+- Pull: email, name, profile photo (if available)
+
+**Supabase Configuration:**
+- Enable Google provider in Supabase Auth settings
+- Enable Apple provider in Supabase Auth settings
+- Configure OAuth redirect URLs
+- Set up provider credentials (client ID, secret)
+
+#### 2. Login/Signup Page UI
+
+**OAuth Buttons:**
+- Display Google and Apple sign-in buttons prominently
+- Position above email/password form
+- Use official brand guidelines (Google/Apple button styles)
+- Divider: "Or continue with email" between OAuth and email/password
+
+**Unified Experience:**
+- Same OAuth buttons on both login and signup pages
+- OAuth flow automatically creates account if user doesn't exist
+- No separate "sign up with Google" vs "log in with Google" flows
+
+**Example Layout:**
+```
+┌─────────────────────────────────┐
+│  [G] Continue with Google       │
+│  [A] Continue with Apple        │
+│                                 │
+│  ─────── Or continue with ───── │
+│                                 │
+│  Email: [____________]          │
+│  Password: [____________]       │
+│  [ ] Keep me logged in          │
+│  [Login]                        │
+└─────────────────────────────────┘
+```
+
+#### 3. Profile Management - Connected Accounts
+
+**New Section in Profile Page:**
+- "Connected Accounts" or "Login Methods" section
+- List all connected authentication methods:
+  - Email/Password (if set)
+  - Google (if connected) - show email and profile photo
+  - Apple (if connected) - show email
+- "Add" buttons for methods not yet connected
+- "Disconnect" buttons for connected methods (disabled if it's the only method)
+
+**Add OAuth Provider:**
+- Click "Connect Google" or "Connect Apple" button
+- OAuth flow links provider to existing account
+- Success message: "Google account connected successfully"
+- Profile photo updated if OAuth provides one
+
+**Remove OAuth Provider:**
+- Click "Disconnect" button
+- Confirmation dialog: "Are you sure you want to disconnect Google?"
+- Validate user has another login method before allowing disconnect
+- Error if trying to remove last login method: "You must have at least one way to log in"
+
+**Add Password (for OAuth-only users):**
+- "Set Password" button if user has no password
+- Form: New password + Confirm password
+- Allows OAuth-only users to add email/password login
+
+**Profile Photo:**
+- Pull profile photo from Google/Apple on first OAuth login
+- Store profile photo URL in user metadata
+- Display in header/navbar and profile page
+- Allow user to change/remove later (future enhancement)
+
+#### 4. Data Pulled from OAuth
+
+**From Google:**
+- ✅ Email (required) - used as primary identifier
+- ✅ Full name (optional) - stored in user profile
+- ✅ Profile photo URL (optional) - displayed in UI
+
+**From Apple:**
+- ✅ Email (required) - may be privacy relay email
+- ✅ Full name (optional) - only provided on first sign-in
+- ✅ Profile photo (rarely available) - fallback to initials
+
+**Data Storage:**
+- Email: `auth.users.email`
+- Name: `auth.users.user_metadata.full_name`
+- Photo: `auth.users.user_metadata.avatar_url`
+- Provider: `auth.users.app_metadata.provider` (google, apple, email)
+
+#### 5. Email Verification
+
+**OAuth Users:**
+- ✅ Skip email verification (Google/Apple already verified)
+- Mark `email_confirmed_at` automatically
+- No verification email sent
+
+**Email/Password Users:**
+- ⚠️ Require email verification (existing behavior)
+- Send verification email on signup
+- Block login until verified
+
+#### 6. Security and Edge Cases
+
+**Account Merging:**
+- If user signs up with email `user@gmail.com` via password
+- Then tries to log in with Google using same `user@gmail.com`
+- Supabase automatically links accounts (if configured correctly)
+- Or show error: "Email already registered. Please log in with password or link Google in profile."
+
+**Multiple OAuth Same Provider:**
+- Users cannot link multiple Google accounts (one per provider)
+- Users cannot link multiple Apple IDs (one per provider)
+- But can have both Google AND Apple linked simultaneously
+
+**Last Login Method Protection:**
+- UI disables "Disconnect" button if it's the only method
+- Backend validation prevents removal of last method
+- Error message: "Cannot disconnect. You must have at least one way to log in."
+
+**Apple Email Hiding:**
+- Apple may provide privacy relay email (`randomstring@privaterelay.appleid.com`)
+- Store and accept these emails
+- User can update to real email later in profile
+
+### Implementation Notes
+
+#### Supabase OAuth Setup
+
+**Enable Providers:**
+1. Go to Supabase Dashboard → Authentication → Providers
+2. Enable "Google" provider:
+   - Add Google OAuth Client ID
+   - Add Google OAuth Client Secret
+   - Copy Redirect URL for Google Cloud Console
+3. Enable "Apple" provider:
+   - Add Apple Service ID
+   - Add Apple Team ID
+   - Add Apple Key ID
+   - Upload Apple Private Key (.p8 file)
+   - Copy Redirect URL for Apple Developer Console
+
+**Google Cloud Console:**
+1. Create OAuth 2.0 Client ID
+2. Add authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+3. Configure OAuth consent screen
+4. Request scopes: email, profile, openid
+
+**Apple Developer Console:**
+1. Create Sign in with Apple Service ID
+2. Configure Sign in with Apple capability
+3. Add redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+4. Generate private key (.p8)
+
+#### Code Changes
+
+**Files to Create/Modify:**
+
+```typescript
+// app/(auth)/login/page.tsx - Add OAuth buttons
+import { signInWithOAuth } from '@/app/actions/auth'
+
+<button onClick={() => signInWithOAuth('google')}>
+  Continue with Google
+</button>
+<button onClick={() => signInWithOAuth('apple')}>
+  Continue with Apple
+</button>
+
+// app/actions/auth.ts - OAuth sign-in action
+'use server'
+export async function signInWithOAuth(provider: 'google' | 'apple') {
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      }
+    }
+  })
+  if (error) throw error
+  redirect(data.url)
+}
+
+// app/auth/callback/route.ts - OAuth callback handler (may already exist)
+export async function GET(request: Request) {
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
+
+  if (code) {
+    const supabase = await createClient()
+    await supabase.auth.exchangeCodeForSession(code)
+  }
+
+  return redirect('/dashboard')
+}
+
+// app/dashboard/profile/page.tsx - Add Connected Accounts section
+// Show list of connected providers
+// Add/remove OAuth connections
+// Set password for OAuth-only users
+
+// components/ConnectedAccounts.tsx - New component
+// Displays connected authentication methods
+// Buttons to add/remove providers
+// Validation for last method protection
+```
+
+**Database Schema Updates:**
+
+```sql
+-- Store provider information in user metadata (Supabase handles this automatically)
+-- auth.users.user_metadata: { full_name, avatar_url, ... }
+-- auth.users.app_metadata: { provider, providers: ['google', 'apple'], ... }
+
+-- Optional: Create table to track provider connections
+CREATE TABLE user_oauth_providers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL, -- 'google', 'apple'
+  provider_user_id TEXT NOT NULL, -- OAuth provider's user ID
+  connected_at TIMESTAMPTZ DEFAULT now(),
+  last_used_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, provider)
+);
+```
+
+**UI Components Needed:**
+
+1. **OAuth Buttons Component** (`components/OAuthButtons.tsx`)
+   - Google button with official styling
+   - Apple button with official styling
+   - Handle OAuth flow initiation
+   - Loading states
+
+2. **Connected Accounts Component** (`components/ConnectedAccounts.tsx`)
+   - List connected providers
+   - Add/remove provider buttons
+   - Profile photo display
+   - Validation and error handling
+
+3. **Set Password Component** (`components/SetPassword.tsx`)
+   - For OAuth-only users to add password
+   - Password strength validation
+   - Confirmation dialog
+
+### Code Location
+
+**New Files:**
+- `app/actions/auth.ts` - OAuth sign-in actions
+- `components/OAuthButtons.tsx` - Google/Apple sign-in buttons
+- `components/ConnectedAccounts.tsx` - Profile connected accounts section
+- `components/SetPassword.tsx` - Set password for OAuth-only users
+
+**Modified Files:**
+- `app/(auth)/login/page.tsx` - Add OAuth buttons
+- `app/(auth)/signup/page.tsx` - Add OAuth buttons (same as login)
+- `app/auth/callback/route.ts` - Handle OAuth callback (may need to create)
+- `app/dashboard/profile/page.tsx` - Add Connected Accounts section
+- `middleware.ts` - May need to handle OAuth callback routes
+
+**Environment Variables:**
+```env
+# Google OAuth (from Google Cloud Console)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+# Apple OAuth (from Apple Developer Console)
+NEXT_PUBLIC_APPLE_CLIENT_ID=...
+APPLE_TEAM_ID=...
+APPLE_KEY_ID=...
+APPLE_PRIVATE_KEY=... (or path to .p8 file)
+```
+
+**Note**: Supabase handles most OAuth configuration in their dashboard, so these environment variables may not be needed if configured in Supabase settings.
+
+### Testing Considerations
+
+#### OAuth Sign-In Flow:
+- [ ] Click "Continue with Google" on login page
+- [ ] Redirected to Google OAuth consent screen
+- [ ] Grant permissions
+- [ ] Redirected back to app dashboard
+- [ ] User logged in successfully
+- [ ] Profile photo and name populated
+
+- [ ] Click "Continue with Apple" on login page
+- [ ] Redirected to Apple OAuth consent screen
+- [ ] Grant permissions
+- [ ] Redirected back to app dashboard
+- [ ] User logged in successfully
+
+#### Account Linking:
+- [ ] Sign up with email/password
+- [ ] Go to profile → Connected Accounts
+- [ ] Click "Connect Google"
+- [ ] Google account linked successfully
+- [ ] Both email/password and Google shown as connected
+
+- [ ] Sign up with Google
+- [ ] Go to profile → Connected Accounts
+- [ ] Click "Set Password"
+- [ ] Password added successfully
+- [ ] Both Google and email/password shown as connected
+
+#### Account Disconnection:
+- [ ] User with both Google and password connected
+- [ ] Click "Disconnect Google"
+- [ ] Confirmation dialog shown
+- [ ] Disconnect successful
+- [ ] Can still log in with password
+
+- [ ] User with ONLY Google connected (no password)
+- [ ] "Disconnect Google" button is disabled
+- [ ] Tooltip: "You must have at least one way to log in"
+- [ ] Cannot disconnect
+
+#### Email Verification:
+- [ ] Sign up with Google → Email auto-verified (no verification email sent)
+- [ ] Sign up with Apple → Email auto-verified (no verification email sent)
+- [ ] Sign up with email/password → Verification email sent (existing behavior)
+
+#### Edge Cases:
+- [ ] Sign up with email `test@gmail.com` via password
+- [ ] Try to log in with Google using same `test@gmail.com`
+- [ ] Accounts merged or error shown appropriately
+- [ ] No duplicate accounts created
+
+- [ ] Sign up with Apple using privacy relay email
+- [ ] Email stored correctly (`xyz@privaterelay.appleid.com`)
+- [ ] Can update to real email in profile later
+
+#### Profile Photo:
+- [ ] Sign up with Google → Profile photo pulled and displayed
+- [ ] Sign up with Apple → Fallback to initials if no photo
+- [ ] Profile photo shown in navbar/header
+- [ ] Profile photo shown in profile page
+
+### Security Considerations
+
+**OAuth Security:**
+- Use HTTPS for all OAuth redirects (required in production)
+- Validate OAuth state parameter to prevent CSRF attacks (Supabase handles this)
+- Store OAuth tokens securely (Supabase handles this)
+- Use short-lived access tokens with refresh tokens
+
+**Account Takeover Prevention:**
+- Require password verification before disconnecting OAuth (optional enhancement)
+- Email notification when OAuth provider is added/removed
+- Show "Last connected" timestamp for OAuth providers
+
+**Privacy:**
+- Only request minimum required OAuth scopes
+- Allow users to disconnect OAuth at any time (if not last method)
+- Don't store unnecessary OAuth data
+- Handle Apple privacy relay emails correctly
+
+**Last Method Protection:**
+- UI disables disconnect button if only method
+- Backend validates at least one method remains
+- Transaction: only remove method if another exists
+- Error handling for edge cases
+
+### Alternative Enhancements (Future)
+
+- Add more OAuth providers (GitHub, Microsoft, Facebook)
+- Show "Last used" timestamp for each login method
+- Email notification when new OAuth provider is connected
+- Two-factor authentication (2FA) for OAuth accounts
+- "Preferred login method" setting (auto-select on login page)
+- Active sessions management (see which devices are logged in)
+- Profile photo upload/change (independent of OAuth photo)
+
+### Dependencies
+
+**Required:**
+- Supabase OAuth provider configuration (Google, Apple)
+- Google Cloud Console OAuth setup
+- Apple Developer Console OAuth setup
+- Domain verification for OAuth redirects (production)
+
+**Optional:**
+- Profile photo storage (use OAuth URLs or upload to storage bucket)
+- Email notification system (for OAuth connection changes)
+
+### Status
+**Status**: Backlogged - Not currently implemented
+**Priority**: High (major UX improvement, preferred login method)
+**Last Updated**: November 19, 2025
+**Next Steps**:
+1. Set up Google OAuth in Google Cloud Console
+2. Set up Apple OAuth in Apple Developer Console
+3. Configure providers in Supabase dashboard
+4. Implement OAuth buttons on login/signup pages
+5. Create Connected Accounts section in profile
+6. Test OAuth flows thoroughly
+7. Document OAuth setup process
+
+---
