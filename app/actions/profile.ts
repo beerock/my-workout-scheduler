@@ -45,9 +45,13 @@ export async function getUserProfile() {
 
 /**
  * Update user email address
- * Note: Requires email confirmation - user will receive confirmation email at new address
+ * Requires password verification to ensure security
+ * Note: User will receive confirmation email at new address only
  */
-export async function updateEmail(newEmail: string): Promise<ProfileResult> {
+export async function updateEmail(
+  newEmail: string,
+  currentPassword: string
+): Promise<ProfileResult> {
   try {
     const supabase = await createClient()
 
@@ -77,7 +81,22 @@ export async function updateEmail(newEmail: string): Promise<ProfileResult> {
       }
     }
 
-    // Update email - this will send a confirmation email to the new address
+    // Verify current password by attempting to sign in
+    if (user.email) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      })
+
+      if (signInError) {
+        return {
+          success: false,
+          error: 'Current password is incorrect',
+        }
+      }
+    }
+
+    // Update email - this will send a confirmation email to the new address only
     const { error: updateError } = await supabase.auth.updateUser({
       email: newEmail,
     })
