@@ -346,11 +346,15 @@ export async function toggleRecurringClassActive(
 }
 
 /**
- * Set next skip date for a recurring class
+ * Set skip for next occurrence of a recurring class
+ * Uses two-field approach: flag for business logic, datetime for UI display
+ *
+ * @param id Class ID
+ * @param skipTargetDatetime ISO string of target class datetime, or null to clear skip
  */
-export async function setNextSkipDate(
+export async function setSkipNextOccurrence(
   id: string,
-  skipDate: string | null
+  skipTargetDatetime: string | null
 ): Promise<RecurringClassResult> {
   try {
     const supabase = await createClient()
@@ -364,16 +368,27 @@ export async function setNextSkipDate(
       }
     }
 
+    // Set both fields atomically
+    const updateData = skipTargetDatetime
+      ? {
+          skip_next_occurrence: true, // Flag for Inngest
+          skip_target_datetime: skipTargetDatetime, // Datetime for UI
+        }
+      : {
+          skip_next_occurrence: false, // Clear flag
+          skip_target_datetime: null, // Clear datetime
+        }
+
     const { error } = await supabase
       .from('recurring_classes')
-      .update({ next_skip_date: skipDate })
+      .update(updateData)
       .eq('id', id)
       .eq('user_id', user.id) // Ensure user owns this class
 
     if (error) {
       return {
         success: false,
-        error: `Failed to update skip date: ${error.message}`,
+        error: `Failed to update skip: ${error.message}`,
       }
     }
 

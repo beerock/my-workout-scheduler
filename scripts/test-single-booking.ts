@@ -149,7 +149,6 @@ async function testSingleBooking() {
       classTime: classData.class_time,
       classType: classData.class_type,
       timezone: classData.timezone,
-      nextSkipDate: classData.next_skip_date,
     }
 
     if (isDryRun) {
