@@ -11,14 +11,27 @@
 --   - Proper datetime storage with timezone
 --   - UI can format in gym's timezone
 
--- Drop old field
-ALTER TABLE recurring_classes
-DROP COLUMN IF EXISTS next_skip_date;
-
--- Add new fields
+-- Step 1: Add new fields (before dropping old one to preserve data)
 ALTER TABLE recurring_classes
 ADD COLUMN skip_next_occurrence BOOLEAN DEFAULT FALSE NOT NULL,
 ADD COLUMN skip_target_datetime TIMESTAMPTZ;
+
+-- Step 2: Migrate existing skip data from next_skip_date to new fields
+-- For any row with next_skip_date set, calculate the full datetime using class info
+UPDATE recurring_classes
+SET
+  skip_next_occurrence = TRUE,
+  skip_target_datetime = (
+    -- Parse the date (YYYY-MM-DD) and combine with class_time to create timestamp
+    -- This assumes next_skip_date is in YYYY-MM-DD format and class_time is HH:MM format
+    (next_skip_date || ' ' || class_time || ':00')::timestamp AT TIME ZONE timezone
+  )
+WHERE next_skip_date IS NOT NULL
+  AND next_skip_date != '';
+
+-- Step 3: Drop old field (data is now migrated)
+ALTER TABLE recurring_classes
+DROP COLUMN next_skip_date;
 
 -- Add comments for documentation
 COMMENT ON COLUMN recurring_classes.skip_next_occurrence IS
