@@ -116,7 +116,7 @@ function VerifyEmailContent() {
                 <li>• Check your spam or junk folder</li>
                 <li>• Check your Promotions or Updates tab (Gmail)</li>
                 <li>• Add noreply@beerock.com to your contacts</li>
-                <li>• The link expires in 24 hours</li>
+                <li>• The link expires in 1 hour</li>
               </ul>
             </div>
           </div>
