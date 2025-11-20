@@ -113,6 +113,7 @@ function VerifyEmailContent() {
             <div className="flex-1">
               <p className="font-medium text-amber-900 mb-2">Important:</p>
               <ul className="text-sm text-amber-800 space-y-1">
+                <li>• <strong>Open the link in this browser</strong> (same one you used to sign up)</li>
                 <li>• Check your spam or junk folder</li>
                 <li>• Check your Promotions or Updates tab (Gmail)</li>
                 <li>• Add noreply@beerock.com to your contacts</li>
