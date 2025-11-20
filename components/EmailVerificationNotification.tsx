@@ -8,6 +8,7 @@ type NotificationType = 'success' | 'error' | null
 export default function EmailVerificationNotification() {
   const [notification, setNotification] = useState<NotificationType>(null)
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [verificationType, setVerificationType] = useState<string>('signup')
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -22,6 +23,10 @@ export default function EmailVerificationNotification() {
     const hashMessage = hashParams.get('message')
     const hashError = hashParams.get('error')
     const hashErrorDescription = hashParams.get('error_description')
+
+    // Get verification type from query params (set by auth callback)
+    const queryVerificationType = searchParams.get('verification_type') || hashType || 'signup'
+    setVerificationType(queryVerificationType)
 
     // Check for errors first
     if (hashError || hashErrorDescription) {
@@ -74,6 +79,13 @@ export default function EmailVerificationNotification() {
   }, [searchParams])
 
   if (notification === 'success') {
+    // Determine message based on verification type
+    const isEmailChange = verificationType === 'email_change'
+    const title = isEmailChange ? 'Email Updated Successfully!' : 'Email Verified Successfully!'
+    const message = isEmailChange
+      ? 'Your email address has been updated and verified. You\'re all set!'
+      : 'Your email address has been verified. You\'re all set!'
+
     return (
       <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
         <div className="flex items-start space-x-3">
@@ -91,9 +103,9 @@ export default function EmailVerificationNotification() {
             />
           </svg>
           <div className="flex-1">
-            <h3 className="font-semibold text-green-900">Email Verified Successfully!</h3>
+            <h3 className="font-semibold text-green-900">{title}</h3>
             <p className="text-sm text-green-800 mt-1">
-              Your email address has been updated and verified. You're all set!
+              {message}
             </p>
           </div>
           <button
