@@ -70,7 +70,8 @@ export type ClassNeedingBooking = {
   booking_window_hours: number
   timezone: string
   active: boolean
-  next_skip_date: string | null
+  skip_next_occurrence: boolean
+  skip_target_datetime: string | null
   gym_url: string
   username: string
   encrypted_password: string
@@ -82,8 +83,9 @@ export type ClassNeedingBooking = {
  * Filters by:
  * - active = true
  * - schedule_paused = false (or null)
- * - next_skip_date is NULL or not equal to today
  * - booking window is open (current time >= class datetime - booking_window_hours)
+ *
+ * Note: Skip logic (skip_next_occurrence) is handled by Inngest, not here
  */
 export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]> {
   const supabase = getSupabaseClient()
