@@ -33,14 +33,6 @@ export async function GET(request: NextRequest) {
 
     // Handle PKCE flow (code parameter)
     if (code) {
-      // SECURITY FIX: Sign out any existing session before exchanging code
-      // This prevents the edge case where user A is logged in and clicks a
-      // verification link for user B, which would verify B but leave A logged in
-      const { data: { session: existingSession } } = await supabase.auth.getSession()
-      if (existingSession) {
-        await supabase.auth.signOut()
-      }
-
       const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
       if (exchangeError) {
@@ -49,13 +41,21 @@ export async function GET(request: NextRequest) {
         // Handle specific error cases
         if (exchangeError.message.includes('expired')) {
           return NextResponse.redirect(
-            new URL('/login?error=Link expired. Please request a new password reset.', request.url)
+            new URL('/login?error=Link expired. Please request a new verification email.', request.url)
           )
         }
 
         if (exchangeError.message.includes('already been used')) {
           return NextResponse.redirect(
-            new URL('/login?message=Link already used. Please log in or request a new reset.', request.url)
+            new URL('/login?message=Link already used. Please log in or request a new verification email.', request.url)
+          )
+        }
+
+        // Handle PKCE errors (code verifier missing or mismatched)
+        // This happens when clicking verification link in a different browser than where you signed up
+        if (exchangeError.message.includes('code') || exchangeError.message.includes('verifier')) {
+          return NextResponse.redirect(
+            new URL('/login?error=Please open the verification link in the same browser where you signed up. If you\'ve closed that browser, please sign up again.', request.url)
           )
         }
 
