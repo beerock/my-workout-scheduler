@@ -127,7 +127,7 @@ Confirm your My Workout Scheduler account
 <p style="word-break: break-all; color: #666;">{{ .ConfirmationURL }}</p>
 
 <p style="margin-top: 30px; color: #666; font-size: 14px;">
-  This link expires in 24 hours.
+  This link expires in 1 hour.
 </p>
 
 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
@@ -165,7 +165,7 @@ Confirm your new email address
 <p style="word-break: break-all; color: #666;">{{ .ConfirmationURL }}</p>
 
 <p style="margin-top: 30px; color: #666; font-size: 14px;">
-  This link expires in 24 hours.
+  This link expires in 1 hour.
 </p>
 
 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
