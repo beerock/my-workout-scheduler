@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import LogoutButton from '@/components/LogoutButton'
 import ProfileForm from '@/components/ProfileForm'
 import EmailVerificationNotification from '@/components/EmailVerificationNotification'
@@ -39,7 +40,9 @@ export default async function ProfilePage() {
             </p>
           </div>
 
-          <EmailVerificationNotification />
+          <Suspense fallback={null}>
+            <EmailVerificationNotification />
+          </Suspense>
 
           <div className="mb-6 p-4 bg-gray-50 rounded-md border border-gray-200">
             <div className="text-sm">

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import LogoutButton from '@/components/LogoutButton'
 import PauseToggle from '@/components/PauseToggle'
 import EmailVerificationNotification from '@/components/EmailVerificationNotification'
@@ -42,7 +43,9 @@ export default async function DashboardPage() {
             <PauseToggle initialPaused={settings?.schedule_paused ?? false} />
           </div>
 
-          <EmailVerificationNotification />
+          <Suspense fallback={null}>
+            <EmailVerificationNotification />
+          </Suspense>
 
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg p-4">
