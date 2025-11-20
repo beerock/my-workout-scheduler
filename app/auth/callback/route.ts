@@ -33,6 +33,14 @@ export async function GET(request: NextRequest) {
 
     // Handle PKCE flow (code parameter)
     if (code) {
+      // SECURITY FIX: Sign out any existing session before exchanging code
+      // This prevents the edge case where user A is logged in and clicks a
+      // verification link for user B, which would verify B but leave A logged in
+      const { data: { session: existingSession } } = await supabase.auth.getSession()
+      if (existingSession) {
+        await supabase.auth.signOut()
+      }
+
       const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
       if (exchangeError) {
@@ -59,8 +67,9 @@ export async function GET(request: NextRequest) {
       // Success - redirect to next page
       const redirectUrl = new URL(next, request.url)
       if (type !== 'recovery') {
-        // Set email_verified for signup flow (detected by EmailVerificationNotification component)
+        // Pass verification type to notification component for appropriate messaging
         redirectUrl.searchParams.set('email_verified', 'true')
+        redirectUrl.searchParams.set('verification_type', type || 'signup')
       }
       return NextResponse.redirect(redirectUrl)
     }
