@@ -2289,3 +2289,579 @@ export function validatePassword(password: string): PasswordValidation {
 **Timeline:** Should be completed before MVP ships to production users
 
 ---
+
+## Contact/Support Form (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - MUST COMPLETE BEFORE LAUNCH**
+
+Add a contact/support system to allow users to reach out for help with issues, questions, or feedback. Users can submit a contact form or email directly. This builds trust and provides a critical support channel for users.
+
+### Current Behavior
+- No way for users to contact support
+- No support email displayed anywhere
+- Users have no recourse if they encounter issues
+
+### Expected Behavior
+
+**Contact Methods:**
+- **Primary:** Contact form on dedicated `/contact` page
+- **Fallback:** Direct email link (`mailto:help@beerock.com`)
+- Both methods available and visible to users
+
+**Contact Form:**
+- Dedicated page at `/contact`
+- Pre-fills user info if logged in (name, email)
+- Fields: Name, Email, Subject/Topic (dropdown), Message
+- On-page confirmation after successful submission
+- Sends email to `help@beerock.com` via Resend
+
+**Footer Link:**
+- Add "Contact" or "Support" link to existing footer
+- Place in appropriate section (e.g., "Help" or "Support" section)
+- Link to `/contact` page
+- Available throughout entire site
+
+**Email Setup:**
+- Use `help@beerock.com` as support email
+- Same domain setup as `noreply@beerock.com` (already configured)
+- DKIM signing enabled (beerock.com domain)
+
+### Requirements
+
+#### 1. Contact Page (`/contact`)
+
+**Page Layout:**
+- Clean, simple form
+- Welcoming heading: "Contact Us" or "Get Help"
+- Subtitle: "Have a question or need help? We're here for you."
+- Contact form (primary)
+- Alternative: "Or email us directly at help@beerock.com"
+
+**Form Fields:**
+
+**Name (required):**
+- Text input
+- Pre-filled if user is logged in (`user.user_metadata.full_name` or from OAuth)
+- Placeholder: "Your name"
+
+**Email (required):**
+- Email input
+- Pre-filled if user is logged in (`user.email`)
+- Validated format (email regex)
+- Placeholder: "your@email.com"
+
+**Subject/Topic (required):**
+- Dropdown select
+- Options:
+  - Bug Report
+  - Feature Request
+  - Account Issue
+  - Booking Problem
+  - General Question
+  - Other
+- Default: "Select a topic"
+
+**Message (required):**
+- Textarea (multi-line)
+- Minimum 10 characters
+- Placeholder: "Tell us how we can help..."
+- Rows: 6-8 lines
+
+**User ID (hidden, auto-populated):**
+- If user is logged in, include user ID in submission
+- Helps with support lookup and context
+- Not visible to user
+
+**Submit Button:**
+- "Send Message" or "Submit"
+- Loading state while submitting
+- Disabled until form is valid
+
+#### 2. Form Submission Flow
+
+**Validation:**
+- Client-side: Real-time validation as user types
+- Server-side: Always validate before sending email
+- Required fields: Name, Email, Subject, Message
+- Email format validation
+- Message minimum length (10 chars)
+
+**Email Sending (via Resend):**
+- Send to: `help@beerock.com`
+- From: User's email (reply-to user email)
+- Subject: `[${subject}] Contact Form Submission from ${name}`
+- Body: Include all form data + user ID (if logged in)
+
+**Email Template:**
+```
+New contact form submission:
+
+From: ${name} (${email})
+User ID: ${userId || 'Not logged in'}
+Subject: ${subject}
+
+Message:
+${message}
+
+---
+Submitted at: ${timestamp}
+```
+
+**Success Response:**
+- Show success message on page (inline, not separate page)
+- Message: "Thanks for reaching out! We'll get back to you within 24 hours."
+- Clear form after successful submission
+- Option to submit another message
+
+**Error Handling:**
+- Show error message if submission fails
+- Message: "Sorry, something went wrong. Please try emailing us directly at help@beerock.com"
+- Don't clear form on error (preserve user input)
+- Log error for debugging
+
+#### 3. Footer Integration
+
+**Add Contact Link:**
+- Link text: "Contact" or "Support"
+- URL: `/contact`
+- Placement: In existing footer, proper section
+  - Suggestion: Create "Support" or "Help" section in footer
+  - Or add to existing "Company" section
+
+**Footer Structure (Example):**
+```
+┌─────────────────────────────────────────┐
+│  My Workout Scheduler                   │
+│                                         │
+│  [Logo/Brand]                           │
+│                                         │
+│  Product         Support       Legal    │
+│  --------        -------       -----    │
+│  Features        Contact       Privacy  │
+│  Pricing         FAQ           Terms    │
+│  Docs            Status                 │
+│                                         │
+│  © 2025 My Workout Scheduler            │
+└─────────────────────────────────────────┘
+```
+
+**Existing Footer Check:**
+- Review current footer implementation
+- Add "Contact" link in appropriate location
+- Ensure footer appears on all pages
+
+#### 4. Email Configuration
+
+**Email Address: `help@beerock.com`**
+
+**Setup in Resend:**
+- Use existing beerock.com domain (already verified)
+- Same DNS/DKIM setup as `noreply@beerock.com`
+- No additional domain verification needed
+
+**Email Sending:**
+- Use Resend API to send contact form submissions
+- From: `help@beerock.com` or `noreply@beerock.com`
+- Reply-To: User's email address (so you can reply directly)
+- To: `help@beerock.com` (your support inbox)
+
+**Environment Variables (existing):**
+```env
+RESEND_API_KEY=...  # Already configured
+RESEND_FROM_EMAIL=noreply@beerock.com  # Use this for "From"
+SUPPORT_EMAIL=help@beerock.com  # New: where to send contact form submissions
+```
+
+#### 5. Auto-Response (Post-MVP)
+
+**For MVP:**
+- Show confirmation message on page after submission
+- No email confirmation sent to user
+- Keep it simple
+
+**Post-MVP Enhancement:**
+- Send confirmation email to user
+- Subject: "We received your message"
+- Body: "Thanks for contacting us. We'll respond within 24 hours."
+- Include copy of their original message
+
+#### 6. Database Tracking (Optional - Discuss)
+
+**Options:**
+
+**Option A: No database (simpler for MVP)**
+- Just send email to help@beerock.com
+- Support team handles via email
+- Pros: Simpler, faster to implement
+- Cons: No tracking, no history in app
+
+**Option B: Store submissions in database (better for scaling)**
+- Create `contact_submissions` table
+- Track submission history
+- Allow users to view their past submissions in profile
+- Pros: Full audit trail, better support workflow
+- Cons: More complex, requires additional UI
+
+**Recommendation for MVP: Option A (email only)**
+- Start simple with email-only
+- Add database tracking later if needed
+- Can always migrate emails to database if desired
+
+**If you want database tracking for MVP:**
+```sql
+CREATE TABLE contact_submissions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT DEFAULT 'new', -- 'new', 'in_progress', 'resolved'
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### Implementation Notes
+
+**Files to Create:**
+
+**New Page:**
+```typescript
+// app/contact/page.tsx - Contact form page
+'use client'
+
+import { useState } from 'react'
+import { submitContactForm } from '@/app/actions/contact'
+
+export default function ContactPage() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  })
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setStatus('loading')
+
+    const result = await submitContactForm(formData)
+
+    if (result.success) {
+      setStatus('success')
+      setFormData({ name: '', email: '', subject: '', message: '' }) // Clear form
+    } else {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-8">
+      <h1>Contact Us</h1>
+      <p>Have a question or need help? We're here for you.</p>
+
+      {status === 'success' && (
+        <div className="bg-green-50 p-4 rounded">
+          Thanks for reaching out! We'll get back to you within 24 hours.
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="bg-red-50 p-4 rounded">
+          Sorry, something went wrong. Please try emailing us directly at{' '}
+          <a href="mailto:help@beerock.com">help@beerock.com</a>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        {/* Form fields... */}
+        <button type="submit" disabled={status === 'loading'}>
+          {status === 'loading' ? 'Sending...' : 'Send Message'}
+        </button>
+      </form>
+
+      <p className="mt-8 text-sm text-gray-600">
+        Or email us directly at{' '}
+        <a href="mailto:help@beerock.com" className="text-blue-600">
+          help@beerock.com
+        </a>
+      </p>
+    </div>
+  )
+}
+```
+
+**New Server Action:**
+```typescript
+// app/actions/contact.ts - Contact form submission
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+interface ContactFormData {
+  name: string
+  email: string
+  subject: string
+  message: string
+}
+
+export async function submitContactForm(data: ContactFormData) {
+  // Validation
+  if (!data.name || !data.email || !data.subject || !data.message) {
+    return { success: false, error: 'All fields are required' }
+  }
+
+  if (data.message.length < 10) {
+    return { success: false, error: 'Message must be at least 10 characters' }
+  }
+
+  // Get user ID if logged in
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Send email via Resend
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL!,
+      to: process.env.SUPPORT_EMAIL || 'help@beerock.com',
+      replyTo: data.email,
+      subject: `[${data.subject}] Contact Form from ${data.name}`,
+      text: `
+New contact form submission:
+
+From: ${data.name} (${data.email})
+User ID: ${user?.id || 'Not logged in'}
+Subject: ${data.subject}
+
+Message:
+${data.message}
+
+---
+Submitted at: ${new Date().toISOString()}
+      `.trim()
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Contact form error:', error)
+    return { success: false, error: 'Failed to send message' }
+  }
+}
+```
+
+**Footer Update:**
+```typescript
+// components/Footer.tsx (or wherever footer is)
+// Add Contact link to footer
+
+<footer>
+  {/* ... existing footer content ... */}
+  <div className="footer-section">
+    <h3>Support</h3>
+    <ul>
+      <li><Link href="/contact">Contact</Link></li>
+      {/* Other support links */}
+    </ul>
+  </div>
+  {/* ... */}
+</footer>
+```
+
+**Environment Variables:**
+```env
+# Add to .env.local and Vercel
+SUPPORT_EMAIL=help@beerock.com
+```
+
+### Code Location
+
+**New Files:**
+- `app/contact/page.tsx` - Contact form page
+- `app/actions/contact.ts` - Contact form submission server action
+- `components/ContactForm.tsx` - Contact form component (optional, can be inline)
+
+**Modified Files:**
+- `components/Footer.tsx` - Add Contact link (or wherever footer is implemented)
+- `.env.example` - Document SUPPORT_EMAIL variable
+
+**Optional (if database tracking):**
+- `supabase/migrations/00X_contact_submissions.sql` - Database schema
+- `lib/supabase/database.ts` - Database helpers for contact submissions
+
+### Testing Considerations
+
+#### Contact Form:
+- [ ] Navigate to `/contact` page
+- [ ] Form displays correctly
+- [ ] All fields present (Name, Email, Subject, Message)
+
+**Logged In User:**
+- [ ] User is logged in
+- [ ] Name and email are pre-filled
+- [ ] Can edit pre-filled values
+- [ ] User ID is included in email (verify in received email)
+
+**Not Logged In User:**
+- [ ] User is not logged in
+- [ ] Form fields are empty
+- [ ] Can fill out all fields manually
+- [ ] Email sent successfully
+
+**Form Validation:**
+- [ ] Try to submit with empty name → Error
+- [ ] Try to submit with empty email → Error
+- [ ] Try to submit with invalid email format → Error
+- [ ] Try to submit with empty subject → Error
+- [ ] Try to submit with short message (< 10 chars) → Error
+- [ ] Submit with all fields valid → Success
+
+**Email Sending:**
+- [ ] Submit form with valid data
+- [ ] Email received at help@beerock.com
+- [ ] Email contains: name, email, subject, message, user ID, timestamp
+- [ ] Reply-To is set to user's email
+- [ ] Can reply directly to user
+
+**Success/Error States:**
+- [ ] Successful submission → Success message shown
+- [ ] Form cleared after success
+- [ ] Failed submission → Error message shown
+- [ ] Form data preserved after error
+- [ ] Mailto link visible as fallback
+
+**Footer Integration:**
+- [ ] "Contact" link appears in footer
+- [ ] Link appears on all pages (auth pages, dashboard, etc.)
+- [ ] Link navigates to `/contact` page
+- [ ] Footer layout looks correct
+
+**Email Configuration:**
+- [ ] help@beerock.com is set up to receive emails
+- [ ] DKIM signing working (check email headers)
+- [ ] Emails not going to spam
+- [ ] Can reply to user emails
+
+### Security Considerations
+
+**Spam Prevention:**
+- Rate limiting (prevent spam submissions)
+- Honeypot field (hidden field to catch bots)
+- reCAPTCHA (optional, adds friction but prevents abuse)
+
+**Data Validation:**
+- Server-side validation (never trust client)
+- Email format validation
+- Message length limits (min 10, max 5000 chars?)
+- Sanitize input to prevent XSS
+
+**Privacy:**
+- Don't expose user emails publicly
+- Only send user email in Reply-To header
+- Don't store sensitive info in contact submissions (if using database)
+
+**For MVP (Keep Simple):**
+- Basic validation only
+- No rate limiting (add if abused)
+- No CAPTCHA (add if spam becomes issue)
+- Focus on getting it working
+
+### Email Inbox Setup
+
+**help@beerock.com Configuration:**
+
+**Option A: Email forwarding (simplest)**
+- Forward help@beerock.com to your personal email
+- Receive contact form submissions in existing inbox
+- Reply from personal email (or set up email client with help@beerock.com)
+
+**Option B: Dedicated inbox**
+- Set up help@beerock.com as real mailbox (Gmail, Outlook, etc.)
+- Access via webmail or email client
+- More professional but requires email provider setup
+
+**Option C: Use Resend to receive (if supported)**
+- Check if Resend supports receiving emails
+- Store in Resend dashboard
+- May have limitations
+
+**Recommendation: Option A (forwarding) for MVP**
+- Simplest to set up
+- Start receiving contact submissions immediately
+- Can upgrade to dedicated inbox later
+
+### Why This Matters
+
+**User Trust:**
+- Users need a way to get help
+- Shows you care about user experience
+- Professional appearance
+
+**Support Channel:**
+- Critical for handling issues
+- Collect bug reports and feedback
+- User retention (help users when stuck)
+
+**Legal/Compliance:**
+- Some jurisdictions require contact information
+- Terms of Service often reference support contact
+- Privacy policies need contact email
+
+### Alternative Enhancements (Post-MVP)
+
+**Auto-Response Email:**
+- Send confirmation email to user
+- "We received your message" notification
+- Set expectations (response within 24 hours)
+
+**Database Tracking:**
+- Store contact submissions in database
+- Track status (new, in progress, resolved)
+- Allow users to view submission history in profile
+
+**Support Ticket System:**
+- Full ticket tracking system
+- Status updates for users
+- Internal notes for support team
+
+**FAQ Page:**
+- Common questions and answers
+- Reduce support volume
+- Link from contact page
+
+**Live Chat:**
+- Real-time chat support (Intercom, Zendesk, etc.)
+- Better user experience
+- Higher cost and maintenance
+
+**Contact Form Improvements:**
+- File attachments (screenshots)
+- Urgency/priority selector
+- Department routing (billing, technical, etc.)
+
+### Status
+**Status**: Pre-MVP - Must be completed before launch
+**Priority**: High (required for user support and trust)
+**Last Updated**: November 19, 2025
+**Blocks**: MVP launch
+**Next Steps**:
+1. Create `/contact` page with form
+2. Implement contact form server action
+3. Configure help@beerock.com email forwarding
+4. Add Contact link to footer
+5. Test form submission and email delivery
+6. Verify emails not going to spam
+7. Set up help@beerock.com inbox access
+
+**Timeline:** Should be completed before MVP ships to production users
+
+**Discussion Needed:**
+- Database tracking: Yes or no for MVP? (Recommendation: No, add later)
+- Email inbox: Forwarding vs dedicated mailbox? (Recommendation: Forwarding)
+
+---
