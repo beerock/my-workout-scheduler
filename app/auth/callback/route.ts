@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(redirectUrl)
     }
 
-    // Handle legacy token hash flow (for password reset)
+    // Handle legacy token hash flow (for password reset and email change)
     if (tokenHash && type) {
       const { error: verifyError } = await supabase.auth.verifyOtp({
         token_hash: tokenHash,
@@ -88,8 +88,16 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      // Success - redirect to next page (usually /reset-password for recovery)
-      return NextResponse.redirect(new URL(next, request.url))
+      // Success - redirect to next page
+      const redirectUrl = new URL(next, request.url)
+
+      // For email change, show verification notification
+      if (type === 'email_change') {
+        redirectUrl.searchParams.set('email_verified', 'true')
+        redirectUrl.searchParams.set('verification_type', 'email_change')
+      }
+
+      return NextResponse.redirect(redirectUrl)
     }
 
     // No valid parameters provided
