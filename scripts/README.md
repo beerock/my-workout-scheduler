@@ -114,55 +114,23 @@ Reusable database query functions used by automation and Inngest functions.
 
 ### 🗑️ User Management Scripts
 
-#### `delete-users-with-logging.sql`
-Comprehensive bulk user deletion script with audit logging.
+**🔒 SECURITY NOTE:** Sensitive admin scripts are stored in `scripts/private/` (gitignored).
 
-**Features:**
-- Creates `deleted_users_audit` table for historical records
-- Shows preview of users that will be deleted
-- Logs all user details before deletion
-- Performs deletion (keeps only specified emails)
-- Verifies deletion and shows summary statistics
+The private folder contains:
+- `delete-users-with-logging.sql` - Bulk user deletion with audit trail
+- `delete-single-user.sql` - Single user deletion
+- `user-deletion-queries.md` - Quick reference queries
 
-**Usage:**
-1. Open Supabase Dashboard → SQL Editor
-2. Paste the entire script
-3. Review the preview output
-4. Script will delete all users except `YOUR_ADMIN_EMAIL` and `cnicolewill@gmail.com`
+**Why private?**
+- Contains specific admin email addresses (phishing risk)
+- Direct database manipulation operations
+- Should not be exposed in public repositories
 
-**⚠️ DESTRUCTIVE:** Permanently deletes users and all related data.
-
----
-
-#### `delete-single-user.sql`
-Delete a single user by email address with audit logging.
-
-**Features:**
-- Check if user exists
-- Show detailed user preview (classes, bookings, credentials)
-- Log to audit table
-- Delete user and cascade related data
-- Confirmation messages
-
-**Usage:**
-1. Open the file and change `email_to_delete` variable
-2. Run in Supabase Dashboard → SQL Editor
-
-**⚠️ DESTRUCTIVE:** Permanently deletes the user and all related data.
-
----
-
-#### `user-deletion-queries.md`
-Quick reference guide for user deletion SQL queries.
-
-**Includes:**
-- Preview queries (safe to run)
-- Deletion queries (destructive)
-- Audit table queries
-- Verification queries
-- Orphaned data checks
-
-**Usage:** Copy-paste queries as needed.
+**Access:** See `scripts/private/README.md` for:
+- Setup instructions
+- Security best practices
+- Template scripts to customize
+- Safe sharing guidelines
 
 ---
 
