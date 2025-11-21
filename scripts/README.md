@@ -114,23 +114,53 @@ Reusable database query functions used by automation and Inngest functions.
 
 ### 🗑️ User Management Scripts
 
-**🔒 SECURITY NOTE:** Sensitive admin scripts are stored in `scripts/private/` (gitignored).
+#### Template Files (Public - Safe to Commit)
 
-The private folder contains:
-- `delete-users-with-logging.sql` - Bulk user deletion with audit trail
-- `delete-single-user.sql` - Single user deletion
-- `user-deletion-queries.md` - Quick reference queries
+**`delete-users-with-logging.sql`** - Bulk user deletion template
+- Creates `deleted_users_audit` table with RLS enabled
+- Shows preview before deletion
+- Logs all user details to audit table
+- Uses example emails (`admin@example.com`, `owner@example.com`)
+- **Before use:** Copy to `scripts/private/` and replace with your actual admin emails
 
-**Why private?**
-- Contains specific admin email addresses (phishing risk)
-- Direct database manipulation operations
-- Should not be exposed in public repositories
+**`delete-single-user.sql`** - Single user deletion template
+- Detailed user preview before deletion
+- Audit logging with RLS
+- Uses example email (`user@example.com`)
+- **Before use:** Copy to `scripts/private/` and replace with actual email
 
-**Access:** See `scripts/private/README.md` for:
-- Setup instructions
-- Security best practices
-- Template scripts to customize
-- Safe sharing guidelines
+**`user-deletion-queries.md`** - Quick reference template
+- Preview, deletion, audit, and verification queries
+- Uses example emails throughout
+- **Before use:** Copy to `scripts/private/` and customize
+
+#### Using the Templates
+
+1. **Copy templates to private folder:**
+   ```bash
+   cp scripts/delete-users-with-logging.sql scripts/private/
+   cp scripts/delete-single-user.sql scripts/private/
+   cp scripts/user-deletion-queries.md scripts/private/
+   ```
+
+2. **Customize with your actual emails:**
+   - Replace `admin@example.com` with your admin email
+   - Replace `owner@example.com` with other admin email
+   - Replace `user@example.com` with actual user to delete
+
+3. **Run in Supabase SQL Editor**
+
+**Why this approach?**
+- ✅ Templates are safe to commit (example emails only)
+- ✅ Team members can easily copy and customize
+- ✅ Private folder stays gitignored (contains real emails)
+- ✅ No risk of exposing admin identities publicly
+
+**Security Features:**
+- `deleted_users_audit` table created with RLS enabled
+- Only service role can access audit logs
+- Cascade deletion for all related data
+- Preview queries before destructive operations
 
 ---
 
