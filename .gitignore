@@ -38,3 +38,6 @@ next-env.d.ts
 
 # automation screenshots
 /screenshots
+
+# private admin scripts
+/scripts/private
