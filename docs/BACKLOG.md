@@ -2865,3 +2865,176 @@ SUPPORT_EMAIL=help@beerock.com
 - Email inbox: Forwarding vs dedicated mailbox? (Recommendation: Forwarding)
 
 ---
+
+
+---
+
+## Admin Dashboard
+
+### Overview
+Create a comprehensive admin dashboard for managing users, viewing analytics, and performing administrative operations without direct database access.
+
+### Requirements
+
+1. **User Management**
+   - **View all users**: List with search, filter, and sorting
+   - **User details**: View full user profile, classes, booking history
+   - **Edit users**: Update email, reset password, modify settings
+   - **Delete users**: Safe deletion with confirmation and audit logging
+   - **User roles**: Implement role-based access (admin, user)
+   - **Bulk operations**: Bulk delete, bulk export to CSV
+
+2. **Analytics & Reports**
+   - **User metrics**: Total users, active users, new signups over time
+   - **Booking metrics**: Success rate, failure rate, retry statistics
+   - **Class analytics**: Most popular classes, branches, time slots
+   - **System health**: Inngest event status, error rates, response times
+   - **Audit logs**: View deleted_users_audit, booking_attempts history
+
+3. **Administrative Tools**
+   - **Email management**: Send announcements, notifications to all users
+   - **System settings**: Configure global settings (maintenance mode, booking limits)
+   - **Database health**: Check for orphaned data, integrity issues
+   - **Logs viewer**: View application logs, Inngest logs, error traces
+   - **Manual operations**: Trigger manual bookings, re-schedule classes
+
+4. **Security & Access Control**
+   - **Admin authentication**: Separate admin login or role-based access
+   - **Audit trail**: Log all admin actions (who did what, when)
+   - **Permission levels**: Different admin roles (super admin, support, read-only)
+   - **2FA for admins**: Two-factor authentication for admin accounts
+
+### Implementation Approach
+
+**Phase 1: Basic User Management**
+- Create `/admin` route with auth middleware
+- List all users with search and pagination
+- View user details page
+- Delete user with audit logging
+
+**Phase 2: Analytics Dashboard**
+- Create dashboard landing page with key metrics
+- Chart library integration (recharts, chart.js)
+- User growth charts, booking success rates
+- Export reports to CSV
+
+**Phase 3: Advanced Features**
+- Bulk operations
+- Email management
+- System settings
+- Logs viewer
+
+### Technical Considerations
+
+**Auth Strategy:**
+- Option A: Add `role` field to auth.users (admin, user)
+- Option B: Separate admin_users table
+- Option C: Check against specific email list in middleware
+- **Recommendation**: Option A (simplest, Supabase native)
+
+**UI Framework:**
+- Use existing Tailwind CSS setup
+- Add chart library: recharts or tremor
+- Pagination component for user lists
+- Modal components for confirmations
+
+**Database Queries:**
+- Create admin-specific server actions
+- Use service role client for unrestricted access
+- Add indexes for performance (user search, date ranges)
+- Cache expensive queries (analytics)
+
+**Security:**
+- Middleware to check admin role
+- All admin actions logged to audit table
+- Rate limiting for sensitive operations
+- CSRF protection for destructive actions
+
+### Code Location
+
+- **Routes**: `/app/admin/` (new directory)
+  - `page.tsx` - Dashboard landing
+  - `users/page.tsx` - User list
+  - `users/[id]/page.tsx` - User details
+  - `analytics/page.tsx` - Analytics dashboard
+  - `logs/page.tsx` - Logs viewer
+  
+- **Components**: `/components/admin/` (new directory)
+  - `UserList.tsx`
+  - `UserDetails.tsx`
+  - `MetricsCard.tsx`
+  - `AnalyticsChart.tsx`
+  
+- **Actions**: `/app/actions/admin.ts` (new file)
+  - `getAllUsers()`
+  - `getUserDetails()`
+  - `updateUser()`
+  - `deleteUserAdmin()`
+  - `getAnalytics()`
+
+- **Middleware**: Update `/middleware.ts`
+  - Check admin role for /admin routes
+
+### Best Practices to Follow
+
+1. **User Experience**
+   - Clear navigation and breadcrumbs
+   - Responsive design (mobile-friendly admin panel)
+   - Loading states and skeleton screens
+   - Toast notifications for actions
+   - Keyboard shortcuts for power users
+
+2. **Data Visualization**
+   - Use appropriate chart types (line for trends, pie for distribution)
+   - Color-coded status indicators
+   - Export charts as images or PDF
+   - Real-time updates where applicable
+
+3. **Performance**
+   - Pagination for large lists (20-50 items per page)
+   - Virtual scrolling for very large lists
+   - Debounced search
+   - Cached analytics queries (5-15 min cache)
+   - Lazy load chart data
+
+4. **Audit & Compliance**
+   - Log all destructive operations
+   - Record admin user who performed action
+   - Timestamp all admin actions
+   - Ability to view audit trail
+   - Compliance with data privacy laws (GDPR, CCPA)
+
+### Benefits
+
+- **No direct database access needed**: Admins use UI instead of SQL
+- **Safer operations**: Confirmation dialogs, audit logs
+- **Better insights**: Visual analytics instead of raw SQL queries
+- **Team collaboration**: Multiple admins can manage users
+- **Professional appearance**: Shows maturity of product
+
+### Testing Considerations
+
+- Test admin authentication and role checks
+- Test user CRUD operations
+- Test pagination and search
+- Test analytics calculation accuracy
+- Test audit logging
+- Test bulk operations (with test data)
+- Test permission boundaries (regular users cannot access /admin)
+
+### Status
+**Status**: Backlogged - Not currently implemented
+**Priority**: Medium (nice-to-have for scaling, not critical for MVP)
+**Effort**: Large (2-3 weeks for complete implementation)
+**Dependencies**: 
+- User deletion administration (v2.9) ✅ Completed
+- Role-based access control (needs implementation)
+**Last Updated**: November 21, 2025
+
+**Recommendation**: 
+- Phase 1 (Basic User Management) should be prioritized when moving beyond MVP
+- Essential for scaling to 10+ users without direct database access
+- Can start small and iterate based on admin needs
+
+---
+
