@@ -116,12 +116,20 @@ Reusable database query functions used by automation and Inngest functions.
 
 #### Template Files (Public - Safe to Commit)
 
-**`delete-users-with-logging.sql`** - Bulk user deletion template
+**`delete-users-with-logging.sql`** - Bulk user deletion template (by email)
 - Creates `deleted_users_audit` table with RLS enabled
 - Shows preview before deletion
 - Logs all user details to audit table
 - Uses example emails (`admin@example.com`, `owner@example.com`)
 - **Before use:** Copy to `scripts/private/` and replace with your actual admin emails
+
+**`delete-users-with-logging-by-uid.sql`** - Bulk user deletion template (by UID)
+- Same functionality as email version
+- Filters by user UUID instead of email addresses
+- Uses example UUIDs (`00000000-0000-0000-0000-000000000001`)
+- Includes helper query to find your admin UIDs
+- **Before use:** Copy to `scripts/private/`, find your UIDs, and replace example UUIDs
+- **Benefit:** More stable identifier (emails can change)
 
 **`delete-single-user.sql`** - Single user deletion template
 - Detailed user preview before deletion
@@ -136,6 +144,7 @@ Reusable database query functions used by automation and Inngest functions.
 
 #### Using the Templates
 
+**Option A: Email-based deletion (simpler)**
 1. **Copy templates to private folder:**
    ```bash
    cp scripts/delete-users-with-logging.sql scripts/private/
@@ -149,6 +158,24 @@ Reusable database query functions used by automation and Inngest functions.
    - Replace `user@example.com` with actual user to delete
 
 3. **Run in Supabase SQL Editor**
+
+**Option B: UID-based deletion (more stable)**
+1. **Copy UID template to private folder:**
+   ```bash
+   cp scripts/delete-users-with-logging-by-uid.sql scripts/private/
+   ```
+
+2. **Find your admin UIDs** (run this query first):
+   ```sql
+   SELECT id, email FROM auth.users
+   WHERE email IN ('your-admin@email.com', 'other-admin@email.com');
+   ```
+
+3. **Replace example UUIDs** with your actual admin UIDs:
+   - Replace `00000000-0000-0000-0000-000000000001` with first admin UID
+   - Replace `00000000-0000-0000-0000-000000000002` with second admin UID
+
+4. **Run in Supabase SQL Editor**
 
 **Why this approach?**
 - ✅ Templates are safe to commit (example emails only)
