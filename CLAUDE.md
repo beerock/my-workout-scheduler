@@ -46,6 +46,44 @@ This document provides Claude with essential context about the My Workout Schedu
 
 ---
 
+## Development Workflow Preferences
+
+### Pull Request Creation
+**Always provide PR title and description automatically after pushing to remote.**
+
+When the following conditions are met:
+1. All requested work is complete
+2. Changes are committed to git
+3. Changes are pushed to remote branch (`git push origin <branch>`)
+4. Git status shows "working tree clean"
+
+**Automatically provide:**
+- Professional PR title (concise, descriptive)
+- Comprehensive PR description including:
+  - Summary of changes
+  - Detailed change breakdown
+  - Testing notes
+  - Security considerations (if applicable)
+  - Known limitations (if applicable)
+
+**Format:**
+```markdown
+## PR Title
+<concise-title>
+
+## PR Description
+<comprehensive-description>
+```
+
+**User can still request explicitly** with phrases like:
+- "ready for PR"
+- "need PR title and description"
+- "create PR content"
+
+**Note:** This applies even when GitHub might auto-populate from single commits, to ensure consistency and comprehensive documentation.
+
+---
+
 ## Tech Stack
 
 - **Frontend/Backend:** Next.js 14 (App Router) with TypeScript
