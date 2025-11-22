@@ -4,6 +4,24 @@ This guide explains how to backup and restore your Supabase database on the **fr
 
 ---
 
+## ⚠️ Important Limitation: Auth Schema Cannot Be Restored
+
+**The Supabase `auth` schema is managed and protected by Supabase** and cannot be restored using `pg_dump`/`psql` with the database password. This is a security feature by design.
+
+**What this means:**
+- ✅ `npm run backup` - **Works perfectly** for app data (gym_credentials, recurring_classes, booking_attempts, user_settings)
+- ⚠️ `npm run backup:full` - **Backs up auth data** but **cannot restore it** due to permission restrictions
+- 📝 **For MVP with 5 users:** Use `npm run backup` and manually recreate users if needed
+
+**Recommended approach:**
+1. Use `npm run backup` for regular backups (app data only)
+2. If migrating to a new Supabase project:
+   - Backup app data with `npm run backup`
+   - Manually recreate users in new project (Supabase Dashboard → Authentication)
+   - Restore app data with `npm run restore`
+
+---
+
 ## Quick Start
 
 ### 1. Get Your Database Password
@@ -50,22 +68,30 @@ Download from: https://www.postgresql.org/download/windows/
 
 ### 4. Run Backup
 
-**App Data Only (Recommended):**
+**✅ Recommended: App Data Only**
 ```bash
 npm run backup
 ```
 
-**Full Backup (Including Auth Users):**
+This backs up your application data that can be fully restored:
+- `gym_credentials` - Encrypted gym login info
+- `recurring_classes` - Class schedules
+- `booking_attempts` - Booking history
+- `user_settings` - User preferences
+
+**⚠️ Advanced: Full Backup (Auth Data Cannot Be Restored)**
 ```bash
 npm run backup:full
 ```
 
-**What's Included:**
+This includes auth data in the backup file, but **cannot restore it** due to Supabase permissions. Only use this if you need a complete snapshot for archival purposes.
 
-| Command | Includes | File Name | Use Case |
-|---------|----------|-----------|----------|
-| `npm run backup` | App data only (`gym_credentials`, `recurring_classes`, `booking_attempts`, etc.) | `backup_YYYY-MM-DD_HH-MM-SS.sql` | Regular backups, testing, dev |
-| `npm run backup:full` | App data + Auth users (emails, password hashes, sessions) | `backup_YYYY-MM-DD_HH-MM-SS_full.sql` | Migrating to new project, disaster recovery |
+**Comparison:**
+
+| Command | Includes | Can Restore? | Use Case |
+|---------|----------|--------------|----------|
+| `npm run backup` | App data only | ✅ Yes | **Regular backups, testing, dev, production** |
+| `npm run backup:full` | App data + Auth users | ⚠️ App data only | Archival, complete snapshots (auth for reference only) |
 
 Backup files are saved to the `backups/` directory with timestamps.
 
@@ -73,19 +99,33 @@ Backup files are saved to the `backups/` directory with timestamps.
 
 ## Restoring a Backup
 
+### ⚠️ Restore Limitations
+
+**Important:** When restoring to the **same database** you backed up from, you may encounter "duplicate key" errors because the data already exists. This is normal.
+
+**To restore to the same database:**
+1. Manually truncate/delete tables first (Supabase Dashboard → Table Editor)
+2. Then run the restore command
+
+**Auth schema cannot be restored** - See limitations section above.
+
+---
+
 ### Option 1: Using npm Scripts (Recommended)
 
-**Restore App Data Only:**
+**Restore App Data:**
 ```bash
 npm run restore backups/backup_2025-11-22_14-30-00.sql
 ```
 
-**Restore Full Backup (Including Auth Users):**
+**⚠️ Not Recommended: Restore Full Backup**
 ```bash
 npm run restore:full backups/backup_2025-11-22_14-30-00_full.sql
 ```
 
-The restore script will:
+This will attempt to restore auth data but will fail with permission errors. Use `npm run restore` instead.
+
+**The restore script will:**
 - ✅ Prompt for confirmation before proceeding
 - ✅ Warn about data being overwritten
 - ✅ Check for required tools (psql)
@@ -267,33 +307,31 @@ const backupsDir = '/path/to/your/backup/location'
 psql "postgresql://postgres:[PASSWORD]@db.[NEW-PROJECT-REF].supabase.co:5432/postgres" < backup.sql
 ```
 
-### Q: Will this backup Supabase Auth users?
+### Q: Can I backup and restore Supabase Auth users?
 
-**A:** It depends on which command you use:
+**A: You can backup auth data, but you CANNOT restore it** using this method.
 
-- **`npm run backup`** - No, app data only (public schema)
-- **`npm run backup:full`** - Yes, includes auth users (public + auth schemas)
+**Why?** Supabase's `auth` schema is protected and managed by Supabase. The database password user doesn't have permission to modify auth tables. This is a security feature.
 
-**To backup with auth users:**
-```bash
-npm run backup:full
-```
+**What you can do:**
 
-This creates a file like `backup_2025-11-22_14-30-00_full.sql` that includes:
-- ✅ App data (gym_credentials, recurring_classes, etc.)
-- ✅ Auth users (emails, password hashes)
-- ✅ Auth sessions and refresh tokens
+| Task | Solution |
+|------|----------|
+| **Backup app data** | ✅ Use `npm run backup` - Works perfectly |
+| **Backup auth data** | ⚠️ Use `npm run backup:full` - Creates backup but cannot restore |
+| **Restore app data** | ✅ Use `npm run restore` - Works perfectly |
+| **Restore auth users** | ❌ Cannot restore - Must recreate manually |
 
-**To restore with auth users:**
-```bash
-npm run restore:full backups/backup_2025-11-22_14-30-00_full.sql
-```
+**For MVP with 5 users:**
+1. Use `npm run backup` for regular backups
+2. If migrating to new project:
+   - Manually recreate the 5 users in Supabase Dashboard → Authentication
+   - Restore app data with `npm run restore`
 
-**⚠️ Important:**
-- Restoring auth users will invalidate existing user sessions
-- Users may need to log in again
-- Use with caution in production
-- Recommended for: migrating to new projects, disaster recovery
+**Alternative for auth migration:**
+- **Supabase CLI:** `supabase db push` and `supabase db pull` (requires Supabase Pro)
+- **Manual export:** Export user emails from old project, invite to new project
+- **Service role:** Use Supabase Management API with service role key (advanced)
 
 ---
 
