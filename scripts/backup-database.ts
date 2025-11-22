@@ -36,9 +36,14 @@ if (!SUPABASE_URL) {
 
 if (!DB_PASSWORD) {
   console.error('❌ Error: SUPABASE_DB_PASSWORD is not set')
-  console.error('   Get your database password from:')
-  console.error('   Supabase Dashboard → Settings → Database → Connection string')
-  console.error('   Then add it to your .env.local file')
+  console.error('')
+  console.error('   To get your database password:')
+  console.error('   1. Go to Supabase Dashboard → Settings → Database')
+  console.error('   2. Scroll to "Database password" section')
+  console.error('   3. Click "Reset database password"')
+  console.error('   4. Copy the password immediately (only shown once!)')
+  console.error('   5. Add to .env.local: SUPABASE_DB_PASSWORD=your_password')
+  console.error('')
   process.exit(1)
 }
 
@@ -132,7 +137,13 @@ try {
     // Check for common errors
     if (error.message.includes('password authentication failed')) {
       console.error('   Error: Invalid database password')
-      console.error('   Check your SUPABASE_DB_PASSWORD in .env.local')
+      console.error('')
+      console.error('   To fix:')
+      console.error('   1. Go to Supabase Dashboard → Settings → Database')
+      console.error('   2. Click "Reset database password"')
+      console.error('   3. Copy the new password')
+      console.error('   4. Update SUPABASE_DB_PASSWORD in .env.local')
+      console.error('')
     } else if (error.message.includes('could not translate host name')) {
       console.error('   Error: Could not connect to database')
       console.error('   Check your NEXT_PUBLIC_SUPABASE_URL in .env.local')
