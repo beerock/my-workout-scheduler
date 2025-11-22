@@ -50,20 +50,50 @@ Download from: https://www.postgresql.org/download/windows/
 
 ### 4. Run Backup
 
+**App Data Only (Recommended):**
 ```bash
 npm run backup
 ```
 
-This creates a backup file in the `backups/` directory with a timestamp:
+**Full Backup (Including Auth Users):**
+```bash
+npm run backup:full
 ```
-backups/backup_2025-11-22_14-30-00.sql
-```
+
+**What's Included:**
+
+| Command | Includes | File Name | Use Case |
+|---------|----------|-----------|----------|
+| `npm run backup` | App data only (`gym_credentials`, `recurring_classes`, `booking_attempts`, etc.) | `backup_YYYY-MM-DD_HH-MM-SS.sql` | Regular backups, testing, dev |
+| `npm run backup:full` | App data + Auth users (emails, password hashes, sessions) | `backup_YYYY-MM-DD_HH-MM-SS_full.sql` | Migrating to new project, disaster recovery |
+
+Backup files are saved to the `backups/` directory with timestamps.
 
 ---
 
 ## Restoring a Backup
 
-### Option 1: Using psql (Command Line)
+### Option 1: Using npm Scripts (Recommended)
+
+**Restore App Data Only:**
+```bash
+npm run restore backups/backup_2025-11-22_14-30-00.sql
+```
+
+**Restore Full Backup (Including Auth Users):**
+```bash
+npm run restore:full backups/backup_2025-11-22_14-30-00_full.sql
+```
+
+The restore script will:
+- ✅ Prompt for confirmation before proceeding
+- ✅ Warn about data being overwritten
+- ✅ Check for required tools (psql)
+- ✅ Provide clear error messages if something fails
+
+**⚠️ WARNING:** Restoring will OVERWRITE existing data!
+
+### Option 2: Using psql (Manual)
 
 ```bash
 # Replace [PASSWORD] with your database password
@@ -73,7 +103,7 @@ backups/backup_2025-11-22_14-30-00.sql
 psql "postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres" < backups/backup_2025-11-22_14-30-00.sql
 ```
 
-### Option 2: Using Supabase Dashboard
+### Option 3: Using Supabase Dashboard
 
 1. Go to **Database** → **SQL Editor**
 2. Open your backup SQL file in a text editor
@@ -81,7 +111,7 @@ psql "postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgre
 4. Paste into SQL Editor
 5. Click **Run**
 
-**Note:** For large backups, the command line method is recommended.
+**Note:** For large backups, the npm script or command line method is recommended.
 
 ---
 
@@ -239,14 +269,31 @@ psql "postgresql://postgres:[PASSWORD]@db.[NEW-PROJECT-REF].supabase.co:5432/pos
 
 ### Q: Will this backup Supabase Auth users?
 
-**A:** No. `pg_dump` only backs up the `public` schema by default. Auth users are in the `auth` schema. To include auth users:
+**A:** It depends on which command you use:
 
+- **`npm run backup`** - No, app data only (public schema)
+- **`npm run backup:full`** - Yes, includes auth users (public + auth schemas)
+
+**To backup with auth users:**
 ```bash
-# Backup all schemas
-pg_dump --schema=public --schema=auth "postgresql://..." > backup.sql
+npm run backup:full
 ```
 
-**Note:** Restoring auth users may require service role access and careful handling.
+This creates a file like `backup_2025-11-22_14-30-00_full.sql` that includes:
+- ✅ App data (gym_credentials, recurring_classes, etc.)
+- ✅ Auth users (emails, password hashes)
+- ✅ Auth sessions and refresh tokens
+
+**To restore with auth users:**
+```bash
+npm run restore:full backups/backup_2025-11-22_14-30-00_full.sql
+```
+
+**⚠️ Important:**
+- Restoring auth users will invalidate existing user sessions
+- Users may need to log in again
+- Use with caution in production
+- Recommended for: migrating to new projects, disaster recovery
 
 ---
 
