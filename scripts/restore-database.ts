@@ -28,7 +28,12 @@ dotenv.config({ path: '.env.local' })
 // Command Line Arguments
 // ============================================================================
 
-const backupFile = process.argv[2]
+// Find the backup file (first argument that is not a flag)
+const backupFile = process.argv.find(arg =>
+  !arg.startsWith('-') &&
+  !arg.includes('restore-database.ts') &&
+  arg !== process.execPath
+)
 const includeAuth = process.argv.includes('--include-auth')
 
 // ============================================================================
