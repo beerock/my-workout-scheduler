@@ -8,17 +8,18 @@ This guide explains how to backup and restore your Supabase database on the **fr
 
 ### 1. Get Your Database Password
 
+**⚠️ Important:** Supabase only shows the database password once when the project is created. If you don't have it saved, you'll need to reset it.
+
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
 2. Navigate to **Settings** → **Database**
-3. Scroll to **Connection string** section
-4. Click **URI** tab
-5. Copy the password from the connection string (the part after `postgres:` and before `@`)
+3. Scroll to **Database password** section
+4. Click **Reset database password**
+5. **Copy the new password immediately** (you won't be able to see it again!)
+6. Save it securely (password manager recommended)
 
-Example connection string:
-```
-postgresql://postgres:YOUR_PASSWORD_HERE@db.abc123xyz.supabase.co:5432/postgres
-                      ^^^^^^^^^^^^^^^^^^
-```
+The password will look something like: `your-long-random-password-here`
+
+**Note:** Resetting the password will invalidate any existing connections using the old password. Update all services that connect to your database.
 
 ### 2. Add Password to Environment Variables
 
