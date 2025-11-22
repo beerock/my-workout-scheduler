@@ -11,6 +11,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "backup": "tsx scripts/backup-database.ts",
     "test:booking-query": "tsx scripts/test-booking-query.ts",
     "test:database-helpers": "tsx scripts/test-database-helpers.ts",
     "test:booking-dry-run": "tsx scripts/test-booking-automation-dry-run.ts",
