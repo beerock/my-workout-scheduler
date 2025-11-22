@@ -4,7 +4,8 @@
  * Creates an on-demand backup of the Supabase PostgreSQL database using pg_dump.
  *
  * Usage:
- *   npm run backup
+ *   npm run backup              # App data only (public schema)
+ *   npm run backup:full         # Includes auth users (public + auth schemas)
  *
  * Requirements:
  *   - PostgreSQL client tools installed (pg_dump command)
@@ -16,6 +17,12 @@
 import { execSync } from 'child_process'
 import { mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
+
+// ============================================================================
+// Command Line Arguments
+// ============================================================================
+
+const includeAuth = process.argv.includes('--include-auth')
 
 // ============================================================================
 // Configuration
@@ -72,7 +79,8 @@ const timestamp = new Date()
   .replace(/T/, '_')
   .replace(/:/g, '-')
   .split('.')[0] // Remove milliseconds
-const filename = `backup_${timestamp}.sql`
+const suffix = includeAuth ? '_full' : ''
+const filename = `backup_${timestamp}${suffix}.sql`
 const filepath = join(backupsDir, filename)
 
 // Build connection string
@@ -84,6 +92,7 @@ const connectionString = `postgresql://postgres:${DB_PASSWORD}@db.${projectRef}.
 
 console.log('🚀 Starting database backup...')
 console.log(`   Project: ${projectRef}`)
+console.log(`   Mode: ${includeAuth ? 'Full (app data + auth users)' : 'App data only (public schema)'}`)
 console.log(`   File: ${filename}`)
 console.log('')
 
@@ -103,7 +112,13 @@ try {
 
   // Run pg_dump
   console.log('⏳ Running pg_dump...')
-  const command = `pg_dump "${connectionString}" > "${filepath}"`
+
+  // Build pg_dump command with appropriate schema flags
+  const schemaFlags = includeAuth
+    ? '--schema=public --schema=auth'
+    : '--schema=public'
+
+  const command = `pg_dump ${schemaFlags} "${connectionString}" > "${filepath}"`
 
   execSync(command, {
     stdio: 'inherit',
