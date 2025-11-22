@@ -17,6 +17,10 @@
 import { execSync } from 'child_process'
 import { mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
+import dotenv from 'dotenv'
+
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' })
 
 // ============================================================================
 // Command Line Arguments

@@ -19,6 +19,10 @@ import { execSync } from 'child_process'
 import { existsSync } from 'fs'
 import { resolve } from 'path'
 import * as readline from 'readline'
+import dotenv from 'dotenv'
+
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' })
 
 // ============================================================================
 // Command Line Arguments
