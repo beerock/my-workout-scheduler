@@ -42,9 +42,13 @@ export default function SignupPage() {
           sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA', // Test key
           callback: (token: string) => {
             setTurnstileToken(token)
+            // Clear any previous errors when verification succeeds
+            setError(null)
           },
           'error-callback': () => {
-            setError('Bot protection verification failed. Please try again.')
+            // Only set error if user already tried to submit
+            // Don't show error on initial page load
+            setTurnstileToken(null)
           },
         })
       }
