@@ -1251,3 +1251,1790 @@ Our implementation requires **password verification** before email changes:
 **Reference Session**: See other email session for related work
 
 ---
+
+## "Stay Logged In" Checkbox on Login Page
+
+### Overview
+**STATUS: BACKLOGGED**
+
+Add a "Keep me logged in" checkbox to the login page that allows users to control session persistence. Currently, users stay logged in indefinitely with no indication or control over this behavior.
+
+### Current Behavior
+- Users stay logged in indefinitely (session persists across browser restarts)
+- No user control over session persistence
+- No indication to users about login behavior
+
+### Expected Behavior
+
+**Checkbox Checked (Stay logged in):**
+- Session persists indefinitely (across browser restarts)
+- User remains logged in until they explicitly sign out
+
+**Checkbox Unchecked (Default):**
+- Session ends when browser closes
+- User must log in again on next browser session
+
+### Requirements
+
+1. **Login Page UI**
+   - Add checkbox below password field on login page
+   - Label: "Keep me logged in"
+   - Default state: **Unchecked**
+   - Only appears on login page (NOT on signup page)
+
+2. **Session Persistence Logic**
+   - Checked: Use Supabase persistent session storage (localStorage)
+   - Unchecked: Use Supabase temporary session storage (sessionStorage)
+   - Supabase supports this via `storage` option in `createBrowserClient()`
+
+3. **User Experience**
+   - Clear indication of what "Keep me logged in" means
+   - Checkbox state remembered if login fails (don't reset form)
+   - Consider adding tooltip or help text explaining behavior
+
+### Implementation Notes
+
+**Supabase Session Storage:**
+
+Supabase client supports session persistence configuration:
+
+```typescript
+// lib/supabase/client.ts or login action
+import { createBrowserClient } from '@supabase/ssr'
+
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    cookies: {
+      // ... existing cookie config
+    },
+    auth: {
+      storage: rememberMe ? window.localStorage : window.sessionStorage,
+      // or use storageKey to differentiate
+    }
+  }
+)
+```
+
+**Alternative Approach:**
+
+Use Supabase's built-in session configuration:
+
+```typescript
+// When user logs in
+await supabase.auth.signInWithPassword({
+  email,
+  password,
+  options: {
+    // This isn't a direct option, but session persistence is controlled by storage type
+  }
+})
+```
+
+**Recommended Implementation:**
+
+1. **Client-side approach (simplest):**
+   - Create separate Supabase clients based on "remember me" choice
+   - Use localStorage for persistent sessions
+   - Use sessionStorage for temporary sessions
+
+2. **Server Action approach:**
+   - Pass `rememberMe` boolean to login server action
+   - Configure cookie options based on preference
+   - Set appropriate cookie maxAge (indefinite vs session)
+
+### Code Location
+
+**Files to modify:**
+- `app/(auth)/login/page.tsx` - Add checkbox to login form
+- `lib/supabase/client.ts` - Support configurable session storage (optional)
+- Login form component - Handle checkbox state
+- May need to modify Supabase middleware if using cookie-based approach
+
+**UI Updates:**
+```tsx
+// app/(auth)/login/page.tsx
+<div className="flex items-center">
+  <input
+    id="remember-me"
+    name="remember-me"
+    type="checkbox"
+    className="h-4 w-4 rounded border-gray-300"
+  />
+  <label htmlFor="remember-me" className="ml-2 text-sm text-gray-700">
+    Keep me logged in
+  </label>
+</div>
+```
+
+### Testing Considerations
+
+1. **Checked checkbox:**
+   - [ ] User logs in with "Keep me logged in" checked
+   - [ ] Close browser completely
+   - [ ] Reopen browser and navigate to app
+   - [ ] Verify user is still logged in
+
+2. **Unchecked checkbox (default):**
+   - [ ] User logs in without checking "Keep me logged in"
+   - [ ] Close browser tab (session should persist in same browser window)
+   - [ ] Close browser completely
+   - [ ] Reopen browser and navigate to app
+   - [ ] Verify user is logged out (redirected to login)
+
+3. **Login failure:**
+   - [ ] Check "Keep me logged in"
+   - [ ] Enter wrong password
+   - [ ] Verify checkbox state is preserved after error
+
+4. **Manual logout:**
+   - [ ] Verify logout works regardless of checkbox state
+   - [ ] Session cleared properly in both cases
+
+### Security Considerations
+
+- **Indefinite sessions**: Consider if indefinite sessions pose security risk
+- **Shared computers**: Users on shared computers should NOT check "Keep me logged in"
+- **Session hijacking**: Ensure session tokens are still secure with persistent storage
+- **Consider**: Adding help text warning about shared computer usage
+
+### Alternative Enhancements (Future)
+
+- Add "Remember me for 30 days" option (middle ground)
+- Add session timeout for inactive users (even with "Keep me logged in")
+- Show last login time in user profile
+- Add "Active sessions" management page
+
+### Status
+**Status**: Backlogged - Not currently implemented
+**Priority**: Medium (UX improvement, security consideration)
+**Last Updated**: November 19, 2025
+**Next Steps**:
+1. Research Supabase session storage configuration options
+2. Decide on client-side vs server-side implementation
+3. Implement checkbox UI on login page
+4. Test session persistence behavior
+
+---
+
+## OAuth Login (Google and Apple Sign-In)
+
+### Overview
+**STATUS: BACKLOGGED**
+
+Add Google and Apple OAuth authentication as the **preferred login method**, allowing users to sign up and log in with their existing Google or Apple accounts. Users can also link multiple OAuth providers to their account and manage these connections in their profile settings.
+
+### Current Behavior
+- Only email/password authentication available
+- Users must create and remember a password
+- No social login options
+
+### Expected Behavior
+
+**OAuth as Preferred Method:**
+- Google and Apple OAuth buttons prominently displayed on login/signup pages
+- Unified experience: OAuth can create new account if user doesn't exist
+- Email/password still available as alternative method
+- Users can add password later via profile management
+
+**Account Linking:**
+- Users who sign up with email/password can later add Google/Apple OAuth
+- Users who sign up with OAuth can later add password
+- Users can link multiple OAuth providers to one account (both Google AND Apple)
+- Profile page shows all connected authentication methods
+
+**Account Security:**
+- Users must have at least ONE login method at all times
+- Can disconnect OAuth providers only if another method exists (password or other OAuth)
+- Can convert from OAuth-only to email/password by adding password in profile
+- OAuth emails are pre-verified (skip email verification step)
+
+### Requirements
+
+#### 1. OAuth Providers Setup
+
+**Google OAuth:**
+- Configure Google Cloud Console OAuth 2.0 credentials
+- Set authorized redirect URIs for Supabase
+- Request scopes: email, profile, openid
+- Pull: email, name, profile photo
+
+**Apple OAuth:**
+- Configure Apple Developer account OAuth credentials
+- Set up Sign in with Apple service ID
+- Request scopes: email, name
+- Pull: email, name, profile photo (if available)
+
+**Supabase Configuration:**
+- Enable Google provider in Supabase Auth settings
+- Enable Apple provider in Supabase Auth settings
+- Configure OAuth redirect URLs
+- Set up provider credentials (client ID, secret)
+
+#### 2. Login/Signup Page UI
+
+**OAuth Buttons:**
+- Display Google and Apple sign-in buttons prominently
+- Position above email/password form
+- Use official brand guidelines (Google/Apple button styles)
+- Divider: "Or continue with email" between OAuth and email/password
+
+**Unified Experience:**
+- Same OAuth buttons on both login and signup pages
+- OAuth flow automatically creates account if user doesn't exist
+- No separate "sign up with Google" vs "log in with Google" flows
+
+**Example Layout:**
+```
+┌─────────────────────────────────┐
+│  [G] Continue with Google       │
+│  [A] Continue with Apple        │
+│                                 │
+│  ─────── Or continue with ───── │
+│                                 │
+│  Email: [____________]          │
+│  Password: [____________]       │
+│  [ ] Keep me logged in          │
+│  [Login]                        │
+└─────────────────────────────────┘
+```
+
+#### 3. Profile Management - Connected Accounts
+
+**New Section in Profile Page:**
+- "Connected Accounts" or "Login Methods" section
+- List all connected authentication methods:
+  - Email/Password (if set)
+  - Google (if connected) - show email and profile photo
+  - Apple (if connected) - show email
+- "Add" buttons for methods not yet connected
+- "Disconnect" buttons for connected methods (disabled if it's the only method)
+
+**Add OAuth Provider:**
+- Click "Connect Google" or "Connect Apple" button
+- OAuth flow links provider to existing account
+- Success message: "Google account connected successfully"
+- Profile photo updated if OAuth provides one
+
+**Remove OAuth Provider:**
+- Click "Disconnect" button
+- Confirmation dialog: "Are you sure you want to disconnect Google?"
+- Validate user has another login method before allowing disconnect
+- Error if trying to remove last login method: "You must have at least one way to log in"
+
+**Add Password (for OAuth-only users):**
+- "Set Password" button if user has no password
+- Form: New password + Confirm password
+- Allows OAuth-only users to add email/password login
+
+**Profile Photo:**
+- Pull profile photo from Google/Apple on first OAuth login
+- Store profile photo URL in user metadata
+- Display in header/navbar and profile page
+- Allow user to change/remove later (future enhancement)
+
+#### 4. Data Pulled from OAuth
+
+**From Google:**
+- ✅ Email (required) - used as primary identifier
+- ✅ Full name (optional) - stored in user profile
+- ✅ Profile photo URL (optional) - displayed in UI
+
+**From Apple:**
+- ✅ Email (required) - may be privacy relay email
+- ✅ Full name (optional) - only provided on first sign-in
+- ✅ Profile photo (rarely available) - fallback to initials
+
+**Data Storage:**
+- Email: `auth.users.email`
+- Name: `auth.users.user_metadata.full_name`
+- Photo: `auth.users.user_metadata.avatar_url`
+- Provider: `auth.users.app_metadata.provider` (google, apple, email)
+
+#### 5. Email Verification
+
+**OAuth Users:**
+- ✅ Skip email verification (Google/Apple already verified)
+- Mark `email_confirmed_at` automatically
+- No verification email sent
+
+**Email/Password Users:**
+- ⚠️ Require email verification (existing behavior)
+- Send verification email on signup
+- Block login until verified
+
+#### 6. Security and Edge Cases
+
+**Account Merging:**
+- If user signs up with email `user@gmail.com` via password
+- Then tries to log in with Google using same `user@gmail.com`
+- Supabase automatically links accounts (if configured correctly)
+- Or show error: "Email already registered. Please log in with password or link Google in profile."
+
+**Multiple OAuth Same Provider:**
+- Users cannot link multiple Google accounts (one per provider)
+- Users cannot link multiple Apple IDs (one per provider)
+- But can have both Google AND Apple linked simultaneously
+
+**Last Login Method Protection:**
+- UI disables "Disconnect" button if it's the only method
+- Backend validation prevents removal of last method
+- Error message: "Cannot disconnect. You must have at least one way to log in."
+
+**Apple Email Hiding:**
+- Apple may provide privacy relay email (`randomstring@privaterelay.appleid.com`)
+- Store and accept these emails
+- User can update to real email later in profile
+
+### Implementation Notes
+
+#### Supabase OAuth Setup
+
+**Enable Providers:**
+1. Go to Supabase Dashboard → Authentication → Providers
+2. Enable "Google" provider:
+   - Add Google OAuth Client ID
+   - Add Google OAuth Client Secret
+   - Copy Redirect URL for Google Cloud Console
+3. Enable "Apple" provider:
+   - Add Apple Service ID
+   - Add Apple Team ID
+   - Add Apple Key ID
+   - Upload Apple Private Key (.p8 file)
+   - Copy Redirect URL for Apple Developer Console
+
+**Google Cloud Console:**
+1. Create OAuth 2.0 Client ID
+2. Add authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+3. Configure OAuth consent screen
+4. Request scopes: email, profile, openid
+
+**Apple Developer Console:**
+1. Create Sign in with Apple Service ID
+2. Configure Sign in with Apple capability
+3. Add redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+4. Generate private key (.p8)
+
+#### Code Changes
+
+**Files to Create/Modify:**
+
+```typescript
+// app/(auth)/login/page.tsx - Add OAuth buttons
+import { signInWithOAuth } from '@/app/actions/auth'
+
+<button onClick={() => signInWithOAuth('google')}>
+  Continue with Google
+</button>
+<button onClick={() => signInWithOAuth('apple')}>
+  Continue with Apple
+</button>
+
+// app/actions/auth.ts - OAuth sign-in action
+'use server'
+export async function signInWithOAuth(provider: 'google' | 'apple') {
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      }
+    }
+  })
+  if (error) throw error
+  redirect(data.url)
+}
+
+// app/auth/callback/route.ts - OAuth callback handler (may already exist)
+export async function GET(request: Request) {
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
+
+  if (code) {
+    const supabase = await createClient()
+    await supabase.auth.exchangeCodeForSession(code)
+  }
+
+  return redirect('/dashboard')
+}
+
+// app/dashboard/profile/page.tsx - Add Connected Accounts section
+// Show list of connected providers
+// Add/remove OAuth connections
+// Set password for OAuth-only users
+
+// components/ConnectedAccounts.tsx - New component
+// Displays connected authentication methods
+// Buttons to add/remove providers
+// Validation for last method protection
+```
+
+**Database Schema Updates:**
+
+```sql
+-- Store provider information in user metadata (Supabase handles this automatically)
+-- auth.users.user_metadata: { full_name, avatar_url, ... }
+-- auth.users.app_metadata: { provider, providers: ['google', 'apple'], ... }
+
+-- Optional: Create table to track provider connections
+CREATE TABLE user_oauth_providers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL, -- 'google', 'apple'
+  provider_user_id TEXT NOT NULL, -- OAuth provider's user ID
+  connected_at TIMESTAMPTZ DEFAULT now(),
+  last_used_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, provider)
+);
+```
+
+**UI Components Needed:**
+
+1. **OAuth Buttons Component** (`components/OAuthButtons.tsx`)
+   - Google button with official styling
+   - Apple button with official styling
+   - Handle OAuth flow initiation
+   - Loading states
+
+2. **Connected Accounts Component** (`components/ConnectedAccounts.tsx`)
+   - List connected providers
+   - Add/remove provider buttons
+   - Profile photo display
+   - Validation and error handling
+
+3. **Set Password Component** (`components/SetPassword.tsx`)
+   - For OAuth-only users to add password
+   - Password strength validation
+   - Confirmation dialog
+
+### Code Location
+
+**New Files:**
+- `app/actions/auth.ts` - OAuth sign-in actions
+- `components/OAuthButtons.tsx` - Google/Apple sign-in buttons
+- `components/ConnectedAccounts.tsx` - Profile connected accounts section
+- `components/SetPassword.tsx` - Set password for OAuth-only users
+
+**Modified Files:**
+- `app/(auth)/login/page.tsx` - Add OAuth buttons
+- `app/(auth)/signup/page.tsx` - Add OAuth buttons (same as login)
+- `app/auth/callback/route.ts` - Handle OAuth callback (may need to create)
+- `app/dashboard/profile/page.tsx` - Add Connected Accounts section
+- `middleware.ts` - May need to handle OAuth callback routes
+
+**Environment Variables:**
+```env
+# Google OAuth (from Google Cloud Console)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+# Apple OAuth (from Apple Developer Console)
+NEXT_PUBLIC_APPLE_CLIENT_ID=...
+APPLE_TEAM_ID=...
+APPLE_KEY_ID=...
+APPLE_PRIVATE_KEY=... (or path to .p8 file)
+```
+
+**Note**: Supabase handles most OAuth configuration in their dashboard, so these environment variables may not be needed if configured in Supabase settings.
+
+### Testing Considerations
+
+#### OAuth Sign-In Flow:
+- [ ] Click "Continue with Google" on login page
+- [ ] Redirected to Google OAuth consent screen
+- [ ] Grant permissions
+- [ ] Redirected back to app dashboard
+- [ ] User logged in successfully
+- [ ] Profile photo and name populated
+
+- [ ] Click "Continue with Apple" on login page
+- [ ] Redirected to Apple OAuth consent screen
+- [ ] Grant permissions
+- [ ] Redirected back to app dashboard
+- [ ] User logged in successfully
+
+#### Account Linking:
+- [ ] Sign up with email/password
+- [ ] Go to profile → Connected Accounts
+- [ ] Click "Connect Google"
+- [ ] Google account linked successfully
+- [ ] Both email/password and Google shown as connected
+
+- [ ] Sign up with Google
+- [ ] Go to profile → Connected Accounts
+- [ ] Click "Set Password"
+- [ ] Password added successfully
+- [ ] Both Google and email/password shown as connected
+
+#### Account Disconnection:
+- [ ] User with both Google and password connected
+- [ ] Click "Disconnect Google"
+- [ ] Confirmation dialog shown
+- [ ] Disconnect successful
+- [ ] Can still log in with password
+
+- [ ] User with ONLY Google connected (no password)
+- [ ] "Disconnect Google" button is disabled
+- [ ] Tooltip: "You must have at least one way to log in"
+- [ ] Cannot disconnect
+
+#### Email Verification:
+- [ ] Sign up with Google → Email auto-verified (no verification email sent)
+- [ ] Sign up with Apple → Email auto-verified (no verification email sent)
+- [ ] Sign up with email/password → Verification email sent (existing behavior)
+
+#### Edge Cases:
+- [ ] Sign up with email `test@gmail.com` via password
+- [ ] Try to log in with Google using same `test@gmail.com`
+- [ ] Accounts merged or error shown appropriately
+- [ ] No duplicate accounts created
+
+- [ ] Sign up with Apple using privacy relay email
+- [ ] Email stored correctly (`xyz@privaterelay.appleid.com`)
+- [ ] Can update to real email in profile later
+
+#### Profile Photo:
+- [ ] Sign up with Google → Profile photo pulled and displayed
+- [ ] Sign up with Apple → Fallback to initials if no photo
+- [ ] Profile photo shown in navbar/header
+- [ ] Profile photo shown in profile page
+
+### Security Considerations
+
+**OAuth Security:**
+- Use HTTPS for all OAuth redirects (required in production)
+- Validate OAuth state parameter to prevent CSRF attacks (Supabase handles this)
+- Store OAuth tokens securely (Supabase handles this)
+- Use short-lived access tokens with refresh tokens
+
+**Account Takeover Prevention:**
+- Require password verification before disconnecting OAuth (optional enhancement)
+- Email notification when OAuth provider is added/removed
+- Show "Last connected" timestamp for OAuth providers
+
+**Privacy:**
+- Only request minimum required OAuth scopes
+- Allow users to disconnect OAuth at any time (if not last method)
+- Don't store unnecessary OAuth data
+- Handle Apple privacy relay emails correctly
+
+**Last Method Protection:**
+- UI disables disconnect button if only method
+- Backend validates at least one method remains
+- Transaction: only remove method if another exists
+- Error handling for edge cases
+
+### Alternative Enhancements (Future)
+
+- Add more OAuth providers (GitHub, Microsoft, Facebook)
+- Show "Last used" timestamp for each login method
+- Email notification when new OAuth provider is connected
+- Two-factor authentication (2FA) for OAuth accounts
+- "Preferred login method" setting (auto-select on login page)
+- Active sessions management (see which devices are logged in)
+- Profile photo upload/change (independent of OAuth photo)
+
+### Dependencies
+
+**Required:**
+- Supabase OAuth provider configuration (Google, Apple)
+- Google Cloud Console OAuth setup
+- Apple Developer Console OAuth setup
+- Domain verification for OAuth redirects (production)
+
+**Optional:**
+- Profile photo storage (use OAuth URLs or upload to storage bucket)
+- Email notification system (for OAuth connection changes)
+
+### Status
+**Status**: Backlogged - Not currently implemented
+**Priority**: High (major UX improvement, preferred login method)
+**Last Updated**: November 19, 2025
+**Next Steps**:
+1. Set up Google OAuth in Google Cloud Console
+2. Set up Apple OAuth in Apple Developer Console
+3. Configure providers in Supabase dashboard
+4. Implement OAuth buttons on login/signup pages
+5. Create Connected Accounts section in profile
+6. Test OAuth flows thoroughly
+7. Document OAuth setup process
+
+---
+
+## Password Security Requirements (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - MUST COMPLETE BEFORE LAUNCH**
+
+Implement industry-standard password security requirements to protect user accounts. Currently, passwords only require 8 characters with no complexity requirements. While this is a casual site without highly sensitive data, basic password security is essential.
+
+### Current Behavior
+- Minimum password length: 8 characters (enforced programmatically)
+- No complexity requirements (no uppercase, digits, or symbols required)
+- No password strength indicator
+- No validation for existing weak passwords
+
+### Expected Behavior
+
+**Password Requirements:**
+- **Minimum length**: 8 characters (keep current)
+- **Complexity**: Must contain at least:
+  - Lowercase letters (a-z)
+  - Uppercase letters (A-Z)
+  - Digits (0-9)
+  - Symbols NOT required (better mobile UX)
+
+**Enforcement:**
+- **App-level validation only** (client-side + server-side)
+- Skip Supabase auth settings (to avoid complex error handling)
+- Clear, user-friendly error messages
+
+**Existing Users:**
+- **Force password reset on next login** if password doesn't meet new requirements
+- Show message: "We've updated our password requirements. Please create a new password."
+- Redirect to password reset flow
+
+**Password Strength Indicator (Post-MVP):**
+- Visual feedback while typing (Weak/Medium/Strong)
+- Helpful but not critical for MVP
+- Can be added after launch
+
+### Requirements
+
+#### 1. Password Validation Logic
+
+**Validation Rules:**
+```typescript
+function validatePassword(password: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = []
+
+  if (password.length < 8) {
+    errors.push('Password must be at least 8 characters')
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter')
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter')
+  }
+
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one digit')
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  }
+}
+```
+
+**Where to Enforce:**
+- ✅ Signup page (client + server)
+- ✅ Password change in profile (client + server)
+- ✅ Password reset flow (client + server)
+- ✅ OAuth users adding password (client + server)
+
+#### 2. User Interface Updates
+
+**Signup Page:**
+- Add password requirements text below password field:
+  ```
+  Password must contain:
+  • At least 8 characters
+  • Lowercase and uppercase letters
+  • At least one digit
+  ```
+- Show inline validation errors if password doesn't meet requirements
+- Disable submit button until password is valid (optional, or allow submit with clear error)
+
+**Profile Password Change:**
+- Same requirements text as signup
+- Validate new password meets requirements
+- Show clear error messages if validation fails
+
+**Error Messages:**
+- Clear, specific messages for each missing requirement
+- Example: "Password must contain at least one uppercase letter"
+- Group errors in a list if multiple requirements missing
+
+#### 3. Existing User Migration
+
+**Force Password Reset Flow:**
+
+**Option A: Check on login (Recommended)**
+1. User logs in with email/password
+2. After successful auth, check if password meets new requirements
+3. If password is weak:
+   - Set flag in session or database: `requires_password_reset: true`
+   - Redirect to password reset page (not dashboard)
+   - Show message: "We've updated our password requirements for better security. Please create a new password that meets the requirements."
+4. User must reset password before accessing dashboard
+5. After successful reset, clear flag and allow dashboard access
+
+**Option B: Background migration with soft deadline**
+1. Show banner on dashboard: "Your password doesn't meet our updated security requirements. Please update it in your profile."
+2. Allow continued use for 30 days
+3. After 30 days, force password reset on login
+4. More user-friendly but adds complexity
+
+**Recommended: Option A** (simpler, immediate security improvement)
+
+**Implementation:**
+```typescript
+// After successful login
+const passwordMeetsRequirements = await checkPasswordStrength(userId)
+
+if (!passwordMeetsRequirements) {
+  // Set flag requiring password reset
+  await setRequiresPasswordReset(userId, true)
+
+  // Redirect to forced password reset page
+  redirect('/auth/reset-password?reason=security_update')
+}
+```
+
+**Database Changes (Optional):**
+```sql
+-- Add flag to track users requiring password reset
+ALTER TABLE auth.users
+ADD COLUMN requires_password_reset BOOLEAN DEFAULT FALSE;
+
+-- Or use user_metadata:
+-- auth.users.user_metadata.requires_password_reset = true
+```
+
+**Challenge: Detecting Weak Passwords**
+- Supabase stores password hashes, not plaintext
+- **Cannot directly check existing password strength**
+- **Solution**: Check on next login attempt:
+  - User enters password
+  - Before hashing, validate against new requirements
+  - If weak, force reset after successful login
+
+#### 4. Client-Side Validation
+
+**Real-time Feedback:**
+- Validate as user types (debounced, e.g., 500ms delay)
+- Show green checkmarks for met requirements
+- Show red X or grey text for unmet requirements
+
+**Visual Design:**
+```
+Password must contain:
+✓ At least 8 characters
+✓ Lowercase letters
+✗ Uppercase letters
+✓ At least one digit
+```
+
+**Code Example:**
+```tsx
+// components/PasswordInput.tsx
+const [password, setPassword] = useState('')
+const validation = validatePassword(password)
+
+<input
+  type="password"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+/>
+
+<ul className="text-sm mt-2">
+  <li className={password.length >= 8 ? 'text-green-600' : 'text-gray-500'}>
+    {password.length >= 8 ? '✓' : '○'} At least 8 characters
+  </li>
+  <li className={/[a-z]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
+    {/[a-z]/.test(password) ? '✓' : '○'} Lowercase letters
+  </li>
+  <li className={/[A-Z]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
+    {/[A-Z]/.test(password) ? '✓' : '○'} Uppercase letters
+  </li>
+  <li className={/[0-9]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
+    {/[0-9]/.test(password) ? '✓' : '○'} At least one digit
+  </li>
+</ul>
+```
+
+#### 5. Server-Side Validation
+
+**Validate in Server Actions:**
+- Always validate on server even if client validates
+- Never trust client-side validation alone
+- Return clear error messages to client
+
+**Code Example:**
+```typescript
+// app/actions/auth.ts (or similar)
+'use server'
+
+import { validatePassword } from '@/lib/password-validation'
+
+export async function signup(email: string, password: string) {
+  const validation = validatePassword(password)
+
+  if (!validation.valid) {
+    return {
+      success: false,
+      errors: validation.errors
+    }
+  }
+
+  // Proceed with signup
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password
+  })
+
+  // ...
+}
+```
+
+### Implementation Notes
+
+**Files to Create/Modify:**
+
+**New Files:**
+- `lib/password-validation.ts` - Password validation utility functions
+- `components/PasswordRequirements.tsx` - Visual requirements checklist component (optional)
+
+**Modified Files:**
+- `app/(auth)/signup/page.tsx` - Add password requirements, validation
+- `app/(auth)/login/page.tsx` - Check for weak password after login, force reset if needed
+- `app/actions/profile.ts` - Add password validation to password change action
+- `components/ProfileForm.tsx` - Add password requirements to password change form
+- Server actions for signup/password reset - Add validation
+
+**Password Validation Utility:**
+```typescript
+// lib/password-validation.ts
+export interface PasswordValidation {
+  valid: boolean
+  errors: string[]
+  checks: {
+    minLength: boolean
+    hasLowercase: boolean
+    hasUppercase: boolean
+    hasDigit: boolean
+  }
+}
+
+export function validatePassword(password: string): PasswordValidation {
+  const checks = {
+    minLength: password.length >= 8,
+    hasLowercase: /[a-z]/.test(password),
+    hasUppercase: /[A-Z]/.test(password),
+    hasDigit: /[0-9]/.test(password)
+  }
+
+  const errors: string[] = []
+
+  if (!checks.minLength) {
+    errors.push('Password must be at least 8 characters')
+  }
+  if (!checks.hasLowercase) {
+    errors.push('Password must contain at least one lowercase letter')
+  }
+  if (!checks.hasUppercase) {
+    errors.push('Password must contain at least one uppercase letter')
+  }
+  if (!checks.hasDigit) {
+    errors.push('Password must contain at least one digit')
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    checks
+  }
+}
+```
+
+### Code Location
+
+**New Files:**
+- `lib/password-validation.ts` - Validation logic
+- `components/PasswordRequirements.tsx` - Visual checklist (optional)
+- `app/auth/reset-password/page.tsx` - Forced password reset page (may already exist)
+
+**Modified Files:**
+- `app/(auth)/signup/page.tsx` - Add requirements and validation
+- `app/(auth)/login/page.tsx` - Check weak password, force reset
+- `app/actions/profile.ts` - Validate password on change
+- `components/ProfileForm.tsx` - Show requirements
+- Any password reset flows
+
+### Testing Considerations
+
+#### Password Validation:
+- [ ] Try password "password" → Rejected (no uppercase, no digit)
+- [ ] Try password "Password" → Rejected (no digit)
+- [ ] Try password "Password1" → Accepted ✓
+- [ ] Try password "Pass123" → Rejected (less than 8 characters)
+- [ ] Try password "PASSWORD123" → Rejected (no lowercase)
+
+#### Client-Side Validation:
+- [ ] Type weak password → See error messages
+- [ ] Type strong password → See green checkmarks
+- [ ] Submit with weak password → Blocked or show error
+- [ ] Client-side validation matches server-side
+
+#### Server-Side Validation:
+- [ ] Bypass client validation (direct API call) → Server rejects weak password
+- [ ] Server returns clear error messages
+- [ ] Error messages displayed in UI
+
+#### Existing User Migration:
+- [ ] User with weak password (e.g., "password") logs in
+- [ ] Successful login, but redirected to password reset page
+- [ ] Message shown: "Please create a new password..."
+- [ ] User creates strong password → Allowed to dashboard
+- [ ] User tries weak password again → Validation error
+
+- [ ] User with strong password (e.g., "Password123") logs in
+- [ ] No interruption, goes straight to dashboard
+
+#### All Password Entry Points:
+- [ ] Signup with weak password → Rejected
+- [ ] Signup with strong password → Accepted
+- [ ] Change password in profile with weak password → Rejected
+- [ ] Change password in profile with strong password → Accepted
+- [ ] OAuth user adding password with weak password → Rejected
+- [ ] OAuth user adding password with strong password → Accepted
+- [ ] Password reset with weak password → Rejected
+- [ ] Password reset with strong password → Accepted
+
+### Security Considerations
+
+**Why These Requirements:**
+- **8 characters minimum**: Industry baseline, good balance of security and usability
+- **Lowercase + Uppercase + Digits**: Increases password complexity significantly
+- **No symbols required**: Better mobile UX, still secure with other requirements
+- **Force reset for weak passwords**: Immediate security improvement for existing users
+
+**Why NOT Supabase Settings:**
+- Avoids complex error handling between Supabase and app
+- Gives us full control over error messages and UX
+- Simpler to test and debug
+- Can customize validation logic if needed
+
+**Additional Security (Future):**
+- Password strength meter (visual indicator)
+- Check against common password databases (Have I Been Pwned API)
+- Enforce password rotation (change every 90 days)
+- Rate limiting on password attempts
+- Two-factor authentication (2FA)
+
+### Why This Matters (Even for Casual Site)
+
+**User Data at Risk:**
+- Gym login credentials (stored encrypted)
+- Email address
+- Booking history
+- Personal schedule information
+
+**Attack Vectors:**
+- Weak passwords enable brute-force attacks
+- Credential stuffing (reused passwords from other breaches)
+- Unauthorized access to gym account credentials
+
+**Industry Standard:**
+- Even casual sites should enforce basic password security
+- Users expect minimum security standards
+- Protects both user and application reputation
+
+### Alternative Enhancements (Post-MVP)
+
+**Password Strength Meter:**
+- Visual indicator: Weak (red) / Medium (yellow) / Strong (green)
+- Real-time feedback as user types
+- More engaging UX than just checkboxes
+
+**Breach Detection:**
+- Integrate with Have I Been Pwned API
+- Check if password appears in known breaches
+- Warn user if password is compromised
+
+**Passphrase Support:**
+- Allow longer passwords (passphrases) without complexity requirements
+- Example: "correct horse battery staple" (4 random words)
+- More secure and easier to remember
+
+**Password Manager Integration:**
+- Auto-generate secure passwords
+- Browser password manager compatibility
+- "Suggest Strong Password" button
+
+### Status
+**Status**: Pre-MVP - Must be completed before launch
+**Priority**: High (security requirement)
+**Last Updated**: November 19, 2025
+**Blocks**: MVP launch
+**Next Steps**:
+1. Create password validation utility (`lib/password-validation.ts`)
+2. Update signup page with requirements and validation
+3. Update profile password change with validation
+4. Implement forced password reset for existing users with weak passwords
+5. Add server-side validation to all password entry points
+6. Test all password flows thoroughly
+7. Document password requirements for users
+
+**Timeline:** Should be completed before MVP ships to production users
+
+---
+
+## Contact/Support Form (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - MUST COMPLETE BEFORE LAUNCH**
+
+Add a contact/support system to allow users to reach out for help with issues, questions, or feedback. Users can submit a contact form or email directly. This builds trust and provides a critical support channel for users.
+
+### Current Behavior
+- No way for users to contact support
+- No support email displayed anywhere
+- Users have no recourse if they encounter issues
+
+### Expected Behavior
+
+**Contact Methods:**
+- **Primary:** Contact form on dedicated `/contact` page
+- **Fallback:** Direct email link (`mailto:help@beerock.com`)
+- Both methods available and visible to users
+
+**Contact Form:**
+- Dedicated page at `/contact`
+- Pre-fills user info if logged in (name, email)
+- Fields: Name, Email, Subject/Topic (dropdown), Message
+- On-page confirmation after successful submission
+- Sends email to `help@beerock.com` via Resend
+
+**Footer Link:**
+- Add "Contact" or "Support" link to existing footer
+- Place in appropriate section (e.g., "Help" or "Support" section)
+- Link to `/contact` page
+- Available throughout entire site
+
+**Email Setup:**
+- Use `help@beerock.com` as support email
+- Same domain setup as `noreply@beerock.com` (already configured)
+- DKIM signing enabled (beerock.com domain)
+
+### Requirements
+
+#### 1. Contact Page (`/contact`)
+
+**Page Layout:**
+- Clean, simple form
+- Welcoming heading: "Contact Us" or "Get Help"
+- Subtitle: "Have a question or need help? We're here for you."
+- Contact form (primary)
+- Alternative: "Or email us directly at help@beerock.com"
+
+**Form Fields:**
+
+**Name (required):**
+- Text input
+- Pre-filled if user is logged in (`user.user_metadata.full_name` or from OAuth)
+- Placeholder: "Your name"
+
+**Email (required):**
+- Email input
+- Pre-filled if user is logged in (`user.email`)
+- Validated format (email regex)
+- Placeholder: "your@email.com"
+
+**Subject/Topic (required):**
+- Dropdown select
+- Options:
+  - Bug Report
+  - Feature Request
+  - Account Issue
+  - Booking Problem
+  - General Question
+  - Other
+- Default: "Select a topic"
+
+**Message (required):**
+- Textarea (multi-line)
+- Minimum 10 characters
+- Placeholder: "Tell us how we can help..."
+- Rows: 6-8 lines
+
+**User ID (hidden, auto-populated):**
+- If user is logged in, include user ID in submission
+- Helps with support lookup and context
+- Not visible to user
+
+**Submit Button:**
+- "Send Message" or "Submit"
+- Loading state while submitting
+- Disabled until form is valid
+
+#### 2. Form Submission Flow
+
+**Validation:**
+- Client-side: Real-time validation as user types
+- Server-side: Always validate before sending email
+- Required fields: Name, Email, Subject, Message
+- Email format validation
+- Message minimum length (10 chars)
+
+**Email Sending (via Resend):**
+- Send to: `help@beerock.com`
+- From: User's email (reply-to user email)
+- Subject: `[${subject}] Contact Form Submission from ${name}`
+- Body: Include all form data + user ID (if logged in)
+
+**Email Template:**
+```
+New contact form submission:
+
+From: ${name} (${email})
+User ID: ${userId || 'Not logged in'}
+Subject: ${subject}
+
+Message:
+${message}
+
+---
+Submitted at: ${timestamp}
+```
+
+**Success Response:**
+- Show success message on page (inline, not separate page)
+- Message: "Thanks for reaching out! We'll get back to you within 24 hours."
+- Clear form after successful submission
+- Option to submit another message
+
+**Error Handling:**
+- Show error message if submission fails
+- Message: "Sorry, something went wrong. Please try emailing us directly at help@beerock.com"
+- Don't clear form on error (preserve user input)
+- Log error for debugging
+
+#### 3. Footer Integration
+
+**Add Contact Link:**
+- Link text: "Contact" or "Support"
+- URL: `/contact`
+- Placement: In existing footer, proper section
+  - Suggestion: Create "Support" or "Help" section in footer
+  - Or add to existing "Company" section
+
+**Footer Structure (Example):**
+```
+┌─────────────────────────────────────────┐
+│  My Workout Scheduler                   │
+│                                         │
+│  [Logo/Brand]                           │
+│                                         │
+│  Product         Support       Legal    │
+│  --------        -------       -----    │
+│  Features        Contact       Privacy  │
+│  Pricing         FAQ           Terms    │
+│  Docs            Status                 │
+│                                         │
+│  © 2025 My Workout Scheduler            │
+└─────────────────────────────────────────┘
+```
+
+**Existing Footer Check:**
+- Review current footer implementation
+- Add "Contact" link in appropriate location
+- Ensure footer appears on all pages
+
+#### 4. Email Configuration
+
+**Email Address: `help@beerock.com`**
+
+**Setup in Resend:**
+- Use existing beerock.com domain (already verified)
+- Same DNS/DKIM setup as `noreply@beerock.com`
+- No additional domain verification needed
+
+**Email Sending:**
+- Use Resend API to send contact form submissions
+- From: `help@beerock.com` or `noreply@beerock.com`
+- Reply-To: User's email address (so you can reply directly)
+- To: `help@beerock.com` (your support inbox)
+
+**Environment Variables (existing):**
+```env
+RESEND_API_KEY=...  # Already configured
+RESEND_FROM_EMAIL=noreply@beerock.com  # Use this for "From"
+SUPPORT_EMAIL=help@beerock.com  # New: where to send contact form submissions
+```
+
+#### 5. Auto-Response (Post-MVP)
+
+**For MVP:**
+- Show confirmation message on page after submission
+- No email confirmation sent to user
+- Keep it simple
+
+**Post-MVP Enhancement:**
+- Send confirmation email to user
+- Subject: "We received your message"
+- Body: "Thanks for contacting us. We'll respond within 24 hours."
+- Include copy of their original message
+
+#### 6. Database Tracking (Optional - Discuss)
+
+**Options:**
+
+**Option A: No database (simpler for MVP)**
+- Just send email to help@beerock.com
+- Support team handles via email
+- Pros: Simpler, faster to implement
+- Cons: No tracking, no history in app
+
+**Option B: Store submissions in database (better for scaling)**
+- Create `contact_submissions` table
+- Track submission history
+- Allow users to view their past submissions in profile
+- Pros: Full audit trail, better support workflow
+- Cons: More complex, requires additional UI
+
+**Recommendation for MVP: Option A (email only)**
+- Start simple with email-only
+- Add database tracking later if needed
+- Can always migrate emails to database if desired
+
+**If you want database tracking for MVP:**
+```sql
+CREATE TABLE contact_submissions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT DEFAULT 'new', -- 'new', 'in_progress', 'resolved'
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### Implementation Notes
+
+**Files to Create:**
+
+**New Page:**
+```typescript
+// app/contact/page.tsx - Contact form page
+'use client'
+
+import { useState } from 'react'
+import { submitContactForm } from '@/app/actions/contact'
+
+export default function ContactPage() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  })
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setStatus('loading')
+
+    const result = await submitContactForm(formData)
+
+    if (result.success) {
+      setStatus('success')
+      setFormData({ name: '', email: '', subject: '', message: '' }) // Clear form
+    } else {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-8">
+      <h1>Contact Us</h1>
+      <p>Have a question or need help? We're here for you.</p>
+
+      {status === 'success' && (
+        <div className="bg-green-50 p-4 rounded">
+          Thanks for reaching out! We'll get back to you within 24 hours.
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="bg-red-50 p-4 rounded">
+          Sorry, something went wrong. Please try emailing us directly at{' '}
+          <a href="mailto:help@beerock.com">help@beerock.com</a>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        {/* Form fields... */}
+        <button type="submit" disabled={status === 'loading'}>
+          {status === 'loading' ? 'Sending...' : 'Send Message'}
+        </button>
+      </form>
+
+      <p className="mt-8 text-sm text-gray-600">
+        Or email us directly at{' '}
+        <a href="mailto:help@beerock.com" className="text-blue-600">
+          help@beerock.com
+        </a>
+      </p>
+    </div>
+  )
+}
+```
+
+**New Server Action:**
+```typescript
+// app/actions/contact.ts - Contact form submission
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+interface ContactFormData {
+  name: string
+  email: string
+  subject: string
+  message: string
+}
+
+export async function submitContactForm(data: ContactFormData) {
+  // Validation
+  if (!data.name || !data.email || !data.subject || !data.message) {
+    return { success: false, error: 'All fields are required' }
+  }
+
+  if (data.message.length < 10) {
+    return { success: false, error: 'Message must be at least 10 characters' }
+  }
+
+  // Get user ID if logged in
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Send email via Resend
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL!,
+      to: process.env.SUPPORT_EMAIL || 'help@beerock.com',
+      replyTo: data.email,
+      subject: `[${data.subject}] Contact Form from ${data.name}`,
+      text: `
+New contact form submission:
+
+From: ${data.name} (${data.email})
+User ID: ${user?.id || 'Not logged in'}
+Subject: ${data.subject}
+
+Message:
+${data.message}
+
+---
+Submitted at: ${new Date().toISOString()}
+      `.trim()
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Contact form error:', error)
+    return { success: false, error: 'Failed to send message' }
+  }
+}
+```
+
+**Footer Update:**
+```typescript
+// components/Footer.tsx (or wherever footer is)
+// Add Contact link to footer
+
+<footer>
+  {/* ... existing footer content ... */}
+  <div className="footer-section">
+    <h3>Support</h3>
+    <ul>
+      <li><Link href="/contact">Contact</Link></li>
+      {/* Other support links */}
+    </ul>
+  </div>
+  {/* ... */}
+</footer>
+```
+
+**Environment Variables:**
+```env
+# Add to .env.local and Vercel
+SUPPORT_EMAIL=help@beerock.com
+```
+
+### Code Location
+
+**New Files:**
+- `app/contact/page.tsx` - Contact form page
+- `app/actions/contact.ts` - Contact form submission server action
+- `components/ContactForm.tsx` - Contact form component (optional, can be inline)
+
+**Modified Files:**
+- `components/Footer.tsx` - Add Contact link (or wherever footer is implemented)
+- `.env.example` - Document SUPPORT_EMAIL variable
+
+**Optional (if database tracking):**
+- `supabase/migrations/00X_contact_submissions.sql` - Database schema
+- `lib/supabase/database.ts` - Database helpers for contact submissions
+
+### Testing Considerations
+
+#### Contact Form:
+- [ ] Navigate to `/contact` page
+- [ ] Form displays correctly
+- [ ] All fields present (Name, Email, Subject, Message)
+
+**Logged In User:**
+- [ ] User is logged in
+- [ ] Name and email are pre-filled
+- [ ] Can edit pre-filled values
+- [ ] User ID is included in email (verify in received email)
+
+**Not Logged In User:**
+- [ ] User is not logged in
+- [ ] Form fields are empty
+- [ ] Can fill out all fields manually
+- [ ] Email sent successfully
+
+**Form Validation:**
+- [ ] Try to submit with empty name → Error
+- [ ] Try to submit with empty email → Error
+- [ ] Try to submit with invalid email format → Error
+- [ ] Try to submit with empty subject → Error
+- [ ] Try to submit with short message (< 10 chars) → Error
+- [ ] Submit with all fields valid → Success
+
+**Email Sending:**
+- [ ] Submit form with valid data
+- [ ] Email received at help@beerock.com
+- [ ] Email contains: name, email, subject, message, user ID, timestamp
+- [ ] Reply-To is set to user's email
+- [ ] Can reply directly to user
+
+**Success/Error States:**
+- [ ] Successful submission → Success message shown
+- [ ] Form cleared after success
+- [ ] Failed submission → Error message shown
+- [ ] Form data preserved after error
+- [ ] Mailto link visible as fallback
+
+**Footer Integration:**
+- [ ] "Contact" link appears in footer
+- [ ] Link appears on all pages (auth pages, dashboard, etc.)
+- [ ] Link navigates to `/contact` page
+- [ ] Footer layout looks correct
+
+**Email Configuration:**
+- [ ] help@beerock.com is set up to receive emails
+- [ ] DKIM signing working (check email headers)
+- [ ] Emails not going to spam
+- [ ] Can reply to user emails
+
+### Security Considerations
+
+**Spam Prevention:**
+- Rate limiting (prevent spam submissions)
+- Honeypot field (hidden field to catch bots)
+- reCAPTCHA (optional, adds friction but prevents abuse)
+
+**Data Validation:**
+- Server-side validation (never trust client)
+- Email format validation
+- Message length limits (min 10, max 5000 chars?)
+- Sanitize input to prevent XSS
+
+**Privacy:**
+- Don't expose user emails publicly
+- Only send user email in Reply-To header
+- Don't store sensitive info in contact submissions (if using database)
+
+**For MVP (Keep Simple):**
+- Basic validation only
+- No rate limiting (add if abused)
+- No CAPTCHA (add if spam becomes issue)
+- Focus on getting it working
+
+### Email Inbox Setup
+
+**help@beerock.com Configuration:**
+
+**Option A: Email forwarding (simplest)**
+- Forward help@beerock.com to your personal email
+- Receive contact form submissions in existing inbox
+- Reply from personal email (or set up email client with help@beerock.com)
+
+**Option B: Dedicated inbox**
+- Set up help@beerock.com as real mailbox (Gmail, Outlook, etc.)
+- Access via webmail or email client
+- More professional but requires email provider setup
+
+**Option C: Use Resend to receive (if supported)**
+- Check if Resend supports receiving emails
+- Store in Resend dashboard
+- May have limitations
+
+**Recommendation: Option A (forwarding) for MVP**
+- Simplest to set up
+- Start receiving contact submissions immediately
+- Can upgrade to dedicated inbox later
+
+### Why This Matters
+
+**User Trust:**
+- Users need a way to get help
+- Shows you care about user experience
+- Professional appearance
+
+**Support Channel:**
+- Critical for handling issues
+- Collect bug reports and feedback
+- User retention (help users when stuck)
+
+**Legal/Compliance:**
+- Some jurisdictions require contact information
+- Terms of Service often reference support contact
+- Privacy policies need contact email
+
+### Alternative Enhancements (Post-MVP)
+
+**Auto-Response Email:**
+- Send confirmation email to user
+- "We received your message" notification
+- Set expectations (response within 24 hours)
+
+**Database Tracking:**
+- Store contact submissions in database
+- Track status (new, in progress, resolved)
+- Allow users to view submission history in profile
+
+**Support Ticket System:**
+- Full ticket tracking system
+- Status updates for users
+- Internal notes for support team
+
+**FAQ Page:**
+- Common questions and answers
+- Reduce support volume
+- Link from contact page
+
+**Live Chat:**
+- Real-time chat support (Intercom, Zendesk, etc.)
+- Better user experience
+- Higher cost and maintenance
+
+**Contact Form Improvements:**
+- File attachments (screenshots)
+- Urgency/priority selector
+- Department routing (billing, technical, etc.)
+
+### Status
+**Status**: Pre-MVP - Must be completed before launch
+**Priority**: High (required for user support and trust)
+**Last Updated**: November 19, 2025
+**Blocks**: MVP launch
+**Next Steps**:
+1. Create `/contact` page with form
+2. Implement contact form server action
+3. Configure help@beerock.com email forwarding
+4. Add Contact link to footer
+5. Test form submission and email delivery
+6. Verify emails not going to spam
+7. Set up help@beerock.com inbox access
+
+**Timeline:** Should be completed before MVP ships to production users
+
+**Discussion Needed:**
+- Database tracking: Yes or no for MVP? (Recommendation: No, add later)
+- Email inbox: Forwarding vs dedicated mailbox? (Recommendation: Forwarding)
+
+---
+
+
+---
+
+## Admin Dashboard
+
+### Overview
+Create a comprehensive admin dashboard for managing users, viewing analytics, and performing administrative operations without direct database access.
+
+### Requirements
+
+1. **User Management**
+   - **View all users**: List with search, filter, and sorting
+   - **User details**: View full user profile, classes, booking history
+   - **Edit users**: Update email, reset password, modify settings
+   - **Delete users**: Safe deletion with confirmation and audit logging
+   - **User roles**: Implement role-based access (admin, user)
+   - **Bulk operations**: Bulk delete, bulk export to CSV
+
+2. **Analytics & Reports**
+   - **User metrics**: Total users, active users, new signups over time
+   - **Booking metrics**: Success rate, failure rate, retry statistics
+   - **Class analytics**: Most popular classes, branches, time slots
+   - **System health**: Inngest event status, error rates, response times
+   - **Audit logs**: View deleted_users_audit, booking_attempts history
+
+3. **Administrative Tools**
+   - **Email management**: Send announcements, notifications to all users
+   - **System settings**: Configure global settings (maintenance mode, booking limits)
+   - **Database health**: Check for orphaned data, integrity issues
+   - **Logs viewer**: View application logs, Inngest logs, error traces
+   - **Manual operations**: Trigger manual bookings, re-schedule classes
+
+4. **Security & Access Control**
+   - **Admin authentication**: Separate admin login or role-based access
+   - **Audit trail**: Log all admin actions (who did what, when)
+   - **Permission levels**: Different admin roles (super admin, support, read-only)
+   - **2FA for admins**: Two-factor authentication for admin accounts
+
+### Implementation Approach
+
+**Phase 1: Basic User Management**
+- Create `/admin` route with auth middleware
+- List all users with search and pagination
+- View user details page
+- Delete user with audit logging
+
+**Phase 2: Analytics Dashboard**
+- Create dashboard landing page with key metrics
+- Chart library integration (recharts, chart.js)
+- User growth charts, booking success rates
+- Export reports to CSV
+
+**Phase 3: Advanced Features**
+- Bulk operations
+- Email management
+- System settings
+- Logs viewer
+
+### Technical Considerations
+
+**Auth Strategy:**
+- Option A: Add `role` field to auth.users (admin, user)
+- Option B: Separate admin_users table
+- Option C: Check against specific email list in middleware
+- **Recommendation**: Option A (simplest, Supabase native)
+
+**UI Framework:**
+- Use existing Tailwind CSS setup
+- Add chart library: recharts or tremor
+- Pagination component for user lists
+- Modal components for confirmations
+
+**Database Queries:**
+- Create admin-specific server actions
+- Use service role client for unrestricted access
+- Add indexes for performance (user search, date ranges)
+- Cache expensive queries (analytics)
+
+**Security:**
+- Middleware to check admin role
+- All admin actions logged to audit table
+- Rate limiting for sensitive operations
+- CSRF protection for destructive actions
+
+### Code Location
+
+- **Routes**: `/app/admin/` (new directory)
+  - `page.tsx` - Dashboard landing
+  - `users/page.tsx` - User list
+  - `users/[id]/page.tsx` - User details
+  - `analytics/page.tsx` - Analytics dashboard
+  - `logs/page.tsx` - Logs viewer
+  
+- **Components**: `/components/admin/` (new directory)
+  - `UserList.tsx`
+  - `UserDetails.tsx`
+  - `MetricsCard.tsx`
+  - `AnalyticsChart.tsx`
+  
+- **Actions**: `/app/actions/admin.ts` (new file)
+  - `getAllUsers()`
+  - `getUserDetails()`
+  - `updateUser()`
+  - `deleteUserAdmin()`
+  - `getAnalytics()`
+
+- **Middleware**: Update `/middleware.ts`
+  - Check admin role for /admin routes
+
+### Best Practices to Follow
+
+1. **User Experience**
+   - Clear navigation and breadcrumbs
+   - Responsive design (mobile-friendly admin panel)
+   - Loading states and skeleton screens
+   - Toast notifications for actions
+   - Keyboard shortcuts for power users
+
+2. **Data Visualization**
+   - Use appropriate chart types (line for trends, pie for distribution)
+   - Color-coded status indicators
+   - Export charts as images or PDF
+   - Real-time updates where applicable
+
+3. **Performance**
+   - Pagination for large lists (20-50 items per page)
+   - Virtual scrolling for very large lists
+   - Debounced search
+   - Cached analytics queries (5-15 min cache)
+   - Lazy load chart data
+
+4. **Audit & Compliance**
+   - Log all destructive operations
+   - Record admin user who performed action
+   - Timestamp all admin actions
+   - Ability to view audit trail
+   - Compliance with data privacy laws (GDPR, CCPA)
+
+### Benefits
+
+- **No direct database access needed**: Admins use UI instead of SQL
+- **Safer operations**: Confirmation dialogs, audit logs
+- **Better insights**: Visual analytics instead of raw SQL queries
+- **Team collaboration**: Multiple admins can manage users
+- **Professional appearance**: Shows maturity of product
+
+### Testing Considerations
+
+- Test admin authentication and role checks
+- Test user CRUD operations
+- Test pagination and search
+- Test analytics calculation accuracy
+- Test audit logging
+- Test bulk operations (with test data)
+- Test permission boundaries (regular users cannot access /admin)
+
+### Status
+**Status**: Backlogged - Not currently implemented
+**Priority**: Medium (nice-to-have for scaling, not critical for MVP)
+**Effort**: Large (2-3 weeks for complete implementation)
+**Dependencies**: 
+- User deletion administration (v2.9) ✅ Completed
+- Role-based access control (needs implementation)
+**Last Updated**: November 21, 2025
+
+**Recommendation**: 
+- Phase 1 (Basic User Management) should be prioritized when moving beyond MVP
+- Essential for scaling to 10+ users without direct database access
+- Can start small and iterate based on admin needs
+
+---
+

@@ -46,6 +46,44 @@ This document provides Claude with essential context about the My Workout Schedu
 
 ---
 
+## Development Workflow Preferences
+
+### Pull Request Creation
+**Always provide PR title and description automatically after pushing to remote.**
+
+When the following conditions are met:
+1. All requested work is complete
+2. Changes are committed to git
+3. Changes are pushed to remote branch (`git push origin <branch>`)
+4. Git status shows "working tree clean"
+
+**Automatically provide:**
+- Professional PR title (concise, descriptive)
+- Comprehensive PR description including:
+  - Summary of changes
+  - Detailed change breakdown
+  - Testing notes
+  - Security considerations (if applicable)
+  - Known limitations (if applicable)
+
+**Format:**
+```markdown
+## PR Title
+<concise-title>
+
+## PR Description
+<comprehensive-description>
+```
+
+**User can still request explicitly** with phrases like:
+- "ready for PR"
+- "need PR title and description"
+- "create PR content"
+
+**Note:** This applies even when GitHub might auto-populate from single commits, to ensure consistency and comprehensive documentation.
+
+---
+
 ## Tech Stack
 
 - **Frontend/Backend:** Next.js 14 (App Router) with TypeScript
@@ -505,6 +543,67 @@ The system detects email verification in multiple ways:
 
 **Files:** `app/actions/profile.ts`, `components/ProfileForm.tsx`, `components/EmailVerificationNotification.tsx`, `app/dashboard/profile/page.tsx`, `docs/SUPABASE_EMAIL_SETTINGS.md`
 
+### 12. User Deletion Administration
+
+**Admin-level user deletion with audit logging** for managing test users and cleanup operations.
+
+**Template Scripts (Public - Safe to Commit):**
+
+Scripts are provided as templates with example emails that can be safely committed to version control:
+
+1. **`scripts/delete-users-with-logging.sql`** - Bulk user deletion
+   - Creates `deleted_users_audit` table with RLS enabled (service role only)
+   - Shows preview before deletion
+   - Logs user details: email, class count, booking count, metadata
+   - Verifies deletion and shows summary statistics
+   - Uses example emails (`admin@example.com`, `owner@example.com`)
+
+2. **`scripts/delete-single-user.sql`** - Single user deletion
+   - Detailed user preview before deletion
+   - Audit logging with RLS security
+   - Uses example email (`user@example.com`)
+
+3. **`scripts/user-deletion-queries.md`** - Quick reference queries
+   - Preview, deletion, audit, and verification queries
+   - All with example emails
+
+**Usage Workflow:**
+
+```bash
+# 1. Copy templates to private folder (gitignored)
+cp scripts/delete-users-with-logging.sql scripts/private/
+cp scripts/delete-single-user.sql scripts/private/
+cp scripts/user-deletion-queries.md scripts/private/
+
+# 2. Edit files in scripts/private/ to replace example emails with real ones
+# 3. Run customized scripts in Supabase SQL Editor
+```
+
+**Security Features:**
+
+- `deleted_users_audit` table has RLS enabled (service role access only)
+- Template files use example emails (safe for public repo)
+- Customized files in `scripts/private/` are gitignored
+- No exposure of admin identities or real email addresses
+
+**Cascade Deletion:**
+
+When a user is deleted from `auth.users`, these automatically delete via `ON DELETE CASCADE`:
+- ✅ `gym_credentials` - User's gym login info
+- ✅ `recurring_classes` - User's class schedules
+- ✅ `booking_attempts` - All booking history
+- ✅ `user_settings` - User preferences
+
+**Known Limitation:**
+
+⚠️ **Inngest scheduled events are NOT canceled** when users are deleted. Scheduled booking events will still trigger but fail gracefully:
+- Booking function calls `getClassById()` which returns `null`
+- Function exits early with "Class not found" message
+- No actual booking attempt is made
+- Acceptable for MVP; could add event cancellation in future
+
+**Files:** `scripts/delete-users-with-logging.sql`, `scripts/delete-single-user.sql`, `scripts/user-deletion-queries.md`, `scripts/private/README.md`
+
 ---
 
 ## Operational Notes
@@ -935,5 +1034,6 @@ await supabase
 - **v2.0** - Inngest migration: event-driven architecture, intelligent retry logic, 100% free tier
 - **v2.7** - Enhanced class status detection (6 states), duplicate prevention with idempotency keys, smart retry logic
 - **v2.8** - User profile management (email/password update, account deletion), email verification notifications, environment variable strategy, production email setup (Resend with beerock.com domain, DKIM signing)
+- **v2.9** - User deletion administration: Template-based SQL scripts with audit logging, RLS-secured audit table, cascade deletion for related data, example emails for safe public commits
 
-**Last Updated:** November 19, 2025
+**Last Updated:** November 21, 2025
