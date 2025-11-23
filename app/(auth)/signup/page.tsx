@@ -30,37 +30,55 @@ export default function SignupPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    // Load Cloudflare Turnstile script
-    const script = document.createElement('script')
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
-    script.async = true
-    script.defer = true
-    script.onload = () => {
-      // Render turnstile widget once script is loaded
-      if (turnstileRef.current && window.turnstile) {
-        widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
-          sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA', // Test key
-          callback: (token: string) => {
-            setTurnstileToken(token)
-            // Clear any previous errors when verification succeeds
-            setError(null)
-          },
-          'error-callback': () => {
-            // Only set error if user already tried to submit
-            // Don't show error on initial page load
-            setTurnstileToken(null)
-          },
-        })
+    // Check if script already exists (prevents double loading in dev mode)
+    let script = document.querySelector('script[src*="turnstile"]') as HTMLScriptElement
+    let shouldCleanup = false
+
+    const renderWidget = () => {
+      // Only render if widget doesn't already exist and ref is available
+      if (turnstileRef.current && window.turnstile && !widgetIdRef.current) {
+        // Check if widget is already rendered in the div
+        if (turnstileRef.current.children.length === 0) {
+          widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA', // Test key
+            callback: (token: string) => {
+              setTurnstileToken(token)
+              // Clear any previous errors when verification succeeds
+              setError(null)
+            },
+            'error-callback': () => {
+              // Only set error if user already tried to submit
+              // Don't show error on initial page load
+              setTurnstileToken(null)
+            },
+          })
+        }
       }
     }
-    document.body.appendChild(script)
+
+    if (!script) {
+      // Script doesn't exist, create it
+      script = document.createElement('script')
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+      script.async = true
+      script.defer = true
+      script.onload = renderWidget
+      document.body.appendChild(script)
+      shouldCleanup = true
+    } else if (window.turnstile) {
+      // Script already loaded, render immediately
+      renderWidget()
+    } else {
+      // Script exists but not loaded yet, wait for it
+      script.addEventListener('load', renderWidget)
+    }
 
     return () => {
-      // Cleanup
-      if (widgetIdRef.current && window.turnstile) {
+      // Only cleanup if we created the script
+      if (shouldCleanup && widgetIdRef.current && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current)
+        widgetIdRef.current = null
       }
-      document.body.removeChild(script)
     }
   }, [])
 
