@@ -1418,6 +1418,135 @@ await supabase.auth.signInWithPassword({
 
 ---
 
+## Authentication Security & UX Improvements - Priority 2 & 3
+
+### Overview
+**STATUS: PARTIALLY COMPLETED (Priority 1 Complete, Priority 2/3 Backlogged)**
+
+Following a comprehensive audit of the signup and authentication workflow, several improvements were identified and prioritized. Priority 1 improvements have been completed and deployed to production (v2.9). This section tracks the remaining Priority 2 and Priority 3 enhancements.
+
+### Completed (Priority 1) ✅
+
+The following critical improvements have been implemented:
+
+1. **Password Confirmation Field on Signup** ✅
+   - Prevents users from locking themselves out due to password typos
+   - Validates passwords match before submission
+   - Clear error messaging if passwords don't match
+
+2. **Resend Verification on Login Page** ✅
+   - Detects unverified email errors on login attempt
+   - Shows blue banner with "Resend Verification Email" button
+   - Helps users recover from unverified account lockout
+   - Success feedback after resending
+
+3. **Bot Protection with Cloudflare Turnstile** ✅
+   - Prevents automated bot signups
+   - Uses Cloudflare Turnstile (privacy-friendly alternative to reCAPTCHA)
+   - Invisible in production (visible test widget in development)
+   - Fixed duplicate widget rendering in React Strict Mode
+
+4. **Persistent Notifications** ✅
+   - Removed auto-dismiss timers from ALL auth notifications
+   - Users manually dismiss with X button or by refreshing page
+   - Applied to: verify-email, login, profile (email/password changes)
+   - Context-aware messaging (signup vs email change)
+
+5. **Consistent Expiration Times** ✅
+   - All verification links expire in 1 hour (Supabase default)
+   - Documented in verify-email page instructions
+
+**Auth Workflow Grade:** A- (up from B+)
+
+### Remaining (Priority 2 - Post-MVP)
+
+1. **Password Strength Meter**
+   - **Status**: Backlogged
+   - **Description**: Visual indicator showing password strength (Weak/Fair/Good/Strong)
+   - **Library**: Consider using zxcvbn for strength calculation
+   - **UI**: Progress bar below password field with color coding
+   - **Feedback**: Real-time strength updates as user types
+   - **Benefit**: Encourages stronger passwords without enforcing strict rules
+
+2. **Unverified Account Cleanup Job**
+   - **Status**: Backlogged
+   - **Description**: Automated job to delete stale unverified accounts
+   - **Implementation**: Daily cron job (could use Inngest scheduled function)
+   - **Logic**: Delete accounts where `email_confirmed_at IS NULL AND created_at > 48 hours old`
+   - **Notification**: Optional email 24 hours before deletion ("verify your email or your account will be deleted")
+   - **Benefit**: Keeps database clean, prevents email squatting
+
+3. **Password Complexity Requirements**
+   - **Status**: Backlogged
+   - **Description**: Enforce minimum password complexity rules
+   - **Requirements**:
+     - At least 1 uppercase letter
+     - At least 1 lowercase letter
+     - At least 1 number
+     - Optional: At least 1 special character
+   - **Current**: Only minimum 8 characters enforced
+   - **UI**: Show checklist below password field
+   - **Benefit**: Improves account security
+
+### Remaining (Priority 3 - Nice to Have)
+
+1. **Expiration Timer on verify-email Page**
+   - **Status**: Backlogged
+   - **Description**: Countdown showing time until verification link expires
+   - **UI**: "Link expires in: 45:32" with live countdown
+   - **Implementation**: JavaScript countdown starting from 1 hour (3600 seconds)
+   - **Edge Case**: Handle page refresh (calculate time from URL timestamp if available)
+   - **Benefit**: Creates urgency, reduces support tickets about expired links
+
+2. **App-Level Rate Limiting**
+   - **Status**: Backlogged
+   - **Description**: Prevent signup abuse and brute force attacks
+   - **Implementation**: Use Upstash Redis for rate limiting
+   - **Limits**:
+     - Signup: 3 attempts per IP per hour
+     - Login: 5 attempts per IP per 15 minutes
+     - Resend verification: 3 attempts per email per hour
+   - **Current**: Relying on Supabase built-in rate limiting + Cloudflare Turnstile
+   - **Benefit**: Additional layer of protection against abuse
+
+3. **Social Login Integration**
+   - **Status**: Backlogged (see separate section below for full details)
+   - **Description**: Google/GitHub OAuth as alternative to email/password
+   - **Benefit**: Faster signup, no password to remember
+   - **Note**: See "OAuth Login (Google and Apple Sign-In)" section for complete specification
+
+### Files Modified (Priority 1 Implementation)
+
+- `app/(auth)/signup/page.tsx` - Password confirmation, Turnstile integration
+- `app/(auth)/login/page.tsx` - Resend verification feature
+- `app/(auth)/verify-email/page.tsx` - Removed auto-dismiss from resend success
+- `components/EmailVerificationNotification.tsx` - Persistent notifications, context-aware messaging
+- `components/ProfileForm.tsx` - Removed auto-dismiss from email/password success
+- `.env.example` - Added NEXT_PUBLIC_TURNSTILE_SITE_KEY documentation
+
+### Environment Variables (Priority 1)
+
+**Required for Cloudflare Turnstile:**
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` - Cloudflare Turnstile site key
+  - Test key: `1x00000000000000000000AA` (always passes, visible widget)
+  - Production: Custom site key from Cloudflare dashboard (invisible)
+
+### Status
+**Priority 1 Status**: ✅ COMPLETED AND DEPLOYED (v2.9)
+**Priority 2 Status**: Backlogged (Post-MVP)
+**Priority 3 Status**: Backlogged (Nice to Have)
+**Last Updated**: November 23, 2025
+**Completed**: November 23, 2025 (Priority 1)
+
+### Next Steps (Priority 2/3)
+1. Evaluate password strength meter libraries (zxcvbn vs alternatives)
+2. Design unverified account cleanup job (determine notification timing)
+3. Decide on password complexity requirements (with or without special characters)
+4. Research rate limiting solutions (Upstash Redis vs Vercel Edge Config)
+5. Test expiration timer UX (decide if it adds value or creates anxiety)
+
+---
+
 ## OAuth Login (Google and Apple Sign-In)
 
 ### Overview
