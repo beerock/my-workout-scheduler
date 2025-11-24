@@ -14,7 +14,18 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Recent Updates (v2.8):**
+**Recent Updates (v2.9):**
+- **Priority 1 Auth Security & UX Improvements** - Production-ready authentication
+  - Password confirmation field on signup (prevents typo lockouts)
+  - Resend verification on login page (unverified email recovery)
+  - Bot protection with Cloudflare Turnstile (prevents automated signups)
+  - Persistent notifications (no auto-dismiss, user-controlled)
+  - Email change verification notifications (context-aware messaging)
+  - Consistent 1-hour expiration across all auth links
+  - Fixed Turnstile duplicate widget rendering in React Strict Mode
+  - Auth workflow grade: A- (up from B+)
+
+**Previous Updates (v2.8):**
 - **User Profile Management** - Complete profile settings page
   - Email update with password verification and email confirmation
   - Password change with current password verification

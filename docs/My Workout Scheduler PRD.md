@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.7
+**Version:** 2.9
 **Product Owner:** Brock Busby
-**Last Updated:** November 17, 2025
+**Last Updated:** November 23, 2025
 **Status:** Production - Deployed and Testing
 
 
@@ -76,6 +76,15 @@
   - Email verification notifications (success/error messages)
   - Support for Supabase "Double Confirm Email Changes" setting
   - Comprehensive documentation for email configuration
+- ✅ **COMPLETED: Authentication Security & UX Improvements (v2.9)**
+  - Password confirmation field on signup page (prevents typo lockouts)
+  - Resend verification feature on login page (unverified email recovery)
+  - Bot protection with Cloudflare Turnstile (prevents automated signups)
+  - Persistent notifications (no auto-dismiss, user-controlled dismissal only)
+  - Email change verification notifications (context-aware messaging)
+  - Consistent 1-hour expiration across all auth links
+  - Fixed Turnstile duplicate widget rendering in React Strict Mode
+  - Auth workflow grade: A- (up from B+)
 
 **Major Changes from v1.0:**
 
@@ -147,6 +156,10 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 | **Password Update** | Change password with current password verification | High | ✅ |
 | **Account Deletion** | Delete account with two-step confirmation and password verification | Medium | ✅ |
 | **Email Verification Notifications** | Show success/error messages after email verification | Medium | ✅ |
+| **Password Confirmation** | Confirm password on signup to prevent typo lockouts | High | ✅ |
+| **Resend Verification on Login** | Resend verification email from login page for unverified accounts | High | ✅ |
+| **Bot Protection** | Cloudflare Turnstile captcha on signup page | High | ✅ |
+| **Persistent Notifications** | User-controlled dismissal for all auth notifications | Medium | ✅ |
 
 ### 3.2 Schedule Management ✅ COMPLETE
 
