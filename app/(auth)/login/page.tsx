@@ -11,6 +11,9 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showResendVerification, setShowResendVerification] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -32,6 +35,7 @@ function LoginForm() {
     e.preventDefault()
     setError(null)
     setMessage(null)
+    setShowResendVerification(false)
     setLoading(true)
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -42,9 +46,45 @@ function LoginForm() {
     if (error) {
       setError(error.message)
       setLoading(false)
+
+      // Check if error is due to unverified email
+      if (error.message.toLowerCase().includes('email not confirmed') ||
+          error.message.toLowerCase().includes('email confirmation')) {
+        setShowResendVerification(true)
+      }
     } else {
       router.push('/dashboard')
       router.refresh()
+    }
+  }
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError('Please enter your email address')
+      return
+    }
+
+    setResending(true)
+    setError(null)
+    setResendSuccess(false)
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      })
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setResendSuccess(true)
+        setMessage('Verification email sent! Check your inbox.')
+        setShowResendVerification(false)
+      }
+    } catch (err) {
+      setError('Failed to resend verification email. Please try again.')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -99,6 +139,22 @@ function LoginForm() {
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
               {error}
+            </div>
+          )}
+
+          {showResendVerification && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-900 mb-2">
+                Email not verified? We can resend the verification email.
+              </p>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resending}
+                className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                {resending ? 'Sending...' : 'Resend Verification Email'}
+              </button>
             </div>
           )}
 

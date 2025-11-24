@@ -48,8 +48,7 @@ function VerifyEmailContent() {
       } else {
         setResendSuccess(true)
         setCountdown(60) // 60 second cooldown
-        // Clear success message after 3 seconds
-        setTimeout(() => setResendSuccess(false), 3000)
+        // Success message persists until user navigates away
       }
     } catch (error) {
       setResendError('An unexpected error occurred. Please try again.')

@@ -97,9 +97,14 @@ export async function updateEmail(
     }
 
     // Update email - this will send a confirmation email to the new address only
-    const { error: updateError } = await supabase.auth.updateUser({
-      email: newEmail,
-    })
+    const { error: updateError } = await supabase.auth.updateUser(
+      {
+        email: newEmail,
+      },
+      {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+      }
+    )
 
     if (updateError) {
       return {

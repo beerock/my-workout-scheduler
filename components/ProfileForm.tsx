@@ -64,8 +64,7 @@ export default function ProfileForm({ userEmail }: Props) {
         setNewEmail('')
         setEmailPassword('')
 
-        // Clear success message after 5 seconds
-        setTimeout(() => setEmailSuccess(false), 5000)
+        // Success message persists until user dismisses or navigates away
       } else {
         setEmailError(result.error || 'Failed to update email')
       }
@@ -111,8 +110,7 @@ export default function ProfileForm({ userEmail }: Props) {
         setNewPassword('')
         setConfirmNewPassword('')
 
-        // Clear success message after 5 seconds
-        setTimeout(() => setPasswordSuccess(false), 5000)
+        // Success message persists until user dismisses or navigates away
       } else {
         setPasswordError(result.error || 'Failed to update password')
       }

@@ -40,12 +40,8 @@ export default function EmailVerificationNotification() {
         window.history.replaceState(null, '', window.location.pathname + window.location.search)
       }
 
-      // Auto-hide after 10 seconds
-      const timer = setTimeout(() => {
-        setNotification(null)
-      }, 10000)
-
-      return () => clearTimeout(timer)
+      // Don't auto-hide - user must manually dismiss
+      return
     }
 
     // Check for email verification success in multiple ways:
@@ -69,12 +65,7 @@ export default function EmailVerificationNotification() {
         window.history.replaceState(null, '', window.location.pathname + window.location.search)
       }
 
-      // Auto-hide after 10 seconds
-      const timer = setTimeout(() => {
-        setNotification(null)
-      }, 10000)
-
-      return () => clearTimeout(timer)
+      // Don't auto-hide - user must manually dismiss
     }
   }, [searchParams])
 
