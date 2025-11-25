@@ -990,10 +990,22 @@ async function findAndBookClass(
           const buttonTexts = buttons.map((btn) => (btn as HTMLElement).textContent?.trim() || '')
           const buttonIds = buttons.map((btn) => (btn as HTMLElement).id || '')
           const buttonClasses = buttons.map((btn) => (btn as HTMLElement).className || '')
+          const buttonDisabledStates = buttons.map((btn) => {
+            const element = btn as HTMLButtonElement
+            return element.disabled ||
+                   element.getAttribute('disabled') !== null ||
+                   element.classList.contains('disabled')
+          })
+          const buttonTooltips = buttons.map((btn) => {
+            return (btn as HTMLElement).getAttribute('title') ||
+                   (btn as HTMLElement).getAttribute('data-tooltip') ||
+                   (btn as HTMLElement).getAttribute('aria-label') ||
+                   ''
+          })
 
           // Extract time patterns from text
           const timePatterns = text.match(/\d{1,2}:\d{2}\s*(AM|PM)?/gi) || []
-          
+
           // Extract class name patterns (look for common class name indicators)
           const classNameMatch = text.match(/([A-Z][A-Z\s]+(?:PUMP|YOGA|CYCLE|CARDIO|STRENGTH|CORE|FITNESS|TRAINING|DANCE|AQUA|SWIM|PILATES|BARRE|ZUMBA|KICKBOXING|BOXING|MARTIAL|ARTS|SPIN|RIDE|WALK|RUN|JOG|STRETCH|FLEX|BALANCE|MEDITATION|MINDFUL|STRESS|RELAX|RESTORE|RENEW|REVIVE|REVITALIZE|REJUVENATE|REFRESH|REBOOT|RESET|REVAMP|REVIVE|REVITALIZE|REJUVENATE|REFRESH|REBOOT|RESET|REVAMP)[A-Z\s]*)/i)
 
@@ -1008,6 +1020,8 @@ async function findAndBookClass(
             buttonTexts,
             buttonIds,
             buttonClasses,
+            buttonDisabledStates,
+            buttonTooltips,
             timePatterns,
             classNameMatch: classNameMatch ? classNameMatch[0] : null,
           }
@@ -1186,11 +1200,49 @@ async function findAndBookClass(
               classItem.html.toLowerCase().includes('waitlist')))
           )
 
+          // Check if booking button is disabled (indicates booking window not open yet)
+          const hasDisabledBookingButton = hasBookingButton && classItem.buttonTexts.some((btn, index) => {
+            const btnUpper = btn.toUpperCase()
+            const isBookingButton = btnUpper.includes('RESERVE') ||
+                                   btnUpper.includes('BOOK') ||
+                                   btnUpper.includes('WAITLIST') ||
+                                   btnUpper.includes('ADD TO WAITLIST')
+            return isBookingButton && classItem.buttonDisabledStates[index]
+          })
+
+          // Check for booking window tooltip (e.g., "Reservation starts at...")
+          const hasBookingWindowTooltip = hasDisabledBookingButton && classItem.buttonTooltips.some((tooltip) => {
+            const tooltipLower = tooltip.toLowerCase()
+            return tooltipLower.includes('reservation starts') ||
+                   tooltipLower.includes('booking opens') ||
+                   tooltipLower.includes('reservations open')
+          })
+
           // Determine status with improved logic
-          // Priority order: reserved > cancelled > not reservable > full > available
+          // Priority order: reserved > cancelled > not reservable > booking window not open > full > available
           let status: 'reserved' | 'available' | 'full'
+          let windowNotOpenMessage: string | undefined
+
           if (isReserved) {
             status = 'reserved'
+          } else if (hasDisabledBookingButton) {
+            // Booking button exists but is disabled = window not open yet
+            console.log(`   ⏰ RESERVE button is DISABLED - booking window not open yet`)
+            status = 'full' // Return 'full' to trigger retry logic (not permanent failure)
+
+            // Extract tooltip message if available
+            const tooltipMessage = classItem.buttonTooltips.find((tooltip) => {
+              const tooltipLower = tooltip.toLowerCase()
+              return tooltipLower.includes('reservation starts') ||
+                     tooltipLower.includes('booking opens') ||
+                     tooltipLower.includes('reservations open')
+            })
+
+            if (tooltipMessage) {
+              windowNotOpenMessage = `Booking window not yet open: ${tooltipMessage}`
+            } else {
+              windowNotOpenMessage = 'Booking window not yet open - RESERVE button is disabled'
+            }
           } else if (isCancelled || isNotReservable) {
             // Cancelled or Not Reservable = permanent failure (don't retry)
             status = 'full'
@@ -1216,14 +1268,18 @@ async function findAndBookClass(
             status = 'full'
           }
 
-          console.log(`   Status check: isReserved=${isReserved}, isFull=${isFull}, isCancelled=${isCancelled}, isNotReservable=${isNotReservable}, hasBookingButton=${hasBookingButton}`)
+          console.log(`   Status check: isReserved=${isReserved}, isFull=${isFull}, isCancelled=${isCancelled}, isNotReservable=${isNotReservable}, hasBookingButton=${hasBookingButton}, hasDisabledBookingButton=${hasDisabledBookingButton}`)
           console.log(`   Determined status: ${status}`)
           console.log(`   Button texts: ${classItem.buttonTexts.join(', ')}`)
+          if (windowNotOpenMessage) {
+            console.log(`   Window message: ${windowNotOpenMessage}`)
+          }
 
           return {
             found: true,
             status,
             debugInfo: classItem,
+            windowNotOpenMessage,
           }
         }
       }
@@ -1353,6 +1409,16 @@ async function findAndBookClass(
     }
 
     if (searchResult.status === 'full') {
+      // Check if booking window hasn't opened yet (disabled button)
+      // This should trigger clock drift retry logic (short retries)
+      if (searchResult.windowNotOpenMessage) {
+        return {
+          status: 'failed',
+          errorMessage: searchResult.windowNotOpenMessage,
+          selectedBranch: branchUsed,
+        }
+      }
+
       // Check if it's a permanent failure (cancelled or not reservable)
       // These should NOT trigger retry logic (no "full" in error message)
       const debugText = searchResult.debugInfo?.text?.toLowerCase() || ''
