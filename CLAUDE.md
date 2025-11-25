@@ -37,6 +37,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **Previous Updates (v2.7):**
 - **Enhanced class status detection** (6 states: available, window not open, reserved, full, cancelled, not reservable)
+- **Booking window detection with fast retry loop**: Detects disabled buttons, 9×5s retries to meet <60s booking KPI
 - **Duplicate booking prevention** with idempotency keys and pending attempt checks
 - **Smart retry logic**: Only retries temporary failures (class full), not permanent ones (cancelled, not reservable)
 - **Fuzzy matching for class names**: Handles typos in class names (e.g., "Raquetball" → "Racquetball") using Levenshtein distance algorithm with 0.75-0.8 similarity threshold
@@ -48,7 +49,7 @@ This document provides Claude with essential context about the My Workout Schedu
 **Previous Updates (v2.0):**
 - **Migrated to Inngest event-driven architecture** (from GitHub Actions cron)
 - Precise timing: triggers at exact booking window times (no polling)
-- Intelligent retry logic: clock drift (12×15s) and class full (15min intervals)
+- Intelligent retry logic: booking window not open (9×5s fast retry) and class full (15min intervals)
 - Daily scheduler (midnight UTC) ensures all classes are scheduled
 - FREE infrastructure (eliminated $4-8/month GitHub Actions cost)
 - Fixed timezone-related bugs in booking window and reset logic
@@ -320,9 +321,32 @@ Classes book at a specific time before the class starts (e.g., 26 hours prior):
 **Window Detection:**
 - Check if "RESERVE" button is disabled
 - Check for tooltip: "Reservation starts at [DATE] at [TIME]"
-- If window not open, skip booking attempt
+- Extract button disabled states and tooltips during class finding
 
-**Files:** `scripts/booking-automation.ts`, `lib/date-utils.ts:calculateBookingWindowOpen()`
+**Fast Retry Loop (NEW in v2.7):**
+When disabled button detected (booking window not open):
+- **9 attempts × 5 seconds = 45 seconds** total coverage
+- Page reload + wait = ~7 seconds actual gap per cycle
+- Breaks immediately when booking window opens
+- Meets <60s booking KPI even with early triggers
+
+**Example Timeline (trigger 15s early):**
+```
+2:14:45 PM - Trigger
+2:14:50 PM - Attempt 1: Button disabled
+2:14:55 PM - Retry 1: Button disabled
+2:15:00 PM - Retry 2: Window opens! Book now ✅
+Total: 15 seconds to book
+```
+
+**Priority Order:**
+`reserved > disabled button > cancelled > not reservable > full > available`
+
+**Outer Retry Loop:**
+- Reduced from 12 to 3 attempts (disabled button case handled by fast loop)
+- Handles other edge cases: class not found, network issues
+
+**Files:** `scripts/booking-automation.ts` (lines 1411-1476, 148-154), `lib/date-utils.ts:calculateBookingWindowOpen()`
 
 ### 4. Two-Step Booking Flow (YMCA Daxko Platform)
 

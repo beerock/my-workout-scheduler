@@ -320,6 +320,102 @@ process.exit(0)
 
 ---
 
+## Duplicate Detection Race Window (45-Second Gap)
+
+### Overview
+**STATUS: BACKLOGGED (Low Priority)**
+
+The duplicate run detection has a ~45-second race window where simultaneous booking attempts could both proceed. This happens because the duplicate check occurs in Inngest (fast) but the `pending` database record is created by GitHub Actions (slow to start).
+
+### Current Behavior
+
+**Timeline of duplicate detection:**
+1. First Inngest run (t=0s): Checks DB → Finds 0 pending → Triggers GitHub Actions
+2. Second Inngest run (t=0-45s): Checks DB → Finds 0 pending → Triggers GitHub Actions
+3. First GitHub Actions (t=~45s): Creates `pending` attempt in DB
+4. Second GitHub Actions (t=~45s): Creates `pending` attempt in DB
+
+**Result:** Both attempts proceed if triggered within ~45 seconds of each other.
+
+**Test Results (2025-11-24):**
+- Triggered two bookings 0.2 seconds apart
+- Both Inngest functions returned `false` from duplicate check
+- Both GitHub Actions workflows ran
+- Both created pending attempts in database
+- Gap from Inngest start to DB record creation: 44-81 seconds
+
+### Why It's Low Priority
+
+**Unlikely to happen in practice:**
+1. **Inngest event deduplication (primary defense)**: Inngest already deduplicates events at the infrastructure level (idempotency keys)
+2. **User behavior**: Users won't manually trigger within 45 seconds
+3. **Automated triggers**: Daily scheduler and retry logic use unique event IDs
+4. **Failure is graceful**: Even if duplicate runs proceed, gym website would reject second booking attempt
+
+**This is defense-in-depth** - a second line of defense that catches rare edge cases.
+
+### Potential Solutions
+
+**Option A: Create pending attempt in Inngest (before GitHub Actions)**
+```typescript
+// In lib/inngest/functions.ts, before triggering GitHub Actions:
+const attemptId = await step.run('create-pending-attempt', async () => {
+  return await createBookingAttempt(
+    classData.id,
+    'pending',
+    null,
+    classData.branch || 'Unknown'
+  );
+});
+
+// Then trigger GitHub Actions with attemptId
+// GitHub Actions updates the attempt instead of creating new one
+```
+
+**Pros:**
+- Closes the race window completely
+- Duplicate check happens immediately after creation
+- Clean separation: Inngest creates, GitHub Actions updates
+
+**Cons:**
+- Need to pass attemptId to GitHub Actions
+- GitHub Actions script needs refactoring to update vs create
+- More complex error handling (if GitHub Actions fails, pending attempt orphaned)
+
+**Option B: Add duplicate check in GitHub Actions workflow**
+- Check for pending attempts before creating new one
+- Simpler but adds DB query to Puppeteer script
+- Still has small race window (both workflows start simultaneously)
+
+**Option C: Use database-level locking**
+- Add unique constraint: `(recurring_class_id, class_date, status='pending')`
+- Second attempt would fail at DB level
+- Simpler but less graceful (throws error vs clean exit)
+
+### When to Revisit
+
+**Revisit this if:**
+- You implement "Book Now" manual trigger button (users could spam-click)
+- You see duplicate booking attempts in production logs
+- Webhook/event duplicates start appearing
+- You want to add real-time notifications (WebSocket connections might duplicate)
+
+**Otherwise:** Accept current behavior. The 45-second window is unlikely to be hit given Inngest's event deduplication and normal usage patterns.
+
+### Code Location
+- Duplicate check: `lib/inngest/functions.ts` lines 52-88
+- Pending attempt creation: GitHub Actions → `scripts/test-single-booking.ts` → `booking-automation.ts`
+
+### Status
+**Status**: Backlogged - Known limitation, not actively being addressed
+**Priority**: Low (defense-in-depth, unlikely scenario)
+**Impact**: Rare race condition where duplicate bookings could proceed within 45-second window
+**Last Updated**: November 24, 2025
+**Decision**: Accept current behavior, primary defense (Inngest idempotency) is sufficient
+**Testing**: Documented in production testing session (Test #5)
+
+---
+
 ## Multi-Branch Fallback Logic
 
 ### Overview
