@@ -1411,10 +1411,11 @@ async function findAndBookClass(
     if (searchResult.status === 'full') {
       // Check if booking window hasn't opened yet (disabled button)
       // This should trigger clock drift retry logic (short retries)
+      // NOTE: Error message must match pattern in retry logic (line 177-178)
       if (searchResult.windowNotOpenMessage) {
         return {
           status: 'failed',
-          errorMessage: searchResult.windowNotOpenMessage,
+          errorMessage: `Could not find or click booking button - ${searchResult.windowNotOpenMessage}`,
           selectedBranch: branchUsed,
         }
       }
