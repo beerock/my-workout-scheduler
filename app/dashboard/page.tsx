@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import LogoutButton from '@/components/LogoutButton'
 import PauseToggle from '@/components/PauseToggle'
+import EmailVerificationNotification from '@/components/EmailVerificationNotification'
 import { getUserSettings } from '@/app/actions/user-settings'
 
 export default async function DashboardPage() {
@@ -40,7 +42,11 @@ export default async function DashboardPage() {
             </div>
             <PauseToggle initialPaused={settings?.schedule_paused ?? false} />
           </div>
-          
+
+          <Suspense fallback={null}>
+            <EmailVerificationNotification />
+          </Suspense>
+
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Schedule Management</h3>
@@ -68,6 +74,21 @@ export default async function DashboardPage() {
                 </a>
                 <p className="text-sm text-gray-500 mt-2">
                   Store your gym website login credentials securely
+                </p>
+              </div>
+            </div>
+
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Profile Settings</h3>
+              <div className="space-y-2">
+                <a
+                  href="/dashboard/profile"
+                  className="block px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-center"
+                >
+                  Manage Profile
+                </a>
+                <p className="text-sm text-gray-500 mt-2">
+                  Update email, password, and account settings
                 </p>
               </div>
             </div>
