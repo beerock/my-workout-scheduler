@@ -932,6 +932,9 @@ async function findAndBookClass(
   selectedBranch: string
 }> {
   try {
+    console.log(`\n🎯 Starting booking attempt for: ${classType} at ${classTime}`)
+    console.log(`📍 Current page: ${page.url()}`)
+
     // Parse class time
     const [hours, minutes] = classTime.split(':').map(Number)
     const targetTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
@@ -939,7 +942,7 @@ async function findAndBookClass(
     const hour12 = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours)
     const ampm = hours >= 12 ? 'PM' : 'AM'
     const targetTime12 = `${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`
-    
+
 
     // Function to search for class in currently loaded classes
     const searchForClass = async (): Promise<{
@@ -949,6 +952,8 @@ async function findAndBookClass(
       status?: 'reserved' | 'available' | 'full'
       debugInfo?: any
     }> => {
+      console.log(`📍 Searching on page: ${page.url()}`)
+
       // Get all class rows/cards from the page with more detailed structure
       const classes = await page.evaluate(() => {
         // Try to find the actual class list container first
@@ -1423,7 +1428,19 @@ async function findAndBookClass(
           await new Promise(resolve => setTimeout(resolve, quickRetryDelay))
 
           console.log(`🔄 Refreshing page and re-checking booking window...`)
+          console.log(`📍 Current page: ${page.url()}`)
           await page.reload({ waitUntil: 'networkidle2' })
+
+          // Wait for schedule to load - ensure class containers appear
+          try {
+            await page.waitForSelector('tr, .class-item, .schedule-item, [class*="class"]', {
+              visible: true,
+              timeout: 10000
+            })
+            console.log(`✅ Schedule reloaded successfully`)
+          } catch (e) {
+            console.log(`⚠️  Schedule did not fully load after page reload (timeout)`)
+          }
 
           // Re-search for class to check if button is now enabled
           searchResult = await searchForClass()
@@ -1461,6 +1478,15 @@ async function findAndBookClass(
               errorMessage: `Could not find or click booking button - ${searchResult.windowNotOpenMessage}`,
               selectedBranch: branchUsed,
             }
+          }
+        }
+
+        // If we broke out of the loop because class not found after reload
+        if (!searchResult.found) {
+          return {
+            status: 'failed',
+            errorMessage: `Class disappeared from schedule after page reload - may have been cancelled or removed`,
+            selectedBranch: branchUsed,
           }
         }
 
