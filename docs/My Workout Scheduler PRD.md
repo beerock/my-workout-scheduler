@@ -69,6 +69,16 @@
   - Critical for classes that appear after "Load more results"
   - Prevents click failures on elements outside viewport
   - Smooth scrolling with 500ms animation delay
+- ✅ **COMPLETED: Booking Window Detection with Fast Retry Loop (v2.7)**
+  - Detects disabled RESERVE buttons (booking window not yet open)
+  - Extracts button disabled states and tooltip messages
+  - Fast retry loop: 9 attempts × 5s = 45s coverage of critical first minute
+  - Page reload and re-check every 5 seconds until window opens
+  - Breaks immediately when booking window opens
+  - Meets <60s booking KPI even with early triggers
+  - Priority order: reserved > disabled button > cancelled > not reservable > full > available
+  - Prevents "Booking result unclear" errors
+  - Outer retry loop reduced from 12 to 3 attempts (disabled button case handled separately)
 - ✅ **COMPLETED: User Profile Management (v2.8)**
   - Email update with password verification and email confirmation
   - Password change with current password verification
