@@ -14,7 +14,28 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Recent Updates (v2.7):**
+**Recent Updates (v2.9):**
+- **Priority 1 Auth Security & UX Improvements** - Production-ready authentication
+  - Password confirmation field on signup (prevents typo lockouts)
+  - Resend verification on login page (unverified email recovery)
+  - Bot protection with Cloudflare Turnstile (prevents automated signups)
+  - Persistent notifications (no auto-dismiss, user-controlled)
+  - Email change verification notifications (context-aware messaging)
+  - Consistent 1-hour expiration across all auth links
+  - Fixed Turnstile duplicate widget rendering in React Strict Mode
+  - Auth workflow grade: A- (up from B+)
+
+**Previous Updates (v2.8):**
+- **User Profile Management** - Complete profile settings page
+  - Email update with password verification and email confirmation
+  - Password change with current password verification
+  - Account deletion with two-step confirmation
+  - Email verification notifications (success/error messages)
+  - Support for Supabase "Double Confirm Email Changes" setting
+  - Hash parameter detection for email verification callbacks
+  - Comprehensive error handling for expired verification links
+
+**Previous Updates (v2.7):**
 - **Enhanced class status detection** (6 states: available, window not open, reserved, full, cancelled, not reservable)
 - **Duplicate booking prevention** with idempotency keys and pending attempt checks
 - **Smart retry logic**: Only retries temporary failures (class full), not permanent ones (cancelled, not reservable)
@@ -36,6 +57,44 @@ This document provides Claude with essential context about the My Workout Schedu
 
 ---
 
+## Development Workflow Preferences
+
+### Pull Request Creation
+**Always provide PR title and description automatically after pushing to remote.**
+
+When the following conditions are met:
+1. All requested work is complete
+2. Changes are committed to git
+3. Changes are pushed to remote branch (`git push origin <branch>`)
+4. Git status shows "working tree clean"
+
+**Automatically provide:**
+- Professional PR title (concise, descriptive)
+- Comprehensive PR description including:
+  - Summary of changes
+  - Detailed change breakdown
+  - Testing notes
+  - Security considerations (if applicable)
+  - Known limitations (if applicable)
+
+**Format:**
+```markdown
+## PR Title
+<concise-title>
+
+## PR Description
+<comprehensive-description>
+```
+
+**User can still request explicitly** with phrases like:
+- "ready for PR"
+- "need PR title and description"
+- "create PR content"
+
+**Note:** This applies even when GitHub might auto-populate from single commits, to ensure consistency and comprehensive documentation.
+
+---
+
 ## Tech Stack
 
 - **Frontend/Backend:** Next.js 14 (App Router) with TypeScript
@@ -43,8 +102,8 @@ This document provides Claude with essential context about the My Workout Schedu
 - **Database & Auth:** Supabase (PostgreSQL + built-in auth)
 - **Automation:** Inngest (event-driven orchestration) + Puppeteer (headless Chrome)
 - **Date/Time:** date-fns and date-fns-tz for timezone handling
+- **Email Service:** Resend (production domain: beerock.com with DKIM)
 - **Hosting:** Vercel
-- **Notifications:** Resend or SendGrid (planned)
 
 ---
 
@@ -112,17 +171,21 @@ my-workout-scheduler/
 │   ├── actions/             # Server actions for form submissions
 │   │   ├── gym-credentials.ts      # Gym credential CRUD operations
 │   │   ├── recurring-classes.ts    # Schedule CRUD operations
-│   │   └── user-settings.ts        # User settings operations
+│   │   ├── user-settings.ts        # User settings operations
+│   │   └── profile.ts              # Profile management operations
 │   ├── api/
 │   │   └── inngest/         # Inngest webhook endpoint
 │   ├── dashboard/           # Protected dashboard
 │   │   ├── page.tsx         # Main dashboard landing
 │   │   ├── credentials/     # Gym credentials management
-│   │   └── schedule/        # Schedule management pages
+│   │   ├── schedule/        # Schedule management pages
+│   │   └── profile/         # User profile management
 │   ├── layout.tsx           # Root layout
 │   ├── page.tsx             # Landing page
 │   └── globals.css          # Global styles
 ├── components/              # Reusable React components
+│   ├── EmailVerificationNotification.tsx  # Email verification notifications
+│   └── ProfileForm.tsx      # Profile management form
 ├── lib/
 │   ├── supabase/           # Supabase client configuration
 │   │   ├── client.ts       # Browser client
@@ -163,11 +226,16 @@ my-workout-scheduler/
 - **`app/dashboard/page.tsx`** - Main dashboard landing page
 - **`app/dashboard/credentials/page.tsx`** - Gym credentials management form
 - **`app/dashboard/schedule/page.tsx`** - Schedule list view with CRUD operations
+- **`app/dashboard/profile/page.tsx`** - User profile management page
 - **`app/actions/recurring-classes.ts`** - Server actions for schedule CRUD operations
 - **`app/actions/gym-credentials.ts`** - Server actions for credential management
 - **`app/actions/user-settings.ts`** - Server actions for user settings (pause toggle)
+- **`app/actions/profile.ts`** - Server actions for profile management (email, password, account deletion)
+- **`components/ProfileForm.tsx`** - Profile management form component
+- **`components/EmailVerificationNotification.tsx`** - Email verification notification component
 - **`lib/encryption.ts`** - Handles AES-256-GCM encryption for gym credentials
 - **`lib/date-utils.ts`** - Date/time utilities (booking window calculations, timezone handling)
+- **`lib/env-utils.ts`** - Environment utilities (URL resolution, email config, environment detection)
 - **`lib/supabase/database.ts`** - Database query helpers (CRUD operations)
 - **`middleware.ts`** - Protects routes, redirects unauthenticated users to login
 
@@ -397,6 +465,156 @@ Each recurring class has a timezone setting (e.g., "America/New_York"). System u
 
 **Files:** `lib/date-utils.ts` (primary), `scripts/booking-automation.ts`, `inngest/bookClass.ts`
 
+### 10. Environment Variable Strategy
+
+**Comprehensive environment management** implemented with multi-environment support:
+
+**Environment Utilities (`lib/env-utils.ts`):**
+- `getSiteUrl()` - Dynamic URL resolution with priority order:
+  1. NEXT_PUBLIC_SITE_URL (explicit override, production only)
+  2. VERCEL_URL (auto-injected by Vercel for preview/production)
+  3. http://localhost:3000 (local development fallback)
+- `getEmailConfig()` - Environment-aware email sender configuration
+- `getEnvironment()` - Detects current environment (development/preview/production)
+- `getResendApiKey()` - Validates and returns Resend API key
+- `validateEnv()` - Validates all required environment variables
+
+**Email Configuration:**
+- **Production:** `noreply@beerock.com` (custom domain with DKIM signing)
+- **Preview:** `onboarding@resend.dev` (Resend test sender) + "(Preview)" in name
+- **Development:** `onboarding@resend.dev` (Resend test sender) + "(Local)" in name
+
+**Security Best Practices:**
+- Separate API keys for production vs development/preview
+- Production keys restricted to specific domain (beerock.com)
+- "Sending Access" permissions only (not Full Access)
+- Different encryption keys per environment
+- All sensitive variables marked as "Sensitive" in Vercel
+
+**Documentation:**
+- `docs/ENVIRONMENT_VARIABLES_STRATEGY.md` - Comprehensive strategy (360 lines)
+- `docs/ENV_QUICK_REFERENCE.md` - Quick reference guide (310 lines)
+- `docs/PRODUCTION_EMAIL_SETUP.md` - Production email setup (completed ✅)
+- `.env.example` - Documented template with 8 organized sections
+
+**Testing:**
+- `test-env-setup.ts` - Environment validation test script
+- `test-resend-email.ts` - Email sending test script
+
+**Files:** `lib/env-utils.ts`, `docs/ENVIRONMENT_VARIABLES_STRATEGY.md`, `docs/ENV_QUICK_REFERENCE.md`, `docs/PRODUCTION_EMAIL_SETUP.md`
+
+### 11. User Profile Management
+
+Users can manage their account settings through the profile page at `/dashboard/profile`.
+
+**Features:**
+
+**Email Update:**
+- Requires current password verification (proves user identity)
+- Sends confirmation email to new address
+- Supabase "Double Confirm Email Changes" setting determines email flow:
+  - **Disabled**: One email to new address only (recommended with password verification)
+  - **Enabled**: Two emails - one to old address, one to new address (requires both confirmations)
+- Email verification notifications show success/error messages on dashboard
+
+**Password Change:**
+- Requires current password verification
+- Validates new password strength (minimum 6 characters)
+- Immediate effect after successful change
+
+**Account Deletion:**
+- Two-step confirmation process (checkbox + password)
+- Requires password verification
+- Uses service role client for admin deletion
+- Automatically cascades to related data (if RLS policies configured)
+
+**Email Verification Flow:**
+
+1. **User updates email** → Enters password → Submits form
+2. **Server verifies password** → Calls Supabase `updateUser()` → Email sent
+3. **User clicks link in email** → Redirected to dashboard with hash parameters
+4. **EmailVerificationNotification component** detects hash parameters:
+   - Success: `#type=email_change` or `#message=Confirmation+link+accepted`
+   - Error: `#error=...` or `#error_description=...`
+5. **Notification shown** → Auto-dismisses after 10 seconds
+
+**Hash Parameter Detection:**
+
+The system detects email verification in multiple ways:
+- `type=email_change` (email update when double confirm disabled)
+- `type=signup` (initial signup verification)
+- `message=Confirmation link accepted` (when double confirm enabled)
+- `error` or `error_description` (for expired/invalid links)
+- `access_token` presence with `type` parameter
+
+**Configuration Documentation:**
+- `docs/SUPABASE_EMAIL_SETTINGS.md` - Complete guide for configuring Supabase email settings
+- Explains security considerations of password verification vs double confirm
+- Step-by-step instructions for finding and toggling the setting
+
+**Files:** `app/actions/profile.ts`, `components/ProfileForm.tsx`, `components/EmailVerificationNotification.tsx`, `app/dashboard/profile/page.tsx`, `docs/SUPABASE_EMAIL_SETTINGS.md`
+
+### 12. User Deletion Administration
+
+**Admin-level user deletion with audit logging** for managing test users and cleanup operations.
+
+**Template Scripts (Public - Safe to Commit):**
+
+Scripts are provided as templates with example emails that can be safely committed to version control:
+
+1. **`scripts/delete-users-with-logging.sql`** - Bulk user deletion
+   - Creates `deleted_users_audit` table with RLS enabled (service role only)
+   - Shows preview before deletion
+   - Logs user details: email, class count, booking count, metadata
+   - Verifies deletion and shows summary statistics
+   - Uses example emails (`admin@example.com`, `owner@example.com`)
+
+2. **`scripts/delete-single-user.sql`** - Single user deletion
+   - Detailed user preview before deletion
+   - Audit logging with RLS security
+   - Uses example email (`user@example.com`)
+
+3. **`scripts/user-deletion-queries.md`** - Quick reference queries
+   - Preview, deletion, audit, and verification queries
+   - All with example emails
+
+**Usage Workflow:**
+
+```bash
+# 1. Copy templates to private folder (gitignored)
+cp scripts/delete-users-with-logging.sql scripts/private/
+cp scripts/delete-single-user.sql scripts/private/
+cp scripts/user-deletion-queries.md scripts/private/
+
+# 2. Edit files in scripts/private/ to replace example emails with real ones
+# 3. Run customized scripts in Supabase SQL Editor
+```
+
+**Security Features:**
+
+- `deleted_users_audit` table has RLS enabled (service role access only)
+- Template files use example emails (safe for public repo)
+- Customized files in `scripts/private/` are gitignored
+- No exposure of admin identities or real email addresses
+
+**Cascade Deletion:**
+
+When a user is deleted from `auth.users`, these automatically delete via `ON DELETE CASCADE`:
+- ✅ `gym_credentials` - User's gym login info
+- ✅ `recurring_classes` - User's class schedules
+- ✅ `booking_attempts` - All booking history
+- ✅ `user_settings` - User preferences
+
+**Known Limitation:**
+
+⚠️ **Inngest scheduled events are NOT canceled** when users are deleted. Scheduled booking events will still trigger but fail gracefully:
+- Booking function calls `getClassById()` which returns `null`
+- Function exits early with "Class not found" message
+- No actual booking attempt is made
+- Acceptable for MVP; could add event cancellation in future
+
+**Files:** `scripts/delete-users-with-logging.sql`, `scripts/delete-single-user.sql`, `scripts/user-deletion-queries.md`, `scripts/private/README.md`
+
 ---
 
 ## Operational Notes
@@ -509,26 +727,46 @@ USING (auth.uid() = user_id);
 
 ### Environment Variables
 
-**Local development (`.env.local`):**
+**Comprehensive environment variable strategy implemented** - See `docs/ENVIRONMENT_VARIABLES_STRATEGY.md` and `docs/ENV_QUICK_REFERENCE.md` for full details.
+
+**Required variables (`.env.local`):**
 ```env
+# Core Application
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+
+# Security
 ENCRYPTION_KEY=...  # Generate with: openssl rand -base64 32
+
+# Event Automation
 INNGEST_EVENT_KEY=...
 INNGEST_SIGNING_KEY=...
-PUPPETEER_SKIP_DOWNLOAD=true  # For Vercel deployment
+
+# Email Service (Resend)
+RESEND_API_KEY=...  # Get from https://resend.com/api-keys
+RESEND_FROM_EMAIL=onboarding@resend.dev  # Dev: use test sender
+RESEND_FROM_NAME=My Workout Scheduler
+
+# Deployment
+PUPPETEER_SKIP_DOWNLOAD=true  # Required for Vercel builds
 ```
 
-**Inngest configuration:**
-- Sign up at https://inngest.com
-- Create new app, copy Event Key and Signing Key
-- Set both keys in `.env.local` and Vercel
+**Multi-environment configuration:**
+- **Production:** Custom domain email (`noreply@beerock.com`), domain-restricted API key
+- **Preview:** Test sender (`onboarding@resend.dev`), unrestricted API key
+- **Development:** Test sender (`onboarding@resend.dev`), unrestricted API key
 
-**Vercel environment variables:**
-- Same as local `.env.local`
+**Vercel setup:**
 - Set in Vercel Dashboard → Settings → Environment Variables
-- **Critical:** Add `PUPPETEER_SKIP_DOWNLOAD=true` to prevent build failures
+- Use different secrets for each environment (especially `ENCRYPTION_KEY`)
+- Mark sensitive variables with "Sensitive" checkbox
+- Set `NEXT_PUBLIC_SITE_URL` only in Production environment
+
+**For setup instructions:**
+- Environment variables: `docs/ENVIRONMENT_VARIABLES_STRATEGY.md`, `docs/ENV_QUICK_REFERENCE.md`
+- Production email: `docs/PRODUCTION_EMAIL_SETUP.md`
+- Template with comments: `.env.example`
 
 ### Credential Storage
 
@@ -630,6 +868,9 @@ Currently relies on manual testing. Consider adding:
 - `docs/My Workout Scheduler PRD.md` - Full product spec
 - `docs/BOOKING_AUTOMATION.md` - Automation system details
 - `docs/PRODUCTION_TESTING.md` - Production testing guide (v2.7+)
+- `docs/ENVIRONMENT_VARIABLES_STRATEGY.md` - Environment variable strategy (comprehensive)
+- `docs/ENV_QUICK_REFERENCE.md` - Environment variables quick reference
+- `docs/PRODUCTION_EMAIL_SETUP.md` - Production email setup guide (completed ✅)
 - `docs/GITHUB_ACTIONS_SETUP.md` - GitHub Actions setup guide
 - `docs/YMCA_BOOKING_FLOW_CONFIRMED.md` - Confirmed booking flow
 
@@ -637,6 +878,7 @@ Currently relies on manual testing. Consider adding:
 - `docs/DATABASE_SETUP.md` - Database setup guide
 - `docs/TESTING_BOOKINGS.md` - Testing instructions
 - `docs/BACKLOG.md` - Future enhancements
+- `.env.example` - Environment variables template
 
 ---
 
@@ -711,6 +953,12 @@ npm install
 
 # Run development server
 npm run dev
+
+# Test environment variables
+npx tsx test-env-setup.ts
+
+# Test email sending
+npx tsx test-resend-email.ts your@email.com
 
 # Test encryption
 npx tsx test-encryption.ts
@@ -796,5 +1044,7 @@ await supabase
 - **v1.4** - Timezone bug fixes, centralized date utilities, server actions refactor
 - **v2.0** - Inngest migration: event-driven architecture, intelligent retry logic, 100% free tier
 - **v2.7** - Enhanced class status detection (6 states), duplicate prevention with idempotency keys, smart retry logic
+- **v2.8** - User profile management (email/password update, account deletion), email verification notifications, environment variable strategy, production email setup (Resend with beerock.com domain, DKIM signing)
+- **v2.9** - User deletion administration: Template-based SQL scripts with audit logging, RLS-secured audit table, cascade deletion for related data, example emails for safe public commits
 
-**Last Updated:** November 17, 2025
+**Last Updated:** November 21, 2025

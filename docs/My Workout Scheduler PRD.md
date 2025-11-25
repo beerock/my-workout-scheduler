@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.7
+**Version:** 2.9
 **Product Owner:** Brock Busby
-**Last Updated:** November 17, 2025
+**Last Updated:** November 23, 2025
 **Status:** Production - Deployed and Testing
 
 
@@ -69,6 +69,22 @@
   - Critical for classes that appear after "Load more results"
   - Prevents click failures on elements outside viewport
   - Smooth scrolling with 500ms animation delay
+- ✅ **COMPLETED: User Profile Management (v2.8)**
+  - Email update with password verification and email confirmation
+  - Password change with current password verification
+  - Account deletion with two-step confirmation
+  - Email verification notifications (success/error messages)
+  - Support for Supabase "Double Confirm Email Changes" setting
+  - Comprehensive documentation for email configuration
+- ✅ **COMPLETED: Authentication Security & UX Improvements (v2.9)**
+  - Password confirmation field on signup page (prevents typo lockouts)
+  - Resend verification feature on login page (unverified email recovery)
+  - Bot protection with Cloudflare Turnstile (prevents automated signups)
+  - Persistent notifications (no auto-dismiss, user-controlled dismissal only)
+  - Email change verification notifications (context-aware messaging)
+  - Consistent 1-hour expiration across all auth links
+  - Fixed Turnstile duplicate widget rendering in React Strict Mode
+  - Auth workflow grade: A- (up from B+)
 
 **Major Changes from v1.0:**
 
@@ -129,12 +145,21 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 
 ### 3.1 User Management
 
-| Feature | Description | Priority |
-| :---- | :---- | :---- |
-| **Account Creation** | Email/password registration via Supabase Auth | High |
-| **Login** | Basic login page | High |
-| **Credential Storage** | Securely store gym website login credentials (Supabase encrypted) | High |
-| **Gym Configuration** | Set gym URL and default branch | High |
+| Feature | Description | Priority | Status |
+| :---- | :---- | :---- | :---- |
+| **Account Creation** | Email/password registration via Supabase Auth | High | ✅ |
+| **Login** | Basic login page | High | ✅ |
+| **Credential Storage** | Securely store gym website login credentials (Supabase encrypted) | High | ✅ |
+| **Gym Configuration** | Set gym URL and default branch | High | ✅ |
+| **Profile Management** | Update email, password, and account settings | High | ✅ |
+| **Email Update** | Change email with password verification and email confirmation | High | ✅ |
+| **Password Update** | Change password with current password verification | High | ✅ |
+| **Account Deletion** | Delete account with two-step confirmation and password verification | Medium | ✅ |
+| **Email Verification Notifications** | Show success/error messages after email verification | Medium | ✅ |
+| **Password Confirmation** | Confirm password on signup to prevent typo lockouts | High | ✅ |
+| **Resend Verification on Login** | Resend verification email from login page for unverified accounts | High | ✅ |
+| **Bot Protection** | Cloudflare Turnstile captcha on signup page | High | ✅ |
+| **Persistent Notifications** | User-controlled dismissal for all auth notifications | Medium | ✅ |
 
 ### 3.2 Schedule Management ✅ COMPLETE
 
@@ -462,10 +487,12 @@ booking\_attempts (
 
 **Days 11-12: Dashboard & Notifications**
 
-- [ ] Build status dashboard page  
-- [ ] Show booking history (last 30 days)  
-- [ ] Set up email service (Resend/SendGrid)  
-- [ ] Send booking confirmation emails  
+- [ ] Build status dashboard page
+- [ ] Show booking history (last 30 days)
+- [x] Set up email service (Resend) - ✅ Completed
+  - Development: `onboarding@resend.dev`
+  - Production: `noreply@beerock.com` (domain verified, DKIM enabled)
+- [ ] Send booking confirmation emails
 - [ ] Send failure alert emails
 
 **Days 13-14: Testing & Launch**
