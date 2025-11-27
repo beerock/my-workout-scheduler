@@ -78,7 +78,7 @@ async function testBookingQuery() {
   console.log('Filtering criteria:')
   console.log('  - active = true')
   console.log('  - schedule_paused = false')
-  console.log('  - next_skip_date IS NULL OR != today')
+  console.log('  - skip_next_occurrence = false (skip logic handled by Inngest)')
   console.log('  - user has gym credentials\n')
   
   const classesNeedingBooking = classes?.filter(c => {
@@ -91,12 +91,10 @@ async function testBookingQuery() {
     if (!usersWithCreds.has(c.user_id)) {
       return false
     }
-    
-    // Check skip date
-    if (c.next_skip_date === today) {
-      return false // Skip today
-    }
-    
+
+    // Note: Skip logic is handled by Inngest (not here in getClassesNeedingBooking)
+    // We don't filter by skip_next_occurrence here
+
     return true
   }) || []
   
@@ -107,10 +105,10 @@ async function testBookingQuery() {
   } else {
     classesNeedingBooking.forEach((c, i) => {
       const creds = credentials?.find(cred => cred.user_id === c.user_id)
-      const skipInfo = c.next_skip_date 
-        ? ` (skip: ${c.next_skip_date})` 
+      const skipInfo = c.skip_next_occurrence
+        ? ` (skip next: ${c.skip_target_datetime || 'yes'})`
         : ''
-      
+
       console.log(`   ${i + 1}. ${c.class_type}`)
       console.log(`      Day: ${c.day_of_week}, Time: ${c.class_time}`)
       console.log(`      Branch: ${c.branch}`)
@@ -118,19 +116,20 @@ async function testBookingQuery() {
       console.log()
     })
   }
-  
-  // Step 5: Test skip date logic
-  console.log('Step 5: Testing skip date logic...\n')
-  const classesWithSkipToday = classes?.filter(c => c.next_skip_date === today) || []
-  console.log(`Classes with skip_date = today (${today}): ${classesWithSkipToday.length}`)
-  
-  if (classesWithSkipToday.length > 0) {
-    classesWithSkipToday.forEach(c => {
+
+  // Step 5: Test skip flag logic
+  console.log('Step 5: Testing skip flag logic...\n')
+  const classesWithSkipActive = classes?.filter(c => c.skip_next_occurrence === true) || []
+  console.log(`Classes with skip_next_occurrence = true: ${classesWithSkipActive.length}`)
+
+  if (classesWithSkipActive.length > 0) {
+    classesWithSkipActive.forEach(c => {
       console.log(`  - ${c.class_type} (ID: ${c.id})`)
+      console.log(`    Skip target: ${c.skip_target_datetime || 'Not set'}`)
     })
-    console.log('\n✅ These classes should be SKIPPED by automation')
+    console.log('\n✅ These classes should be SKIPPED by Inngest on next booking attempt')
   } else {
-    console.log('  (No classes scheduled to skip today)')
+    console.log('  (No classes have skip flag set)')
   }
   
   console.log('\n' + '='.repeat(50))

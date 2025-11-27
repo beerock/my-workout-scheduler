@@ -11,7 +11,6 @@ import {
   getClassesNeedingBooking,
   createBookingAttempt,
   updateBookingAttempt,
-  clearSkipDate,
   type ClassNeedingBooking,
 } from './database-helpers'
 import { bookClass, type BookingParams } from './booking-automation'
