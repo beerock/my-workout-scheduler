@@ -73,6 +73,8 @@
   - Detects disabled RESERVE buttons (booking window not yet open)
   - Extracts button disabled states and tooltip messages
   - Fast retry loop: 9 attempts × 5s = 45s coverage of critical first minute
+  - **Optimized timing (v2.10)**: Checks immediately after detection, then waits only if still disabled
+  - Catches window opening up to 5 seconds faster (immediate retry after detection)
   - Page reload and re-check every 5 seconds until window opens
   - Breaks immediately when booking window opens
   - Meets <60s booking KPI even with early triggers
@@ -105,6 +107,11 @@
 - **v2.3:** Migrated to event-driven architecture for better reliability and cost savings
 - **v2.4:** Production deployment with Inngest → GitHub Actions hybrid architecture
 - **v2.5:** Production testing complete, retry logic validated, removed artificial max retry limits
+- **v2.6:** Enhanced class status detection with fuzzy matching and badge/pill detection
+- **v2.7:** Booking window detection with fast retry loop (disabled button detection)
+- **v2.8:** User profile management with email verification and account controls
+- **v2.9:** Authentication security improvements with bot protection and better UX
+- **v2.10:** Optimized retry timing for faster booking window detection (immediate retry after detection)
 
 ---
 
