@@ -416,6 +416,197 @@ const attemptId = await step.run('create-pending-attempt', async () => {
 
 ---
 
+## Booking Automation Improvements
+
+### Early Exit on Page Load Failure
+
+#### Overview
+Currently, when the schedule page fails to load after a reload during the fast retry loop, the automation continues attempting to search for the class. This could lead to incorrect results or wasted retry attempts on incomplete data.
+
+#### Current Behavior
+- Fast retry loop reloads page every 5 seconds
+- If schedule doesn't load within 10 seconds, a warning is logged
+- Automation continues with potentially incomplete data
+- Class search might fail or return incorrect results
+
+#### Proposed Behavior
+- Detect when schedule fails to load after reload
+- Break out of retry loop early with specific error
+- Avoid searching on incomplete page data
+- Return clear error message indicating page load failure
+
+#### Benefits
+- Prevents false negatives (missing classes due to incomplete page load)
+- Saves retry attempts for actual checks
+- Clearer error messages for debugging
+- Better handling of network issues
+
+#### Implementation Notes
+- Location: `scripts/booking-automation.ts` around line 1432-1443
+- Add counter for consecutive page load failures
+- Break after 2-3 consecutive failures
+- Return specific error: "Schedule page failed to load after multiple attempts"
+
+#### Status
+**Status**: Backlogged - Nice-to-have improvement
+**Priority**: Low
+**Last Updated**: November 27, 2025
+
+---
+
+### Exponential Backoff for Outer Retry Loop
+
+#### Overview
+The outer retry loop (handles cases like class not found, network issues) currently uses fixed 15-second intervals between retries. Implementing exponential backoff could improve resource usage and handle transient failures more gracefully.
+
+#### Current Behavior
+- Outer retry loop: 3 attempts with 15-second fixed delay
+- Timeline: 0s → 15s → 30s (total 30 seconds)
+- Same delay regardless of failure type
+- Located in `scripts/booking-automation.ts` around line 148-154
+
+#### Proposed Behavior
+- Use exponential backoff: 15s → 30s → 60s
+- Timeline: 0s → 15s → 45s (total 45 seconds)
+- Adjust delay based on failure type (optional):
+  - Network errors: longer delays
+  - Class not found: shorter delays
+
+#### Benefits
+- Better handling of transient network issues
+- Reduces load on gym website during issues
+- More sophisticated retry strategy
+- Industry best practice for retry logic
+
+#### Implementation Notes
+- Simple approach: Multiply delay by 2 each retry
+- Formula: `delay = baseDelay * Math.pow(2, retryAttempt)`
+- Example: 15s × 2^0 = 15s, 15s × 2^1 = 30s, 15s × 2^2 = 60s
+- Consider max delay cap (e.g., 60 seconds)
+
+#### Code Location
+```typescript
+// Current (scripts/booking-automation.ts ~line 154)
+const retryDelay = 15000 // Fixed 15 seconds
+
+// Proposed
+const baseDelay = 15000
+const retryDelay = baseDelay * Math.pow(2, attempt)
+```
+
+#### Status
+**Status**: Backlogged - Nice-to-have optimization
+**Priority**: Low
+**Last Updated**: November 27, 2025
+
+---
+
+### Booking Performance Metrics
+
+#### Overview
+Add instrumentation to track booking performance metrics, helping optimize retry logic and identify bottlenecks. This will provide data-driven insights for future improvements.
+
+#### Proposed Metrics
+
+**Timing Metrics:**
+- Time from trigger to booking window opening
+- Time from window opening to successful booking
+- Average time spent in fast retry loop
+- Page load times during retries
+
+**Retry Metrics:**
+- Number of fast retries before window opens
+- Number of outer retries before success/failure
+- Success rate by retry attempt number
+- Percentage of bookings needing retries
+
+**Detection Metrics:**
+- Frequency of disabled button detection
+- Frequency of class full detection
+- Frequency of class not found
+- Cancelled/not reservable class frequency
+
+**Outcome Metrics:**
+- Overall booking success rate
+- Waitlist vs confirmed booking ratio
+- Failure reasons (categorized)
+- Time of day distribution for failures
+
+#### Implementation Approaches
+
+**Option A: Database Table**
+```sql
+CREATE TABLE booking_metrics (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  booking_attempt_id UUID REFERENCES booking_attempts(id),
+  metric_name TEXT NOT NULL,
+  metric_value NUMERIC,
+  metric_unit TEXT, -- 'seconds', 'count', 'boolean'
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Option B: Enhanced booking_attempts Table**
+```sql
+ALTER TABLE booking_attempts ADD COLUMN metrics JSONB;
+-- Example: {"retry_count": 3, "time_to_book_ms": 15234, "page_loads": 4}
+```
+
+**Option C: Application Logging**
+- Enhanced console.log with structured JSON
+- Parse logs for analysis
+- Use existing Inngest/GitHub Actions logs
+- No database changes needed
+
+#### Data to Capture
+
+```typescript
+interface BookingMetrics {
+  // Timing
+  trigger_time: string
+  window_open_time: string | null
+  booking_complete_time: string
+  total_duration_ms: number
+
+  // Retries
+  fast_retry_count: number
+  fast_retry_duration_ms: number
+  outer_retry_count: number
+
+  // Detection
+  disabled_button_detected: boolean
+  class_full_detected: boolean
+  class_cancelled_detected: boolean
+
+  // Page loads
+  page_reload_count: number
+  avg_page_load_ms: number
+  schedule_load_failures: number
+}
+```
+
+#### Benefits
+- Identify optimal retry intervals through real data
+- Detect patterns in booking success/failure
+- Optimize fast retry loop parameters (count, interval)
+- Better understanding of gym website behavior
+- Support data-driven decision making
+
+#### Implementation Notes
+- Start simple: Add basic timing metrics to booking_attempts JSONB column
+- Instrument key points in booking-automation.ts
+- Add metrics collection without changing core logic
+- Store metrics in booking_attempts.metadata or new metrics column
+- Create dashboard view later (post-MVP)
+
+#### Status
+**Status**: Backlogged - Planned before MVP release
+**Priority**: Medium (valuable for optimization)
+**Last Updated**: November 27, 2025
+**Note**: User plans to implement before MVP release
+
+---
+
 ## Multi-Branch Fallback Logic
 
 ### Overview
