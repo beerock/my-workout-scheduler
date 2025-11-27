@@ -8,7 +8,6 @@ import {
   updateBookingAttempt,
   getClassById,
   getAllActiveClasses,
-  clearSkipDate,
   type ClassNeedingBooking,
 } from '@/scripts/database-helpers';
 import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
