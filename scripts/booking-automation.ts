@@ -951,6 +951,7 @@ async function findAndBookClass(
       buttonElement?: any
       status?: 'reserved' | 'available' | 'full'
       debugInfo?: any
+      windowNotOpenMessage?: string
     }> => {
       console.log(`📍 Searching on page: ${page.url()}`)
 
@@ -1416,6 +1417,7 @@ async function findAndBookClass(
     if (searchResult.status === 'full') {
       // Check if booking window hasn't opened yet (disabled button)
       // Fast retry loop: 9 attempts × 5s = 45s to catch window opening
+      // Optimized timing: Check immediately, then wait only if still disabled
       if (searchResult.windowNotOpenMessage) {
         console.log(`⏰ Booking window not open yet - starting fast retry loop`)
         console.log(`   ${searchResult.windowNotOpenMessage}`)
@@ -1424,10 +1426,7 @@ async function findAndBookClass(
         const quickRetryDelay = 5000 // 5 seconds
 
         for (let retry = 0; retry < maxQuickRetries; retry++) {
-          console.log(`⏰ Waiting 5s before retry ${retry + 1}/${maxQuickRetries}...`)
-          await new Promise(resolve => setTimeout(resolve, quickRetryDelay))
-
-          console.log(`🔄 Refreshing page and re-checking booking window...`)
+          console.log(`🔄 Refreshing page and re-checking booking window (attempt ${retry + 1}/${maxQuickRetries})...`)
           console.log(`📍 Current page: ${page.url()}`)
           await page.reload({ waitUntil: 'networkidle2' })
 
@@ -1465,14 +1464,16 @@ async function findAndBookClass(
             }
           }
 
-          // Still disabled, continue retry loop
-          if (searchResult.windowNotOpenMessage) {
-            console.log(`   ⏰ Still disabled: ${searchResult.windowNotOpenMessage}`)
-          }
-
-          // If this was the last retry attempt
-          if (retry === maxQuickRetries - 1) {
-            console.log(`⏰ Booking window did not open after ${maxQuickRetries} retries (${maxQuickRetries * 5}s)`)
+          // Still disabled - wait before next retry (unless this is the last attempt)
+          if (retry < maxQuickRetries - 1) {
+            if (searchResult.windowNotOpenMessage) {
+              console.log(`   ⏰ Still disabled: ${searchResult.windowNotOpenMessage}`)
+            }
+            console.log(`   ⏰ Waiting 5s before next attempt...`)
+            await new Promise(resolve => setTimeout(resolve, quickRetryDelay))
+          } else {
+            // Last attempt failed
+            console.log(`⏰ Booking window did not open after ${maxQuickRetries} retries`)
             return {
               status: 'failed',
               errorMessage: `Could not find or click booking button - ${searchResult.windowNotOpenMessage}`,
