@@ -164,7 +164,9 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
         page,
         classType,
         classTime,
-        branchToUse
+        branchToUse,
+        dayOfWeek,
+        timezone
       )
       
       // If booking succeeded or failed for reasons other than button not found, return
@@ -925,7 +927,9 @@ async function findAndBookClass(
   page: Page,
   classType: string,
   classTime: string,
-  branchUsed: string
+  branchUsed: string,
+  dayOfWeek: number,
+  timezone: string
 ): Promise<{
   status: 'confirmed' | 'waitlisted' | 'failed'
   errorMessage?: string
@@ -1429,6 +1433,16 @@ async function findAndBookClass(
           console.log(`🔄 Refreshing page and re-checking booking window (attempt ${retry + 1}/${maxQuickRetries})...`)
           console.log(`📍 Current page: ${page.url()}`)
           await page.reload({ waitUntil: 'networkidle2' })
+
+          // Re-navigate to the correct day (page reload resets to default day)
+          console.log(`📅 Re-navigating to day ${dayOfWeek} after reload...`)
+          const renavResult = await navigateToDay(page, dayOfWeek, timezone, classTime)
+          if (!renavResult.success) {
+            console.log(`⚠️  Failed to navigate to correct day after reload: ${renavResult.error}`)
+            // Continue anyway - class might still be found
+          } else {
+            console.log(`✅ Successfully navigated to day ${dayOfWeek}`)
+          }
 
           // Wait for schedule to load - ensure class containers appear
           try {
