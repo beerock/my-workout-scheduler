@@ -1490,7 +1490,7 @@ async function findAndBookClass(
             console.log(`⏰ Booking window did not open after ${maxQuickRetries} retries`)
             return {
               status: 'failed',
-              errorMessage: `Could not find or click booking button - ${searchResult.windowNotOpenMessage}`,
+              errorMessage: `Booking window not open after ${maxQuickRetries} retries (${maxQuickRetries * 5}s) - ${searchResult.windowNotOpenMessage}`,
               selectedBranch: branchUsed,
             }
           }
@@ -1510,7 +1510,7 @@ async function findAndBookClass(
         if (searchResult.status !== 'available') {
           return {
             status: 'failed',
-            errorMessage: `Could not find or click booking button - ${searchResult.windowNotOpenMessage || 'Booking window not open'}`,
+            errorMessage: `Booking window not open - ${searchResult.windowNotOpenMessage || 'RESERVE button still disabled after retries'}`,
             selectedBranch: branchUsed,
           }
         }
