@@ -51,7 +51,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
     return {
       status: 'skipped',
       branchUsed: null,
-      errorMessage: `Skipped: next_skip_date equals today (${today})`,
+      errorMessage: `✓ This class was intentionally skipped as requested. The skip has been cleared automatically and your regular schedule will resume next week.`,
     }
   }
 
@@ -99,7 +99,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
       return {
         status: 'failed',
         branchUsed: null,
-        errorMessage: `Login failed: ${loginResult.error}`,
+        errorMessage: `Login failed: ${loginResult.error}\n\nWhat to do: Try logging into your gym website manually. If successful, update your credentials in Dashboard → Gym Credentials. If you can't log in, reset your password on the gym website first.`,
         screenshotPath,
       }
     }
@@ -123,7 +123,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
       return {
         status: 'failed',
         branchUsed: branchResult.selectedBranch || null,
-        errorMessage: `Branch selection failed: ${branchResult.error}`,
+        errorMessage: `Branch selection failed: ${branchResult.error}\n\nWhat to do: Check your gym's website for the exact branch name. Update your class settings to match EXACTLY (including any prefixes like "Asheville - Downtown").`,
         screenshotPath,
       }
     }
@@ -185,7 +185,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
     return {
       status: 'failed',
       branchUsed: null,
-      errorMessage: `Unexpected error: ${errorMessage}`,
+      errorMessage: `Something unexpected went wrong: ${errorMessage}\n\nThis might be a one-time glitch. The system will try again at the next scheduled time.\n\nIf this happens repeatedly (3+ times), please check the error details in booking history and report the issue with screenshots.`,
       screenshotPath,
     }
   } finally {
@@ -1344,7 +1344,7 @@ async function findAndBookClass(
     if (!searchResult.found) {
       return {
         status: 'failed',
-        errorMessage: `Class "${classType}" at ${targetTime} not found on schedule (searched all loaded results)`,
+        errorMessage: `Class "${classType}" at ${targetTime} not found on schedule.\n\nWhy this happens:\n• Class name doesn't match exactly (check for typos)\n• Wrong time, day, or branch selected\n• Gym no longer offers this class\n\nWhat to do:\n1. Go to your gym's website and find the exact class listing\n2. Update your class settings to match EXACTLY\n3. Check the screenshot in booking history to see what classes were found`,
         selectedBranch: branchUsed,
       }
     }
@@ -1353,7 +1353,7 @@ async function findAndBookClass(
     if (searchResult.status === 'reserved') {
       return {
         status: 'confirmed',
-        errorMessage: 'Class already reserved',
+        errorMessage: '✅ Great news! This class is already booked. Nothing to do - you\'re all set!',
         selectedBranch: branchUsed,
       }
     }
@@ -1413,7 +1413,7 @@ async function findAndBookClass(
             console.log(`✅ Class already reserved (booked by someone else or another process)`)
             return {
               status: 'confirmed',
-              errorMessage: 'Class already reserved',
+              errorMessage: '✅ Great news! This class is already booked. Nothing to do - you\'re all set!',
               selectedBranch: branchUsed,
             }
           }
@@ -1430,7 +1430,7 @@ async function findAndBookClass(
             console.log(`⏰ Booking window did not open after ${maxQuickRetries} retries`)
             return {
               status: 'failed',
-              errorMessage: `Booking window not open after ${maxQuickRetries} retries (${maxQuickRetries * 5}s) - ${searchResult.windowNotOpenMessage}`,
+              errorMessage: `Booking window not yet open. We tried ${maxQuickRetries} times over ${maxQuickRetries * 5} seconds to catch the window.\n\n${searchResult.windowNotOpenMessage}\n\nIf this keeps happening, the booking window time may be set incorrectly. Check your class settings and verify the "booking window" time (e.g., "26 hours before class").`,
               selectedBranch: branchUsed,
             }
           }
@@ -1440,7 +1440,7 @@ async function findAndBookClass(
         if (!searchResult.found) {
           return {
             status: 'failed',
-            errorMessage: `Class disappeared from schedule after page reload - may have been cancelled or removed`,
+            errorMessage: `Class disappeared from schedule after page reload. This usually means the gym cancelled or removed the class.\n\nWhat to do: Check your gym's website to verify the class status. If cancelled, remove it from your schedule.`,
             selectedBranch: branchUsed,
           }
         }
@@ -1450,7 +1450,7 @@ async function findAndBookClass(
         if (searchResult.status !== 'available') {
           return {
             status: 'failed',
-            errorMessage: `Booking window not open - ${searchResult.windowNotOpenMessage || 'RESERVE button still disabled after retries'}`,
+            errorMessage: `Booking window not yet open - ${searchResult.windowNotOpenMessage || 'RESERVE button still disabled after retries'}\n\nThe system tried ${maxQuickRetries} times but the booking window hasn't opened yet. This may mean the booking window time is configured incorrectly in your settings.`,
             selectedBranch: branchUsed,
           }
         }
@@ -1463,7 +1463,7 @@ async function findAndBookClass(
       if (debugText.includes('cancelled')) {
         return {
           status: 'failed',
-          errorMessage: 'Class is cancelled - booking not possible',
+          errorMessage: 'This class has been cancelled by the gym and cannot be booked.\n\nWhy this happens: Instructor unavailable, low attendance, or schedule changes.\n\nWhat to do: Remove this class from your schedule (Dashboard → Schedule → Delete). Check your gym\'s website for the class status or alternative times.',
           selectedBranch: branchUsed,
         }
       }
@@ -1471,7 +1471,7 @@ async function findAndBookClass(
       if (debugText.includes('not reservable')) {
         return {
           status: 'failed',
-          errorMessage: 'Class is not reservable - booking not possible',
+          errorMessage: 'This class cannot be reserved online.\n\nWhy this happens: May require special registration, restricted membership level, or in-person booking only.\n\nWhat to do: Contact your gym to ask about booking requirements. Remove from automated schedule if it can\'t be booked online.',
           selectedBranch: branchUsed,
         }
       }
@@ -1480,7 +1480,7 @@ async function findAndBookClass(
       // IMPORTANT: Error message MUST contain "full" to trigger retry logic
       return {
         status: 'failed',
-        errorMessage: 'Class is full - no waitlist option available. Will retry in case spots open up.',
+        errorMessage: 'Class is currently full, but don\'t worry - we\'ve got you covered!\n\nWe\'ll automatically keep trying every 15 minutes until the class starts. If someone cancels, we\'ll grab that spot for you. No action needed - just sit back and relax!',
         selectedBranch: branchUsed,
       }
     }
@@ -1648,7 +1648,7 @@ async function findAndBookClass(
 
       return {
         status: 'failed',
-        errorMessage: 'Could not find or click booking button for the class',
+        errorMessage: 'Found your class but couldn\'t click the booking button.\n\nWhy this happens: Website layout changed, button has different ID, or network slowness.\n\nWhat to do: Try manually booking to verify button exists. Check screenshot in booking history. If this persists, report the issue.',
         selectedBranch: branchUsed,
       }
     }
@@ -1769,7 +1769,7 @@ async function findAndBookClass(
     if (!secondButton) {
       return {
         status: 'failed',
-        errorMessage: 'No RESERVE button found on class description page',
+        errorMessage: 'No RESERVE button found on class description page.\n\nWhy this happens: Class may not allow online reservations, website changed, or wrong class selected.\n\nWhat to do: Try booking manually through gym website to verify. Check screenshot in booking history to see what page we landed on.',
         selectedBranch: branchUsed,
       }
     }
@@ -1809,7 +1809,7 @@ async function findAndBookClass(
       console.log('⚠️  Concurrent booking conflict detected - user already has a class at this time')
       return {
         status: 'failed',
-        errorMessage: 'Cannot book - you already have a class scheduled at this time (conflicts with existing reservation)',
+        errorMessage: 'You already have another class booked at this time.\n\nWhat to do:\n1. Log into your gym account and find your existing reservation\n2. Cancel it if you prefer this class instead\n3. Or adjust your schedule to avoid the conflict (Dashboard → Schedule)\n\nGyms don\'t allow double-booking the same time slot.',
         selectedBranch: branchUsed,
       }
     }
@@ -1850,7 +1850,7 @@ async function findAndBookClass(
     console.log('⚠️  Booking result unclear')
     return {
       status: 'failed',
-      errorMessage: 'Booking result unclear after clicking RESERVE button - check screenshots',
+      errorMessage: 'Booking result unclear after clicking RESERVE button.\n\nWhat to do RIGHT NOW:\n1. Check your gym account to see if the class was booked\n2. Check the screenshots in booking history to see what happened\n3. If booked: Great! You\'re all set (ignore this error)\n4. If not booked: Try booking manually or check the error in screenshots',
       selectedBranch: branchUsed,
     }
   } catch (error) {
