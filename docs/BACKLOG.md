@@ -651,6 +651,241 @@ When a class is not available at the primary branch, automatically attempt to bo
 
 ---
 
+## User Troubleshooting Guide
+
+### Overview
+Create comprehensive user-facing documentation to help users diagnose and fix common booking failures. This guide would be linked from error messages and dashboard to provide self-service support.
+
+### Context
+From failure scenarios audit (v2.10), we identified 16 different failure types. Many have simple fixes (typos in class name, wrong time, etc.) but users currently don't know how to debug these issues.
+
+### Requirements
+
+**1. Common Failure Scenarios Section**
+For each of the 16 failure types, provide:
+- What this error means (plain language)
+- Why it happens (common causes)
+- How to fix it (step-by-step)
+- When to contact support
+
+**2. Self-Service Debugging Tools**
+- Class name validator (check if class exists on gym website)
+- Time zone checker (verify class time in your timezone)
+- Booking window calculator (show when window opens)
+- Credentials tester (verify gym login works)
+
+**3. Quick Fixes Checklist**
+```markdown
+Before contacting support, check:
+□ Class name matches gym website exactly (case-sensitive)
+□ Class time is correct (AM/PM, timezone)
+□ Day of week is correct
+□ Branch name is accurate
+□ Your gym credentials are up to date
+□ Class hasn't been cancelled by gym
+```
+
+**4. Screenshots & Examples**
+- Show gym website screenshots with labels
+- Point out where to find class name, time, branch
+- Example of correct vs incorrect configuration
+
+### Proposed Sections
+
+**Troubleshooting Guide Structure:**
+1. Introduction (how to use this guide)
+2. Quick Fixes Checklist
+3. Common Errors by Category
+   - Configuration Errors (class not found, wrong time, wrong branch)
+   - Credential Issues (login failed, password changed)
+   - Temporary Failures (class full, booking window not open)
+   - Permanent Failures (class cancelled, not reservable)
+4. Self-Service Tools
+5. When to Contact Support
+6. FAQ
+
+### Implementation Notes
+
+**Location:** Create `docs/USER_TROUBLESHOOTING_GUIDE.md`
+
+**Link from:**
+- Error messages (include URL to specific section)
+- Dashboard help button
+- Email notifications (future)
+- 404/error pages
+
+**Dependencies:**
+- Failure scenarios audit (completed in v2.10)
+- Error message improvements (future session)
+- User notifications system (future)
+
+### Example Entry
+
+```markdown
+### Error: "Class not found on schedule"
+
+**What this means:**
+We couldn't find your class when searching the gym's class schedule. This usually means there's a small difference between your configuration and what the gym website shows.
+
+**Common causes:**
+• Class name has a typo or different spelling
+• Class time is incorrect (AM/PM mix-up)
+• Wrong day of week selected
+• Wrong branch selected
+
+**How to fix:**
+1. Go to your gym's website and find the class
+2. Copy the exact class name (including capitalization)
+3. Note the exact time (verify AM/PM)
+4. Verify the day and branch
+5. Update your recurring class in the dashboard
+6. Try booking again
+
+**Still not working?**
+Check our [Class Name Examples](#class-name-examples) or [contact support](#support).
+```
+
+### Benefits
+- Reduces support burden (users can self-serve)
+- Faster problem resolution (no wait for support)
+- Better user experience (empowering vs frustrating)
+- Lower churn (users don't give up due to confusion)
+
+### Status
+**Status**: Backlogged - Recommended after error messaging improvements
+**Priority**: Medium (post-MVP, but important for UX)
+**Dependencies**: Error messaging improvement session, failure scenarios audit
+**Last Updated**: November 28, 2025
+**Estimated Effort**: 4-6 hours (writing + examples + screenshots)
+
+---
+
+## Retry Status Indicators in Dashboard
+
+### Overview
+Show real-time retry status in the dashboard so users know when the system is actively retrying a booking and when they need to take action. Currently, users must guess whether failures are temporary or permanent.
+
+### Context
+From failure scenarios audit (v2.10):
+- 2 scenarios trigger automatic retries (booking window not open, class full)
+- 14 scenarios fail immediately (permanent failures)
+- Users have no visibility into which category their failure falls into
+
+### Requirements
+
+**1. Status Badge on Booking History**
+```
+✅ Confirmed          (green badge)
+⏳ Retrying           (yellow badge, animated)
+❌ Failed - Action Needed  (red badge)
+⏭️ Skipped            (gray badge)
+```
+
+**2. Retry Information Panel**
+When status is "Retrying", show:
+- What we're retrying for (e.g., "Class is full - waiting for spots to open")
+- Retry schedule (e.g., "Checking every 15 minutes")
+- Next retry time (e.g., "Next attempt: Friday 3:45 PM")
+- Time remaining (e.g., "Will retry until class starts (2h 15m remaining)")
+- Attempts so far (e.g., "Attempt 3 of unlimited")
+
+**3. Action Required Callout**
+When status is "Failed - Action Needed", show:
+- Clear description of problem
+- Why it needs manual action
+- Step-by-step fix instructions
+- Link to troubleshooting guide
+
+### Proposed UI
+
+```
+┌─────────────────────────────────────────────────────┐
+│ BODYPUMP • Monday 4:15 PM                           │
+│ ⏳ Retrying - Class is full                         │
+├─────────────────────────────────────────────────────┤
+│ We're automatically checking for open spots.        │
+│                                                     │
+│ 📅 Next attempt: Monday 3:00 PM                     │
+│ ⏱️ Checking every 15 minutes until 4:15 PM         │
+│ 🔄 Attempt 8 (no limit)                            │
+│                                                     │
+│ [Cancel Retry] [View Details]                      │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ Racquetball • Saturday 12:30 PM                     │
+│ ❌ Failed - Action Needed                           │
+├─────────────────────────────────────────────────────┤
+│ Class "Raquetball" not found on schedule.          │
+│                                                     │
+│ This usually means:                                 │
+│ • Typo in class name (check spelling)              │
+│ • Wrong time or day selected                       │
+│                                                     │
+│ Quick fix:                                          │
+│ 1. Check gym website for exact class name          │
+│ 2. Update class name in settings                   │
+│ 3. We'll try again at next scheduled time          │
+│                                                     │
+│ [Edit Class] [Troubleshooting Guide]               │
+└─────────────────────────────────────────────────────┘
+```
+
+### Implementation Notes
+
+**Database Changes:**
+```sql
+ALTER TABLE booking_attempts ADD COLUMN retry_status TEXT;
+-- Values: 'no_retry', 'retrying', 'retry_exhausted'
+
+ALTER TABLE booking_attempts ADD COLUMN next_retry_at TIMESTAMPTZ;
+ALTER TABLE booking_attempts ADD COLUMN retry_count INTEGER DEFAULT 0;
+```
+
+**Frontend Components:**
+- `<RetryStatusBadge />` - Colored badge with icon
+- `<RetryInfoPanel />` - Expandable details panel
+- `<ActionRequiredCallout />` - Error with fix steps
+
+**Real-time Updates:**
+- Polling: Refresh every 30 seconds when retry active
+- Or: WebSocket for real-time status (post-MVP)
+
+**Code Locations:**
+- `app/dashboard/page.tsx` - Booking history list
+- `components/BookingAttemptCard.tsx` - Individual attempt display
+- `lib/inngest/functions.ts` - Update retry_status, next_retry_at
+
+### User Stories
+
+**As a user with a full class:**
+- I want to see that the system is still trying
+- I want to know when the next attempt will be
+- I want to cancel the retry if I change my mind
+
+**As a user with a config error:**
+- I want to know immediately that I need to fix something
+- I want clear instructions on what to fix
+- I want to easily access settings to make the fix
+
+### Benefits
+- Reduces anxiety (users know system is working)
+- Clearer action items (know when manual intervention needed)
+- Better trust (transparency in automation)
+- Fewer support requests ("Is it still trying?")
+
+### Status
+**Status**: Backlogged - Recommended after user notifications
+**Priority**: Medium (post-MVP UX improvement)
+**Dependencies**:
+- Failure scenarios audit (completed)
+- User notifications system (for retry status updates)
+- Error messaging improvements
+**Last Updated**: November 28, 2025
+**Estimated Effort**: 6-8 hours (DB changes + UI components + integration)
+
+---
+
 ## Performance Optimizations
 
 ### Browser Session Reuse for Same User
