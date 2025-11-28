@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.9
+**Version:** 2.10
 **Product Owner:** Brock Busby
-**Last Updated:** November 23, 2025
+**Last Updated:** November 28, 2025
 **Status:** Production - Deployed and Testing
 
 
@@ -80,7 +80,18 @@
   - Meets <60s booking KPI even with early triggers
   - Priority order: reserved > disabled button > cancelled > not reservable > full > available
   - Prevents "Booking result unclear" errors
-  - Outer retry loop reduced from 12 to 3 attempts (disabled button case handled separately)
+- ✅ **COMPLETED: Retry Architecture Simplification (v2.10)**
+  - Removed outer retry loop (3×15s) - complexity reduction
+  - Single retry strategy: Fast retry (9×5s) in Puppeteer + Class full retry (15min) in Inngest
+  - Re-navigate to correct day after page reload (fixes day navigation bug)
+  - Prevent outer retry loop for "booking window not open" errors (infinite loop fix)
+  - Cleaner code: -74 lines, simpler logic, easier debugging
+- ✅ **COMPLETED: Failure Scenarios Audit (v2.10)**
+  - Comprehensive audit of all 16 failure scenarios
+  - Documented retry behavior for each failure type
+  - Error message catalog with root causes and user actions
+  - Identified need for user-friendly error messages and notification system
+  - See `docs/FAILURE_SCENARIOS_AUDIT.md` for complete reference
 - ✅ **COMPLETED: User Profile Management (v2.8)**
   - Email update with password verification and email confirmation
   - Password change with current password verification

@@ -18,7 +18,7 @@ import { createClient } from '@/lib/supabase/server';
 /**
  * Main booking function - triggered at exact booking window time
  * Handles:
- * 1. Clock drift retries (12 attempts × 15 seconds = 3 minutes)
+ * 1. Clock drift/window detection (9 attempts × 5 seconds = 45s, inside Puppeteer)
  * 2. Class full retries (every 15 minutes until class starts)
  */
 export const bookClassFunction = inngest.createFunction(
@@ -175,7 +175,7 @@ export const bookClassFunction = inngest.createFunction(
     console.log(`[Inngest] Waiting for booking result...`);
     const bookingResult = await step.waitForEvent('wait-for-result', {
       event: 'booking/result',
-      timeout: '10m', // GitHub Actions can take 6-7 min with clock drift retries (12 × 15s = 3 min)
+      timeout: '10m', // GitHub Actions can take 5-6 min (includes 45s fast retry + page loads)
       match: 'data.classId',  // Match on classId (present in both original and result events)
     });
 
