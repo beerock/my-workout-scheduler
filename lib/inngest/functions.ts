@@ -12,7 +12,7 @@ import {
 } from '@/scripts/database-helpers';
 import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
 import { differenceInMinutes } from 'date-fns';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 /**
  * Main booking function - triggered at exact booking window time
@@ -54,7 +54,7 @@ export const bookClassFunction = inngest.createFunction(
     // UI already shows badge only when current_time < skip_target_datetime
     await step.run('clear-previous-skip-datetime', async () => {
       if (classData.skip_target_datetime) {
-        const supabase = await createClient();
+        const supabase = createServiceRoleClient();
         const { error } = await supabase
           .from('recurring_classes')
           .update({ skip_target_datetime: null })
@@ -86,7 +86,7 @@ export const bookClassFunction = inngest.createFunction(
 
       // Clear the skip flag (so next week books normally)
       await step.run('clear-skip-flag', async () => {
-        const supabase = await createClient();
+        const supabase = createServiceRoleClient();
         const { error } = await supabase
           .from('recurring_classes')
           .update({ skip_next_occurrence: false })
@@ -114,7 +114,7 @@ export const bookClassFunction = inngest.createFunction(
 
     // Check for duplicate runs - if another booking attempt is already in progress, exit
     const hasDuplicateRun = await step.run('check-duplicate-runs', async () => {
-      const supabase = await createClient();
+      const supabase = createServiceRoleClient();
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
       const { data: pendingAttempts, error } = await supabase
