@@ -3650,6 +3650,184 @@ When a class has `skip_next_occurrence = true` (user clicked "Skip Next"), we ne
 
 ---
 
+## Skip/Edit Interaction Behavior (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - MUST DETERMINE BEFORE LAUNCH**
+
+When a class has an active skip set (`skip_next_occurrence = true`, `skip_target_datetime` set), we need to determine what happens if the user edits the class details (time, day, branch, etc.).
+
+### Current Behavior
+
+**Skip functionality:**
+- User clicks "Skip Next" → System calculates next occurrence and sets both fields
+- `skip_next_occurrence = true` (flag for Inngest)
+- `skip_target_datetime = "2025-12-01 11:00:00+00"` (specific datetime being skipped)
+
+**Edit functionality:**
+- User can edit class via Edit button
+- Form pre-populates with current values
+- On save, class fields are updated
+
+**The question:** What should happen to skip state when user edits a class?
+
+### Scenarios to Consider
+
+1. **User edits time but same day (e.g., 6:00 AM → 7:00 AM Monday)**
+   - Skip is for Monday 6:00 AM
+   - After edit, class is Monday 7:00 AM
+   - Should skip still apply? To which time?
+
+2. **User edits day but same time (e.g., Monday 6:00 AM → Tuesday 6:00 AM)**
+   - Skip is for Monday 6:00 AM
+   - After edit, class is Tuesday 6:00 AM
+   - Should skip still apply? To which day?
+
+3. **User edits both day and time**
+   - Skip target datetime no longer matches class schedule
+   - Skip becomes meaningless/invalid
+
+4. **User edits branch or class type (same day/time)**
+   - Skip datetime still matches schedule
+   - Should skip persist?
+
+5. **User edits booking window hours**
+   - Skip datetime still valid
+   - But booking window calculation changes
+   - Could affect when booking happens
+
+### Options to Consider
+
+**Option 1: Clear skip on ANY edit**
+- Any edit to class → Clear both `skip_next_occurrence` and `skip_target_datetime`
+- Rationale: Editing indicates user is actively managing the class, skip may no longer be relevant
+- Pro: Simple, predictable, no stale data
+- Con: User might lose skip they wanted to keep (e.g., just fixing a typo in class name)
+
+**Option 2: Clear skip only on day/time edits**
+- Edit day_of_week or class_time → Clear skip
+- Edit other fields (branch, class_type, booking_window_hours) → Preserve skip
+- Rationale: Skip is tied to specific datetime, other changes don't invalidate it
+- Pro: Preserves skip when it's still relevant
+- Con: More complex logic, edge cases
+
+**Option 3: Recalculate skip target datetime on edit**
+- Edit day/time → Recalculate `skip_target_datetime` based on new schedule
+- Other edits → Preserve skip as-is
+- Rationale: Preserve user intent to skip "next occurrence" even if schedule changes
+- Pro: Most flexible, respects user intent
+- Con: Complex, could be confusing (user skipped Monday, edited to Tuesday, now skipping Tuesday?)
+
+**Option 4: Warn user and ask confirmation**
+- If skip is active and user edits day/time → Show dialog
+- "This class has a skip set for [date]. Changing the schedule will clear the skip. Continue?"
+- Pro: User is aware and makes informed decision
+- Con: Extra friction, requires UI changes
+
+**Option 5: Prevent edits while skip is active**
+- Show message: "Cannot edit class while skip is active. Please unskip first."
+- Pro: No data inconsistency possible
+- Con: Too restrictive, poor UX
+
+### Recommendation for MVP
+
+**Recommended approach (Option 2 variant):**
+
+1. **Clear skip when day/time changes:**
+   - If `day_of_week` or `class_time` is edited → Clear both skip fields
+   - Rationale: Skip target datetime no longer matches schedule, becomes invalid
+   - Log to console: "Skip cleared due to schedule change"
+
+2. **Preserve skip for other edits:**
+   - If only `branch`, `class_type`, or `booking_window_hours` edited → Preserve skip
+   - Rationale: Skip datetime still valid for the class schedule
+
+3. **No UI warning for MVP:**
+   - Keep it simple, don't add dialog friction
+   - Future: Could add "(will clear skip)" hint in form if needed
+
+4. **Server action logic:**
+   ```typescript
+   // In saveRecurringClass server action
+   if (id) {
+     // Editing existing class
+     const { data: existingClass } = await getRecurringClass(id);
+
+     // Check if day or time changed
+     const scheduleChanged =
+       existingClass.day_of_week !== data.day_of_week ||
+       existingClass.class_time !== data.class_time;
+
+     if (scheduleChanged) {
+       // Clear skip when schedule changes
+       classData.skip_next_occurrence = false;
+       classData.skip_target_datetime = null;
+     }
+     // Otherwise preserve existing skip fields (don't update them)
+   }
+   ```
+
+### Benefits of This Approach
+
+- **Predictable**: Schedule changes clear skip, other changes don't
+- **Simple**: No UI changes, just server logic
+- **Correct**: Prevents invalid skip datetimes
+- **Non-breaking**: Doesn't block user actions
+
+### Edge Cases to Handle
+
+1. **Booking window already passed:**
+   - If schedule change moves booking window to the past → Don't schedule, show dialog
+   - (Already handled by existing "booking window already open" logic)
+
+2. **Skip datetime in the past:**
+   - If user edits old skip → Skip already cleared by time-based logic
+   - No special handling needed
+
+3. **Multiple rapid edits:**
+   - Each edit re-evaluates schedule change
+   - Skip cleared on first schedule change, stays cleared
+
+### Implementation Notes
+
+**Files to modify:**
+- `app/actions/recurring-classes.ts` (saveRecurringClass function)
+  - Add schedule change detection
+  - Clear skip fields when schedule changes
+
+**Database:**
+- No schema changes needed
+- Just update logic
+
+**UI:**
+- No changes needed for MVP
+- Optional enhancement: Show warning when editing skipped class
+
+### Testing Considerations
+
+**Test scenarios:**
+1. Skip class → Edit time only → Verify skip cleared ✓
+2. Skip class → Edit day only → Verify skip cleared ✓
+3. Skip class → Edit both day and time → Verify skip cleared ✓
+4. Skip class → Edit branch only → Verify skip preserved ✓
+5. Skip class → Edit class type only → Verify skip preserved ✓
+6. Skip class → Edit booking window hours → Verify skip preserved ✓
+7. Skip class → Edit multiple fields including time → Verify skip cleared ✓
+
+### Status
+**Status**: Pre-MVP - Decision documented, implementation needed
+**Priority**: Medium (important for data consistency)
+**Last Updated**: November 30, 2025
+**Decision**: Clear skip when day/time changes, preserve for other edits (Option 2)
+**Blocks**: MVP launch (implementation required)
+**Next Steps**:
+1. Implement schedule change detection in saveRecurringClass
+2. Add skip clearing logic for schedule changes
+3. Test all edit scenarios
+4. Update PRODUCTION_TESTING.md with test cases
+
+---
+
 ## Admin Dashboard
 
 ### Overview
