@@ -3517,6 +3517,136 @@ SUPPORT_EMAIL=help@beerock.com
 
 ---
 
+## Skip/Pause Interaction Behavior (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - MUST DETERMINE BEFORE LAUNCH**
+
+When a class has `skip_next_occurrence = true` (user clicked "Skip Next"), we need to determine the correct behavior when the user pauses/unpauses their schedule or the individual class. Currently, the system does not have defined behavior for this interaction.
+
+### Current Behavior
+
+**Skip functionality:**
+- User clicks "Skip Next" → `skip_next_occurrence = true`, `skip_target_datetime` set to next occurrence
+- Inngest checks `skip_next_occurrence` flag before booking (simple boolean check)
+- After skip happens, flag cleared immediately
+- At next booking attempt (one week later), `skip_target_datetime` cleared
+
+**Pause functionality:**
+- **Global pause:** `user_settings.schedule_paused = true` (affects all classes)
+- **Per-class pause:** `recurring_classes.active = false` (affects individual class)
+
+**The question:** What should happen to skip state when user pauses/unpauses?
+
+### Scenarios to Consider
+
+1. **Class is skipped, then user pauses globally**
+   - Should skip state persist?
+   - Should skip state be cleared?
+   - What happens when user unpauses?
+
+2. **Class is skipped, then user deactivates that specific class**
+   - Should skip state persist?
+   - Should skip state be cleared?
+   - What happens when user reactivates the class?
+
+3. **User pauses globally, then tries to skip a class**
+   - Should UI allow skip while paused?
+   - Should skip be queued for when they unpause?
+   - Should it show an error/warning?
+
+4. **Class is inactive, then user tries to skip it**
+   - Should UI allow skip while inactive?
+   - Should skip be queued for when they reactivate?
+   - Should it show an error/warning?
+
+### Options to Consider
+
+**Option 1: Skip state is independent of pause state**
+- Skip state persists regardless of pause/unpause actions
+- Rationale: User explicitly set skip, shouldn't be affected by pause
+- Example: User skips Dec 25, then pauses for vacation. When they return and unpause, Dec 25 skip should still be there (though likely in the past and auto-cleared)
+
+**Option 2: Skip state is cleared when paused**
+- Global pause clears all skip states
+- Per-class deactivation clears skip state for that class
+- Rationale: Pause indicates user doesn't care about schedule temporarily, reset everything
+- Concern: User might forget they had skips set and be surprised when they're cleared
+
+**Option 3: Skip state is preserved but "frozen"**
+- Skip state persists but doesn't apply while paused
+- When unpaused, skip state resumes
+- Rationale: Best of both worlds - preserves user intent but respects pause
+- Complexity: Need to track "frozen" skip state separately
+
+**Option 4: Disable skip UI when paused/inactive**
+- Don't allow skipping paused or inactive classes
+- If already skipped, preserve state but show warning in UI
+- Rationale: Prevent user confusion, keep states separate
+- Best for MVP: Simple, clear, predictable
+
+### Recommendation for MVP
+
+**Recommended approach (Option 4 variant):**
+
+1. **Skip state is independent and preserved:**
+   - `skip_next_occurrence` and `skip_target_datetime` persist regardless of pause/active state
+   - This is the simplest implementation (no additional code needed)
+
+2. **UI considerations:**
+   - Show skip badge even when class is paused/inactive (user can see it's set)
+   - Allow unskip even when paused/inactive (user can clear it if they want)
+   - Optional: Show warning badge "Paused - skip will apply when resumed"
+
+3. **Booking logic (already correct):**
+   - Inngest checks pause state first: `if (paused || !active) → skip booking`
+   - Then checks skip state: `if (skip_next_occurrence) → skip booking`
+   - Order of checks doesn't matter since both result in skip
+
+4. **Edge case handling:**
+   - If skip datetime passes while paused → system auto-clears it normally
+   - If user unpauses after skip datetime passed → skip is already cleared, no issue
+   - If user unpauses before skip datetime → skip still applies correctly
+
+### Benefits of This Approach
+
+- **Simple**: No code changes needed, current behavior already correct
+- **Predictable**: Skip state is preserved, user sees what they set
+- **Flexible**: User can modify skip state even while paused
+- **No data loss**: User intent is never lost
+- **No surprises**: What you see is what you get
+
+### Implementation Notes
+
+**No code changes needed for MVP:**
+- Current implementation already handles this correctly
+- Inngest checks pause/active state before booking
+- Skip state is preserved in database
+
+**Optional UI enhancements (post-MVP):**
+- Add visual indicator when class is both skipped and paused
+- Show tooltip: "This skip will apply when you resume this class"
+- Confirmation dialog when unpausing: "You have 2 classes with skips set"
+
+### Testing Considerations
+
+**Test scenarios:**
+1. Skip class → Pause globally → Verify skip badge still shows → Unpause → Verify skip applies
+2. Skip class → Deactivate class → Verify skip badge still shows → Reactivate → Verify skip applies
+3. Pause globally → Try to skip class → Verify UI allows it → Verify booking skipped
+4. Deactivate class → Try to skip class → Verify UI allows it → Verify booking skipped
+5. Skip class → Pause → Wait for skip datetime to pass → Unpause → Verify skip auto-cleared
+
+### Status
+**Status**: Pre-MVP - Decision documented, no code changes needed
+**Priority**: Low (current behavior is acceptable, just needs to be documented and tested)
+**Last Updated**: November 29, 2025
+**Decision**: Preserve skip state independently of pause state (Option 4 variant)
+**Blocks**: MVP launch (documentation and testing needed)
+**Next Steps**:
+1. Document this behavior in user-facing help/FAQ
+2. Add test scenarios to PRODUCTION_TESTING.md
+3. Consider adding UI hints for paused + skipped state (post-MVP)
 
 ---
 
