@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { saveRecurringClass, type RecurringClassFormData } from '@/app/actions/recurring-classes'
 import { useRouter } from 'next/navigation'
-import { COMMON_TIMEZONES } from '@/lib/date-utils'
+import { COMMON_TIMEZONES, formatDateInGymTimezone } from '@/lib/date-utils'
 import type { RecurringClass } from '@/lib/database.types'
 
 type Props = {
@@ -30,6 +30,12 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
   const [showBookNowDialog, setShowBookNowDialog] = useState(false)
   const [savedClassId, setSavedClassId] = useState<string | null>(null)
   const [bookingClass, setBookingClass] = useState(false)
+  const [showSkipClearDialog, setShowSkipClearDialog] = useState(false)
+  const [skipClearData, setSkipClearData] = useState<{
+    skipDate: string | null
+    formData: RecurringClassFormData
+    classId: string
+  } | null>(null)
   const [formData, setFormData] = useState<RecurringClassFormData>({
     day_of_week: initialClass?.day_of_week ?? 1,
     class_time: initialClass?.class_time ? initialClass.class_time.substring(0, 5) : '',
@@ -90,6 +96,21 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         },
         (initialClass && !isCopy) ? initialClass.id : undefined
       )
+
+      // Check for skip clear warning FIRST (before booking window check)
+      if (result.skipClearWarning) {
+        setSkipClearData({
+          skipDate: result.skipDate || null,
+          formData: {
+            ...formData,
+            class_time: timeWithSeconds,
+          },
+          classId: (initialClass && !isCopy) ? initialClass.id : ''
+        })
+        setShowSkipClearDialog(true)
+        setLoading(false)
+        return
+      }
 
       if (result.success) {
         setSuccess(true)
@@ -168,6 +189,61 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
       router.push('/dashboard/schedule')
       router.refresh()
     }
+  }
+
+  const handleConfirmSkipClear = async () => {
+    if (!skipClearData) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Call saveRecurringClass again with confirmation flag
+      const result = await saveRecurringClass(
+        skipClearData.formData,
+        skipClearData.classId,
+        true // confirmSkipClear
+      )
+
+      if (!result.success) {
+        setError(result.error || 'Failed to save class')
+        setLoading(false)
+        return
+      }
+
+      // NOW check for booking window (may happen after clearing skip)
+      if (result.bookingWindowAlreadyOpen && result.id) {
+        // Close skip dialog, show booking window dialog
+        setShowSkipClearDialog(false)
+        setSkipClearData(null)
+        setSavedClassId(result.id)
+        setShowBookNowDialog(true)
+        setLoading(false)
+        return
+      }
+
+      // Success, close modal and navigate
+      setShowSkipClearDialog(false)
+      setSkipClearData(null)
+      setSuccess(true)
+
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        router.push('/dashboard/schedule')
+        router.refresh()
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCancelSkipClear = () => {
+    setShowSkipClearDialog(false)
+    setSkipClearData(null)
+    setLoading(false)
   }
 
   const handleChange = (
@@ -381,6 +457,50 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
             <strong>Book Now:</strong> Books this week's class immediately.<br />
             <strong>Skip This Week:</strong> Saves the class and automatic booking starts next week.
           </p>
+        </div>
+      </div>
+    )}
+
+    {/* Skip Clear Confirmation Dialog */}
+    {showSkipClearDialog && skipClearData && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            ⚠️ Clear Skip Confirmation
+          </h3>
+          <p className="text-gray-700 mb-6">
+            Changing the class schedule will clear your skip for{' '}
+            <strong>
+              {formatDateInGymTimezone(
+                new Date(skipClearData.skipDate || ''),
+                skipClearData.formData.timezone,
+                'short'
+              )}
+            </strong>. Do you want to continue?
+          </p>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleCancelSkipClear}
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmSkipClear}
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              {loading ? 'Saving...' : 'Continue'}
+            </button>
+          </div>
         </div>
       </div>
     )}
