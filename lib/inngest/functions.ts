@@ -55,12 +55,20 @@ export const bookClassFunction = inngest.createFunction(
     await step.run('clear-previous-skip-datetime', async () => {
       if (classData.skip_target_datetime) {
         const supabase = await createClient();
-        await supabase
+        const { error } = await supabase
           .from('recurring_classes')
           .update({ skip_target_datetime: null })
           .eq('id', classData.id);
+
+        if (error) {
+          console.error(`[Inngest] ❌ Failed to clear skip_target_datetime:`, error);
+          throw new Error(`Failed to clear skip datetime: ${error.message}`);
+        }
+
         console.log(`[Inngest] ✅ Cleared skip_target_datetime from previous occurrence`);
+        return { success: true };
       }
+      return { success: true, skipped: 'no datetime to clear' };
     });
 
     // Check if we should skip this booking (simple boolean flag check)
@@ -79,11 +87,18 @@ export const bookClassFunction = inngest.createFunction(
       // Clear the skip flag (so next week books normally)
       await step.run('clear-skip-flag', async () => {
         const supabase = await createClient();
-        await supabase
+        const { error } = await supabase
           .from('recurring_classes')
           .update({ skip_next_occurrence: false })
           .eq('id', classData.id);
+
+        if (error) {
+          console.error(`[Inngest] ❌ Failed to clear skip_next_occurrence flag:`, error);
+          throw new Error(`Failed to clear skip flag: ${error.message}`);
+        }
+
         console.log(`[Inngest] ✅ Cleared skip_next_occurrence flag for next week`);
+        return { success: true };
       });
 
       // Keep skip_target_datetime (UI still needs it until class time passes)
