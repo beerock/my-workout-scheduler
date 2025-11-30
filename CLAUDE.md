@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.9):** Production-ready authentication with bot protection (Cloudflare Turnstile), password confirmation on signup, resend verification on login, persistent notifications, and email verification handling.
+**Current Version (v2.11):** Production-ready with fixed skip functionality using two-field approach (boolean flag + timestamptz) for simpler business logic and proper timezone handling.
 
 ---
 
@@ -42,7 +42,7 @@ This document provides Claude with essential context about the My Workout Schedu
 2. **Supabase Database**
    - `users` - Auth (managed by Supabase Auth)
    - `gym_credentials` - Encrypted gym login info
-   - `recurring_classes` - Schedule configuration (includes `next_skip_date`)
+   - `recurring_classes` - Schedule configuration (includes `skip_next_occurrence`, `skip_target_datetime`)
    - `booking_attempts` - Booking history (status: pending, confirmed, waitlisted, failed, skipped)
    - `user_settings` - Global settings (`schedule_paused`)
 
@@ -175,11 +175,28 @@ Each class has a timezone (e.g., "America/New_York"). System uses class timezone
 
 **Files:** `lib/date-utils.ts` (primary), `scripts/booking-automation.ts`, `inngest/bookClass.ts`
 
-### 9. Skip Next Occurrence
+### 9. Skip Next Occurrence (Two-Field Approach)
 
-Users can skip single occurrence via `next_skip_date` field. System automatically clears after skipping (smart unskip). If booking window passed, skip clears immediately.
+Users can skip single occurrence using two fields for clear separation of concerns:
 
-**Files:** `app/actions/recurring-classes.ts`, `scripts/booking-automation.ts`
+**Fields:**
+- `skip_next_occurrence` (boolean) - Flag for business logic checked by Inngest
+- `skip_target_datetime` (timestamptz) - Full datetime for UI display with timezone
+
+**How it works:**
+- User clicks "Skip Next" → System calculates next occurrence datetime and sets both fields
+- Inngest checks boolean flag before booking attempt (simple, no date comparison needed)
+- UI shows badge based on `current_time < skip_target_datetime` comparison
+- After skip happens, flag cleared immediately (prevents double-skip)
+- At next booking attempt (one week later), datetime cleared (cleanup stale data)
+
+**Benefits:**
+- Simpler business logic (boolean check vs date comparison)
+- No timezone bugs in skip logic (flag is timezone-agnostic)
+- Proper datetime storage with timezone for UI display
+- Clear separation: backend uses flag, UI uses datetime
+
+**Files:** `app/actions/recurring-classes.ts`, `lib/inngest/functions.ts`, `components/SkipButton.tsx`
 
 ### 10. Environment Variables
 
@@ -368,4 +385,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** November 27, 2025 (v2.9)
+**Last Updated:** November 29, 2025 (v2.11)
