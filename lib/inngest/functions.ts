@@ -49,6 +49,20 @@ export const bookClassFunction = inngest.createFunction(
     );
     console.log(`[Inngest] Skip flag: ${classData.skip_next_occurrence}, Skip target: ${classData.skip_target_datetime}`);
 
+    // Clear skip_target_datetime from previous week (cleanup stale data)
+    // This happens at the NEXT occurrence after the skipped one
+    // UI already shows badge only when current_time < skip_target_datetime
+    await step.run('clear-previous-skip-datetime', async () => {
+      if (classData.skip_target_datetime) {
+        const supabase = await createClient();
+        await supabase
+          .from('recurring_classes')
+          .update({ skip_target_datetime: null })
+          .eq('id', classData.id);
+        console.log(`[Inngest] ✅ Cleared skip_target_datetime from previous occurrence`);
+      }
+    });
+
     // Check if we should skip this booking (simple boolean flag check)
     if (classData.skip_next_occurrence === true) {
       console.log(`[Inngest] ⏭️  Skip flag is TRUE - skipping booking for "${className}"`);
@@ -269,20 +283,6 @@ export const bookClassFunction = inngest.createFunction(
           `[Inngest] Not retrying - class starts in ${minutesUntilClass} minutes (too soon)`
         );
       }
-    }
-
-    // Clear skip_target_datetime after successful booking (cleanup stale UI data)
-    if (status === 'confirmed' || status === 'waitlisted') {
-      await step.run('clear-skip-target-datetime', async () => {
-        if (classData.skip_target_datetime) {
-          const supabase = await createClient();
-          await supabase
-            .from('recurring_classes')
-            .update({ skip_target_datetime: null })
-            .eq('id', classData.id);
-          console.log(`[Inngest] ✅ Cleared skip_target_datetime after successful booking`);
-        }
-      });
     }
 
     // Final result (success, waitlisted, or permanent failure)
