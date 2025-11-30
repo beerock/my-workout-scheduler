@@ -58,13 +58,13 @@ async function testDryRun() {
         console.log(`\n📅 Class: ${classItem.class_type}`)
         console.log(`   Day: ${getDayName(classItem.day_of_week)}, Time: ${classItem.class_time}`)
         console.log(`   Branch: ${classItem.branch}`)
-        console.log(`   Skip Date: ${classItem.next_skip_date || 'None'}`)
+        console.log(`   Skip Next: ${classItem.skip_next_occurrence ? 'YES' : 'No'}`)
+        console.log(`   Skip Target: ${classItem.skip_target_datetime || 'None'}`)
 
-        // Check skip date
-        const today = new Date().toISOString().split('T')[0]
-        if (classItem.next_skip_date === today) {
-          console.log(`   ⏭️  Would SKIP (next_skip_date = today)`)
-          console.log(`   ✅ Would clear skip date`)
+        // Check skip flag (handled by Inngest in production)
+        if (classItem.skip_next_occurrence === true) {
+          console.log(`   ⏭️  Would SKIP (skip_next_occurrence = true)`)
+          console.log(`   ✅ Inngest would clear skip flag after skip`)
           continue
         }
 

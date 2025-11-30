@@ -2,6 +2,8 @@
  * Utility functions for date and time calculations
  */
 
+import { toZonedTime, fromZonedTime } from 'date-fns-tz'
+
 /**
  * Get the day name from day of week (0 = Sunday, 6 = Saturday)
  */
@@ -68,36 +70,85 @@ export function formatDateShort(date: Date | string): string {
 }
 
 /**
- * Calculate the next occurrence of a class given day of week
- * Returns the next future date (not today, even if today matches)
- * 
- * @param dayOfWeek 0-6 (Sunday-Saturday)
- * @param timezone Timezone string (e.g., 'America/New_York')
- * @returns Date string in YYYY-MM-DD format (class date, not booking window date)
+ * Calculate the next occurrence of a class (date + time) in the gym's timezone
+ * Returns a full Date object representing when the class happens
+ *
+ * This is the SINGLE SOURCE OF TRUTH for calculating next class occurrence
+ * Used by: UI (skip button), Inngest (skip logic), scheduler (idempotency)
+ *
+ * @param dayOfWeek 0-6 (Sunday-Saturday) - which day class occurs
+ * @param classTime HH:MM format (e.g., "15:00") - when class starts
+ * @param timezone IANA timezone (e.g., 'America/New_York') - gym's timezone
+ * @returns Date object (TIMESTAMP WITH TIME ZONE equivalent) representing next class occurrence
+ *
+ * @example
+ * calculateNextOccurrence(5, "15:00", "America/New_York")
+ * // Returns: Date object for next Friday 3:00 PM Eastern Time
  */
-export function calculateNextOccurrence(dayOfWeek: number, timezone: string = 'America/New_York'): string {
-  const now = new Date()
-  
-  // Get current day of week (0 = Sunday, 6 = Saturday)
-  const currentDay = now.getDay()
-  
+export function calculateNextOccurrence(
+  dayOfWeek: number,
+  classTime: string,
+  timezone: string = 'America/New_York'
+): Date {
+  // Get current time in the gym's timezone (not user's local timezone!)
+  const nowInGymTz = toZonedTime(new Date(), timezone)
+  const todayInGymTz = nowInGymTz.getDay() // 0-6
+
+  // Parse class time
+  const [classHour, classMinute] = classTime.split(':').map(Number)
+
   // Calculate days until next occurrence
-  let daysUntilNext = (dayOfWeek - currentDay + 7) % 7
-  
-  // If today is the same day, get next week's occurrence (always skip to next week)
-  const daysToAdd = daysUntilNext === 0 ? 7 : daysUntilNext
-  
-  // Create date for the class (not the booking window)
-  const nextDate = new Date(now)
-  nextDate.setDate(now.getDate() + daysToAdd)
-  
-  // Format as YYYY-MM-DD using local date components (not UTC)
-  // This ensures we get the correct date regardless of timezone
-  const year = nextDate.getFullYear()
-  const month = String(nextDate.getMonth() + 1).padStart(2, '0')
-  const day = String(nextDate.getDate()).padStart(2, '0')
-  
-  return `${year}-${month}-${day}`
+  let daysUntil = dayOfWeek - todayInGymTz
+
+  // Handle same-day classes
+  if (daysUntil === 0) {
+    // Same day - check if class time has passed
+    const currentHour = nowInGymTz.getHours()
+    const currentMinute = nowInGymTz.getMinutes()
+    const currentTimeMinutes = currentHour * 60 + currentMinute
+    const classTimeMinutes = classHour * 60 + classMinute
+
+    if (currentTimeMinutes >= classTimeMinutes) {
+      // Class time has passed today, get next week
+      daysUntil = 7
+    } else {
+      // Class time hasn't passed, use today
+      daysUntil = 0
+    }
+  } else if (daysUntil < 0) {
+    // Past day this week, get next week
+    daysUntil += 7
+  }
+
+  // Create class datetime in gym's timezone
+  const classDateInGymTz = new Date(nowInGymTz)
+  classDateInGymTz.setDate(nowInGymTz.getDate() + daysUntil)
+  classDateInGymTz.setHours(classHour, classMinute, 0, 0)
+
+  // Convert to UTC for storage (this becomes TIMESTAMP WITH TIME ZONE)
+  return fromZonedTime(classDateInGymTz, timezone)
+}
+
+/**
+ * Format a datetime in the gym's timezone for display
+ * Used by UI to show skip dates in the correct timezone
+ *
+ * @param datetime Date object (could be TIMESTAMP WITH TIME ZONE from database)
+ * @param timezone Gym's timezone
+ * @param format 'short' (Nov 21) or 'long' (Friday, Nov 21)
+ * @returns Formatted date string
+ */
+export function formatDateInGymTimezone(
+  datetime: Date,
+  timezone: string,
+  format: 'short' | 'long' = 'short'
+): string {
+  const options: Intl.DateTimeFormatOptions =
+    format === 'short'
+      ? { month: 'short', day: 'numeric', timeZone: timezone }
+      : { weekday: 'long', month: 'short', day: 'numeric', timeZone: timezone }
+
+  return new Intl.DateTimeFormat('en-US', options).format(datetime)
 }
 
 /**
