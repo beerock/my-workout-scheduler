@@ -53,7 +53,9 @@ export const bookClassFunction = inngest.createFunction(
     // This happens at the NEXT occurrence after the skipped one
     // UI already shows badge only when current_time < skip_target_datetime
     await step.run('clear-previous-skip-datetime', async () => {
-      if (classData.skip_target_datetime) {
+      // Only clear datetime if we're NOT currently skipping
+      // (i.e., this is cleanup from a previous week's skip)
+      if (classData.skip_target_datetime && !classData.skip_next_occurrence) {
         const supabase = createServiceRoleClient();
         const { error } = await supabase
           .from('recurring_classes')
@@ -68,7 +70,7 @@ export const bookClassFunction = inngest.createFunction(
         console.log(`[Inngest] ✅ Cleared skip_target_datetime from previous occurrence`);
         return { success: true };
       }
-      return { success: true, skipped: 'no datetime to clear' };
+      return { success: true, skipped: 'skip still active or no datetime' };
     });
 
     // Check if we should skip this booking (simple boolean flag check)
