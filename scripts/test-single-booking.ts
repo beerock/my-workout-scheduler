@@ -93,7 +93,8 @@ async function testSingleBooking() {
 
     log.success(`✅ Booking: ${classData.class_type} - ${getDayName(classData.day_of_week)} ${classData.class_time} @ ${classData.branch}`)
     log.debug(`   Active: ${classData.active}`)
-    log.debug(`   Skip Date: ${classData.next_skip_date || 'None'}\n`)
+    log.debug(`   Skip Next: ${classData.skip_next_occurrence ? 'YES' : 'No'}`)
+    log.debug(`   Skip Target: ${classData.skip_target_datetime || 'None'}\n`)
 
     if (!classData.active) {
       log.error('❌ Class is not active. Enable it in the dashboard first.')
@@ -149,7 +150,6 @@ async function testSingleBooking() {
       classTime: classData.class_time,
       classType: classData.class_type,
       timezone: classData.timezone,
-      nextSkipDate: classData.next_skip_date,
     }
 
     if (isDryRun) {

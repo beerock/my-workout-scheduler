@@ -70,7 +70,8 @@ export type ClassNeedingBooking = {
   booking_window_hours: number
   timezone: string
   active: boolean
-  next_skip_date: string | null
+  skip_next_occurrence: boolean
+  skip_target_datetime: string | null
   gym_url: string
   username: string
   encrypted_password: string
@@ -82,8 +83,9 @@ export type ClassNeedingBooking = {
  * Filters by:
  * - active = true
  * - schedule_paused = false (or null)
- * - next_skip_date is NULL or not equal to today
  * - booking window is open (current time >= class datetime - booking_window_hours)
+ *
+ * Note: Skip logic (skip_next_occurrence) is handled by Inngest, not here
  */
 export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]> {
   const supabase = getSupabaseClient()
@@ -154,9 +156,6 @@ export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]>
       continue
     }
 
-    // Check if next_skip_date equals today (should skip)
-    // We still include it to process the skip date clearing
-
     // Calculate if booking window is open
     const bookingWindowOpen = isBookingWindowOpen(
       classItem.day_of_week,
@@ -204,7 +203,8 @@ export async function getClassesNeedingBooking(): Promise<ClassNeedingBooking[]>
       booking_window_hours: classItem.booking_window_hours,
       timezone: classItem.timezone,
       active: classItem.active,
-      next_skip_date: classItem.next_skip_date,
+      skip_next_occurrence: classItem.skip_next_occurrence,
+      skip_target_datetime: classItem.skip_target_datetime,
       gym_url: credentials.gym_url,
       username: credentials.username,
       encrypted_password: credentials.encrypted_password,
@@ -640,23 +640,6 @@ export async function updateBookingAttempt(
 }
 
 /**
- * Clear the next_skip_date for a recurring class
- */
-export async function clearSkipDate(recurringClassId: string): Promise<void> {
-  const supabase = getSupabaseClient()
-
-  const { error } = await supabase
-    .from('recurring_classes')
-    // @ts-ignore - Supabase client type inference issue
-    .update({ next_skip_date: null })
-    .eq('id', recurringClassId)
-
-  if (error) {
-    throw new Error(`Failed to clear skip date: ${error.message}`)
-  }
-}
-
-/**
  * Get a single class by ID with credentials
  * Used by Inngest to fetch class data when booking event fires
  */
@@ -713,7 +696,8 @@ export async function getClassById(classId: string): Promise<ClassNeedingBooking
     booking_window_hours: classData.booking_window_hours,
     timezone: classData.timezone,
     active: classData.active,
-    next_skip_date: classData.next_skip_date,
+    skip_next_occurrence: classData.skip_next_occurrence,
+    skip_target_datetime: classData.skip_target_datetime,
     gym_url: credentials.gym_url,
     username: credentials.username,
     encrypted_password: credentials.encrypted_password,
@@ -796,7 +780,8 @@ export async function getAllActiveClasses(): Promise<ClassNeedingBooking[]> {
       booking_window_hours: classItem.booking_window_hours,
       timezone: classItem.timezone,
       active: classItem.active,
-      next_skip_date: classItem.next_skip_date,
+      skip_next_occurrence: classItem.skip_next_occurrence,
+      skip_target_datetime: classItem.skip_target_datetime,
       gym_url: creds.gym_url,
       username: creds.username,
       encrypted_password: creds.encrypted_password,

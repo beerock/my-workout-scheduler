@@ -52,7 +52,8 @@ export interface Database {
           booking_window_hours: number
           timezone: string
           active: boolean
-          next_skip_date: string | null
+          skip_next_occurrence: boolean
+          skip_target_datetime: string | null
           created_at: string
           updated_at: string
         }
@@ -66,7 +67,8 @@ export interface Database {
           booking_window_hours?: number
           timezone?: string
           active?: boolean
-          next_skip_date?: string | null
+          skip_next_occurrence?: boolean
+          skip_target_datetime?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -80,7 +82,8 @@ export interface Database {
           booking_window_hours?: number
           timezone?: string
           active?: boolean
-          next_skip_date?: string | null
+          skip_next_occurrence?: boolean
+          skip_target_datetime?: string | null
           created_at?: string
           updated_at?: string
         }

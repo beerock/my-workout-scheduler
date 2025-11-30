@@ -26,7 +26,7 @@ export type BookingParams = {
   classTime: string // Format: "HH:MM" or "HH:MM:SS"
   classType: string // Class name/type to match
   timezone: string // Gym's timezone (e.g., "America/New_York")
-  nextSkipDate: string | null // If equals today, skip booking
+  // Note: Skip logic handled by Inngest (not Puppeteer)
 }
 
 /**
@@ -42,18 +42,10 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
     classTime,
     classType,
     timezone,
-    nextSkipDate,
   } = params
 
-  // Check if we should skip today
-  const today = new Date().toISOString().split('T')[0]
-  if (nextSkipDate === today) {
-    return {
-      status: 'skipped',
-      branchUsed: null,
-      errorMessage: `✓ This class was intentionally skipped as requested. The skip has been cleared automatically and your regular schedule will resume next week.`,
-    }
-  }
+  // Note: Skip logic is handled by Inngest before calling this function
+  // Puppeteer just executes bookings - no business logic checks here
 
   let browser: Browser | null = null
   let screenshotPath: string | undefined
