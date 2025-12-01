@@ -3831,6 +3831,73 @@ When a class has an active skip set (`skip_next_occurrence = true`, `skip_target
 
 ---
 
+## Skip Cleanup with Pause/Inactive - Three-Zone Logic Testing (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - PRODUCTION TESTING REQUIRED BEFORE LAUNCH**
+
+The three-zone skip cleanup logic (v2.12) intelligently manages skip fields when users pause their schedule or deactivate individual classes. This feature needs comprehensive production testing to verify all time-based zones work correctly.
+
+### Feature Summary
+
+**What it does:**
+- When pausing schedule (global) or deactivating class (per-class), skip fields are cleaned up based on current time relative to booking window and class time
+- Three zones determine cleanup behavior:
+  - **Zone A** (before booking window): Preserve both fields
+  - **Zone B** (inside booking window): Clear flag only, keep datetime for UI
+  - **Zone C** (after class time): Clear both fields
+- Skip buttons disabled when paused/inactive with helpful tooltips
+
+**Implementation:**
+- `app/actions/recurring-classes.ts` - `toggleRecurringClassActive()` with three-zone logic
+- `app/actions/user-settings.ts` - `updateSchedulePaused()` with bulk three-zone cleanup
+- `components/SkipButton.tsx` - Disabled state UI and tooltips
+- `components/ScheduleList.tsx` - Props passing
+
+### Testing Requirements
+
+**Test Document:** `docs/TESTING_SKIP_THREE_ZONE_LOGIC.md`
+
+**Critical tests to complete:**
+1. ✅ **Part 1: UI Tests** - Skip buttons disabled when paused/inactive
+   - Test 1.1: Skip button disabled when paused (global)
+   - Test 1.2: Skip button disabled when inactive (per-class)
+2. **Part 2: Zone A Tests** - Before booking window opens
+   - Test 2.1: Pause before booking window (preserve both fields)
+   - Test 2.2: Deactivate before booking window (preserve both fields)
+3. **Part 3: Zone B Tests** - Inside booking window (⚠️ TIMING CRITICAL)
+   - Test 3.1: Pause inside booking window (clear flag, keep datetime)
+   - Test 3.2: Deactivate inside booking window (clear flag, keep datetime)
+4. **Part 4: Zone C Tests** - After class time has passed
+   - Test 4.1: Pause after class time (clear both fields)
+   - Test 4.2: Deactivate after class time (clear both fields)
+
+**Test Priority:**
+- **High Priority**: Part 1 (UI), Part 2 (Zone A), Part 4 (Zone C) - Easy to test
+- **Medium Priority**: Part 3 (Zone B) - Requires precise timing inside booking window
+
+### Status
+**Status**: ⚠️ PRE-MVP - PRODUCTION TESTING REQUIRED
+**Priority**: High (must verify before MVP launch)
+**Deployed**: Yes (v2.12 in production)
+**Tested**: Partial (UI tests only)
+**Blocks**: MVP launch (production testing required)
+**Last Updated**: December 1, 2025
+
+### Next Steps
+1. Complete all tests in `docs/TESTING_SKIP_THREE_ZONE_LOGIC.md`
+2. Document test results in the test file
+3. Fix any issues discovered during testing
+4. Mark as ✅ COMPLETED once all tests pass
+
+### Notes
+- Zone B tests are hardest due to timing requirements (must act inside booking window)
+- Tip: Use a class with 2-hour booking window instead of 26 hours for easier Zone B testing
+- Console logs verify which zone logic executed (`Zone A`, `Zone B`, or `Zone C`)
+- Database field verification required (check `skip_next_occurrence` and `skip_target_datetime` in Supabase)
+
+---
+
 ## Admin Dashboard
 
 ### Overview
