@@ -179,6 +179,7 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
                   recurringClass={classItem}
                   gymUrl={gymUrl}
                   onUpdate={onUpdate}
+                  schedulePaused={schedulePaused}
                 />
 
                 {/* Copy Button */}

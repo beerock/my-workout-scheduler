@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { scheduleBooking, calculateBookingWindowOpen } from '@/lib/inngest/scheduler'
+import { calculateBookingWindowOpen as calculateBookingWindow } from '@/lib/date-utils'
 
 export type RecurringClassFormData = {
   day_of_week: number
@@ -372,9 +373,49 @@ export async function toggleRecurringClassActive(
       }
     }
 
+    // If DEACTIVATING (active = false), check for skip cleanup using three-zone logic
+    let updateData: any = { active }
+
+    if (active === false) {
+      // Fetch current class with all fields needed for booking window calculation
+      const { data: existingClass, error: fetchError } = await supabase
+        .from('recurring_classes')
+        .select('skip_target_datetime, day_of_week, class_time, booking_window_hours, timezone')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single()
+
+      if (!fetchError && existingClass?.skip_target_datetime) {
+        const now = new Date()
+        const classTime = new Date(existingClass.skip_target_datetime)
+
+        // Calculate booking window open time
+        const bookingWindowOpen = calculateBookingWindow(
+          existingClass.day_of_week,
+          existingClass.class_time,
+          existingClass.booking_window_hours,
+          existingClass.timezone
+        )
+
+        // Three-zone logic
+        if (classTime <= now) {
+          // Zone C: Class time has passed - full cleanup
+          updateData.skip_next_occurrence = false
+          updateData.skip_target_datetime = null
+          console.log('[toggleRecurringClassActive] Zone C: Clearing both fields (past occurrence)')
+        } else if (bookingWindowOpen <= now) {
+          // Zone B: Inside booking window - clear flag only
+          updateData.skip_next_occurrence = false
+          // Keep skip_target_datetime for UI
+          console.log('[toggleRecurringClassActive] Zone B: Clearing flag only (inside window)')
+        }
+        // Zone A: Before booking window - preserve both fields (no update needed)
+      }
+    }
+
     const { error } = await supabase
       .from('recurring_classes')
-      .update({ active })
+      .update(updateData)
       .eq('id', id)
       .eq('user_id', user.id) // Ensure user owns this class
 
