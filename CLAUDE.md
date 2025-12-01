@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.11):** Production-ready with fixed skip functionality using two-field approach (boolean flag + timestamptz) for simpler business logic and proper timezone handling.
+**Current Version (v2.12):** Production-ready with skip edit confirmation and intelligent pause/inactive interaction using three-zone cleanup logic.
 
 ---
 
@@ -198,7 +198,26 @@ Users can skip single occurrence using two fields for clear separation of concer
 
 **Files:** `app/actions/recurring-classes.ts`, `lib/inngest/functions.ts`, `components/SkipButton.tsx`
 
-### 10. Environment Variables
+### 10. Skip Edit Confirmation
+
+When editing a class with active skip, changing day/time triggers confirmation modal before clearing skip fields.
+
+**Two-pass pattern:** First call returns `skipClearWarning`, second call with `confirmSkipClear=true` clears skip. Modal shows formatted skip date and appears before booking window check.
+
+**Files:** `app/actions/recurring-classes.ts`, `components/RecurringClassForm.tsx`
+
+### 11. Skip Cleanup (Pause/Inactive) - Three-Zone Logic
+
+When pausing schedule or deactivating class, skip fields cleaned up based on time:
+- **Zone A** (before booking window): Preserve both fields
+- **Zone B** (inside window, before class): Clear `skip_next_occurrence` flag only, keep `skip_target_datetime` for UI
+- **Zone C** (after class time): Clear both fields
+
+Skip buttons disabled when paused/inactive with tooltips. Uses `calculateBookingWindowOpen()` for timezone-aware calculations.
+
+**Files:** `app/actions/recurring-classes.ts` (toggleRecurringClassActive), `app/actions/user-settings.ts` (updateSchedulePaused), `components/SkipButton.tsx`
+
+### 12. Environment Variables
 
 **Multi-environment support** with dynamic URL resolution and environment-aware email config:
 - Production: `noreply@beerock.com` (custom domain with DKIM)
