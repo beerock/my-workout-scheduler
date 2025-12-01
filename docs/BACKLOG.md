@@ -3650,10 +3650,10 @@ When a class has `skip_next_occurrence = true` (user clicked "Skip Next"), we ne
 
 ---
 
-## Skip/Edit Interaction Behavior (Pre-MVP)
+## Skip/Edit Interaction Behavior ✅
 
 ### Overview
-**STATUS: PRE-MVP - MUST DETERMINE BEFORE LAUNCH**
+**STATUS: ✅ COMPLETED - READY FOR PRODUCTION**
 
 When a class has an active skip set (`skip_next_occurrence = true`, `skip_target_datetime` set), we need to determine what happens if the user edits the class details (time, day, branch, etc.).
 
@@ -3815,16 +3815,19 @@ When a class has an active skip set (`skip_next_occurrence = true`, `skip_target
 7. Skip class → Edit multiple fields including time → Verify skip cleared ✓
 
 ### Status
-**Status**: Pre-MVP - Decision documented, implementation needed
+**Status**: ✅ COMPLETED (November 30, 2025)
 **Priority**: Medium (important for data consistency)
 **Last Updated**: November 30, 2025
-**Decision**: Clear skip when day/time changes, preserve for other edits (Option 2)
-**Blocks**: MVP launch (implementation required)
-**Next Steps**:
-1. Implement schedule change detection in saveRecurringClass
-2. Add skip clearing logic for schedule changes
-3. Test all edit scenarios
-4. Update PRODUCTION_TESTING.md with test cases
+**Decision**: Clear skip when day/time changes with user confirmation (Option 2 + Option 4 hybrid)
+**Implementation**:
+- Two-pass confirmation pattern with modal dialog
+- User warned BEFORE skip is cleared (shows specific skip date)
+- Modal appears before booking window check
+- Clear both `skip_next_occurrence` and `skip_target_datetime` on confirmation
+**Files Modified**:
+- `app/actions/recurring-classes.ts` - Schedule change detection and skip clearing logic
+- `components/RecurringClassForm.tsx` - Confirmation modal and handlers
+**Testing**: Verified working on local development server ✅
 
 ---
 

@@ -19,6 +19,8 @@ export type RecurringClassResult = {
   id?: string
   bookingWindowAlreadyOpen?: boolean
   bookingTime?: Date
+  skipClearWarning?: boolean
+  skipDate?: string | null
 }
 
 /**
@@ -26,7 +28,8 @@ export type RecurringClassResult = {
  */
 export async function saveRecurringClass(
   data: RecurringClassFormData,
-  id?: string
+  id?: string,
+  confirmSkipClear?: boolean
 ): Promise<RecurringClassResult> {
   try {
     const supabase = await createClient()
@@ -62,7 +65,18 @@ export async function saveRecurringClass(
       }
     }
 
-    const classData = {
+    const classData: {
+      user_id: string
+      day_of_week: number
+      class_time: string
+      class_type: string
+      branch: string
+      booking_window_hours: number
+      timezone: string
+      active: boolean
+      skip_next_occurrence?: boolean
+      skip_target_datetime?: string | null
+    } = {
       user_id: user.id,
       day_of_week: data.day_of_week,
       class_time: data.class_time,
@@ -76,6 +90,44 @@ export async function saveRecurringClass(
     let resultId: string
 
     if (id) {
+      // Fetch existing class to check for schedule changes
+      const { data: existingClass, error: fetchError } = await supabase
+        .from('recurring_classes')
+        .select('day_of_week, class_time, skip_next_occurrence, skip_target_datetime')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single()
+
+      if (fetchError || !existingClass) {
+        return {
+          success: false,
+          error: 'Class not found',
+        }
+      }
+
+      // Check if schedule changed (day or time)
+      const scheduleChanged =
+        existingClass.day_of_week !== data.day_of_week ||
+        existingClass.class_time !== data.class_time
+
+      // Check if skip is active
+      const hasActiveSkip = existingClass.skip_next_occurrence === true
+
+      // If schedule changed AND skip active AND user hasn't confirmed
+      if (scheduleChanged && hasActiveSkip && !confirmSkipClear) {
+        return {
+          success: false,
+          skipClearWarning: true,
+          skipDate: existingClass.skip_target_datetime,
+        }
+      }
+
+      // Clear skip if schedule changed (user already confirmed at this point)
+      if (scheduleChanged && hasActiveSkip) {
+        classData.skip_next_occurrence = false
+        classData.skip_target_datetime = null
+      }
+
       // Update existing class
       const { error } = await supabase
         .from('recurring_classes')
