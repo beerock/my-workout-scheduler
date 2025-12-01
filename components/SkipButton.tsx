@@ -13,17 +13,28 @@ type Props = {
   recurringClass: RecurringClass
   gymUrl?: string | null
   onUpdate?: () => void
+  schedulePaused?: boolean
 }
 
-export default function SkipButton({ recurringClass, gymUrl, onUpdate }: Props) {
+export default function SkipButton({ recurringClass, gymUrl, onUpdate, schedulePaused }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  const { skip_next_occurrence, skip_target_datetime, day_of_week, class_time, timezone } = recurringClass
+  const { skip_next_occurrence, skip_target_datetime, day_of_week, class_time, timezone, active } = recurringClass
 
   // Determine if skip is active
   // Show skip status if skip_target_datetime exists AND hasn't passed yet
   const isSkipActive = skip_target_datetime && new Date() < new Date(skip_target_datetime)
+
+  // Determine if button should be disabled
+  const isDisabled = schedulePaused || !active
+
+  // Get reason for disabled state (for tooltip)
+  const getDisabledReason = () => {
+    if (schedulePaused) return "Cannot skip while schedule is paused"
+    if (!active) return "Cannot skip inactive class"
+    return ""
+  }
 
   const handleSkip = async () => {
     setLoading(true)
@@ -82,8 +93,9 @@ export default function SkipButton({ recurringClass, gymUrl, onUpdate }: Props) 
     return (
       <button
         onClick={handleSkip}
-        disabled={loading}
+        disabled={loading || isDisabled}
         className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        title={isDisabled ? getDisabledReason() : ''}
       >
         {loading ? 'Setting...' : 'Skip Next'}
       </button>
@@ -97,9 +109,9 @@ export default function SkipButton({ recurringClass, gymUrl, onUpdate }: Props) 
         <span>📅 Skipping {formatDateInGymTimezone(new Date(skip_target_datetime!), timezone, 'short')}</span>
         <button
           onClick={handleUnskip}
-          disabled={loading}
-          className="text-blue-800 hover:text-blue-900 font-bold"
-          title="Cancel skip"
+          disabled={loading || isDisabled}
+          className="text-blue-800 hover:text-blue-900 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          title={isDisabled ? getDisabledReason() : "Cancel skip"}
         >
           ×
         </button>

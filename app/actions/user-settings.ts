@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { calculateBookingWindowOpen } from '@/lib/date-utils'
 
 export type UserSettingsResult = {
   success: boolean
@@ -90,6 +91,71 @@ export async function updateSchedulePaused(
       return {
         success: false,
         error: 'Not authenticated',
+      }
+    }
+
+    // If PAUSING (paused = true), check for skips to clean up using three-zone logic
+    if (paused === true) {
+      // Fetch all user's classes with active skips (need full data for window calculation)
+      const { data: classesWithSkips, error: fetchError } = await supabase
+        .from('recurring_classes')
+        .select('id, skip_target_datetime, day_of_week, class_time, booking_window_hours, timezone')
+        .eq('user_id', user.id)
+        .not('skip_target_datetime', 'is', null)
+
+      if (!fetchError && classesWithSkips && classesWithSkips.length > 0) {
+        const now = new Date()
+        const classesToClearBoth: string[] = [] // Zone C: Clear both fields
+        const classesToClearFlag: string[] = [] // Zone B: Clear flag only
+
+        // Categorize each class into zones
+        for (const classItem of classesWithSkips) {
+          const classTime = new Date(classItem.skip_target_datetime)
+
+          // Calculate booking window open time
+          const bookingWindowOpen = calculateBookingWindowOpen(
+            classItem.day_of_week,
+            classItem.class_time,
+            classItem.booking_window_hours,
+            classItem.timezone
+          )
+
+          // Three-zone logic
+          if (classTime <= now) {
+            // Zone C: Past occurrence
+            classesToClearBoth.push(classItem.id)
+          } else if (bookingWindowOpen <= now) {
+            // Zone B: Inside booking window
+            classesToClearFlag.push(classItem.id)
+          }
+          // Zone A: Before booking window - no action (preserve skip)
+        }
+
+        // Bulk update Zone C (clear both fields)
+        if (classesToClearBoth.length > 0) {
+          await supabase
+            .from('recurring_classes')
+            .update({
+              skip_next_occurrence: false,
+              skip_target_datetime: null,
+            })
+            .in('id', classesToClearBoth)
+            .eq('user_id', user.id)
+          console.log(`[updateSchedulePaused] Zone C: Cleared ${classesToClearBoth.length} past skip(s)`)
+        }
+
+        // Bulk update Zone B (clear flag only)
+        if (classesToClearFlag.length > 0) {
+          await supabase
+            .from('recurring_classes')
+            .update({
+              skip_next_occurrence: false,
+              // skip_target_datetime preserved for UI
+            })
+            .in('id', classesToClearFlag)
+            .eq('user_id', user.id)
+          console.log(`[updateSchedulePaused] Zone B: Cleared ${classesToClearFlag.length} flag(s) inside window`)
+        }
       }
     }
 
