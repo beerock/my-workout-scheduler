@@ -148,6 +148,11 @@
   - Migrated from single-field to two-field skip approach (boolean flag + timestamptz)
   - Simplified business logic and eliminated timezone bugs in skip checks
   - Clear lifecycle: flag cleared after skip, datetime cleared at next booking attempt
+- **v2.12:** Skip functionality enhancements
+  - Skip edit confirmation modal prevents accidental skip removal when changing schedule
+  - Three-zone cleanup logic for intelligent pause/inactive interaction
+  - Disabled skip buttons with helpful tooltips when paused or inactive
+  - Time-based skip field management (preserve future skips, clear past skips)
 
 ---
 
@@ -225,7 +230,43 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 | **Timezone Setting** | User specifies timezone per class (stored in recurring_classes) | High | ✅ |
 | **Global Pause** | Toggle to pause all bookings across all classes | High | ✅ |
 | **Per-Class Active Toggle** | Enable/disable individual classes | High | ✅ |
-| **Skip Next Occurrence** | Skip a single upcoming class with smart unskip logic | High | ✅ |
+| **Skip Next Occurrence** | Skip a single upcoming class with edit confirmation and intelligent pause/inactive cleanup | High | ✅ |
+
+#### 3.2.1 Skip Functionality Details
+
+**Skip Edit Confirmation**
+
+When editing a class with an active skip:
+- Changing **day_of_week** or **class_time** triggers confirmation modal
+- Modal displays formatted skip date being cleared (e.g., "Mon, Dec 2")
+- User must explicitly click "Continue" to proceed
+- Prevents accidental skip removal during schedule changes
+- Two-pass server action pattern: first call returns warning, second call with `confirmSkipClear=true` clears skip
+- Modal appears BEFORE booking window check
+
+**Skip Cleanup with Pause/Inactive (Three-Zone Logic)**
+
+Intelligent skip field management when pausing or deactivating:
+
+**Zone A (Before Booking Window):**
+- Condition: `now < booking_window_open_time`
+- Action: Preserve both `skip_next_occurrence` and `skip_target_datetime`
+- Rationale: Future skip still valid, user may unpause/reactivate before window
+
+**Zone B (Inside Booking Window):**
+- Condition: `booking_window_open_time <= now < class_time`
+- Action: Clear `skip_next_occurrence` flag only, keep `skip_target_datetime` for UI
+- Rationale: Scheduled trigger time passed (no automatic booking), clear flag so manual booking can proceed
+
+**Zone C (Past Class Time):**
+- Condition: `class_time <= now`
+- Action: Clear both fields completely
+- Rationale: Data hygiene - occurrence already passed
+
+**UI Behavior:**
+- Skip buttons disabled when schedule paused or class inactive
+- Tooltips explain why: "Cannot skip while schedule is paused" or "Cannot skip inactive class"
+- Skip badge remains visible but cancel (×) button disabled
 
 **Example Configuration:**
 
@@ -412,8 +453,8 @@ recurring\_classes (
   booking\_window\_hours,
   timezone,
   active (boolean),
-  skip\_next\_occurrence (boolean),
-  skip\_target\_datetime (timestamptz),
+  skip\_next\_occurrence (boolean),  -- Flag checked by Inngest; cleared by pause/inactive based on three-zone logic
+  skip\_target\_datetime (timestamptz),  -- Full datetime for UI; preserved in Zone B, cleared in Zone C
   created\_at
 )
 
