@@ -167,15 +167,34 @@ export async function scheduleBooking(classData: {
     return null;
   }
 
-  console.log(
-    `[Scheduler] Scheduling booking for class "${classData.class_type}" (${classData.id}) at ${bookingTime.toISOString()}`
+  // Calculate class date for cancelOn matching and idempotency
+  const classDate = calculateNextClassDate(
+    classData.day_of_week,
+    classData.class_time,
+    classData.timezone
   );
 
+  console.log(
+    `[Scheduler] Scheduling booking for class "${classData.class_type}" (${classData.id}) on ${classDate} at ${bookingTime.toISOString()}`
+  );
+
+  // Cancel any existing scheduled run for this class+date
+  // This ensures edits and daily scheduler don't create duplicates
+  await inngest.send({
+    name: 'booking/cancel',
+    data: {
+      classId: classData.id,
+      classDate,
+    },
+  });
+
+  // Schedule new booking attempt
   await inngest.send({
     name: 'booking/attempt',
     data: {
       classId: classData.id,
       className: classData.class_type,
+      classDate, // Required for cancelOn matching
       attemptNumber: 1,
     },
     ts: bookingTime.getTime(),

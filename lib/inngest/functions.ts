@@ -25,6 +25,13 @@ export const bookClassFunction = inngest.createFunction(
     id: 'book-class',
     // Inngest will retry the entire function if it crashes (network errors, etc.)
     retries: 3,
+    // Cancel any pending run when a cancel event matches classId + classDate
+    cancelOn: [
+      {
+        event: 'booking/cancel',
+        if: 'event.data.classId == async.data.classId && event.data.classDate == async.data.classDate',
+      },
+    ],
   },
   { event: 'booking/attempt' },
   async ({ event, step }) => {
