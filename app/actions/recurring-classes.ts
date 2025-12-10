@@ -2,8 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { scheduleBooking, calculateBookingWindowOpen } from '@/lib/inngest/scheduler'
+import { scheduleBooking, calculateBookingWindowOpen, calculateNextClassDate } from '@/lib/inngest/scheduler'
 import { calculateBookingWindowOpen as calculateBookingWindow } from '@/lib/date-utils'
+import { inngest } from '@/lib/inngest/client'
 
 export type RecurringClassFormData = {
   day_of_week: number
@@ -329,6 +330,45 @@ export async function deleteRecurringClass(id: string): Promise<RecurringClassRe
       }
     }
 
+    // Fetch class data first so we can cancel any pending Inngest run
+    const { data: classData, error: fetchError } = await supabase
+      .from('recurring_classes')
+      .select('day_of_week, class_time, timezone')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (fetchError) {
+      return {
+        success: false,
+        error: `Failed to fetch class: ${fetchError.message}`,
+      }
+    }
+
+    // Cancel any pending scheduled run for this class
+    if (classData) {
+      try {
+        const classDate = calculateNextClassDate(
+          classData.day_of_week,
+          classData.class_time,
+          classData.timezone
+        )
+
+        await inngest.send({
+          name: 'booking/cancel',
+          data: {
+            classId: id,
+            classDate,
+          },
+        })
+        console.log(`[Delete] Sent cancel event for class ${id} on ${classDate}`)
+      } catch (cancelError) {
+        // Log but don't fail - the class will still be deleted
+        console.error('Failed to send cancel event:', cancelError)
+      }
+    }
+
+    // Now delete the class
     const { error } = await supabase
       .from('recurring_classes')
       .delete()
