@@ -529,6 +529,30 @@ booking\_attempts (
 
 ---
 
+## 6.5. Inngest Function Configuration Sync (CRITICAL for Development)
+
+When modifying Inngest function configurations (especially `cancelOn` patterns, retries, or any function metadata), Inngest must be manually synced to pick up changes:
+
+**Problem:** Code changes deployed to Vercel are not automatically reflected in Inngest's cached function definitions. Old function configurations may persist in Inngest until manually synced.
+
+**Solution - After updating any Inngest function in `lib/inngest/functions.ts`:**
+
+1. **Deploy code to Vercel** (via `git push`)
+2. **Verify Vercel deployment** is complete and marked "Ready"
+3. **Manually sync Inngest:**
+   - Navigate to Inngest Dashboard → Apps section
+   - Find your application (your Vercel deployment)
+   - Locate the "Sync" or refresh button
+   - Click to force Inngest to fetch latest function definitions
+   - Wait for sync to complete (usually 10-30 seconds)
+4. **Verify changes took effect** before testing new functionality
+
+**Why this matters:** Function configuration changes (like `cancelOn` CEL expressions) won't be active until Inngest syncs. Runs created before sync will have the old configuration embedded. Always clear old runs after deploying function config changes.
+
+**Automatic sync:** Inngest typically auto-syncs within 5-10 minutes, but manual sync ensures immediate update for testing.
+
+---
+
 ## 7\. Implementation Timeline (2 Weeks)
 
 ### Week 1: Core Functionality

@@ -244,6 +244,29 @@ Skip buttons disabled when paused/inactive with tooltips. Uses `calculateBooking
 - **Per-class:** Active toggle on individual classes
 - **Single occurrence:** "Skip Next" button
 
+### Inngest Function Configuration Sync (CRITICAL)
+
+When modifying Inngest function configurations (especially `cancelOn` patterns), Inngest must re-sync with the application to pick up changes:
+
+**Problem:** Code changes deployed to Vercel are not automatically reflected in Inngest's cached function definitions. Old function configurations may persist in Inngest dashboard until manually synced.
+
+**Solution - After updating Inngest functions:**
+
+1. **Deploy code to Vercel** (via git push)
+2. **Verify Vercel deployment** is complete and marked "Ready"
+3. **Sync Inngest:**
+   - Go to Inngest Dashboard → Apps
+   - Find your app (your Vercel deployment)
+   - Look for "Sync" button or similar refresh option
+   - Click to force Inngest to fetch latest function definitions from your app
+   - Wait for sync to complete
+
+**Why this matters:** Changes to function configurations like `cancelOn` expressions won't take effect until Inngest re-syncs. Old runs created before sync will still have the old configuration baked in.
+
+**Timeline:** Function definitions typically sync automatically within 5-10 minutes, but manual sync ensures immediate update.
+
+**Files affected:** `lib/inngest/functions.ts` (any changes to function configs, retries, cancelOn, etc.)
+
 ---
 
 ## Security & Data Protection
