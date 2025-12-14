@@ -4,6 +4,17 @@
 
 This document provides step-by-step instructions for implementing the user notification system for booking results.
 
+> **⚠️ Note:** There is a previous implementation attempt on branch
+> `claude/email-booking-notifications-01Dzs7tw6eGn5MsdqbSoJpMA`
+> from the session "Add email notifications for booking results".
+>
+> **Before implementing:** Review that branch to see if any code can be
+> reused or if there are conflicts to resolve. This design may supersede
+> or complement that work.
+>
+> **Recommended approach:** Use that branch as the implementation branch,
+> updating it to follow this design document.
+
 ---
 
 ## Table of Contents
