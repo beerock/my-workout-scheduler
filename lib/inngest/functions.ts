@@ -29,7 +29,7 @@ export const bookClassFunction = inngest.createFunction(
     cancelOn: [
       {
         event: 'booking/cancel',
-        if: 'event.data.classId == async.data.classId && event.data.classDate == async.data.classDate',
+        if: 'async.data.classId == event.data.classId && async.data.classDate == event.data.classDate',
       },
     ],
   },
