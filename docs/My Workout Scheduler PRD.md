@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.10
+**Version:** 2.11
 **Product Owner:** Brock Busby
-**Last Updated:** November 28, 2025
+**Last Updated:** November 29, 2025
 **Status:** Production - Deployed and Testing
 
 
@@ -100,6 +100,14 @@
   - Updated booking-automation.ts with improved error messages
   - Implementation-ready documentation for future notification system
   - See `docs/ERROR_MESSAGES.md`, `docs/NOTIFICATIONS_DESIGN.md`, `docs/NOTIFICATIONS_IMPLEMENTATION.md`
+- ✅ **COMPLETED: Skip Functionality Database Migration Fix (v2.11)**
+  - Fixed migration 004 for skip functionality with proper DATE/TIME type casting
+  - Migrated from single-field `next_skip_date` (DATE) to two-field approach
+  - New fields: `skip_next_occurrence` (boolean flag) + `skip_target_datetime` (timestamptz)
+  - Simplified business logic: boolean check instead of date comparison (eliminates timezone bugs)
+  - Clear separation: flag for backend logic, datetime for UI display with timezone formatting
+  - Lifecycle: flag cleared immediately after skip, datetime cleared at next booking attempt
+  - Database migration now handles PostgreSQL DATE and TIME types correctly with `::TEXT` casting
 - ✅ **COMPLETED: User Profile Management (v2.8)**
   - Email update with password verification and email confirmation
   - Password change with current password verification
@@ -135,6 +143,16 @@
   - Categorized errors by action needed (no action / recommended / required)
   - Designed comprehensive email notification system with templates
   - Created implementation-ready documentation for future rollout
+- **v2.11:** Skip functionality database migration fix
+  - Fixed migration 004 for proper DATE/TIME type casting in PostgreSQL
+  - Migrated from single-field to two-field skip approach (boolean flag + timestamptz)
+  - Simplified business logic and eliminated timezone bugs in skip checks
+  - Clear lifecycle: flag cleared after skip, datetime cleared at next booking attempt
+- **v2.12:** Skip functionality enhancements
+  - Skip edit confirmation modal prevents accidental skip removal when changing schedule
+  - Three-zone cleanup logic for intelligent pause/inactive interaction
+  - Disabled skip buttons with helpful tooltips when paused or inactive
+  - Time-based skip field management (preserve future skips, clear past skips)
 
 ---
 
@@ -212,7 +230,43 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 | **Timezone Setting** | User specifies timezone per class (stored in recurring_classes) | High | ✅ |
 | **Global Pause** | Toggle to pause all bookings across all classes | High | ✅ |
 | **Per-Class Active Toggle** | Enable/disable individual classes | High | ✅ |
-| **Skip Next Occurrence** | Skip a single upcoming class with smart unskip logic | High | ✅ |
+| **Skip Next Occurrence** | Skip a single upcoming class with edit confirmation and intelligent pause/inactive cleanup | High | ✅ |
+
+#### 3.2.1 Skip Functionality Details
+
+**Skip Edit Confirmation**
+
+When editing a class with an active skip:
+- Changing **day_of_week** or **class_time** triggers confirmation modal
+- Modal displays formatted skip date being cleared (e.g., "Mon, Dec 2")
+- User must explicitly click "Continue" to proceed
+- Prevents accidental skip removal during schedule changes
+- Two-pass server action pattern: first call returns warning, second call with `confirmSkipClear=true` clears skip
+- Modal appears BEFORE booking window check
+
+**Skip Cleanup with Pause/Inactive (Three-Zone Logic)**
+
+Intelligent skip field management when pausing or deactivating:
+
+**Zone A (Before Booking Window):**
+- Condition: `now < booking_window_open_time`
+- Action: Preserve both `skip_next_occurrence` and `skip_target_datetime`
+- Rationale: Future skip still valid, user may unpause/reactivate before window
+
+**Zone B (Inside Booking Window):**
+- Condition: `booking_window_open_time <= now < class_time`
+- Action: Clear `skip_next_occurrence` flag only, keep `skip_target_datetime` for UI
+- Rationale: Scheduled trigger time passed (no automatic booking), clear flag so manual booking can proceed
+
+**Zone C (Past Class Time):**
+- Condition: `class_time <= now`
+- Action: Clear both fields completely
+- Rationale: Data hygiene - occurrence already passed
+
+**UI Behavior:**
+- Skip buttons disabled when schedule paused or class inactive
+- Tooltips explain why: "Cannot skip while schedule is paused" or "Cannot skip inactive class"
+- Skip badge remains visible but cancel (×) button disabled
 
 **Example Configuration:**
 
@@ -388,18 +442,20 @@ gym\_credentials (
   created\_at  
 )
 
-\-- Recurring class schedule  
-recurring\_classes (  
-  id,  
-  user\_id (FK),  
-  day\_of\_week (0-6),  
-  class\_time,  
-  class\_type,  
-  branch,  
-  booking\_window\_hours,  
-  timezone,  
-  active (boolean),  
-  created\_at  
+\-- Recurring class schedule
+recurring\_classes (
+  id,
+  user\_id (FK),
+  day\_of\_week (0-6),
+  class\_time,
+  class\_type,
+  branch,
+  booking\_window\_hours,
+  timezone,
+  active (boolean),
+  skip\_next\_occurrence (boolean),  -- Flag checked by Inngest; cleared by pause/inactive based on three-zone logic
+  skip\_target\_datetime (timestamptz),  -- Full datetime for UI; preserved in Zone B, cleared in Zone C
+  created\_at
 )
 
 \-- Booking attempt log  
@@ -470,6 +526,30 @@ booking\_attempts (
 | **Scalability** | Support 5 users | Free tiers handle 5 users × 5 classes/week = 100 bookings/month easily |
 | **Maintainability** | Simple codebase | Prioritize readability over cleverness; event-driven architecture cleaner than polling |
 | **Cost** | **FREE** | All services on free tier (eliminated $4-8/month GitHub Actions cost) |
+
+---
+
+## 6.5. Inngest Function Configuration Sync (CRITICAL for Development)
+
+When modifying Inngest function configurations (especially `cancelOn` patterns, retries, or any function metadata), Inngest must be manually synced to pick up changes:
+
+**Problem:** Code changes deployed to Vercel are not automatically reflected in Inngest's cached function definitions. Old function configurations may persist in Inngest until manually synced.
+
+**Solution - After updating any Inngest function in `lib/inngest/functions.ts`:**
+
+1. **Deploy code to Vercel** (via `git push`)
+2. **Verify Vercel deployment** is complete and marked "Ready"
+3. **Manually sync Inngest:**
+   - Navigate to Inngest Dashboard → Apps section
+   - Find your application (your Vercel deployment)
+   - Locate the "Sync" or refresh button
+   - Click to force Inngest to fetch latest function definitions
+   - Wait for sync to complete (usually 10-30 seconds)
+4. **Verify changes took effect** before testing new functionality
+
+**Why this matters:** Function configuration changes (like `cancelOn` CEL expressions) won't be active until Inngest syncs. Runs created before sync will have the old configuration embedded. Always clear old runs after deploying function config changes.
+
+**Automatic sync:** Inngest typically auto-syncs within 5-10 minutes, but manual sync ensures immediate update for testing.
 
 ---
 

@@ -11,7 +11,6 @@ import {
   getClassesNeedingBooking,
   createBookingAttempt,
   updateBookingAttempt,
-  clearSkipDate,
   type ClassNeedingBooking,
 } from './database-helpers'
 import { bookClass, type BookingParams } from './booking-automation'
@@ -79,30 +78,8 @@ async function processUserBookings(
     console.log(`   Day: ${getDayName(classItem.day_of_week)}, Time: ${classItem.class_time}`)
     console.log(`   Branch: ${classItem.branch}`)
 
-    // Check if we should skip today
-    const today = new Date().toISOString().split('T')[0]
-    if (classItem.next_skip_date === today) {
-      console.log(`   ⏭️  Skipping (next_skip_date = today)`)
-
-      // Create skipped attempt
-      const attemptId = await createBookingAttempt(
-        classItem.id,
-        'skipped',
-        null,
-        `Skipped: next_skip_date equals today (${today})`
-      )
-      userResults.skipped++
-
-      // Clear the skip date
-      try {
-        await clearSkipDate(classItem.id)
-        console.log(`   ✅ Cleared skip date`)
-      } catch (error) {
-        console.error(`   ⚠️  Failed to clear skip date:`, error)
-      }
-
-      continue
-    }
+    // Note: Skip logic is handled by Inngest in production
+    // This script is for manual testing only
 
     // Create pending attempt
     let attemptId: string
@@ -124,7 +101,6 @@ async function processUserBookings(
       classTime: classItem.class_time,
       classType: classItem.class_type,
       timezone: classItem.timezone,
-      nextSkipDate: classItem.next_skip_date,
     }
 
     // Execute booking

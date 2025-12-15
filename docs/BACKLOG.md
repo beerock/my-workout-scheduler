@@ -651,6 +651,241 @@ When a class is not available at the primary branch, automatically attempt to bo
 
 ---
 
+## User Troubleshooting Guide
+
+### Overview
+Create comprehensive user-facing documentation to help users diagnose and fix common booking failures. This guide would be linked from error messages and dashboard to provide self-service support.
+
+### Context
+From failure scenarios audit (v2.10), we identified 16 different failure types. Many have simple fixes (typos in class name, wrong time, etc.) but users currently don't know how to debug these issues.
+
+### Requirements
+
+**1. Common Failure Scenarios Section**
+For each of the 16 failure types, provide:
+- What this error means (plain language)
+- Why it happens (common causes)
+- How to fix it (step-by-step)
+- When to contact support
+
+**2. Self-Service Debugging Tools**
+- Class name validator (check if class exists on gym website)
+- Time zone checker (verify class time in your timezone)
+- Booking window calculator (show when window opens)
+- Credentials tester (verify gym login works)
+
+**3. Quick Fixes Checklist**
+```markdown
+Before contacting support, check:
+□ Class name matches gym website exactly (case-sensitive)
+□ Class time is correct (AM/PM, timezone)
+□ Day of week is correct
+□ Branch name is accurate
+□ Your gym credentials are up to date
+□ Class hasn't been cancelled by gym
+```
+
+**4. Screenshots & Examples**
+- Show gym website screenshots with labels
+- Point out where to find class name, time, branch
+- Example of correct vs incorrect configuration
+
+### Proposed Sections
+
+**Troubleshooting Guide Structure:**
+1. Introduction (how to use this guide)
+2. Quick Fixes Checklist
+3. Common Errors by Category
+   - Configuration Errors (class not found, wrong time, wrong branch)
+   - Credential Issues (login failed, password changed)
+   - Temporary Failures (class full, booking window not open)
+   - Permanent Failures (class cancelled, not reservable)
+4. Self-Service Tools
+5. When to Contact Support
+6. FAQ
+
+### Implementation Notes
+
+**Location:** Create `docs/USER_TROUBLESHOOTING_GUIDE.md`
+
+**Link from:**
+- Error messages (include URL to specific section)
+- Dashboard help button
+- Email notifications (future)
+- 404/error pages
+
+**Dependencies:**
+- Failure scenarios audit (completed in v2.10)
+- Error message improvements (future session)
+- User notifications system (future)
+
+### Example Entry
+
+```markdown
+### Error: "Class not found on schedule"
+
+**What this means:**
+We couldn't find your class when searching the gym's class schedule. This usually means there's a small difference between your configuration and what the gym website shows.
+
+**Common causes:**
+• Class name has a typo or different spelling
+• Class time is incorrect (AM/PM mix-up)
+• Wrong day of week selected
+• Wrong branch selected
+
+**How to fix:**
+1. Go to your gym's website and find the class
+2. Copy the exact class name (including capitalization)
+3. Note the exact time (verify AM/PM)
+4. Verify the day and branch
+5. Update your recurring class in the dashboard
+6. Try booking again
+
+**Still not working?**
+Check our [Class Name Examples](#class-name-examples) or [contact support](#support).
+```
+
+### Benefits
+- Reduces support burden (users can self-serve)
+- Faster problem resolution (no wait for support)
+- Better user experience (empowering vs frustrating)
+- Lower churn (users don't give up due to confusion)
+
+### Status
+**Status**: Backlogged - Recommended after error messaging improvements
+**Priority**: Medium (post-MVP, but important for UX)
+**Dependencies**: Error messaging improvement session, failure scenarios audit
+**Last Updated**: November 28, 2025
+**Estimated Effort**: 4-6 hours (writing + examples + screenshots)
+
+---
+
+## Retry Status Indicators in Dashboard
+
+### Overview
+Show real-time retry status in the dashboard so users know when the system is actively retrying a booking and when they need to take action. Currently, users must guess whether failures are temporary or permanent.
+
+### Context
+From failure scenarios audit (v2.10):
+- 2 scenarios trigger automatic retries (booking window not open, class full)
+- 14 scenarios fail immediately (permanent failures)
+- Users have no visibility into which category their failure falls into
+
+### Requirements
+
+**1. Status Badge on Booking History**
+```
+✅ Confirmed          (green badge)
+⏳ Retrying           (yellow badge, animated)
+❌ Failed - Action Needed  (red badge)
+⏭️ Skipped            (gray badge)
+```
+
+**2. Retry Information Panel**
+When status is "Retrying", show:
+- What we're retrying for (e.g., "Class is full - waiting for spots to open")
+- Retry schedule (e.g., "Checking every 15 minutes")
+- Next retry time (e.g., "Next attempt: Friday 3:45 PM")
+- Time remaining (e.g., "Will retry until class starts (2h 15m remaining)")
+- Attempts so far (e.g., "Attempt 3 of unlimited")
+
+**3. Action Required Callout**
+When status is "Failed - Action Needed", show:
+- Clear description of problem
+- Why it needs manual action
+- Step-by-step fix instructions
+- Link to troubleshooting guide
+
+### Proposed UI
+
+```
+┌─────────────────────────────────────────────────────┐
+│ BODYPUMP • Monday 4:15 PM                           │
+│ ⏳ Retrying - Class is full                         │
+├─────────────────────────────────────────────────────┤
+│ We're automatically checking for open spots.        │
+│                                                     │
+│ 📅 Next attempt: Monday 3:00 PM                     │
+│ ⏱️ Checking every 15 minutes until 4:15 PM         │
+│ 🔄 Attempt 8 (no limit)                            │
+│                                                     │
+│ [Cancel Retry] [View Details]                      │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ Racquetball • Saturday 12:30 PM                     │
+│ ❌ Failed - Action Needed                           │
+├─────────────────────────────────────────────────────┤
+│ Class "Raquetball" not found on schedule.          │
+│                                                     │
+│ This usually means:                                 │
+│ • Typo in class name (check spelling)              │
+│ • Wrong time or day selected                       │
+│                                                     │
+│ Quick fix:                                          │
+│ 1. Check gym website for exact class name          │
+│ 2. Update class name in settings                   │
+│ 3. We'll try again at next scheduled time          │
+│                                                     │
+│ [Edit Class] [Troubleshooting Guide]               │
+└─────────────────────────────────────────────────────┘
+```
+
+### Implementation Notes
+
+**Database Changes:**
+```sql
+ALTER TABLE booking_attempts ADD COLUMN retry_status TEXT;
+-- Values: 'no_retry', 'retrying', 'retry_exhausted'
+
+ALTER TABLE booking_attempts ADD COLUMN next_retry_at TIMESTAMPTZ;
+ALTER TABLE booking_attempts ADD COLUMN retry_count INTEGER DEFAULT 0;
+```
+
+**Frontend Components:**
+- `<RetryStatusBadge />` - Colored badge with icon
+- `<RetryInfoPanel />` - Expandable details panel
+- `<ActionRequiredCallout />` - Error with fix steps
+
+**Real-time Updates:**
+- Polling: Refresh every 30 seconds when retry active
+- Or: WebSocket for real-time status (post-MVP)
+
+**Code Locations:**
+- `app/dashboard/page.tsx` - Booking history list
+- `components/BookingAttemptCard.tsx` - Individual attempt display
+- `lib/inngest/functions.ts` - Update retry_status, next_retry_at
+
+### User Stories
+
+**As a user with a full class:**
+- I want to see that the system is still trying
+- I want to know when the next attempt will be
+- I want to cancel the retry if I change my mind
+
+**As a user with a config error:**
+- I want to know immediately that I need to fix something
+- I want clear instructions on what to fix
+- I want to easily access settings to make the fix
+
+### Benefits
+- Reduces anxiety (users know system is working)
+- Clearer action items (know when manual intervention needed)
+- Better trust (transparency in automation)
+- Fewer support requests ("Is it still trying?")
+
+### Status
+**Status**: Backlogged - Recommended after user notifications
+**Priority**: Medium (post-MVP UX improvement)
+**Dependencies**:
+- Failure scenarios audit (completed)
+- User notifications system (for retry status updates)
+- Error messaging improvements
+**Last Updated**: November 28, 2025
+**Estimated Effort**: 6-8 hours (DB changes + UI components + integration)
+
+---
+
 ## Performance Optimizations
 
 ### Browser Session Reuse for Same User
@@ -3282,6 +3517,384 @@ SUPPORT_EMAIL=help@beerock.com
 
 ---
 
+## Skip/Pause Interaction Behavior (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - MUST DETERMINE BEFORE LAUNCH**
+
+When a class has `skip_next_occurrence = true` (user clicked "Skip Next"), we need to determine the correct behavior when the user pauses/unpauses their schedule or the individual class. Currently, the system does not have defined behavior for this interaction.
+
+### Current Behavior
+
+**Skip functionality:**
+- User clicks "Skip Next" → `skip_next_occurrence = true`, `skip_target_datetime` set to next occurrence
+- Inngest checks `skip_next_occurrence` flag before booking (simple boolean check)
+- After skip happens, flag cleared immediately
+- At next booking attempt (one week later), `skip_target_datetime` cleared
+
+**Pause functionality:**
+- **Global pause:** `user_settings.schedule_paused = true` (affects all classes)
+- **Per-class pause:** `recurring_classes.active = false` (affects individual class)
+
+**The question:** What should happen to skip state when user pauses/unpauses?
+
+### Scenarios to Consider
+
+1. **Class is skipped, then user pauses globally**
+   - Should skip state persist?
+   - Should skip state be cleared?
+   - What happens when user unpauses?
+
+2. **Class is skipped, then user deactivates that specific class**
+   - Should skip state persist?
+   - Should skip state be cleared?
+   - What happens when user reactivates the class?
+
+3. **User pauses globally, then tries to skip a class**
+   - Should UI allow skip while paused?
+   - Should skip be queued for when they unpause?
+   - Should it show an error/warning?
+
+4. **Class is inactive, then user tries to skip it**
+   - Should UI allow skip while inactive?
+   - Should skip be queued for when they reactivate?
+   - Should it show an error/warning?
+
+### Options to Consider
+
+**Option 1: Skip state is independent of pause state**
+- Skip state persists regardless of pause/unpause actions
+- Rationale: User explicitly set skip, shouldn't be affected by pause
+- Example: User skips Dec 25, then pauses for vacation. When they return and unpause, Dec 25 skip should still be there (though likely in the past and auto-cleared)
+
+**Option 2: Skip state is cleared when paused**
+- Global pause clears all skip states
+- Per-class deactivation clears skip state for that class
+- Rationale: Pause indicates user doesn't care about schedule temporarily, reset everything
+- Concern: User might forget they had skips set and be surprised when they're cleared
+
+**Option 3: Skip state is preserved but "frozen"**
+- Skip state persists but doesn't apply while paused
+- When unpaused, skip state resumes
+- Rationale: Best of both worlds - preserves user intent but respects pause
+- Complexity: Need to track "frozen" skip state separately
+
+**Option 4: Disable skip UI when paused/inactive**
+- Don't allow skipping paused or inactive classes
+- If already skipped, preserve state but show warning in UI
+- Rationale: Prevent user confusion, keep states separate
+- Best for MVP: Simple, clear, predictable
+
+### Recommendation for MVP
+
+**Recommended approach (Option 4 variant):**
+
+1. **Skip state is independent and preserved:**
+   - `skip_next_occurrence` and `skip_target_datetime` persist regardless of pause/active state
+   - This is the simplest implementation (no additional code needed)
+
+2. **UI considerations:**
+   - Show skip badge even when class is paused/inactive (user can see it's set)
+   - Allow unskip even when paused/inactive (user can clear it if they want)
+   - Optional: Show warning badge "Paused - skip will apply when resumed"
+
+3. **Booking logic (already correct):**
+   - Inngest checks pause state first: `if (paused || !active) → skip booking`
+   - Then checks skip state: `if (skip_next_occurrence) → skip booking`
+   - Order of checks doesn't matter since both result in skip
+
+4. **Edge case handling:**
+   - If skip datetime passes while paused → system auto-clears it normally
+   - If user unpauses after skip datetime passed → skip is already cleared, no issue
+   - If user unpauses before skip datetime → skip still applies correctly
+
+### Benefits of This Approach
+
+- **Simple**: No code changes needed, current behavior already correct
+- **Predictable**: Skip state is preserved, user sees what they set
+- **Flexible**: User can modify skip state even while paused
+- **No data loss**: User intent is never lost
+- **No surprises**: What you see is what you get
+
+### Implementation Notes
+
+**No code changes needed for MVP:**
+- Current implementation already handles this correctly
+- Inngest checks pause/active state before booking
+- Skip state is preserved in database
+
+**Optional UI enhancements (post-MVP):**
+- Add visual indicator when class is both skipped and paused
+- Show tooltip: "This skip will apply when you resume this class"
+- Confirmation dialog when unpausing: "You have 2 classes with skips set"
+
+### Testing Considerations
+
+**Test scenarios:**
+1. Skip class → Pause globally → Verify skip badge still shows → Unpause → Verify skip applies
+2. Skip class → Deactivate class → Verify skip badge still shows → Reactivate → Verify skip applies
+3. Pause globally → Try to skip class → Verify UI allows it → Verify booking skipped
+4. Deactivate class → Try to skip class → Verify UI allows it → Verify booking skipped
+5. Skip class → Pause → Wait for skip datetime to pass → Unpause → Verify skip auto-cleared
+
+### Status
+**Status**: Pre-MVP - Decision documented, no code changes needed
+**Priority**: Low (current behavior is acceptable, just needs to be documented and tested)
+**Last Updated**: November 29, 2025
+**Decision**: Preserve skip state independently of pause state (Option 4 variant)
+**Blocks**: MVP launch (documentation and testing needed)
+**Next Steps**:
+1. Document this behavior in user-facing help/FAQ
+2. Add test scenarios to PRODUCTION_TESTING.md
+3. Consider adding UI hints for paused + skipped state (post-MVP)
+
+---
+
+## Skip/Edit Interaction Behavior ✅
+
+### Overview
+**STATUS: ✅ COMPLETED - READY FOR PRODUCTION**
+
+When a class has an active skip set (`skip_next_occurrence = true`, `skip_target_datetime` set), we need to determine what happens if the user edits the class details (time, day, branch, etc.).
+
+### Current Behavior
+
+**Skip functionality:**
+- User clicks "Skip Next" → System calculates next occurrence and sets both fields
+- `skip_next_occurrence = true` (flag for Inngest)
+- `skip_target_datetime = "2025-12-01 11:00:00+00"` (specific datetime being skipped)
+
+**Edit functionality:**
+- User can edit class via Edit button
+- Form pre-populates with current values
+- On save, class fields are updated
+
+**The question:** What should happen to skip state when user edits a class?
+
+### Scenarios to Consider
+
+1. **User edits time but same day (e.g., 6:00 AM → 7:00 AM Monday)**
+   - Skip is for Monday 6:00 AM
+   - After edit, class is Monday 7:00 AM
+   - Should skip still apply? To which time?
+
+2. **User edits day but same time (e.g., Monday 6:00 AM → Tuesday 6:00 AM)**
+   - Skip is for Monday 6:00 AM
+   - After edit, class is Tuesday 6:00 AM
+   - Should skip still apply? To which day?
+
+3. **User edits both day and time**
+   - Skip target datetime no longer matches class schedule
+   - Skip becomes meaningless/invalid
+
+4. **User edits branch or class type (same day/time)**
+   - Skip datetime still matches schedule
+   - Should skip persist?
+
+5. **User edits booking window hours**
+   - Skip datetime still valid
+   - But booking window calculation changes
+   - Could affect when booking happens
+
+### Options to Consider
+
+**Option 1: Clear skip on ANY edit**
+- Any edit to class → Clear both `skip_next_occurrence` and `skip_target_datetime`
+- Rationale: Editing indicates user is actively managing the class, skip may no longer be relevant
+- Pro: Simple, predictable, no stale data
+- Con: User might lose skip they wanted to keep (e.g., just fixing a typo in class name)
+
+**Option 2: Clear skip only on day/time edits**
+- Edit day_of_week or class_time → Clear skip
+- Edit other fields (branch, class_type, booking_window_hours) → Preserve skip
+- Rationale: Skip is tied to specific datetime, other changes don't invalidate it
+- Pro: Preserves skip when it's still relevant
+- Con: More complex logic, edge cases
+
+**Option 3: Recalculate skip target datetime on edit**
+- Edit day/time → Recalculate `skip_target_datetime` based on new schedule
+- Other edits → Preserve skip as-is
+- Rationale: Preserve user intent to skip "next occurrence" even if schedule changes
+- Pro: Most flexible, respects user intent
+- Con: Complex, could be confusing (user skipped Monday, edited to Tuesday, now skipping Tuesday?)
+
+**Option 4: Warn user and ask confirmation**
+- If skip is active and user edits day/time → Show dialog
+- "This class has a skip set for [date]. Changing the schedule will clear the skip. Continue?"
+- Pro: User is aware and makes informed decision
+- Con: Extra friction, requires UI changes
+
+**Option 5: Prevent edits while skip is active**
+- Show message: "Cannot edit class while skip is active. Please unskip first."
+- Pro: No data inconsistency possible
+- Con: Too restrictive, poor UX
+
+### Recommendation for MVP
+
+**Recommended approach (Option 2 variant):**
+
+1. **Clear skip when day/time changes:**
+   - If `day_of_week` or `class_time` is edited → Clear both skip fields
+   - Rationale: Skip target datetime no longer matches schedule, becomes invalid
+   - Log to console: "Skip cleared due to schedule change"
+
+2. **Preserve skip for other edits:**
+   - If only `branch`, `class_type`, or `booking_window_hours` edited → Preserve skip
+   - Rationale: Skip datetime still valid for the class schedule
+
+3. **No UI warning for MVP:**
+   - Keep it simple, don't add dialog friction
+   - Future: Could add "(will clear skip)" hint in form if needed
+
+4. **Server action logic:**
+   ```typescript
+   // In saveRecurringClass server action
+   if (id) {
+     // Editing existing class
+     const { data: existingClass } = await getRecurringClass(id);
+
+     // Check if day or time changed
+     const scheduleChanged =
+       existingClass.day_of_week !== data.day_of_week ||
+       existingClass.class_time !== data.class_time;
+
+     if (scheduleChanged) {
+       // Clear skip when schedule changes
+       classData.skip_next_occurrence = false;
+       classData.skip_target_datetime = null;
+     }
+     // Otherwise preserve existing skip fields (don't update them)
+   }
+   ```
+
+### Benefits of This Approach
+
+- **Predictable**: Schedule changes clear skip, other changes don't
+- **Simple**: No UI changes, just server logic
+- **Correct**: Prevents invalid skip datetimes
+- **Non-breaking**: Doesn't block user actions
+
+### Edge Cases to Handle
+
+1. **Booking window already passed:**
+   - If schedule change moves booking window to the past → Don't schedule, show dialog
+   - (Already handled by existing "booking window already open" logic)
+
+2. **Skip datetime in the past:**
+   - If user edits old skip → Skip already cleared by time-based logic
+   - No special handling needed
+
+3. **Multiple rapid edits:**
+   - Each edit re-evaluates schedule change
+   - Skip cleared on first schedule change, stays cleared
+
+### Implementation Notes
+
+**Files to modify:**
+- `app/actions/recurring-classes.ts` (saveRecurringClass function)
+  - Add schedule change detection
+  - Clear skip fields when schedule changes
+
+**Database:**
+- No schema changes needed
+- Just update logic
+
+**UI:**
+- No changes needed for MVP
+- Optional enhancement: Show warning when editing skipped class
+
+### Testing Considerations
+
+**Test scenarios:**
+1. Skip class → Edit time only → Verify skip cleared ✓
+2. Skip class → Edit day only → Verify skip cleared ✓
+3. Skip class → Edit both day and time → Verify skip cleared ✓
+4. Skip class → Edit branch only → Verify skip preserved ✓
+5. Skip class → Edit class type only → Verify skip preserved ✓
+6. Skip class → Edit booking window hours → Verify skip preserved ✓
+7. Skip class → Edit multiple fields including time → Verify skip cleared ✓
+
+### Status
+**Status**: ✅ COMPLETED (November 30, 2025)
+**Priority**: Medium (important for data consistency)
+**Last Updated**: November 30, 2025
+**Decision**: Clear skip when day/time changes with user confirmation (Option 2 + Option 4 hybrid)
+**Implementation**:
+- Two-pass confirmation pattern with modal dialog
+- User warned BEFORE skip is cleared (shows specific skip date)
+- Modal appears before booking window check
+- Clear both `skip_next_occurrence` and `skip_target_datetime` on confirmation
+**Files Modified**:
+- `app/actions/recurring-classes.ts` - Schedule change detection and skip clearing logic
+- `components/RecurringClassForm.tsx` - Confirmation modal and handlers
+**Testing**: Verified working on local development server ✅
+
+---
+
+## Skip Cleanup with Pause/Inactive - Three-Zone Logic Testing (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - PRODUCTION TESTING REQUIRED BEFORE LAUNCH**
+
+The three-zone skip cleanup logic (v2.12) intelligently manages skip fields when users pause their schedule or deactivate individual classes. This feature needs comprehensive production testing to verify all time-based zones work correctly.
+
+### Feature Summary
+
+**What it does:**
+- When pausing schedule (global) or deactivating class (per-class), skip fields are cleaned up based on current time relative to booking window and class time
+- Three zones determine cleanup behavior:
+  - **Zone A** (before booking window): Preserve both fields
+  - **Zone B** (inside booking window): Clear flag only, keep datetime for UI
+  - **Zone C** (after class time): Clear both fields
+- Skip buttons disabled when paused/inactive with helpful tooltips
+
+**Implementation:**
+- `app/actions/recurring-classes.ts` - `toggleRecurringClassActive()` with three-zone logic
+- `app/actions/user-settings.ts` - `updateSchedulePaused()` with bulk three-zone cleanup
+- `components/SkipButton.tsx` - Disabled state UI and tooltips
+- `components/ScheduleList.tsx` - Props passing
+
+### Testing Requirements
+
+**Test Document:** `docs/TESTING_SKIP_THREE_ZONE_LOGIC.md`
+
+**Critical tests to complete:**
+1. ✅ **Part 1: UI Tests** - Skip buttons disabled when paused/inactive
+   - Test 1.1: Skip button disabled when paused (global)
+   - Test 1.2: Skip button disabled when inactive (per-class)
+2. **Part 2: Zone A Tests** - Before booking window opens
+   - Test 2.1: Pause before booking window (preserve both fields)
+   - Test 2.2: Deactivate before booking window (preserve both fields)
+3. **Part 3: Zone B Tests** - Inside booking window (⚠️ TIMING CRITICAL)
+   - Test 3.1: Pause inside booking window (clear flag, keep datetime)
+   - Test 3.2: Deactivate inside booking window (clear flag, keep datetime)
+4. **Part 4: Zone C Tests** - After class time has passed
+   - Test 4.1: Pause after class time (clear both fields)
+   - Test 4.2: Deactivate after class time (clear both fields)
+
+**Test Priority:**
+- **High Priority**: Part 1 (UI), Part 2 (Zone A), Part 4 (Zone C) - Easy to test
+- **Medium Priority**: Part 3 (Zone B) - Requires precise timing inside booking window
+
+### Status
+**Status**: ⚠️ PRE-MVP - PRODUCTION TESTING REQUIRED
+**Priority**: High (must verify before MVP launch)
+**Deployed**: Yes (v2.12 in production)
+**Tested**: Partial (UI tests only)
+**Blocks**: MVP launch (production testing required)
+**Last Updated**: December 1, 2025
+
+### Next Steps
+1. Complete all tests in `docs/TESTING_SKIP_THREE_ZONE_LOGIC.md`
+2. Document test results in the test file
+3. Fix any issues discovered during testing
+4. Mark as ✅ COMPLETED once all tests pass
+
+### Notes
+- Zone B tests are hardest due to timing requirements (must act inside booking window)
+- Tip: Use a class with 2-hour booking window instead of 26 hours for easier Zone B testing
+- Console logs verify which zone logic executed (`Zone A`, `Zone B`, or `Zone C`)
+- Database field verification required (check `skip_next_occurrence` and `skip_target_datetime` in Supabase)
 
 ---
 
