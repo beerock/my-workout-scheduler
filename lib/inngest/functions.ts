@@ -8,12 +8,11 @@ import {
   updateBookingAttempt,
   getClassById,
   getAllActiveClasses,
-  clearSkipDate,
   type ClassNeedingBooking,
 } from '@/scripts/database-helpers';
 import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
 import { differenceInMinutes } from 'date-fns';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 /**
  * Main booking function - triggered at exact booking window time
@@ -26,6 +25,13 @@ export const bookClassFunction = inngest.createFunction(
     id: 'book-class',
     // Inngest will retry the entire function if it crashes (network errors, etc.)
     retries: 3,
+    // Cancel any pending run when a cancel event matches classId + classDate
+    cancelOn: [
+      {
+        event: 'booking/cancel',
+        if: 'async.data.classId == event.data.classId && async.data.classDate == event.data.classDate',
+      },
+    ],
   },
   { event: 'booking/attempt' },
   async ({ event, step }) => {
@@ -48,10 +54,76 @@ export const bookClassFunction = inngest.createFunction(
     console.log(
       `[Inngest] Found class: ${classData.class_type} on ${getDayName(classData.day_of_week)} at ${classData.class_time}`
     );
+    console.log(`[Inngest] Skip flag: ${classData.skip_next_occurrence}, Skip target: ${classData.skip_target_datetime}`);
+
+    // Clear skip_target_datetime from previous week (cleanup stale data)
+    // This happens at the NEXT occurrence after the skipped one
+    // UI already shows badge only when current_time < skip_target_datetime
+    await step.run('clear-previous-skip-datetime', async () => {
+      // Only clear datetime if we're NOT currently skipping
+      // (i.e., this is cleanup from a previous week's skip)
+      if (classData.skip_target_datetime && !classData.skip_next_occurrence) {
+        const supabase = createServiceRoleClient();
+        const { error } = await supabase
+          .from('recurring_classes')
+          .update({ skip_target_datetime: null })
+          .eq('id', classData.id);
+
+        if (error) {
+          console.error(`[Inngest] ❌ Failed to clear skip_target_datetime:`, error);
+          throw new Error(`Failed to clear skip datetime: ${error.message}`);
+        }
+
+        console.log(`[Inngest] ✅ Cleared skip_target_datetime from previous occurrence`);
+        return { success: true };
+      }
+      return { success: true, skipped: 'skip still active or no datetime' };
+    });
+
+    // Check if we should skip this booking (simple boolean flag check)
+    if (classData.skip_next_occurrence === true) {
+      console.log(`[Inngest] ⏭️  Skip flag is TRUE - skipping booking for "${className}"`);
+
+      const attemptId = await step.run('create-skip-attempt', async () => {
+        return await createBookingAttempt(
+          classData.id,
+          'skipped',
+          null,
+          `Skipped: User set skip_next_occurrence flag`
+        );
+      });
+
+      // Clear the skip flag (so next week books normally)
+      await step.run('clear-skip-flag', async () => {
+        const supabase = createServiceRoleClient();
+        const { error } = await supabase
+          .from('recurring_classes')
+          .update({ skip_next_occurrence: false })
+          .eq('id', classData.id);
+
+        if (error) {
+          console.error(`[Inngest] ❌ Failed to clear skip_next_occurrence flag:`, error);
+          throw new Error(`Failed to clear skip flag: ${error.message}`);
+        }
+
+        console.log(`[Inngest] ✅ Cleared skip_next_occurrence flag for next week`);
+        return { success: true };
+      });
+
+      // Keep skip_target_datetime (UI still needs it until class time passes)
+      console.log(`[Inngest] Kept skip_target_datetime for UI display`);
+
+      return {
+        status: 'skipped',
+        attemptId,
+        reason: 'user_requested_skip',
+        message: 'Skipped based on user skip flag'
+      };
+    }
 
     // Check for duplicate runs - if another booking attempt is already in progress, exit
     const hasDuplicateRun = await step.run('check-duplicate-runs', async () => {
-      const supabase = await createClient();
+      const supabase = createServiceRoleClient();
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
       const { data: pendingAttempts, error } = await supabase
@@ -85,27 +157,6 @@ export const bookClassFunction = inngest.createFunction(
         status: 'duplicate',
         message: 'Another booking run already in progress - exiting to prevent duplicate',
       };
-    }
-
-    // Check if we should skip today
-    const today = new Date().toISOString().split('T')[0];
-    if (classData.next_skip_date === today) {
-      console.log(`[Inngest] Skipping class "${className}" (next_skip_date = today)`);
-
-      const attemptId = await step.run('create-skip-attempt', async () => {
-        return await createBookingAttempt(
-          classData.id,
-          'skipped',
-          null,
-          `Skipped: next_skip_date equals today (${today})`
-        );
-      });
-
-      await step.run('clear-skip-date', async () => {
-        await clearSkipDate(classData.id);
-      });
-
-      return { status: 'skipped', attemptId, reason: 'next_skip_date' };
     }
 
     // Step 2: Create booking attempt record

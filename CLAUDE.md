@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.9):** Production-ready authentication with bot protection (Cloudflare Turnstile), password confirmation on signup, resend verification on login, persistent notifications, and email verification handling.
+**Current Version (v2.12):** Production-ready with skip edit confirmation and intelligent pause/inactive interaction using three-zone cleanup logic.
 
 ---
 
@@ -42,7 +42,7 @@ This document provides Claude with essential context about the My Workout Schedu
 2. **Supabase Database**
    - `users` - Auth (managed by Supabase Auth)
    - `gym_credentials` - Encrypted gym login info
-   - `recurring_classes` - Schedule configuration (includes `next_skip_date`)
+   - `recurring_classes` - Schedule configuration (includes `skip_next_occurrence`, `skip_target_datetime`)
    - `booking_attempts` - Booking history (status: pending, confirmed, waitlisted, failed, skipped)
    - `user_settings` - Global settings (`schedule_paused`)
 
@@ -175,13 +175,49 @@ Each class has a timezone (e.g., "America/New_York"). System uses class timezone
 
 **Files:** `lib/date-utils.ts` (primary), `scripts/booking-automation.ts`, `inngest/bookClass.ts`
 
-### 9. Skip Next Occurrence
+### 9. Skip Next Occurrence (Two-Field Approach)
 
-Users can skip single occurrence via `next_skip_date` field. System automatically clears after skipping (smart unskip). If booking window passed, skip clears immediately.
+Users can skip single occurrence using two fields for clear separation of concerns:
 
-**Files:** `app/actions/recurring-classes.ts`, `scripts/booking-automation.ts`
+**Fields:**
+- `skip_next_occurrence` (boolean) - Flag for business logic checked by Inngest
+- `skip_target_datetime` (timestamptz) - Full datetime for UI display with timezone
 
-### 10. Environment Variables
+**How it works:**
+- User clicks "Skip Next" → System calculates next occurrence datetime and sets both fields
+- Inngest checks boolean flag before booking attempt (simple, no date comparison needed)
+- UI shows badge based on `current_time < skip_target_datetime` comparison
+- After skip happens, flag cleared immediately (prevents double-skip)
+- At next booking attempt (one week later), datetime cleared (cleanup stale data)
+
+**Benefits:**
+- Simpler business logic (boolean check vs date comparison)
+- No timezone bugs in skip logic (flag is timezone-agnostic)
+- Proper datetime storage with timezone for UI display
+- Clear separation: backend uses flag, UI uses datetime
+
+**Files:** `app/actions/recurring-classes.ts`, `lib/inngest/functions.ts`, `components/SkipButton.tsx`
+
+### 10. Skip Edit Confirmation
+
+When editing a class with active skip, changing day/time triggers confirmation modal before clearing skip fields.
+
+**Two-pass pattern:** First call returns `skipClearWarning`, second call with `confirmSkipClear=true` clears skip. Modal shows formatted skip date and appears before booking window check.
+
+**Files:** `app/actions/recurring-classes.ts`, `components/RecurringClassForm.tsx`
+
+### 11. Skip Cleanup (Pause/Inactive) - Three-Zone Logic
+
+When pausing schedule or deactivating class, skip fields cleaned up based on time:
+- **Zone A** (before booking window): Preserve both fields
+- **Zone B** (inside window, before class): Clear `skip_next_occurrence` flag only, keep `skip_target_datetime` for UI
+- **Zone C** (after class time): Clear both fields
+
+Skip buttons disabled when paused/inactive with tooltips. Uses `calculateBookingWindowOpen()` for timezone-aware calculations.
+
+**Files:** `app/actions/recurring-classes.ts` (toggleRecurringClassActive), `app/actions/user-settings.ts` (updateSchedulePaused), `components/SkipButton.tsx`
+
+### 12. Environment Variables
 
 **Multi-environment support** with dynamic URL resolution and environment-aware email config:
 - Production: `noreply@beerock.com` (custom domain with DKIM)
@@ -207,6 +243,29 @@ Users can skip single occurrence via `next_skip_date` field. System automaticall
 - **Per-user:** Global pause toggle in dashboard settings
 - **Per-class:** Active toggle on individual classes
 - **Single occurrence:** "Skip Next" button
+
+### Inngest Function Configuration Sync (CRITICAL)
+
+When modifying Inngest function configurations (especially `cancelOn` patterns), Inngest must re-sync with the application to pick up changes:
+
+**Problem:** Code changes deployed to Vercel are not automatically reflected in Inngest's cached function definitions. Old function configurations may persist in Inngest dashboard until manually synced.
+
+**Solution - After updating Inngest functions:**
+
+1. **Deploy code to Vercel** (via git push)
+2. **Verify Vercel deployment** is complete and marked "Ready"
+3. **Sync Inngest:**
+   - Go to Inngest Dashboard → Apps
+   - Find your app (your Vercel deployment)
+   - Look for "Sync" button or similar refresh option
+   - Click to force Inngest to fetch latest function definitions from your app
+   - Wait for sync to complete
+
+**Why this matters:** Changes to function configurations like `cancelOn` expressions won't take effect until Inngest re-syncs. Old runs created before sync will still have the old configuration baked in.
+
+**Timeline:** Function definitions typically sync automatically within 5-10 minutes, but manual sync ensures immediate update.
+
+**Files affected:** `lib/inngest/functions.ts` (any changes to function configs, retries, cancelOn, etc.)
 
 ---
 
@@ -368,4 +427,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** November 27, 2025 (v2.9)
+**Last Updated:** November 29, 2025 (v2.11)
