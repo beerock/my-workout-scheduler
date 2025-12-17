@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { calculateBookingWindowOpen } from '@/lib/date-utils'
+import { calculateBookingWindowOpen } from '@/lib/inngest/scheduler'
 
 export type UserSettingsResult = {
   success: boolean

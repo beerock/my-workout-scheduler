@@ -206,9 +206,17 @@ export function isDateToday(dateStr: string | null): boolean {
 }
 
 /**
+ * @deprecated INTERNAL USE ONLY - DO NOT IMPORT DIRECTLY
+ *
+ * This version expects a pre-calculated classDate string (YYYY-MM-DD format).
+ * For calculating booking windows from recurring schedule data (day_of_week),
+ * use the version from @/lib/inngest/scheduler instead.
+ *
+ * This version is only used internally by hasBookingWindowOpened() in this file.
+ *
  * Calculate when the booking window opens for a class
  * Returns the datetime when registration opens (class datetime minus booking_window_hours)
- * 
+ *
  * Note: classDate should be the actual class date (not booking window date)
  */
 export function calculateBookingWindowOpen(
