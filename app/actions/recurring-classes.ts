@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { scheduleBooking, calculateBookingWindowOpen, calculateNextClassDate } from '@/lib/inngest/scheduler'
-import { calculateBookingWindowOpen as calculateBookingWindow } from '@/lib/date-utils'
 import { inngest } from '@/lib/inngest/client'
 
 export type RecurringClassFormData = {
@@ -430,7 +429,7 @@ export async function toggleRecurringClassActive(
         const classTime = new Date(existingClass.skip_target_datetime)
 
         // Calculate booking window open time
-        const bookingWindowOpen = calculateBookingWindow(
+        const bookingWindowOpen = calculateBookingWindowOpen(
           existingClass.day_of_week,
           existingClass.class_time,
           existingClass.booking_window_hours,
