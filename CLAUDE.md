@@ -109,9 +109,13 @@ my-workout-scheduler/
 - Timezone-aware comparisons with DST support
 - Parse YYYY-MM-DD dates as local dates to prevent timezone offset bugs
 
+**Two `calculateBookingWindowOpen` Implementations - Use Correct One:**
+- `lib/inngest/scheduler.ts` - Takes `day_of_week` (number), calculates next occurrence dynamically ✓ **Use this for recurring class scheduling**
+- `lib/date-utils.ts` - Takes `classDate` (string YYYY-MM-DD), for pre-calculated dates only (deprecated for external use)
+
 **Common mistake:** Using `new Date()` without timezone context causes off-by-one-day bugs.
 
-**Files:** `lib/date-utils.ts` (primary source of truth)
+**Files:** `lib/date-utils.ts`, `lib/inngest/scheduler.ts`
 
 ### 3. Booking Window Logic
 
@@ -313,6 +317,30 @@ Clock drift may cause triggers slightly before window opens. Mitigated by fast r
 ### User Deletion Limitation
 
 ⚠️ Inngest scheduled events are NOT canceled when users deleted. Events trigger but fail gracefully with "Class not found" message. Acceptable for MVP.
+
+### Inngest Event Cancellation Behavior
+
+**Current Behavior:**
+- **Delete class**: Inngest events ARE canceled (sends `booking/cancel` event)
+- **Make class inactive**: Inngest events are NOT canceled (events still fire)
+- **Pause schedule**: Inngest events are NOT canceled (events still fire)
+
+**Runtime Protection:**
+Even when events fire for inactive/paused classes, the system safely prevents booking:
+- `getClassById()` filters by `active = true` - inactive classes return null
+- Booking function checks `schedule_paused` flag at runtime
+- Events that can't find active classes return "Class not found" error
+- No actual bookings occur, but events appear in Inngest logs
+
+**Why This Design:**
+- Runtime checks provide defense-in-depth protection
+- Simpler than managing event cancellation for every state change
+- Daily scheduler (midnight UTC) only schedules active classes going forward
+- Similar to user deletion limitation (events not canceled but fail safely)
+
+**For MVP:** Acceptable tradeoff - extra event runs are harmless, runtime checks prevent unwanted bookings.
+
+**Future Consideration:** Could add event cancellation to inactive/pause actions to reduce noise in Inngest logs.
 
 ---
 
