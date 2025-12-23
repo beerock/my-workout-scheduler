@@ -64,11 +64,11 @@ What happens next:
 
 What you can do:
 1. Check your class settings in the dashboard
-2. Verify the "booking window" time (e.g., "26 hours before class")
+2. Verify when the "booking window" opens on your gym website (e.g., "26 hours before class")
 3. If the gym changed their booking rules, update your class settings
 4. The system will automatically try again at the next scheduled time
 
-Need help? Check your booking history in the dashboard to see the exact time the window opens.
+Need further help? Contact us at help@beerock.com.
 ```
 
 **Category:** 🟡 Action Recommended (if persists) / 🟢 No Action (if temporary)
@@ -88,12 +88,12 @@ Your class is currently full, but don't worry - we've got you covered!
 
 Why this happens:
 • The class filled up before we could grab a spot
+• The class list shows "Full" or the RESERVE button is unavailable
 • Other members may have booked at exactly the same time
-• Popular classes can fill in seconds
 
 What happens next:
 ✓ We'll automatically keep trying every 15 minutes until the class starts
-✓ If someone cancels their reservation, we'll grab that spot for you
+✓ If someone cancels their reservation, we'll attempt to grab that spot for you
 ✓ You'll get a confirmation notification if we successfully book it
 ✓ No action needed from you - just sit back and relax!
 
@@ -125,14 +125,15 @@ Why this happens:
 • Class was rescheduled to a different day or time
 
 What happens next:
-❌ We cannot book cancelled classes (this is permanent)
+❌ We cannot book cancelled classes
 ❌ The system will not retry booking this class
 
 What you should do:
-1. Remove this class from your schedule in the dashboard
-2. Check your gym's website or app for class status updates
-3. Look for the class at a different time or day
-4. Contact your gym if you have questions about the cancellation
+1. Check your gym's website or app for class status updates
+2. Look for the class at a different time or day and edit the class in your schedule
+3. Contact your gym if you have questions about the cancellation
+4. If permanently cancelled, remove this class from your schedule in the dashboard
+
 
 How to remove this class:
 Go to Dashboard → Schedule → Find this class → Click "Delete"
@@ -165,14 +166,13 @@ What happens next:
 
 What you should do:
 1. Contact your gym to ask about booking requirements for this class
-2. Check if you need a different membership level or special registration
-3. Ask if you can book in person or by phone
-4. Remove this class from your automated schedule if it can't be booked online
+2. Ask if you can book in person or by phone
+3. Remove this class from your automated schedule if it can't be booked online
 
 How to remove this class:
 Go to Dashboard → Schedule → Find this class → Click "Delete"
 
-Alternative: If this class can be booked online, there may be a configuration issue. Verify the class name and time match exactly.
+Alternative: If this class can be booked online, there may be a configuration issue. Verify the class name and time match exactly. Or email us at help@beerock.com for help.
 ```
 
 **Category:** 🔴 Action Required
@@ -240,7 +240,7 @@ How to fix this:
 2. Compare the class name, time, and day with what you have in your schedule
 3. Update your class settings to match EXACTLY what's on the gym website
    • Class name must match character-for-character (including spaces and capitalization)
-   • Time must be exact (not rounded)
+   • Time must match
    • Day of week must be correct
    • Branch name must match
 4. Save your changes and the system will try again at the next scheduled time
@@ -250,7 +250,7 @@ Tips:
 • But major differences won't work (like "BODYPUMP" vs "Body Pump 60")
 • Check for extra spaces or special characters in the class name
 
-Need help? Check the booking history screenshot to see what classes were found on the schedule.
+Need help? Email help@beerock.com.
 ```
 
 **Category:** 🟡 Action Recommended
@@ -317,8 +317,8 @@ What you should do:
 1. Try logging into your gym website manually to verify your credentials
 2. If your password changed, update it in the dashboard:
    Dashboard → Credentials → Update your password
-3. If you can't log in manually either:
-   • Reset your password on the gym website
+3. If you can't log in manually:
+   • Reset your password on the gym website (e.g. Forgot Password)
    • Contact the gym if your account is locked
    • Make sure your membership is active
 4. Once you can log in manually, update your credentials in our system
@@ -327,6 +327,8 @@ How to update your credentials:
 Go to Dashboard → Gym Credentials → Enter your correct username and password → Save
 
 Important: Your credentials are encrypted and secure. We only use them to automate your bookings.
+
+Need help? Email us at help@beerock.com.
 ```
 
 **Category:** 🔴 Action Required
@@ -356,17 +358,19 @@ What happens next:
 
 What you should do:
 1. Log into your gym website and check the branch dropdown
-2. Note the EXACT branch name as it appears (including any prefixes like "Asheville - Downtown")
+2. Note the EXACT branch name as it appears (including any prefixes like "Asheville YMCA")
 3. Update your class settings with the correct branch name:
    Dashboard → Schedule → Edit class → Update branch name
 4. Save and the system will try again at the next scheduled time
 
 Common branch name issues:
-• Missing prefix: "Downtown" vs "Asheville - Downtown"
-• Different format: "YMCA Downtown" vs "Downtown YMCA"
-• Abbreviations: "Asheville - DT" vs "Asheville - Downtown"
+• Missing prefix: "Woodfin" vs "Woodfin YMCA"
+• Different format: "YMCA Asheville" vs "Asheville YMCA"
+• Abbreviations: "Asheville Y" vs "Asheville YMCA"
 
-Tip: Copy and paste the branch name directly from the gym website to ensure accuracy.
+Tip: Copy the exact branch name as shown on your gym website to ensure accuracy.
+
+Need help? Email help@beerock.com.
 ```
 
 **Category:** 🟡 Action Recommended
@@ -400,13 +404,15 @@ What you should do:
 2. If this happens repeatedly (3+ times in a row):
    • Verify your class day and time settings are correct
    • Check your timezone setting matches your gym's location
-   • Report the issue (we may need to update our automation code)
+   • Report the issue to help@beerock.com (we may need to update our automation code)
 
 When to take action:
 • If this error happens once or twice: Don't worry, it's likely temporary
 • If it happens consistently: Check your class configuration or report the issue
 
 This is often a temporary glitch that resolves itself. We'll keep trying!
+
+Need help? Email help@beerock.com.
 ```
 
 **Category:** 🟡 Action Recommended (if persists)
@@ -437,10 +443,9 @@ What happens next:
 ✓ If it works next time, no action needed
 
 What you should do:
-1. Check the screenshot in your booking history to see what the page looked like
-2. Try manually booking the class to verify the button exists and works
-3. If you can book manually but our system can't:
-   • Report this issue (we may need to update our automation)
+1. Try manually booking the class to verify the button exists and works
+2. If you can book manually but our system can't:
+   • Report this issue to help@beerock.com (we may need to update our automation)
    • Include the class name, time, and gym location
 4. If you can't book manually either:
    • The class may not allow online booking (see "Class Not Reservable")
@@ -450,6 +455,8 @@ When to report:
 • If it happens consistently: Report the issue with screenshots
 
 We're working on making our automation more adaptable to website changes!
+
+Need help? Email help@beerock.com.
 ```
 
 **Category:** 🟡 Action Recommended (if persists)
@@ -465,25 +472,23 @@ We're working on making our automation more adaptable to website changes!
 
 **Improved (User-Friendly):**
 ```
-We navigated to the class details page, but couldn't find a RESERVE button.
+We navigated to the class details page, but couldn't find a RESERVE or WAITLIST button to complete your booking.
 
 Why this might happen:
 • The class doesn't allow online reservations
 • The gym's website changed its booking flow
 • We clicked on the wrong class by mistake (similar name/time)
-• The class requires special registration first
 
 What happens next:
-❌ We cannot complete bookings without a RESERVE button
+❌ We cannot complete bookings without a RESERVE or WAITLIST button
 ❌ The system will not retry (this is likely a configuration or booking flow issue)
 
 What you should do:
-1. Check the screenshot in booking history to see what page we landed on
-2. Try manually booking this class through the gym website
-3. If you can book manually:
+1. Try manually booking this class through the gym website
+2. If you can book manually:
    • The website structure may have changed
-   • Report this issue so we can update our automation
-4. If you can't book manually:
+   • Report this issue to help@beerock.com so we can update our automation
+3. If you can't book manually:
    • Verify the class allows online booking
    • Check if special registration or prerequisites are required
    • Contact the gym to ask about booking requirements
@@ -493,7 +498,7 @@ Possible solutions:
 • Check if the class requires in-person registration
 • Look for special requirements (membership level, program enrollment, etc.)
 
-Screenshot location: Dashboard → Booking History → View Screenshots
+Need help? Email help@beerock.com.
 ```
 
 **Category:** 🟡 Action Recommended
@@ -538,12 +543,7 @@ If you want to keep both classes in your schedule for different weeks:
 1. Use the "Skip Next Occurrence" feature to alternate between them
 2. Or set one class to inactive when you don't want it booked
 
-How to check your existing reservations:
-• Log into your gym website
-• Go to "My Reservations" or "Schedule"
-• Look for overlapping classes
-
-Your gym only allows one class per time slot to prevent conflicts.
+Need help? Email brock@beerock.com.
 ```
 
 **Category:** 🔴 Action Required
@@ -585,7 +585,7 @@ What you should do RIGHT NOW:
 
 **If the class WAS successfully booked:**
 • No action needed - you're confirmed!
-• Please report this so we can improve our confirmation detection
+• Please report this to help@beerock.com so we can improve our confirmation detection
 
 **If the class was NOT booked:**
 • Try booking manually through the gym website
@@ -593,6 +593,8 @@ What you should do RIGHT NOW:
 • Report the issue with screenshots so we can fix it
 
 This is a rare scenario that requires manual verification. We apologize for the inconvenience!
+
+Need help? Email help@beerock.com.
 ```
 
 **Category:** 🟡 Action Recommended (immediate manual verification)
@@ -635,7 +637,7 @@ What you should do:
 **If this happens repeatedly (3+ times):**
 1. Check the error details in booking history
 2. Try manually booking the class to verify it works
-3. Report the issue with these details:
+3. Report the issue to help@beerock.com with these details:
    • Class name and time
    • Exact error message
    • When it occurred
@@ -646,10 +648,9 @@ What you should do:
 2. Check if the gym website is working normally
 3. Look at screenshots in booking history for clues
 
-Where to report issues:
-Dashboard → Booking History → Copy error details → Contact support
-
 We log all errors automatically, but reporting helps us prioritize fixes!
+
+Need help? Email help@beerock.com.
 ```
 
 **Category:** 🟡 Action Recommended (if persists)
@@ -710,6 +711,8 @@ What you should do:
 3. [Step 3]
 
 [Optional: Additional tips, shortcuts, or helpful links]
+
+Need help? Email help@beerock.com.
 ```
 
 ---
