@@ -209,3 +209,94 @@ export async function updateSchedulePaused(
   }
 }
 
+/**
+ * Update notification preferences
+ */
+export async function updateNotificationPreferences(preferences: {
+  notification_email: boolean
+  notification_frequency: 'immediate' | 'daily_digest' | 'critical_only' | 'off'
+  email_on_success: boolean
+  email_on_waitlist: boolean
+  email_on_failure: boolean
+  email_on_retry: boolean
+  daily_digest_time: string
+  timezone: string
+}): Promise<UserSettingsResult> {
+  try {
+    const supabase = await createClient()
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'Not authenticated',
+      }
+    }
+
+    // Check if settings exist
+    const { data: existing } = await supabase
+      .from('user_settings')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (existing) {
+      // Update existing settings
+      const { error } = await supabase
+        .from('user_settings')
+        .update({
+          notification_email: preferences.notification_email,
+          notification_frequency: preferences.notification_frequency,
+          email_on_success: preferences.email_on_success,
+          email_on_waitlist: preferences.email_on_waitlist,
+          email_on_failure: preferences.email_on_failure,
+          email_on_retry: preferences.email_on_retry,
+          daily_digest_time: preferences.daily_digest_time,
+          timezone: preferences.timezone,
+        })
+        .eq('user_id', user.id)
+
+      if (error) {
+        return {
+          success: false,
+          error: `Failed to update notification preferences: ${error.message}`,
+        }
+      }
+    } else {
+      // Create new settings with notification preferences
+      const { error } = await supabase
+        .from('user_settings')
+        .insert({
+          user_id: user.id,
+          schedule_paused: false,
+          notification_email: preferences.notification_email,
+          notification_frequency: preferences.notification_frequency,
+          email_on_success: preferences.email_on_success,
+          email_on_waitlist: preferences.email_on_waitlist,
+          email_on_failure: preferences.email_on_failure,
+          email_on_retry: preferences.email_on_retry,
+          daily_digest_time: preferences.daily_digest_time,
+          timezone: preferences.timezone,
+        })
+
+      if (error) {
+        return {
+          success: false,
+          error: `Failed to create notification preferences: ${error.message}`,
+        }
+      }
+    }
+
+    revalidatePath('/dashboard/profile')
+    return {
+      success: true,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    }
+  }
+}
+

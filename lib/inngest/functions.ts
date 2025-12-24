@@ -11,8 +11,9 @@ import {
   type ClassNeedingBooking,
 } from '@/scripts/database-helpers';
 import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
-import { differenceInMinutes } from 'date-fns';
+import { differenceInMinutes, format } from 'date-fns';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
+import { sendBookingNotification } from '@/lib/notifications/send-booking-notification';
 
 /**
  * Main booking function - triggered at exact booking window time
@@ -246,6 +247,42 @@ export const bookClassFunction = inngest.createFunction(
     if (errorMessage) {
       console.log(`[Inngest] Error message: ${errorMessage}`);
     }
+
+    // Step 4.5: Send notification email (if user preferences allow)
+    await step.run('send-notification', async () => {
+      try {
+        // Calculate formatted date for email
+        const classStartTime = calculateClassStartTime(
+          classData.day_of_week,
+          classData.class_time,
+          classData.timezone
+        );
+        const formattedDate = format(classStartTime, 'EEEE, MMMM d, yyyy');
+        const dayName = format(classStartTime, 'EEEE');
+
+        // Check if this is a retry success (was previously full, now confirmed)
+        const isRetrySuccess = attemptNumber > 1 && status === 'confirmed';
+
+        await sendBookingNotification({
+          userId: classData.user_id,
+          bookingAttemptId: attemptId,
+          status: status as 'confirmed' | 'waitlisted' | 'failed' | 'skipped',
+          errorMessage,
+          className: classData.class_type,
+          dayOfWeek: dayName,
+          date: formattedDate,
+          time: classData.class_time,
+          branchName: classData.branch,
+          isRetrySuccess,
+          retryCount: attemptNumber,
+        });
+
+        console.log(`[Inngest] Notification sent (or skipped per user preferences)`);
+      } catch (error) {
+        console.error(`[Inngest] Failed to send notification:`, error);
+        // Don't throw - notification failure shouldn't break booking flow
+      }
+    });
 
     // Step 5: Handle retry logic for class full scenarios
     // If class is full, retry every 15 minutes until class starts

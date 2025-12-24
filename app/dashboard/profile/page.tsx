@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import LogoutButton from '@/components/LogoutButton'
 import ProfileForm from '@/components/ProfileForm'
 import EmailVerificationNotification from '@/components/EmailVerificationNotification'
+import NotificationPreferencesForm from '@/components/NotificationPreferencesForm'
 import Link from 'next/link'
 
 export default async function ProfilePage() {
@@ -12,6 +13,25 @@ export default async function ProfilePage() {
 
   if (!user) {
     redirect('/login')
+  }
+
+  // Fetch user notification preferences
+  let { data: settings } = await supabase
+    .from('user_settings')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  // Default notification preferences if none exist
+  const notificationPreferences = {
+    notification_email: settings?.notification_email ?? true,
+    notification_frequency: settings?.notification_frequency ?? 'immediate',
+    email_on_success: settings?.email_on_success ?? true,
+    email_on_waitlist: settings?.email_on_waitlist ?? true,
+    email_on_failure: settings?.email_on_failure ?? true,
+    email_on_retry: settings?.email_on_retry ?? true,
+    daily_digest_time: settings?.daily_digest_time ?? '08:00:00',
+    timezone: settings?.timezone ?? 'America/New_York',
   }
 
   return (
@@ -64,6 +84,18 @@ export default async function ProfilePage() {
           </div>
 
           <ProfileForm userEmail={user.email} />
+        </div>
+
+        {/* Notification Preferences Section */}
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Notification Preferences</h2>
+            <p className="text-gray-600 text-sm">
+              Control when and how you receive booking notifications
+            </p>
+          </div>
+
+          <NotificationPreferencesForm initialPreferences={notificationPreferences} />
         </div>
 
         <div className="mt-6">
