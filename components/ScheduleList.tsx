@@ -18,11 +18,28 @@ type Props = {
   onUpdate?: () => void
 }
 
+type ClassToBook = {
+  id: string
+  class_type: string
+  day_of_week: number
+  class_time: string
+  branch: string
+}
+
 export default function ScheduleList({ classes, gymUrl, schedulePaused = false, onUpdate }: Props) {
   const router = useRouter()
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [classToBook, setClassToBook] = useState<ClassToBook | null>(null)
+  const [showBookNowDialog, setShowBookNowDialog] = useState(false)
+  const [bookingClass, setBookingClass] = useState(false)
+
+  const formatClassDisplay = (classData: ClassToBook): string => {
+    const dayName = getDayName(classData.day_of_week)
+    const time = formatTime12Hour(classData.class_time)
+    return `${classData.class_type} - ${dayName} ${time} @ ${classData.branch}`
+  }
 
   const handleDelete = async (id: string) => {
     setDeletingId(id)
@@ -50,18 +67,69 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
     try {
       const result = await toggleRecurringClassActive(id, !currentActive)
       if (result.success) {
-        if (onUpdate) {
-          onUpdate()
+        // Check if booking window is already open (activate scenario)
+        if (result.bookingWindowAlreadyOpen && result.classDetails) {
+          setClassToBook({ id, ...result.classDetails })
+          setShowBookNowDialog(true)
+          setTogglingId(null)
         } else {
-          router.refresh()
+          // No dialog needed, just refresh
+          if (onUpdate) {
+            onUpdate()
+          } else {
+            router.refresh()
+          }
+          setTogglingId(null)
         }
       } else {
         alert(`Failed to update: ${result.error}`)
+        setTogglingId(null)
       }
     } catch (error) {
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    } finally {
       setTogglingId(null)
+    }
+  }
+
+  const handleBookNow = async () => {
+    if (!classToBook) return
+
+    setBookingClass(true)
+    try {
+      const response = await fetch('/api/trigger-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId: classToBook.id })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to trigger booking')
+      }
+
+      // Success - close dialog and refresh
+      setShowBookNowDialog(false)
+      setClassToBook(null)
+      setBookingClass(false)
+      if (onUpdate) {
+        onUpdate()
+      } else {
+        router.refresh()
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to book class')
+      setBookingClass(false)
+    }
+  }
+
+  const handleSkipBooking = () => {
+    setShowBookNowDialog(false)
+    setClassToBook(null)
+    if (onUpdate) {
+      onUpdate()
+    } else {
+      router.refresh()
     }
   }
 
@@ -232,6 +300,40 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
           </div>
         )
       })}
+
+      {/* Book Now Dialog - Single class */}
+      {showBookNowDialog && classToBook && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              ⏰ Booking Window Already Open!
+            </h3>
+            <p className="text-gray-700 mb-4">
+              Booking window is open for <strong>{formatClassDisplay(classToBook)}</strong>. Would you like to book now?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleBookNow}
+                disabled={bookingClass}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {bookingClass ? 'Booking...' : '✅ Yes, Book Now'}
+              </button>
+              <button
+                onClick={handleSkipBooking}
+                disabled={bookingClass}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                No, Skip This Week
+              </button>
+            </div>
+            <p className="mt-3 text-xs text-gray-500">
+              <strong>Book Now:</strong> Books this week's class immediately.<br />
+              <strong>Skip This Week:</strong> Class won't be booked this week, automatic booking resumes next week.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

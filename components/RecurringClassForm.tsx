@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { saveRecurringClass, type RecurringClassFormData } from '@/app/actions/recurring-classes'
 import { useRouter } from 'next/navigation'
-import { COMMON_TIMEZONES, formatDateInGymTimezone } from '@/lib/date-utils'
+import { COMMON_TIMEZONES, formatDateInGymTimezone, getDayName, formatTime12Hour } from '@/lib/date-utils'
 import type { RecurringClass } from '@/lib/database.types'
 
 type Props = {
@@ -44,6 +44,12 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
     booking_window_hours: initialClass?.booking_window_hours ?? 26,
     timezone: initialClass?.timezone || 'America/New_York',
   })
+
+  const formatClassDisplay = (): string => {
+    const dayName = getDayName(formData.day_of_week)
+    const time = formatTime12Hour(formData.class_time)
+    return `${formData.class_type} - ${dayName} ${time} @ ${formData.branch}`
+  }
 
   // Update form when initialClass changes
   useEffect(() => {
@@ -427,7 +433,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
             ⏰ Booking Window Already Open!
           </h3>
           <p className="text-gray-700 mb-6">
-            The booking window for this class is already open. Would you like to book this week's class now, or skip it and start automatic booking next week?
+            Booking window is open for <strong>{formatClassDisplay()}</strong>. Would you like to book now?
           </p>
 
           {error && (
@@ -455,7 +461,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
 
           <p className="mt-3 text-xs text-gray-500">
             <strong>Book Now:</strong> Books this week's class immediately.<br />
-            <strong>Skip This Week:</strong> Saves the class and automatic booking starts next week.
+            <strong>Skip This Week:</strong> Class won't be booked this week, automatic booking resumes next week.
           </p>
         </div>
       </div>
