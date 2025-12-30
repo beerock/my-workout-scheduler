@@ -4060,10 +4060,108 @@ Create a comprehensive admin dashboard for managing users, viewing analytics, an
 - Role-based access control (needs implementation)
 **Last Updated**: November 21, 2025
 
-**Recommendation**: 
+**Recommendation**:
 - Phase 1 (Basic User Management) should be prioritized when moving beyond MVP
 - Essential for scaling to 10+ users without direct database access
 - Can start small and iterate based on admin needs
+
+---
+
+## Event Cancellation for Pause/Inactive/Skip Actions
+
+**Status:** BACKLOG (Not Implemented)
+
+**Current MVP Behavior:**
+- **Delete class**: Inngest events ARE canceled (sends `booking/cancel` event)
+- **Make class inactive**: Inngest events are NOT canceled (events still fire, runtime protection prevents booking)
+- **Pause schedule**: Inngest events are NOT canceled (events still fire, runtime protection prevents booking)
+- **Skip next occurrence**: Inngest event is NOT canceled (event fires, skip flag prevents booking)
+
+**Runtime Protection (Current):**
+- `getClassById()` filters by `active = true` - inactive classes return null
+- Booking function checks `schedule_paused` flag at runtime
+- Booking function checks `skip_next_occurrence` flag at runtime
+- Events that can't find active classes or detect pause/skip return early with "Class not found" or "Skipped" status
+- **No actual bookings occur**, but events appear in Inngest logs
+
+**Why Current Design:**
+- Runtime checks provide defense-in-depth protection
+- Simpler than managing event cancellation for every state change
+- Daily scheduler (midnight UTC) only schedules active classes going forward
+- Acceptable for MVP (extra event runs are harmless, <5% of free tier usage)
+
+**Proposed Enhancement:**
+Implement event cancellation when user pauses, deactivates a class, or sets skip flag:
+- Send `booking/cancel` event when:
+  - User sets `schedule_paused = true` (cancel all active class events for this user)
+  - User sets class `active = false` (cancel this class's next event)
+  - User sets `skip_next_occurrence = true` (cancel this class's next event)
+- Reduces noise in Inngest logs (cleaner event history)
+- More explicit user intent (if user pauses, they don't want events queued)
+
+**Implementation Approach:**
+1. **Pause action** (`app/actions/user-settings.ts`):
+   ```typescript
+   // After setting schedule_paused = true
+   const { data: activeClasses } = await supabase
+     .from('recurring_classes')
+     .select('id, day_of_week, class_time, timezone, booking_window_hours')
+     .eq('user_id', user.id)
+     .eq('active', true)
+
+   for (const classItem of activeClasses) {
+     const nextOccurrence = calculateNextOccurrence(...)
+     await inngest.send({
+       name: 'booking/cancel',
+       data: { classId: classItem.id, classDate: nextOccurrence.toISOString() }
+     })
+   }
+   ```
+
+2. **Inactive action** (`app/actions/recurring-classes.ts`):
+   ```typescript
+   // After setting active = false
+   const nextOccurrence = calculateNextOccurrence(...)
+   await inngest.send({
+     name: 'booking/cancel',
+     data: { classId: id, classDate: nextOccurrence.toISOString() }
+   })
+   ```
+
+3. **Skip action** (`app/actions/recurring-classes.ts`):
+   ```typescript
+   // After setting skip_next_occurrence = true
+   await inngest.send({
+     name: 'booking/cancel',
+     data: { classId: id, classDate: skipTargetDatetime }
+   })
+   ```
+
+**Benefits:**
+- Cleaner Inngest logs (only events that should actually run)
+- Consistent with delete behavior (delete cancels events)
+- More intuitive for monitoring/debugging
+- Reduces noise when scaling to more users
+
+**Risks:**
+- Added complexity (more places to track event cancellation)
+- Need to ensure cancellation logic matches scheduling logic
+- Edge cases: What if user unpauses before midnight? (Immediate scheduling feature handles this)
+
+**Effort:** ~2-4 hours
+- Backend changes: 3 locations (pause, inactive, skip)
+- Testing: Verify events canceled correctly, no duplicate cancellations
+- Edge case handling: Unpause/reactivate/unskip scenarios
+
+**When to Implement:**
+- When log noise becomes a problem (50+ users)
+- When Inngest execution quota becomes a concern
+- When monitoring/alerting gets confused by expected failures
+- When you want perfect log hygiene for production system
+
+**Decision Made:** Ship MVP without event cancellation. Rely on runtime protection. Add to backlog for future consideration if scaling beyond 10-15 users.
+
+**Last Updated:** December 29, 2025
 
 ---
 
