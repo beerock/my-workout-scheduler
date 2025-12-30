@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.11
+**Version:** 2.13
 **Product Owner:** Brock Busby
-**Last Updated:** November 29, 2025
+**Last Updated:** December 29, 2025
 **Status:** Production - Deployed and Testing
 
 
@@ -153,6 +153,13 @@
   - Three-zone cleanup logic for intelligent pause/inactive interaction
   - Disabled skip buttons with helpful tooltips when paused or inactive
   - Time-based skip field management (preserve future skips, clear past skips)
+- **v2.13:** Immediate scheduling on unpause, activate, and unskip
+  - Silent scheduling: Classes with future booking windows scheduled automatically in background
+  - User prompts: "Book Now" dialogs for classes with already-open booking windows
+  - Prevents missed bookings when user actions occur between now and midnight UTC
+  - Consistent UX: All three scenarios (unpause/activate/unskip) use same dialog pattern
+  - Sequential dialogs: Multiple classes with open windows presented one-by-one with progress indicator
+  - Real-world fix: User unpauses Sunday 11:30 AM → event scheduled for Monday 2:15 PM → booking succeeds
 
 ---
 
@@ -270,9 +277,66 @@ Intelligent skip field management when pausing or deactivating:
 
 **Example Configuration:**
 
-- Monday 4:15 PM BODYPUMP @ Downtown YMCA (books 26 hours prior)  
-- Wednesday 4:15 PM BODYPUMP @ Downtown YMCA (books 26 hours prior)  
+- Monday 4:15 PM BODYPUMP @ Downtown YMCA (books 26 hours prior)
+- Wednesday 4:15 PM BODYPUMP @ Downtown YMCA (books 26 hours prior)
 - Saturday 9:30 AM BODYPUMP @ Downtown YMCA (books 26 hours prior)
+
+#### 3.2.2 Immediate Scheduling (v2.13)
+
+**Problem Solved:**
+Users could miss bookings if they unpause, activate a class, or remove a skip between the current time and midnight UTC (when the daily scheduler runs).
+
+**Real-world example:**
+- Sunday 11:30 AM: User unpauses schedule
+- Sunday 2:15 PM: Booking window opens for Monday 4:15 PM class
+- Before v2.13: Nothing scheduled until midnight UTC → booking missed ❌
+- With v2.13: Event scheduled immediately at 11:30 AM → booking succeeds at 2:15 PM ✓
+
+**How It Works:**
+
+**Silent Scheduling (No User Interaction):**
+- When booking window is NOT yet open (future)
+- System calls `scheduleBooking()` silently in background
+- User sees no dialogs, classes scheduled automatically
+- Common case: Most schedules don't have open booking windows
+
+**User Prompts (Book Now Dialogs):**
+- When booking window IS already open
+- System shows "Book Now" dialog with class details
+- User chooses: "Yes, Book Now" (triggers immediate booking) or "Skip This Week" (no action)
+- Dialog includes: Class type, day, time, branch (e.g., "BODYPUMP - Monday 4:15 PM @ Downtown YMCA")
+
+**Three Trigger Scenarios:**
+
+1. **Global Unpause** (`updateSchedulePaused(false)`)
+   - Checks all active classes
+   - Schedules classes with future windows silently
+   - Shows sequential dialogs for classes with open windows
+   - Progress indicator: "Class 1 of 3" when multiple dialogs
+
+2. **Individual Class Activate** (`toggleRecurringClassActive(true)`)
+   - Checks single class booking window
+   - Silent schedule or single dialog based on window status
+
+3. **Skip Removal** (`setSkipNextOccurrence(null)`)
+   - Checks single class booking window (only if class is active)
+   - Silent schedule or single dialog based on window status
+
+**Duplicate Prevention:**
+- `scheduleBooking()` sends `booking/cancel` event FIRST
+- Cancels any existing event for that class+date combination
+- Then sends new `booking/attempt` event
+- Only one event exists per class+date at any time
+
+**Error Handling:**
+- Scheduling failures don't break user actions
+- Errors logged to console but don't throw
+- Daily scheduler at midnight UTC provides fallback safety net
+
+**Implementation:**
+- Backend: `app/actions/user-settings.ts`, `app/actions/recurring-classes.ts`
+- Frontend: `components/PauseToggle.tsx`, `components/SkipButton.tsx`, `components/ScheduleList.tsx` (activate), `components/RecurringClassForm.tsx` (existing dialog updated)
+- Scheduling: Uses existing `scheduleBooking()` and `calculateBookingWindowOpen()` from `lib/inngest/scheduler.ts`
 
 ### 3.3 Automated Booking Engine ✅ COMPLETE
 
@@ -285,6 +349,7 @@ Intelligent skip field management when pausing or deactivating:
 | **Error Handling** | Detect failures, log errors, send notification | High | ✅ |
 | **Status Updates** | Write booking results back to database | High | ✅ |
 | **Daily Scheduler** | Midnight UTC cron ensures all active classes are scheduled | High | ✅ |
+| **Immediate Scheduling** | Schedule bookings immediately on unpause/activate/unskip (silent or user prompt) | High | ✅ |
 
 **Booking Flow (Production Architecture):**
 
