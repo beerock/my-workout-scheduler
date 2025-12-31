@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { Button, Card } from '@/components/ui'
 
 function VerifyEmailContent() {
   const [email, setEmail] = useState<string>('')
@@ -59,12 +60,12 @@ function VerifyEmailContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
+      <Card className="w-full max-w-md" padding="lg">
         {/* Email Icon */}
         <div className="flex justify-center mb-4">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-blue-600"
+              className="w-8 h-8 text-primary-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -79,27 +80,27 @@ function VerifyEmailContent() {
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">Check Your Email</h1>
+        <h1 className="font-sora text-2xl font-bold text-gray-900 mb-2 text-center">Check Your Email</h1>
 
-        <p className="text-gray-600 text-center mb-6">
+        <p className="font-dm-sans text-gray-600 text-center mb-6">
           We sent a verification link to:
         </p>
 
         {email && (
-          <div className="bg-gray-50 border border-gray-200 rounded-md p-3 mb-6 text-center">
-            <p className="font-medium text-gray-900 break-all">{email}</p>
-          </div>
+          <Card variant="outlined" padding="sm" className="mb-6 text-center">
+            <p className="font-dm-sans font-medium text-gray-900 break-all">{email}</p>
+          </Card>
         )}
 
-        <p className="text-gray-700 mb-6">
+        <p className="font-dm-sans text-gray-700 mb-6">
           Click the link in the email to activate your account and start scheduling your workouts.
         </p>
 
         {/* Important Instructions */}
-        <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-6">
+        <div className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6">
           <div className="flex items-start">
             <svg
-              className="w-5 h-5 text-amber-600 mt-0.5 mr-2 flex-shrink-0"
+              className="w-5 h-5 text-warning-600 mt-0.5 mr-2 flex-shrink-0"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -110,8 +111,8 @@ function VerifyEmailContent() {
               />
             </svg>
             <div className="flex-1">
-              <p className="font-medium text-amber-900 mb-2">Important:</p>
-              <ul className="text-sm text-amber-800 space-y-1">
+              <p className="font-dm-sans font-medium text-warning-900 mb-2">Important:</p>
+              <ul className="font-dm-sans text-sm text-warning-800 space-y-1">
                 <li>• Check your spam or junk folder</li>
                 <li>• Check your Promotions or Updates tab (Gmail)</li>
                 <li>• Add noreply@beerock.com to your contacts</li>
@@ -123,40 +124,41 @@ function VerifyEmailContent() {
 
         {/* Resend Section */}
         <div className="mb-6">
-          <p className="text-sm text-gray-600 mb-3 text-center">Didn't receive the email?</p>
+          <p className="font-dm-sans text-sm text-gray-600 mb-3 text-center">Didn't receive the email?</p>
 
           {resendSuccess && (
-            <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm text-center">
-              ✓ Email sent! Check your inbox.
+            <div className="mb-3 p-4 bg-success-50 border border-success-200 rounded-lg text-success-700 font-dm-sans text-sm text-center">
+              Email sent! Check your inbox.
             </div>
           )}
 
           {resendError && (
-            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            <div className="mb-3 p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 font-dm-sans text-sm">
               {resendError}
             </div>
           )}
 
-          <button
+          <Button
+            variant="secondary"
             onClick={handleResend}
             disabled={resending || countdown > 0 || !email}
-            className="w-full py-2 px-4 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full"
           >
             {resending
               ? 'Sending...'
               : countdown > 0
               ? `Resend in ${countdown}s`
               : resendSuccess
-              ? '✓ Email Sent!'
+              ? 'Email Sent!'
               : 'Resend Verification Email'}
-          </button>
+          </Button>
         </div>
 
         {/* Wrong Email */}
         <div className="text-center">
-          <p className="text-sm text-gray-600">
+          <p className="font-dm-sans text-sm text-gray-600">
             Wrong email?{' '}
-            <Link href="/signup" className="text-blue-600 hover:underline font-medium">
+            <Link href="/signup" className="text-primary-600 hover:text-primary-700 hover:underline font-medium">
               Sign up again
             </Link>
           </p>
@@ -164,11 +166,11 @@ function VerifyEmailContent() {
 
         {/* Back to Login */}
         <div className="text-center mt-4">
-          <Link href="/login" className="text-sm text-gray-500 hover:text-gray-700">
+          <Link href="/login" className="font-dm-sans text-sm text-gray-500 hover:text-gray-700">
             ← Back to Login
           </Link>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }
@@ -177,7 +179,7 @@ export default function VerifyEmailPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-600">Loading...</div>
+        <div className="font-dm-sans text-gray-600">Loading...</div>
       </div>
     }>
       <VerifyEmailContent />

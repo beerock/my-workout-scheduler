@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.13):** Production-ready with immediate scheduling on unpause, activate, and unskip.
+**Current Version (v2.13):** Production-ready with Design System v2 component library, immediate scheduling on unpause/activate/unskip, skip edit confirmation, and intelligent pause/inactive interaction using three-zone cleanup logic.
 
 ---
 
@@ -231,7 +231,82 @@ Skip buttons disabled when paused/inactive with tooltips. Uses `calculateBooking
 
 **Files:** `lib/env-utils.ts`
 
-### 13. Immediate Scheduling (v2.13)
+### 13. Design System v2 & Component Library (CRITICAL)
+
+**Version:** v2.13 (December 2025)
+**Status:** MANDATORY for all frontend AND email development
+
+**All UI/UX work MUST use Design System v2 patterns and the component library.**
+
+#### Using the Frontend Design Skill (IMPORTANT)
+
+For any new visual design work (pages, components, email templates, redesigns):
+```
+/frontend-design
+```
+This skill ensures production-grade, polished designs that avoid generic AI aesthetics.
+
+#### Component Library: `components/ui/`
+
+Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'`
+
+**Available Components (15 total):**
+
+| Category | Components |
+|----------|------------|
+| Core | Button, Badge, Card, Modal |
+| Form | Input, Select, Checkbox, FormField |
+| Navigation | DropdownMenu, Tabs (with TabPanel) |
+| Feedback | Toast, Skeleton (+ SkeletonCard, SkeletonClassCard) |
+| Display | StatusIndicator, StatCard |
+
+#### Design Tokens (Tailwind Config)
+
+**Typography:** `font-sora` (headings), `font-dm-sans` (body)
+
+**Colors:**
+- Primary: `primary-*` (#1a6fff) - main actions
+- Success: `success-*` (#00c853) - confirmations, booked status
+- Warning: `warning-*` (#ff9500) - pending status
+- Danger: `danger-*` (#f43f5e) - destructive actions, failed status
+- Purple: `purple-*` (#8B5CF6) - achievements, streaks, premium
+
+**Visual Effects:**
+- Gradients: `bg-gradient-primary`, `bg-gradient-success`, `bg-gradient-danger`, `bg-gradient-purple`
+- Shadows: `shadow-card`, `shadow-floating`, `shadow-btn-primary`, `shadow-btn-success`
+- Clip-paths: `clip-diagonal-badge`, `clip-diagonal-card-tr`, `clip-diagonal-card-br`
+
+#### Development Rules
+
+**Web UI:**
+1. ❌ NEVER create inline buttons - use `<Button>` component
+2. ❌ NEVER create inline form fields - use `<Input>`, `<Select>`, `<Checkbox>`
+3. ❌ NEVER use arbitrary colors - use design tokens from tailwind.config.ts
+4. ✅ ALWAYS import from `components/ui/`
+5. ✅ ALWAYS run `/frontend-design` skill for new visual design work
+
+**Email Templates:**
+- **Location:** `lib/email/templates/`
+- ✅ Use design token colors (primary #1a6fff, success #00c853, warning #ff9500, danger #f43f5e)
+- ✅ Follow diagonal accent aesthetic where applicable
+- ✅ Match responsive layout patterns from existing templates
+- ✅ Test in Gmail/Outlook/Apple Mail
+
+**UX Decision:** Buttons use `rounded-lg` (not diagonal) for clear affordance. Only badges use diagonal clip-path.
+
+#### Reference Prototypes
+
+- Main hub: `/dashboard/prototype` - Design system showcase
+- Scheduler redesign: `/dashboard/prototype/scheduler-v2`
+- Component showcase: `/dashboard/prototype/design-system-components`
+
+**Files:**
+- `tailwind.config.ts` - Design token definitions
+- `components/ui/index.ts` - Barrel export (import all components from here)
+- `docs/DESIGN_SYSTEM.md` - Complete design system documentation
+- `docs/COMPONENT_LIBRARY.md` - Component usage guide with full API docs
+
+### 14. Immediate Scheduling (v2.13)
 
 Users can trigger immediate scheduling by unpausing, activating a class, or removing a skip. System automatically schedules classes without waiting for midnight UTC daily scheduler.
 
@@ -492,4 +567,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** December 29, 2025 (v2.13)
+**Last Updated:** December 30, 2025 (v2.13)

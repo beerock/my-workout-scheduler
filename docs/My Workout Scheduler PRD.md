@@ -2,7 +2,7 @@
 
 **Version:** 2.13
 **Product Owner:** Brock Busby
-**Last Updated:** December 29, 2025
+**Last Updated:** December 30, 2025
 **Status:** Production - Deployed and Testing
 
 
@@ -153,7 +153,24 @@
   - Three-zone cleanup logic for intelligent pause/inactive interaction
   - Disabled skip buttons with helpful tooltips when paused or inactive
   - Time-based skip field management (preserve future skips, clear past skips)
-- **v2.13:** Immediate scheduling on unpause, activate, and unskip
+- ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13)**
+  - Complete design system with editorial diagonal-cut design language
+  - **15 reusable UI components** in `components/ui/`:
+    - Core: Button, Badge, Card, Modal
+    - Form: Input, Select, Checkbox, FormField
+    - Navigation: DropdownMenu, Tabs (with TabPanel)
+    - Feedback: Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
+    - Display: StatusIndicator, StatCard
+  - Typography: **Sora** (headings) + **DM Sans** (body) - fresher than generic AI fonts
+  - Extended Tailwind config with design tokens: colors, gradients, shadows, clip-paths
+  - Prototype pages for visual reference:
+    - `/dashboard/prototype` - Design system showcase
+    - `/dashboard/prototype/scheduler-v2` - Scheduler redesign
+    - `/dashboard/prototype/design-system-components` - Component showcase
+  - **Use `/frontend-design` skill** for any new visual design work (UI, emails, components)
+  - Email templates follow design system colors and aesthetic
+  - Component documentation (DESIGN_SYSTEM.md, COMPONENT_LIBRARY.md)
+- ✅ **COMPLETED: Immediate scheduling on unpause, activate, and unskip (v2.13)**
   - Silent scheduling: Classes with future booking windows scheduled automatically in background
   - User prompts: "Book Now" dialogs for classes with already-open booking windows
   - Prevents missed bookings when user actions occur between now and midnight UTC
@@ -381,24 +398,29 @@ Users could miss bookings if they unpause, activate a class, or remove a skip be
    - **Success or permanent failure** → Stop
 7. **Daily scheduler** (midnight UTC) → Re-schedules all active classes for next occurrence
 
-### 3.4 Dashboard & Monitoring (Minimal)
+### 3.4 Dashboard & Monitoring ✅ ENHANCED (v2.13)
 
-| Feature | Description | Priority |
-| :---- | :---- | :---- |
-| **Upcoming Classes View** | Simple list of scheduled classes | High |
-| **Booking Status** | Status badge: Pending, Confirmed, Waitlisted, Failed | High |
-| **Email Notifications** | Send confirmation/failure emails | High |
-| **Basic History** | Show last 30 days of booking attempts | Medium |
+| Feature | Description | Priority | Status |
+| :---- | :---- | :---- | :---- |
+| **Rich Dashboard Overview** | Stat widgets, upcoming classes, recent activity, action items | High | ✅ |
+| **Upcoming Classes View** | Next 7 days with booking status badges | High | ✅ |
+| **Booking Status Badges** | Visual indicators: Confirmed, Pending, Waitlisted, Failed, Skipped | High | ✅ |
+| **Quick Stats** | Classes this week, active classes, success rate, action items count | High | ✅ |
+| **Recent Activity Timeline** | Last 5 booking attempts with results | High | ✅ |
+| **Action Items** | Failed bookings and credential issues requiring attention | High | ✅ |
+| **Email Notifications** | Designed and ready for integration (Phase 4) | High | 🔜 |
+| **Basic History** | Show last 30 days of booking attempts | Medium | 📋 |
 
-### 3.5 What's NOT Included (Prototype)
+### 3.5 What's NOT Included / Future Enhancements
 
-- ❌ Pretty design (functional Bootstrap/Tailwind only)  
-- ❌ Calendar view (just lists)  
-- ❌ Manual trigger buttons (edit schedule to retry)  
-- ❌ Multi-branch fallback (add to v2)  
-- ❌ Advanced error recovery (manual intervention required)  
-- ❌ Mobile app (responsive web only)  
+- ✅ ~~Pretty design (functional Bootstrap/Tailwind only)~~ → **COMPLETED in v2.13** (Modern fitness app design system)
+- ❌ Calendar view (currently list view with next booking dates)
+- ❌ Manual trigger buttons (edit schedule to retry)
+- ❌ Multi-branch fallback (add to v2)
+- ❌ Advanced error recovery (manual intervention required)
+- ❌ Mobile app (responsive web only)
 - ❌ Class listing scraper (manual entry for now)
+- 🔜 Email notifications (designed in v2.13, ready for integration)
 
 ---
 
@@ -888,10 +910,29 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 
 **Vercel:**
 
-- Zero-config Next.js deployment  
-- Automatic HTTPS  
-- Edge network (fast)  
+- Zero-config Next.js deployment
+- Automatic HTTPS
+- Edge network (fast)
 - Free for personal projects
+
+**Design System v2 & Component Library (v2.13):**
+
+- **Tailwind CSS Extended:** Design tokens for colors, gradients (`bg-gradient-primary`), shadows (`shadow-card`), clip-paths (`clip-diagonal-badge`)
+- **Component Library:** **15 reusable UI components** in `components/ui/`:
+  - Core: Button, Badge, Card, Modal
+  - Form: Input, Select, Checkbox, FormField
+  - Navigation: DropdownMenu, Tabs (with TabPanel)
+  - Feedback: Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
+  - Display: StatusIndicator, StatCard
+- **Typography:** Sora (headings) + DM Sans (body) - editorial, non-generic aesthetic
+- **Visual Language:** Diagonal-cut badges, rounded buttons, corner-clipped cards
+- **Colors:** Primary (#1a6fff), Success (#00c853), Warning (#ff9500), Danger (#f43f5e), Purple (#8B5CF6)
+- **Component Documentation:** `docs/DESIGN_SYSTEM.md` and `docs/COMPONENT_LIBRARY.md`
+- **Prototype Pages:** `/dashboard/prototype`, `/scheduler-v2`, `/design-system-components`
+- **Frontend Design Skill:** Use `/frontend-design` for any new visual work (UI, emails, components)
+- **Benefits:** Eliminates duplicate implementations, ensures UI consistency, faster feature development
+- **Responsive:** Desktop-first with mobile optimization
+- **Accessible:** WCAG AA compliant, keyboard navigation, proper ARIA labels
 
 ### Free Tier Limits (More Than Enough)
 

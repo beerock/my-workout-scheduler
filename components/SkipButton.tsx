@@ -10,6 +10,7 @@ import {
   formatTime12Hour,
 } from '@/lib/date-utils'
 import type { RecurringClass } from '@/lib/database.types'
+import { Button, Modal, Badge } from '@/components/ui'
 
 type ClassToBook = {
   id: string
@@ -162,48 +163,50 @@ export default function SkipButton({ recurringClass, gymUrl, onUpdate, scheduleP
   if (!isSkipActive) {
     return (
       <>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={handleSkip}
           disabled={loading || isDisabled}
-          className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          loading={loading}
           title={isDisabled ? getDisabledReason() : ''}
         >
-          {loading ? 'Setting...' : 'Skip Next'}
-        </button>
+          Skip Next
+        </Button>
 
         {/* Book Now Dialog - Single class */}
-        {showBookNowDialog && classToBook && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                ⏰ Booking Window Already Open!
-              </h3>
-              <p className="text-gray-700 mb-4">
-                Booking window is open for <strong>{formatClassDisplay(classToBook)}</strong>. Would you like to book now?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleBookNow}
-                  disabled={bookingClass}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  {bookingClass ? 'Booking...' : '✅ Yes, Book Now'}
-                </button>
-                <button
-                  onClick={handleSkipBooking}
-                  disabled={bookingClass}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  No, Skip This Week
-                </button>
-              </div>
-              <p className="mt-3 text-xs text-gray-500">
-                <strong>Book Now:</strong> Books this week's class immediately.<br />
-                <strong>Skip This Week:</strong> Class won't be booked this week, automatic booking resumes next week.
-              </p>
-            </div>
-          </div>
-        )}
+        <Modal
+          isOpen={showBookNowDialog && !!classToBook}
+          onClose={handleSkipBooking}
+          title="Booking Window Already Open!"
+          size="md"
+          footer={
+            <>
+              <Button
+                variant="ghost"
+                onClick={handleSkipBooking}
+                disabled={bookingClass}
+              >
+                No, Skip This Week
+              </Button>
+              <Button
+                variant="success"
+                onClick={handleBookNow}
+                loading={bookingClass}
+              >
+                Yes, Book Now
+              </Button>
+            </>
+          }
+        >
+          <p className="text-gray-700">
+            Booking window is open for <strong>{classToBook && formatClassDisplay(classToBook)}</strong>. Would you like to book now?
+          </p>
+          <p className="mt-4 text-sm text-gray-500">
+            <strong>Book Now:</strong> Books this week&apos;s class immediately.<br />
+            <strong>Skip This Week:</strong> Class won&apos;t be booked this week, automatic booking resumes next week.
+          </p>
+        </Modal>
       </>
     )
   }
@@ -212,52 +215,52 @@ export default function SkipButton({ recurringClass, gymUrl, onUpdate, scheduleP
   return (
     <>
       <div className="flex items-center gap-2">
-        <span className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded flex items-center gap-2">
-          <span>📅 Skipping {formatDateInGymTimezone(new Date(skip_target_datetime!), timezone, 'short')}</span>
+        <Badge variant="info" size="sm" className="flex items-center gap-2">
+          <span>Skipping {formatDateInGymTimezone(new Date(skip_target_datetime!), timezone, 'short')}</span>
           <button
             onClick={handleUnskip}
             disabled={loading || isDisabled}
-            className="text-blue-800 hover:text-blue-900 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-white hover:text-gray-100 font-bold disabled:opacity-50 disabled:cursor-not-allowed ml-1"
             title={isDisabled ? getDisabledReason() : "Cancel skip"}
           >
             ×
           </button>
-        </span>
+        </Badge>
       </div>
 
       {/* Book Now Dialog - Single class */}
-      {showBookNowDialog && classToBook && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              ⏰ Booking Window Already Open!
-            </h3>
-            <p className="text-gray-700 mb-4">
-              Booking window is open for <strong>{formatClassDisplay(classToBook)}</strong>. Would you like to book now?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleBookNow}
-                disabled={bookingClass}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {bookingClass ? 'Booking...' : '✅ Yes, Book Now'}
-              </button>
-              <button
-                onClick={handleSkipBooking}
-                disabled={bookingClass}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                No, Skip This Week
-              </button>
-            </div>
-            <p className="mt-3 text-xs text-gray-500">
-              <strong>Book Now:</strong> Books this week's class immediately.<br />
-              <strong>Skip This Week:</strong> Class won't be booked this week, automatic booking resumes next week.
-            </p>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={showBookNowDialog && !!classToBook}
+        onClose={handleSkipBooking}
+        title="Booking Window Already Open!"
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={handleSkipBooking}
+              disabled={bookingClass}
+            >
+              No, Skip This Week
+            </Button>
+            <Button
+              variant="success"
+              onClick={handleBookNow}
+              loading={bookingClass}
+            >
+              Yes, Book Now
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-700">
+          Booking window is open for <strong>{classToBook && formatClassDisplay(classToBook)}</strong>. Would you like to book now?
+        </p>
+        <p className="mt-4 text-sm text-gray-500">
+          <strong>Book Now:</strong> Books this week&apos;s class immediately.<br />
+          <strong>Skip This Week:</strong> Class won&apos;t be booked this week, automatic booking resumes next week.
+        </p>
+      </Modal>
     </>
   )
 }
