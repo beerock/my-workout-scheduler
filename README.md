@@ -116,6 +116,53 @@ my-workout-scheduler/
 ✅ **Booking automation** (GitHub Actions + Puppeteer)  
 ✅ **Automated class booking** (runs every 15 minutes via GitHub Actions)  
 ✅ **Booking attempt tracking** (records all booking attempts in database)
+✅ **Modern Design System** (v2.13 - Peloton/ClassPass/Strava-inspired aesthetic)
+✅ **Component Library** (7 reusable UI components)
+
+## Design System
+
+This project uses a comprehensive design system and component library for all UI development, featuring a modern fitness app aesthetic inspired by Peloton, ClassPass, and Strava.
+
+### Component Library
+
+**Location:** `components/ui/`
+
+All UI components are built using reusable, accessible components from the design system:
+
+- **Button** - All action buttons with variants (primary, secondary, success, danger, ghost, outline)
+- **Card** - Container component for grouped content
+- **Badge** - Status indicators for booking states
+- **FormField** - Consistent form input wrapper with labels, errors, helper text
+- **Modal** - Dialog/overlay component for confirmations and forms
+- **StatusIndicator** - Booking status display with colored dots
+- **StatCard** - Dashboard metric widgets
+
+### Design Tokens
+
+All styling uses semantic design tokens defined in [tailwind.config.ts](tailwind.config.ts):
+
+- **Colors:** Primary (blue), secondary (orange), success (green), warning (amber), danger (red), status colors
+- **Typography:** Inter font with consistent weight scale
+- **Spacing:** Standard Tailwind spacing (4px base unit)
+- **Shadows:** Custom shadows for cards, hover states, and floating elements
+- **Accessibility:** WCAG AA compliant with 4.5:1 color contrast
+
+### Development Rules
+
+**IMPORTANT:** All UI development must use the component library:
+
+1. ❌ NEVER create inline buttons with Tailwind classes
+2. ❌ NEVER create inline form fields
+3. ❌ NEVER use arbitrary colors
+4. ✅ ALWAYS use components from `components/ui/`
+5. ✅ ALWAYS use design tokens from [tailwind.config.ts](tailwind.config.ts)
+6. ✅ ALWAYS use the frontend-design skill (`/frontend-design`) for new UI/UX work
+
+### Documentation
+
+- **[Design System](docs/DESIGN_SYSTEM.md)** - Complete design system documentation (color palette, typography, spacing, accessibility)
+- **[Component Library](docs/COMPONENT_LIBRARY.md)** - Component API reference with examples
+- **[CLAUDE.md Section 13](CLAUDE.md#13-design-system--component-library-critical-for-ui-development)** - Design system rules for AI development
 
 ## Booking Automation
 

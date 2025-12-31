@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Button, Input, Card } from '@/components/ui'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -71,7 +72,7 @@ export default function ResetPasswordPage() {
   if (validSession === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-600">Loading...</div>
+        <div className="font-dm-sans text-gray-600">Loading...</div>
       </div>
     )
   }
@@ -80,11 +81,11 @@ export default function ResetPasswordPage() {
   if (!validSession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
+        <Card className="w-full max-w-md" padding="lg">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-danger-100 rounded-full flex items-center justify-center">
               <svg
-                className="w-8 h-8 text-red-600"
+                className="w-8 h-8 text-danger-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -99,26 +100,24 @@ export default function ResetPasswordPage() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">Invalid or Expired Link</h1>
-          <p className="text-gray-600 text-center mb-6">
+          <h1 className="font-sora text-2xl font-bold text-gray-900 mb-2 text-center">Invalid or Expired Link</h1>
+          <p className="font-dm-sans text-gray-600 text-center mb-6">
             This password reset link is invalid or has expired. Please request a new one.
           </p>
 
           <div className="space-y-3">
-            <Link
-              href="/forgot-password"
-              className="block w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-center"
-            >
-              Request New Reset Link
+            <Link href="/forgot-password">
+              <Button variant="primary" className="w-full">
+                Request New Reset Link
+              </Button>
             </Link>
-            <Link
-              href="/login"
-              className="block w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-center"
-            >
-              Back to Login
+            <Link href="/login">
+              <Button variant="secondary" className="w-full">
+                Back to Login
+              </Button>
             </Link>
           </div>
-        </div>
+        </Card>
       </div>
     )
   }
@@ -126,12 +125,12 @@ export default function ResetPasswordPage() {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
+        <Card className="w-full max-w-md" padding="lg">
           {/* Success Icon */}
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-success-100 rounded-full flex items-center justify-center">
               <svg
-                className="w-8 h-8 text-green-600"
+                className="w-8 h-8 text-success-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -146,90 +145,75 @@ export default function ResetPasswordPage() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+          <h1 className="font-sora text-2xl font-bold text-gray-900 mb-2 text-center">
             Password Updated Successfully!
           </h1>
-          <p className="text-gray-600 text-center mb-6">
+          <p className="font-dm-sans text-gray-600 text-center mb-6">
             Your password has been changed. You can now log in with your new password.
           </p>
 
-          <Link
-            href="/login"
-            className="block w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-center"
-          >
-            Go to Login
+          <Link href="/login">
+            <Button variant="primary" className="w-full">
+              Go to Login
+            </Button>
           </Link>
 
-          <p className="mt-4 text-sm text-gray-500 text-center">
+          <p className="mt-4 font-dm-sans text-sm text-gray-500 text-center">
             Redirecting in 3 seconds...
           </p>
-        </div>
+        </Card>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Reset Your Password</h1>
-        <p className="text-gray-600 mb-6">Enter your new password below.</p>
+      <Card className="w-full max-w-md" padding="lg">
+        <h1 className="font-sora text-2xl font-bold text-gray-900 mb-2">Reset Your Password</h1>
+        <p className="font-dm-sans text-gray-600 mb-6">Enter your new password below.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              New Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
-          </div>
+          <Input
+            label="New Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="Enter new password"
+            hint="Minimum 8 characters"
+          />
 
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Confirm New Password
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              minLength={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          <Input
+            label="Confirm New Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            placeholder="Confirm new password"
+          />
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 font-dm-sans text-sm">
               {error}
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            variant="primary"
+            loading={loading}
+            className="w-full"
           >
             {loading ? 'Updating...' : 'Update Password'}
-          </button>
+          </Button>
         </form>
 
         <div className="mt-6 text-center">
-          <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900">
+          <Link href="/login" className="font-dm-sans text-sm text-gray-600 hover:text-gray-900">
             ← Back to Login
           </Link>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

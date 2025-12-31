@@ -5,6 +5,7 @@ import { saveRecurringClass, type RecurringClassFormData } from '@/app/actions/r
 import { useRouter } from 'next/navigation'
 import { COMMON_TIMEZONES, formatDateInGymTimezone, getDayName, formatTime12Hour } from '@/lib/date-utils'
 import type { RecurringClass } from '@/lib/database.types'
+import { Button, Modal, Input, Select } from '@/components/ui'
 
 type Props = {
   initialClass?: RecurringClass | null
@@ -13,13 +14,13 @@ type Props = {
 }
 
 const DAYS_OF_WEEK = [
-  { value: 0, label: 'Sunday' },
-  { value: 1, label: 'Monday' },
-  { value: 2, label: 'Tuesday' },
-  { value: 3, label: 'Wednesday' },
-  { value: 4, label: 'Thursday' },
-  { value: 5, label: 'Friday' },
-  { value: 6, label: 'Saturday' },
+  { value: '0', label: 'Sunday' },
+  { value: '1', label: 'Monday' },
+  { value: '2', label: 'Tuesday' },
+  { value: '3', label: 'Wednesday' },
+  { value: '4', label: 'Thursday' },
+  { value: '5', label: 'Friday' },
+  { value: '6', label: 'Saturday' },
 ]
 
 export default function RecurringClassForm({ initialClass, isCopy = false, onSuccess }: Props) {
@@ -264,252 +265,199 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
     }))
   }
 
+  // Convert timezone list to Select options format
+  const timezoneOptions = COMMON_TIMEZONES.map(tz => ({
+    value: tz.value,
+    label: tz.label,
+  }))
+
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="day_of_week" className="block text-sm font-medium text-gray-700 mb-1">
-          Day of Week <span className="text-red-500">*</span>
-        </label>
-        <select
-          id="day_of_week"
+        <Select
+          label="Day of Week"
           name="day_of_week"
-          value={formData.day_of_week}
+          value={formData.day_of_week.toString()}
           onChange={handleChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {DAYS_OF_WEEK.map(day => (
-            <option key={day.value} value={day.value}>
-              {day.label}
-            </option>
-          ))}
-        </select>
-      </div>
+          options={DAYS_OF_WEEK}
+        />
 
-      <div>
-        <label htmlFor="class_time" className="block text-sm font-medium text-gray-700 mb-1">
-          Class Time <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="class_time"
+        <Input
+          label="Class Time"
           name="class_time"
           type="time"
           value={formData.class_time}
           onChange={handleChange}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          hint="The time when the class starts"
         />
-        <p className="mt-1 text-xs text-gray-500">
-          The time when the class starts
-        </p>
-      </div>
 
-      <div>
-        <label htmlFor="class_type" className="block text-sm font-medium text-gray-700 mb-1">
-          Class Type <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="class_type"
+        <Input
+          label="Class Type"
           name="class_type"
           type="text"
           value={formData.class_type}
           onChange={handleChange}
           required
           placeholder="e.g., BODYPUMP"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          hint="The name or type of the class"
         />
-        <p className="mt-1 text-xs text-gray-500">
-          The name or type of the class
-        </p>
-      </div>
 
-      <div>
-        <label htmlFor="branch" className="block text-sm font-medium text-gray-700 mb-1">
-          Branch <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="branch"
+        <Input
+          label="Branch"
           name="branch"
           type="text"
           value={formData.branch}
           onChange={handleChange}
           required
           placeholder="e.g., Downtown YMCA"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          hint="The gym branch where this class is held"
         />
-        <p className="mt-1 text-xs text-gray-500">
-          The gym branch where this class is held
-        </p>
-      </div>
 
-      <div>
-        <label htmlFor="booking_window_hours" className="block text-sm font-medium text-gray-700 mb-1">
-          Booking Window Hours
-        </label>
-        <input
-          id="booking_window_hours"
+        <Input
+          label="Booking Window Hours"
           name="booking_window_hours"
           type="number"
-          min="1"
-          max="168"
+          min={1}
+          max={168}
           value={formData.booking_window_hours}
           onChange={handleChange}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          hint="Hours before class when registration opens (default: 26)"
         />
-        <p className="mt-1 text-xs text-gray-500">
-          Hours before class when registration opens (default: 26)
-        </p>
-      </div>
 
-      <div>
-        <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-1">
-          Timezone
-        </label>
-        <select
-          id="timezone"
+        <Select
+          label="Timezone"
           name="timezone"
           value={formData.timezone}
           onChange={handleChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {COMMON_TIMEZONES.map(tz => (
-            <option key={tz.value} value={tz.value}>
-              {tz.label}
-            </option>
-          ))}
-        </select>
-        <p className="mt-1 text-xs text-gray-500">
-          Gym/Class location timezone (e.g., Eastern Time for Asheville YMCA). This is the timezone where the class takes place, not your viewing timezone.
-        </p>
-      </div>
+          options={timezoneOptions}
+          hint="Gym/Class location timezone. This is the timezone where the class takes place."
+        />
 
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
-          ✅ Class saved successfully!
-        </div>
-      )}
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Saving...' : (initialClass && !isCopy) ? 'Update Class' : 'Add Class'}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push('/dashboard/schedule')}
-            disabled={loading}
-            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-        </div>
-
-        {initialClass && !isCopy && (
-          <div className="text-sm text-gray-500">
-            Created: {new Date(initialClass.created_at).toLocaleDateString()}
+        {error && (
+          <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm font-dm-sans">
+            {error}
           </div>
         )}
-      </div>
-    </form>
 
-    {/* Book Now Dialog */}
-    {showBookNowDialog && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            ⏰ Booking Window Already Open!
-          </h3>
-          <p className="text-gray-700 mb-6">
-            Booking window is open for <strong>{formatClassDisplay()}</strong>. Would you like to book now?
-          </p>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleBookNow}
-              disabled={bookingClass}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              {bookingClass ? 'Booking...' : '✅ Yes, Book Now'}
-            </button>
-            <button
-              onClick={handleSkipBooking}
-              disabled={bookingClass}
-              className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              No, Skip This Week
-            </button>
+        {success && (
+          <div className="p-4 bg-success-50 border border-success-200 rounded-lg text-success-700 text-sm font-dm-sans">
+            Class saved successfully!
           </div>
+        )}
 
-          <p className="mt-3 text-xs text-gray-500">
-            <strong>Book Now:</strong> Books this week's class immediately.<br />
-            <strong>Skip This Week:</strong> Class won't be booked this week, automatic booking resumes next week.
-          </p>
-        </div>
-      </div>
-    )}
-
-    {/* Skip Clear Confirmation Dialog */}
-    {showSkipClearDialog && skipClearData && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            ⚠️ Clear Skip Confirmation
-          </h3>
-          <p className="text-gray-700 mb-6">
-            Changing the class schedule will clear your skip for{' '}
-            <strong>
-              {formatDateInGymTimezone(
-                new Date(skipClearData.skipDate || ''),
-                skipClearData.formData.timezone,
-                'short'
-              )}
-            </strong>. Do you want to continue?
-          </p>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleCancelSkipClear}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              type="submit"
+              variant="primary"
+              loading={loading}
+            >
+              {(initialClass && !isCopy) ? 'Update Class' : 'Add Class'}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => router.push('/dashboard/schedule')}
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
               Cancel
-            </button>
-            <button
-              onClick={handleConfirmSkipClear}
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              {loading ? 'Saving...' : 'Continue'}
-            </button>
+            </Button>
           </div>
+
+          {initialClass && !isCopy && (
+            <div className="text-sm text-gray-500 font-dm-sans">
+              Created: {new Date(initialClass.created_at).toLocaleDateString()}
+            </div>
+          )}
         </div>
-      </div>
-    )}
+      </form>
+
+      {/* Book Now Dialog */}
+      <Modal
+        isOpen={showBookNowDialog}
+        onClose={handleSkipBooking}
+        title="Booking Window Already Open!"
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={handleSkipBooking}
+              disabled={bookingClass}
+            >
+              No, Skip This Week
+            </Button>
+            <Button
+              variant="success"
+              onClick={handleBookNow}
+              loading={bookingClass}
+            >
+              Yes, Book Now
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-700">
+          Booking window is open for <strong>{formatClassDisplay()}</strong>. Would you like to book now?
+        </p>
+
+        {error && (
+          <div className="mt-4 p-3 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        <p className="mt-4 text-sm text-gray-500">
+          <strong>Book Now:</strong> Books this week&apos;s class immediately.<br />
+          <strong>Skip This Week:</strong> Class won&apos;t be booked this week, automatic booking resumes next week.
+        </p>
+      </Modal>
+
+      {/* Skip Clear Confirmation Dialog */}
+      <Modal
+        isOpen={showSkipClearDialog && !!skipClearData}
+        onClose={handleCancelSkipClear}
+        title="Clear Skip Confirmation"
+        size="md"
+        variant="danger"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={handleCancelSkipClear}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="success"
+              onClick={handleConfirmSkipClear}
+              loading={loading}
+            >
+              Continue
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-700">
+          Changing the class schedule will clear your skip for{' '}
+          <strong>
+            {skipClearData && formatDateInGymTimezone(
+              new Date(skipClearData.skipDate || ''),
+              skipClearData.formData.timezone,
+              'short'
+            )}
+          </strong>. Do you want to continue?
+        </p>
+
+        {error && (
+          <div className="mt-4 p-3 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm">
+            {error}
+          </div>
+        )}
+      </Modal>
     </>
   )
 }

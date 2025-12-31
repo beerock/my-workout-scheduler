@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { Button, Card } from '@/components/ui'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -11,30 +12,27 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <Card className="text-center max-w-lg" padding="lg">
+        <h1 className="font-sora text-4xl font-bold text-gray-900 mb-4">
           My Workout Scheduler
         </h1>
-        <p className="text-gray-600 mb-8">
+        <p className="font-dm-sans text-gray-600 mb-8 text-lg">
           Automatically book gym classes when registration opens
         </p>
-        <div className="space-x-4">
-          <Link
-            href="/login"
-            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Login
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link href="/login">
+            <Button variant="primary" size="lg" className="w-full sm:w-auto">
+              Login
+            </Button>
           </Link>
-          <Link
-            href="/signup"
-            className="inline-block px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-          >
-            Sign Up
+          <Link href="/signup">
+            <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+              Sign Up
+            </Button>
           </Link>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }
-

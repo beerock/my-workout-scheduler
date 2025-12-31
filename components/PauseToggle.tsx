@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateSchedulePaused, getUserSettings } from '@/app/actions/user-settings'
+import { updateSchedulePaused } from '@/app/actions/user-settings'
 import { formatTime12Hour } from '@/lib/date-utils'
+import { Button, Modal, Badge } from '@/components/ui'
 
 type ClassWithOpenWindow = {
   id: string
@@ -143,61 +144,59 @@ export default function PauseToggle({ initialPaused, onUpdate }: Props) {
           checked={paused}
           onChange={handleToggle}
           disabled={loading}
-          className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+          className="w-5 h-5 text-primary-500 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
         />
-        <span className="text-sm font-medium text-gray-700">
+        <span className="text-sm font-medium text-gray-700 font-dm-sans">
           Pause all bookings
         </span>
       </label>
-      
+
       {paused && (
-        <span className="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded">
-          ⚠️ Paused
-        </span>
+        <Badge variant="warning" size="sm">Paused</Badge>
       )}
 
       {error && (
-        <span className="text-xs text-red-600">{error}</span>
+        <span className="text-xs text-danger-600 font-dm-sans">{error}</span>
       )}
 
       {/* Book Now Dialog - Sequential for multiple classes */}
-      {showBookNowDialog && classesWithOpenWindows[currentDialogIndex] && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              ⏰ Booking Window Already Open!
-            </h3>
-            <p className="text-gray-700 mb-4">
-              Booking window is open for <strong>{formatClassDisplay(classesWithOpenWindows[currentDialogIndex])}</strong>. Would you like to book now?
-            </p>
-            {classesWithOpenWindows.length > 1 && (
-              <p className="text-sm text-gray-500 mb-4">
-                Class {currentDialogIndex + 1} of {classesWithOpenWindows.length}
-              </p>
-            )}
-            <div className="flex gap-3">
-              <button
-                onClick={handleBookNow}
-                disabled={bookingClass}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {bookingClass ? 'Booking...' : '✅ Yes, Book Now'}
-              </button>
-              <button
-                onClick={handleSkipBooking}
-                disabled={bookingClass}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                No, Skip This Week
-              </button>
-            </div>
-            <p className="mt-3 text-xs text-gray-500">
-              <strong>Book Now:</strong> Books this week's class immediately.<br />
-              <strong>Skip This Week:</strong> Class won't be booked this week, automatic booking resumes next week.
-            </p>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={showBookNowDialog && !!classesWithOpenWindows[currentDialogIndex]}
+        onClose={handleSkipBooking}
+        title="Booking Window Already Open!"
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={handleSkipBooking}
+              disabled={bookingClass}
+            >
+              No, Skip This Week
+            </Button>
+            <Button
+              variant="success"
+              onClick={handleBookNow}
+              loading={bookingClass}
+            >
+              Yes, Book Now
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-700">
+          Booking window is open for <strong>{classesWithOpenWindows[currentDialogIndex] && formatClassDisplay(classesWithOpenWindows[currentDialogIndex])}</strong>. Would you like to book now?
+        </p>
+        {classesWithOpenWindows.length > 1 && (
+          <p className="text-sm text-gray-500 mt-2">
+            Class {currentDialogIndex + 1} of {classesWithOpenWindows.length}
+          </p>
+        )}
+        <p className="mt-4 text-sm text-gray-500">
+          <strong>Book Now:</strong> Books this week&apos;s class immediately.<br />
+          <strong>Skip This Week:</strong> Class won&apos;t be booked this week, automatic booking resumes next week.
+        </p>
+      </Modal>
     </div>
   )
 }

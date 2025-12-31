@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Button, Input, Card } from '@/components/ui'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -89,91 +90,88 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Login</h1>
-        
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <Card className="w-full max-w-md" padding="lg">
+        <h1 className="font-sora text-2xl font-bold text-gray-900 mb-6">Login</h1>
+
         <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="you@example.com"
+          />
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <label className="font-dm-sans text-sm font-medium text-gray-700">
                 Password
               </label>
               <Link
                 href="/forgot-password"
-                className="text-xs text-blue-600 hover:underline"
+                className="font-dm-sans text-xs text-primary-600 hover:text-primary-700 hover:underline"
               >
                 Forgot password?
               </Link>
             </div>
-            <input
-              id="password"
+            <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your password"
             />
           </div>
 
           {message && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
+            <div className="p-4 bg-success-50 border border-success-200 rounded-lg text-success-700 font-dm-sans text-sm">
               {message}
             </div>
           )}
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 font-dm-sans text-sm">
               {error}
             </div>
           )}
 
           {showResendVerification && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-sm text-blue-900 mb-2">
+            <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg">
+              <p className="font-dm-sans text-sm text-primary-900 mb-3">
                 Email not verified? We can resend the verification email.
               </p>
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={handleResendVerification}
-                disabled={resending}
-                className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                loading={resending}
+                className="w-full"
               >
                 {resending ? 'Sending...' : 'Resend Verification Email'}
-              </button>
+              </Button>
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="primary"
+            loading={loading}
+            className="w-full"
           >
             {loading ? 'Logging in...' : 'Login'}
-          </button>
+          </Button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center font-dm-sans text-sm text-gray-600">
           Don't have an account?{' '}
-          <Link href="/signup" className="text-blue-600 hover:underline">
+          <Link href="/signup" className="text-primary-600 hover:text-primary-700 hover:underline font-medium">
             Sign up
           </Link>
         </p>
-      </div>
+      </Card>
     </div>
   )
 }
@@ -182,11 +180,10 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-600">Loading...</div>
+        <div className="font-dm-sans text-gray-600">Loading...</div>
       </div>
     }>
       <LoginForm />
     </Suspense>
   )
 }
-

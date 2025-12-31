@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { saveGymCredentials, getGymCredentials, type GymCredentialsFormData } from '@/app/actions/gym-credentials'
+import { saveGymCredentials, type GymCredentialsFormData } from '@/app/actions/gym-credentials'
 import { useRouter } from 'next/navigation'
+import { Button, Input } from '@/components/ui'
 
 type Credentials = {
   id: string
@@ -99,169 +100,121 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
     }))
   }
 
+  // Password visibility toggle icon
+  const EyeIcon = (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+  )
+
+  const EyeOffIcon = (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+    </svg>
+  )
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="gym_url" className="block text-sm font-medium text-gray-700 mb-1">
-          Gym URL <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="gym_url"
-          name="gym_url"
-          type="url"
-          value={formData.gym_url}
-          onChange={handleChange}
-          required
-          placeholder="https://ops1.operations.daxko.com/Online/4032/GXP/ClassSchedule.mvc"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <p className="mt-1 text-xs text-gray-500">
-          The URL where you log in to book classes
-        </p>
-      </div>
+      <Input
+        label="Gym URL"
+        name="gym_url"
+        type="url"
+        value={formData.gym_url}
+        onChange={handleChange}
+        required
+        placeholder="https://ops1.operations.daxko.com/Online/4032/GXP/ClassSchedule.mvc"
+        hint="The URL where you log in to book classes"
+      />
 
-      <div>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-          Username <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="username"
-          name="username"
-          type="text"
-          value={formData.username}
-          onChange={handleChange}
-          required
-          placeholder="Email or phone number"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <p className="mt-1 text-xs text-gray-500">
-          Your YMCA login username (email or phone number)
-        </p>
-      </div>
+      <Input
+        label="Username"
+        name="username"
+        type="text"
+        value={formData.username}
+        onChange={handleChange}
+        required
+        placeholder="Email or phone number"
+        hint="Your YMCA login username (email or phone number)"
+      />
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Password {!initialCredentials && <span className="text-red-500">*</span>}
-        </label>
-        <div className="relative">
-          <input
-            id="password"
-            name="password"
-            type={showPassword ? 'text' : 'password'}
-            value={formData.password}
-            onChange={handleChange}
-            required={!initialCredentials}
-            placeholder={initialCredentials ? "Leave blank to keep current password" : "Enter your gym password"}
-            className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      <Input
+        label={initialCredentials ? "Password" : "Password *"}
+        name="password"
+        type={showPassword ? 'text' : 'password'}
+        value={formData.password}
+        onChange={handleChange}
+        required={!initialCredentials}
+        placeholder={initialCredentials ? "Leave blank to keep current password" : "Enter your gym password"}
+        hint={initialCredentials ? "Leave blank to keep current password, or enter a new password to update" : undefined}
+        rightIcon={
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700"
             tabIndex={-1}
           >
-            {showPassword ? (
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-              </svg>
-            ) : (
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            )}
+            {showPassword ? EyeOffIcon : EyeIcon}
           </button>
-        </div>
-        {initialCredentials && (
-          <p className="mt-1 text-xs text-gray-500">
-            Leave blank to keep current password, or enter a new password to update (confirm password required)
-          </p>
-        )}
-      </div>
+        }
+      />
 
       {(formData.password || !initialCredentials) && (
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-            Confirm Password <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type={showConfirmPassword ? 'text' : 'password'}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required={!!formData.password}
-              placeholder="Confirm your gym password"
-              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+        <Input
+          label="Confirm Password"
+          name="confirmPassword"
+          type={showConfirmPassword ? 'text' : 'password'}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required={!!formData.password}
+          placeholder="Confirm your gym password"
+          hint={initialCredentials ? "Re-enter your password to confirm the change" : "Re-enter your password to confirm"}
+          rightIcon={
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700"
               tabIndex={-1}
             >
-              {showConfirmPassword ? (
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                </svg>
-              ) : (
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              )}
+              {showConfirmPassword ? EyeOffIcon : EyeIcon}
             </button>
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            {initialCredentials 
-              ? "Re-enter your password to confirm the change"
-              : "Re-enter your password to confirm"}
-          </p>
-        </div>
+          }
+        />
       )}
 
-      <div>
-        <label htmlFor="default_branch" className="block text-sm font-medium text-gray-700 mb-1">
-          Default Branch
-        </label>
-        <input
-          id="default_branch"
-          name="default_branch"
-          type="text"
-          value={formData.default_branch}
-          onChange={handleChange}
-          placeholder="e.g., Asheville - Downtown"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <p className="mt-1 text-xs text-gray-500">
-          Your preferred gym branch (optional)
-        </p>
-      </div>
+      <Input
+        label="Default Branch"
+        name="default_branch"
+        type="text"
+        value={formData.default_branch}
+        onChange={handleChange}
+        placeholder="e.g., Asheville - Downtown"
+        hint="Your preferred gym branch (optional)"
+      />
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+        <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm font-dm-sans">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
-          ✅ Credentials saved successfully!
+        <div className="p-4 bg-success-50 border border-success-200 rounded-lg text-success-700 text-sm font-dm-sans">
+          Credentials saved successfully!
         </div>
       )}
 
       <div className="flex items-center justify-between">
-        <button
+        <Button
           type="submit"
-          disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          variant="primary"
+          loading={loading}
         >
-          {loading ? 'Saving...' : initialCredentials ? 'Update Credentials' : 'Save Credentials'}
-        </button>
+          {initialCredentials ? 'Update Credentials' : 'Save Credentials'}
+        </Button>
 
         {initialCredentials && (
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 font-dm-sans">
             Last updated: {new Date(initialCredentials.updated_at).toLocaleDateString()}
           </div>
         )}
