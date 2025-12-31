@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation'
 import {
   deleteRecurringClass,
   toggleRecurringClassActive,
-  getRecurringClasses,
 } from '@/app/actions/recurring-classes'
 import { getDayName, formatTime12Hour } from '@/lib/date-utils'
 import SkipButton from './SkipButton'
 import type { RecurringClass } from '@/lib/database.types'
+import { Button, Modal, Badge, Card } from '@/components/ui'
 
 type Props = {
   classes: RecurringClass[]
@@ -144,13 +144,13 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
   if (sortedClasses.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">No classes scheduled yet.</p>
-        <a
-          href="/dashboard/schedule/add"
-          className="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        <p className="text-gray-500 mb-4 font-dm-sans">No classes scheduled yet.</p>
+        <Button
+          variant="primary"
+          onClick={() => router.push('/dashboard/schedule/add')}
         >
           Add Your First Class
-        </a>
+        </Button>
       </div>
     )
   }
@@ -163,53 +163,51 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
         const showDelete = showDeleteConfirm === classItem.id
 
         return (
-          <div
+          <Card
             key={classItem.id}
-            className={`border rounded-lg p-4 ${
+            variant="outlined"
+            padding="md"
+            className={
               schedulePaused
-                ? 'bg-gray-100 opacity-60'
-                : classItem.active
-                ? 'bg-white'
-                : 'bg-gray-50 opacity-75'
-            }`}
+                ? 'opacity-60'
+                : !classItem.active
+                ? 'opacity-75 bg-gray-50'
+                : ''
+            }
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 {/* Day and Time - Prominent Display */}
                 <div className="flex items-center gap-4 mb-3">
                   <div className="flex items-center gap-2">
-                    <span className={`text-2xl font-bold ${
+                    <span className={`text-2xl font-sora font-bold ${
                       schedulePaused ? 'text-gray-400' : 'text-gray-900'
                     }`}>
                       {getDayName(classItem.day_of_week)}
                     </span>
-                    <span className={`text-2xl font-bold ${
+                    <span className={`text-2xl font-sora font-bold ${
                       schedulePaused ? 'text-gray-400' : 'text-gray-900'
                     }`}>
                       {formatTime12Hour(classItem.class_time)}
                     </span>
                   </div>
                   {schedulePaused && (
-                    <span className="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded">
-                      ⚠️ Paused
-                    </span>
+                    <Badge variant="warning" size="sm">Paused</Badge>
                   )}
                   {!schedulePaused && !classItem.active && (
-                    <span className="px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-600 rounded">
-                      Inactive
-                    </span>
+                    <Badge variant="default" size="sm" diagonal={false}>Inactive</Badge>
                   )}
                 </div>
-                
+
                 <div className="mb-2">
-                  <h3 className={`text-lg font-semibold ${
+                  <h3 className={`text-lg font-sora font-semibold ${
                     schedulePaused ? 'text-gray-400' : 'text-gray-900'
                   }`}>
                     {classItem.class_type}
                   </h3>
                 </div>
-                
-                <div className={`space-y-1 text-sm ${
+
+                <div className={`space-y-1 text-sm font-dm-sans ${
                   schedulePaused ? 'text-gray-400' : 'text-gray-600'
                 }`}>
                   <div className="flex items-center gap-2">
@@ -235,9 +233,9 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
                     checked={schedulePaused ? false : classItem.active}
                     onChange={() => handleToggleActive(classItem.id, classItem.active)}
                     disabled={isToggling || schedulePaused}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+                    className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
                   />
-                  <span className={`text-xs ${
+                  <span className={`text-xs font-dm-sans ${
                     schedulePaused ? 'text-gray-400' : 'text-gray-600'
                   }`}>Active</span>
                 </label>
@@ -251,89 +249,93 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
                 />
 
                 {/* Copy Button */}
-                <a
-                  href={`/dashboard/schedule/add?copyFrom=${classItem.id}`}
-                  className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200"
-                  title="Copy this class"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/dashboard/schedule/add?copyFrom=${classItem.id}`)}
                 >
                   Copy
-                </a>
+                </Button>
 
                 {/* Edit Button */}
-                <a
-                  href={`/dashboard/schedule/edit/${classItem.id}`}
-                  className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={() => router.push(`/dashboard/schedule/edit/${classItem.id}`)}
                 >
                   Edit
-                </a>
+                </Button>
 
                 {/* Delete Button */}
                 {!showDelete ? (
-                  <button
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
                     onClick={() => setShowDeleteConfirm(classItem.id)}
                     disabled={isDeleting}
-                    className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
                   >
                     Delete
-                  </button>
+                  </Button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-600">Confirm?</span>
-                    <button
+                    <span className="text-xs text-gray-600 font-dm-sans">Confirm?</span>
+                    <Button
+                      variant="danger"
+                      size="sm"
                       onClick={() => handleDelete(classItem.id)}
-                      disabled={isDeleting}
-                      className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                      loading={isDeleting}
                     >
-                      {isDeleting ? 'Deleting...' : 'Yes'}
-                    </button>
-                    <button
+                      Yes
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setShowDeleteConfirm(null)}
                       disabled={isDeleting}
-                      className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
                     >
                       No
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
             </div>
-          </div>
+          </Card>
         )
       })}
 
       {/* Book Now Dialog - Single class */}
-      {showBookNowDialog && classToBook && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              ⏰ Booking Window Already Open!
-            </h3>
-            <p className="text-gray-700 mb-4">
-              Booking window is open for <strong>{formatClassDisplay(classToBook)}</strong>. Would you like to book now?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleBookNow}
-                disabled={bookingClass}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {bookingClass ? 'Booking...' : '✅ Yes, Book Now'}
-              </button>
-              <button
-                onClick={handleSkipBooking}
-                disabled={bookingClass}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                No, Skip This Week
-              </button>
-            </div>
-            <p className="mt-3 text-xs text-gray-500">
-              <strong>Book Now:</strong> Books this week's class immediately.<br />
-              <strong>Skip This Week:</strong> Class won't be booked this week, automatic booking resumes next week.
-            </p>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={showBookNowDialog && !!classToBook}
+        onClose={handleSkipBooking}
+        title="Booking Window Already Open!"
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={handleSkipBooking}
+              disabled={bookingClass}
+            >
+              No, Skip This Week
+            </Button>
+            <Button
+              variant="success"
+              onClick={handleBookNow}
+              loading={bookingClass}
+            >
+              Yes, Book Now
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-700">
+          Booking window is open for <strong>{classToBook && formatClassDisplay(classToBook)}</strong>. Would you like to book now?
+        </p>
+        <p className="mt-4 text-sm text-gray-500">
+          <strong>Book Now:</strong> Books this week&apos;s class immediately.<br />
+          <strong>Skip This Week:</strong> Class won&apos;t be booked this week, automatic booking resumes next week.
+        </p>
+      </Modal>
     </div>
   )
 }

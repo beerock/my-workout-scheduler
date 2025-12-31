@@ -5,6 +5,7 @@ import LogoutButton from '@/components/LogoutButton'
 import ProfileForm from '@/components/ProfileForm'
 import EmailVerificationNotification from '@/components/EmailVerificationNotification'
 import Link from 'next/link'
+import { Button, Card } from '@/components/ui'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -16,15 +17,15 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-white shadow-card border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-xl font-semibold text-gray-900">
+              <Link href="/dashboard" className="font-sora text-xl font-semibold text-gray-900">
                 My Workout Scheduler
               </Link>
               <span className="text-gray-400">|</span>
-              <span className="text-gray-600">Profile Settings</span>
+              <span className="font-dm-sans text-gray-600">Profile Settings</span>
             </div>
             <LogoutButton />
           </div>
@@ -32,10 +33,10 @@ export default async function ProfilePage() {
       </nav>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
+        <Card>
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Profile Settings</h1>
-            <p className="text-gray-600 text-sm">
+            <h1 className="font-sora text-2xl font-bold text-gray-900 mb-2">Profile Settings</h1>
+            <p className="font-dm-sans text-gray-600 text-sm">
               Manage your account settings, update your email and password
             </p>
           </div>
@@ -44,8 +45,8 @@ export default async function ProfilePage() {
             <EmailVerificationNotification />
           </Suspense>
 
-          <div className="mb-6 p-4 bg-gray-50 rounded-md border border-gray-200">
-            <div className="text-sm">
+          <Card variant="outlined" padding="md" className="mb-6">
+            <div className="font-dm-sans text-sm">
               <div className="flex justify-between items-center mb-2">
                 <span className="font-medium text-gray-700">User ID:</span>
                 <span className="text-gray-600 font-mono text-xs">{user.id}</span>
@@ -61,17 +62,16 @@ export default async function ProfilePage() {
                 </span>
               </div>
             </div>
-          </div>
+          </Card>
 
           <ProfileForm userEmail={user.email} />
-        </div>
+        </Card>
 
         <div className="mt-6">
-          <Link
-            href="/dashboard"
-            className="text-blue-600 hover:text-blue-700 text-sm"
-          >
-            ← Back to Dashboard
+          <Link href="/dashboard">
+            <Button variant="ghost" size="sm" className="text-primary-600 hover:text-primary-700">
+              ← Back to Dashboard
+            </Button>
           </Link>
         </div>
       </main>
