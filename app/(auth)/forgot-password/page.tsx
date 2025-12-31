@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { getAuthCallbackUrl } from '@/lib/env'
+import { Button, Input, Card } from '@/components/ui'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -66,12 +67,12 @@ export default function ForgotPasswordPage() {
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
+        <Card className="w-full max-w-md" padding="lg">
           {/* Email Icon */}
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
               <svg
-                className="w-8 h-8 text-blue-600"
+                className="w-8 h-8 text-primary-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -86,20 +87,20 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+          <h1 className="font-sora text-2xl font-bold text-gray-900 mb-2 text-center">
             Password Reset Email Sent
           </h1>
 
-          <p className="text-gray-600 text-center mb-6">
+          <p className="font-dm-sans text-gray-600 text-center mb-6">
             If an account exists for <span className="font-medium text-gray-900">{email}</span>,
             you'll receive a password reset link shortly.
           </p>
 
           {/* Important Instructions */}
-          <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-6">
+          <div className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6">
             <div className="flex items-start">
               <svg
-                className="w-5 h-5 text-amber-600 mt-0.5 mr-2 flex-shrink-0"
+                className="w-5 h-5 text-warning-600 mt-0.5 mr-2 flex-shrink-0"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -110,8 +111,8 @@ export default function ForgotPasswordPage() {
                 />
               </svg>
               <div className="flex-1">
-                <p className="font-medium text-amber-900 mb-2">Important:</p>
-                <ul className="text-sm text-amber-800 space-y-1">
+                <p className="font-dm-sans font-medium text-warning-900 mb-2">Important:</p>
+                <ul className="font-dm-sans text-sm text-warning-800 space-y-1">
                   <li>• Check your spam or junk folder</li>
                   <li>• Check your Promotions or Updates tab (Gmail)</li>
                   <li>• The link expires in 1 hour</li>
@@ -121,83 +122,79 @@ export default function ForgotPasswordPage() {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            <div className="mb-4 p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 font-dm-sans text-sm">
               {error}
             </div>
           )}
 
           {/* Resend Button */}
           <div className="mb-6">
-            <p className="text-sm text-gray-600 mb-3 text-center">Didn't receive the email?</p>
-            <button
+            <p className="font-dm-sans text-sm text-gray-600 mb-3 text-center">Didn't receive the email?</p>
+            <Button
+              variant="secondary"
               onClick={handleResend}
               disabled={loading || countdown > 0}
-              className="w-full py-2 px-4 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full"
             >
               {loading
                 ? 'Sending...'
                 : countdown > 0
                 ? `Resend in ${countdown}s`
                 : 'Resend Reset Link'}
-            </button>
+            </Button>
           </div>
 
           {/* Back to Login */}
           <div className="text-center">
-            <Link href="/login" className="text-sm text-blue-600 hover:underline">
+            <Link href="/login" className="font-dm-sans text-sm text-primary-600 hover:text-primary-700 hover:underline">
               ← Back to Login
             </Link>
           </div>
-        </div>
+        </Card>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Forgot Password?</h1>
-        <p className="text-gray-600 mb-6">
+      <Card className="w-full max-w-md" padding="lg">
+        <h1 className="font-sora text-2xl font-bold text-gray-900 mb-2">Forgot Password?</h1>
+        <p className="font-dm-sans text-gray-600 mb-6">
           Enter your email address and we'll send you a link to reset your password.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com"
-            />
-          </div>
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="you@example.com"
+          />
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 font-dm-sans text-sm">
               {error}
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            variant="primary"
+            loading={loading}
+            className="w-full"
           >
             {loading ? 'Sending...' : 'Send Reset Link'}
-          </button>
+          </Button>
         </form>
 
         <div className="mt-6 text-center">
-          <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900">
+          <Link href="/login" className="font-dm-sans text-sm text-gray-600 hover:text-gray-900">
             ← Back to Login
           </Link>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

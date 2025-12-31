@@ -5,6 +5,7 @@ import { getUserSettings } from '@/app/actions/user-settings'
 import ScheduleList from '@/components/ScheduleList'
 import PauseToggle from '@/components/PauseToggle'
 import Link from 'next/link'
+import { Button, Card } from '@/components/ui'
 
 export default async function SchedulePage() {
   const supabase = await createClient()
@@ -32,28 +33,27 @@ export default async function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-white shadow-card border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <h1 className="text-xl font-semibold text-gray-900">
+            <h1 className="font-sora text-xl font-semibold text-gray-900">
               My Workout Scheduler
             </h1>
-            <Link
-              href="/dashboard"
-              className="text-sm text-gray-600 hover:text-gray-900"
-            >
-              ← Back to Dashboard
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">
+                ← Back to Dashboard
+              </Button>
             </Link>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
+        <Card>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">My Schedule</h1>
-              <p className="text-gray-600 text-sm">
+              <h1 className="font-sora text-2xl font-bold text-gray-900 mb-2">My Schedule</h1>
+              <p className="font-dm-sans text-gray-600 text-sm">
                 Manage your recurring class schedule and booking preferences
               </p>
             </div>
@@ -61,11 +61,10 @@ export default async function SchedulePage() {
               <PauseToggle
                 initialPaused={settings?.schedule_paused ?? false}
               />
-              <Link
-                href="/dashboard/schedule/add"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                + Add Class
+              <Link href="/dashboard/schedule/add">
+                <Button variant="primary">
+                  + Add Class
+                </Button>
               </Link>
             </div>
           </div>
@@ -75,7 +74,7 @@ export default async function SchedulePage() {
             gymUrl={credentials?.gym_url || null}
             schedulePaused={settings?.schedule_paused ?? false}
           />
-        </div>
+        </Card>
       </main>
     </div>
   )
