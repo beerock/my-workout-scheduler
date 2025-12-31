@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.13):** Production-ready with Design System v2 component library, skip edit confirmation, and intelligent pause/inactive interaction using three-zone cleanup logic.
+**Current Version (v2.13):** Production-ready with Design System v2 component library, immediate scheduling on unpause/activate/unskip, skip edit confirmation, and intelligent pause/inactive interaction using three-zone cleanup logic.
 
 ---
 
@@ -305,6 +305,43 @@ Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'
 - `components/ui/index.ts` - Barrel export (import all components from here)
 - `docs/DESIGN_SYSTEM.md` - Complete design system documentation
 - `docs/COMPONENT_LIBRARY.md` - Component usage guide with full API docs
+
+### 14. Immediate Scheduling (v2.13)
+
+Users can trigger immediate scheduling by unpausing, activating a class, or removing a skip. System automatically schedules classes without waiting for midnight UTC daily scheduler.
+
+**Two scheduling modes:**
+
+**Silent Scheduling (Future Windows):**
+- Booking window not yet open (`bookingTime > now`)
+- Call `scheduleBooking()` in background
+- No user dialogs or interruption
+- Most common case
+
+**User Prompt (Open Windows):**
+- Booking window already open (`bookingTime <= now`)
+- Show "Book Now" dialog with class details
+- User decides: Book immediately or skip this week
+- Sequential dialogs for multiple classes (unpause scenario)
+
+**Implementation locations:**
+
+**Backend:**
+- `app/actions/user-settings.ts` - `updateSchedulePaused()` checks all active classes when unpausing
+- `app/actions/recurring-classes.ts` - `toggleRecurringClassActive()` and `setSkipNextOccurrence()` check single class
+- Return `classesWithOpenWindows` or `bookingWindowAlreadyOpen` + `classDetails` for UI prompts
+
+**Frontend:**
+- `components/PauseToggle.tsx` - Sequential dialogs for multiple classes (progress indicator)
+- `components/SkipButton.tsx` - Single dialog for unskip
+- `components/ScheduleList.tsx` - Single dialog for activate
+- `components/RecurringClassForm.tsx` - Existing dialog updated with class details
+
+**Dialog format:** "Booking window is open for **{CLASS_TYPE} - {DAY} {TIME} @ {BRANCH}**. Would you like to book now?"
+
+**Duplicate prevention:** `scheduleBooking()` sends `booking/cancel` first, then new event. Only one event exists per class+date.
+
+**Files:** `app/actions/user-settings.ts`, `app/actions/recurring-classes.ts`, `components/PauseToggle.tsx`, `components/SkipButton.tsx`, `components/ScheduleList.tsx`, `lib/inngest/scheduler.ts` (uses existing functions)
 
 ---
 
