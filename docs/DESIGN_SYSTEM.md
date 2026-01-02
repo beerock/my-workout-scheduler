@@ -309,54 +309,68 @@ All colors use a 50-900 scale for consistent theming across the application.
 
 ## Responsive Breakpoints
 
-**Desktop-first approach with mobile optimization**
+**Mobile-first approach** - Design for 320px, enhance for larger screens
 
-| Breakpoint | Min Width | Target Devices | Layout Strategy |
-|------------|-----------|----------------|-----------------|
-| **Mobile** | 320px - 767px | Phones | Single column, stacked cards, hamburger menu, larger touch targets (≥44px) |
-| **Tablet** | 768px - 1023px | Tablets | 2-column layouts, collapsible sidebar, touch-friendly |
-| **Desktop** | 1024px+ | Laptops, desktops | Multi-column, full sidebar, hover states |
+| Breakpoint | Width | Tailwind | Layout Strategy |
+|------------|-------|----------|-----------------|
+| **XS** | < 640px | (default) | Single column, stacked cards, large touch targets |
+| **SM** | ≥ 640px | `sm:` | 2-column grids, more spacing |
+| **MD** | ≥ 768px | `md:` | Desktop nav visible, expanded layouts |
+| **LG** | ≥ 1024px | `lg:` | Full multi-column, hover states, larger elements |
 
 ### Breakpoint Usage (Tailwind)
 
-```css
-/* Mobile-first approach */
-.class {
-  /* Mobile styles (default) */
-}
-
-@media (min-width: 768px) {
-  /* Tablet styles */
-}
-
-@media (min-width: 1024px) {
-  /* Desktop styles */
-}
+```tsx
+// Mobile-first responsive classes
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+<div className="p-4 sm:p-6 lg:p-8">
+<div className="text-2xl sm:text-4xl lg:text-7xl">
+<div className="hidden sm:block">  // Only visible on sm+
+<div className="flex sm:hidden">   // Only visible on mobile
 ```
 
 ### Responsive Design Guidelines
 
-**Mobile (320px - 767px):**
-- Single column layouts
-- Cards stack vertically
-- Hamburger navigation
-- Bottom sheets for actions
+**Mobile (< 640px):**
+- Single column layouts (`grid-cols-1`)
+- Reduced padding (`p-4` instead of `p-6`)
+- Cards stack vertically with full width
+- Hamburger menu positioned on right
 - Touch targets ≥44px
-- Hide non-critical information
-- Prioritize status visibility
+- Hide non-essential visual elements (gauges, legends)
+- Larger, bolder typography for hero elements
+- Layout containers MUST have `overflow-x-hidden` to prevent horizontal scroll
 
-**Tablet (768px - 1023px):**
-- 2-column grid layouts
-- Collapsible sidebar navigation
+**Tablet (640px - 1023px):**
+- 2-column grid layouts (`sm:grid-cols-2`)
+- Standard padding (`sm:p-6`)
+- Visual elements visible (gauges, charts)
 - Touch-friendly controls
-- Responsive tables (horizontal scroll if needed)
 
 **Desktop (1024px+):**
-- Full sidebar navigation
-- Multi-column dashboards (3-4 columns)
+- Multi-column dashboards (`lg:grid-cols-4`)
+- Full padding (`lg:p-8`)
+- Prominent visual elements (larger gauges)
 - Hover states for cards and buttons
 - Tooltips on hover
-- Larger data tables with full columns
+
+### Adaptive Component Behavior
+
+Some components adapt their content based on viewport:
+
+**SuccessRateCard:**
+- **Mobile (< sm):** Large percentage text as hero, gauge hidden, legend hidden
+- **Tablet (sm+):** Gauge visible (144px), legend visible
+- **Desktop (lg+):** Prominent gauge (240px), full visualization
+
+**Stats Grid:**
+- **Mobile:** Single column, cards stack vertically
+- **Tablet:** 2-column grid
+- **Desktop:** 4-column grid
+
+**Action Buttons:**
+- Use `flex-wrap` to allow graceful wrapping on narrow viewports
+- Responsive padding: `px-3 sm:px-5 py-2 sm:py-2.5`
 
 ---
 

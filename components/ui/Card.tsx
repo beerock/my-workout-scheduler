@@ -7,6 +7,7 @@ export interface CardProps {
   children: React.ReactNode
   className?: string
   onClick?: () => void
+  style?: React.CSSProperties
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
@@ -18,6 +19,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       children,
       className = '',
       onClick,
+      style,
       ...props
     },
     ref
@@ -41,9 +43,9 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       lg: 'p-8',
     }
 
-    // Hover styles
+    // Hover styles - shadow change + translate lift for tactile feedback
     const hoverStyles = hover
-      ? 'transition-all duration-200 hover:shadow-card-hover hover:scale-[1.02] cursor-pointer'
+      ? 'transition-all duration-200 hover:shadow-card-hover hover:-translate-y-1 cursor-pointer'
       : ''
 
     // Combine styles
@@ -63,6 +65,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <Component
         ref={ref as any}
         className={combinedClassName}
+        style={style}
         {...componentProps}
         {...props}
       >

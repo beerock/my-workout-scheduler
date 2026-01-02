@@ -24,7 +24,20 @@ export function getShortDayName(dayOfWeek: number): string {
  * Format time from HH:MM:SS or HH:MM to 12-hour format
  */
 export function formatTime12Hour(time: string): string {
-  const [hours, minutes] = time.split(':').map(Number)
+  // Handle empty or invalid time strings
+  if (!time || typeof time !== 'string' || !time.includes(':')) {
+    return '--:-- --'
+  }
+
+  const parts = time.split(':')
+  const hours = Number(parts[0])
+  const minutes = Number(parts[1])
+
+  // Validate parsed numbers
+  if (isNaN(hours) || isNaN(minutes)) {
+    return '--:-- --'
+  }
+
   const period = hours >= 12 ? 'PM' : 'AM'
   const hours12 = hours % 12 || 12
   return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { sora, dmSans } from '@/lib/fonts'
+import { ToastProvider } from '@/contexts/ToastContext'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -14,7 +15,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${sora.variable} ${dmSans.variable}`}>
-      <body className="font-dm-sans antialiased">{children}</body>
+      <body className="font-dm-sans antialiased">
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+      </body>
     </html>
   )
 }

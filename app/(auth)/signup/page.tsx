@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getAuthCallbackUrl } from '@/lib/env'
-import { Button, Input, Card } from '@/components/ui'
+import { Button, Input } from '@/components/ui'
+import AuthLayout from '@/components/AuthLayout'
 
 // Extend Window interface for turnstile
 declare global {
@@ -120,11 +121,8 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md" padding="lg">
-        <h1 className="font-sora text-2xl font-bold text-gray-900 mb-6">Sign Up</h1>
-
-        <form onSubmit={handleSignup} className="space-y-4">
+    <AuthLayout title="Create account" subtitle="Start automating your gym class bookings">
+      <form onSubmit={handleSignup} className="space-y-4">
           <Input
             label="Email"
             type="email"
@@ -170,17 +168,16 @@ export default function SignupPage() {
             loading={loading}
             className="w-full"
           >
-            {loading ? 'Signing up...' : 'Sign Up'}
+            {loading ? 'Creating account...' : 'Create Account'}
           </Button>
         </form>
 
         <p className="mt-6 text-center font-dm-sans text-sm text-gray-600">
           Already have an account?{' '}
           <Link href="/login" className="text-primary-600 hover:text-primary-700 hover:underline font-medium">
-            Login
+            Sign in
           </Link>
         </p>
-      </Card>
-    </div>
+    </AuthLayout>
   )
 }
