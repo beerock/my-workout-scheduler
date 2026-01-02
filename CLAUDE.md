@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.13):** Production-ready with Design System v2 component library, immediate scheduling on unpause/activate/unskip, skip edit confirmation, and intelligent pause/inactive interaction using three-zone cleanup logic.
+**Current Version (v2.16):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, and intelligent pause/inactive interaction using three-zone cleanup logic.
 
 ---
 
@@ -250,7 +250,7 @@ This skill ensures production-grade, polished designs that avoid generic AI aest
 
 Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'`
 
-**Available Components (16 total):**
+**Available Components (18 total):**
 
 | Category | Components |
 |----------|------------|
@@ -259,6 +259,7 @@ Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'
 | Navigation | DropdownMenu, Tabs (with TabPanel) |
 | Feedback | Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard) |
 | Display | StatusIndicator, StatCard, Divider |
+| Layout | Header, Footer |
 
 #### Design Tokens (Tailwind Config)
 
@@ -282,10 +283,24 @@ Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'
 1. ❌ NEVER create inline buttons - use `<Button>` component
 2. ❌ NEVER create inline form fields - use `<Input>`, `<Select>`, `<Checkbox>`
 3. ❌ NEVER use arbitrary colors - use design tokens from tailwind.config.ts
-4. ✅ ALWAYS import from `components/ui/`
-5. ✅ ALWAYS run `/frontend-design` skill for new visual design work
-6. ✅ ALWAYS use mobile-first responsive classes (design for 320px, enhance with sm:/lg:)
-7. ✅ ALWAYS add `overflow-x-hidden` to layout root containers (prevents mobile horizontal scroll)
+4. ❌ NEVER create inline footers - use `<Footer>` component on ALL pages
+5. ✅ ALWAYS import from `components/ui/`
+6. ✅ ALWAYS run `/frontend-design` skill for new visual design work
+7. ✅ ALWAYS use mobile-first responsive classes (design for 320px, enhance with sm:/lg:)
+8. ✅ ALWAYS add `overflow-x-hidden` to layout root containers (prevents mobile horizontal scroll)
+9. ✅ ALWAYS include `<Footer>` at bottom of every page
+
+**Layout Components:**
+- **Header:** Use `<Header>` for dashboard/protected pages (via EditorialLayout). Auth pages and landing page have custom headers.
+- **Footer:** Use `<Footer>` on ALL pages. Props: `showTagline` (default: true), `className`, `style`
+
+```tsx
+// Standard footer with tagline
+<Footer />
+
+// Footer without tagline
+<Footer showTagline={false} />
+```
 
 **Mobile-First Responsive Patterns:**
 ```tsx
@@ -594,4 +609,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** December 30, 2025 (v2.13)
+**Last Updated:** January 2, 2026 (v2.16)

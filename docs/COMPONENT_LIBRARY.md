@@ -4,8 +4,8 @@
 
 This document provides complete API documentation, usage examples, and best practices for all reusable UI components in the My Workout Scheduler design system.
 
-**Version:** 2.14
-**Last Updated:** January 1, 2026
+**Version:** 2.16
+**Last Updated:** January 2, 2026
 **Location:** `components/ui/`
 
 ---
@@ -38,8 +38,12 @@ This document provides complete API documentation, usage examples, and best prac
 15. [StatCard](#statcard)
 16. [Divider](#divider)
 
+**Layout:**
+17. [Header](#header)
+18. [Footer](#footer)
+
 **Guidelines:**
-17. [Usage Guidelines](#usage-guidelines)
+19. [Usage Guidelines](#usage-guidelines)
 
 ---
 
@@ -2159,6 +2163,143 @@ import { Divider } from '@/components/ui'
 
 ---
 
+## Header
+
+**File:** `components/ui/Header.tsx`
+
+**Purpose:** Production header component for dashboard pages with full navigation, user dropdown, and mobile menu.
+
+**When to use:**
+- ✅ Dashboard pages (via EditorialLayout)
+- ✅ Protected/authenticated pages
+- ✅ Pages requiring full navigation
+
+**When NOT to use:**
+- ❌ Auth pages (use AuthLayout's simplified header)
+- ❌ Landing page (has custom hero header)
+- ❌ Prototype pages (may use custom headers)
+
+### API
+
+```typescript
+interface HeaderProps {
+  className?: string
+}
+```
+
+### Features
+
+- **Logo/Brand:** Calendar icon + "My Workout Scheduler" linking to dashboard
+- **Desktop Navigation:** Schedule link + user dropdown menu
+- **User Dropdown:** Profile, Credentials, Logout options
+- **Mobile Menu:** Hamburger icon with slide-down navigation drawer
+- **Diagonal Accent Bar:** Gradient bar at bottom (blue → green → purple)
+- **Responsive:** Mobile-first design with md breakpoint
+
+### Code Examples
+
+```tsx
+// Basic usage (typically via EditorialLayout)
+import { Header } from '@/components/ui'
+
+<Header />
+
+// With custom class
+<Header className="border-b-2" />
+```
+
+### Design Features (v2)
+
+- **Background:** `bg-white/80 backdrop-blur-sm`
+- **Height:** `h-14` mobile, `h-16` desktop
+- **Accent Bar:** Gradient with diagonal clip-path at bottom
+- **User Avatar:** Gradient circle with user icon
+- **Typography:** Sora for brand, DM Sans for nav items
+
+### Accessibility
+
+- ✅ Keyboard navigation (Tab through links)
+- ✅ ESC closes dropdowns
+- ✅ Click outside closes menus
+- ✅ Focus management on menu open/close
+- ✅ `aria-label` for mobile menu button
+
+---
+
+## Footer
+
+**File:** `components/ui/Footer.tsx`
+
+**Purpose:** Standard footer component with copyright and tagline for all pages.
+
+**When to use:**
+- ✅ All front-end pages (dashboard, auth, landing, prototypes)
+- ✅ Any page requiring copyright notice
+
+### API
+
+```typescript
+interface FooterProps {
+  showTagline?: boolean  // Default: true
+  className?: string
+  style?: React.CSSProperties
+}
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| showTagline | `boolean` | `true` | Show tagline text below copyright |
+| className | `string` | `''` | Additional CSS classes |
+| style | `CSSProperties` | - | Inline styles (useful for animations) |
+
+### Content
+
+**With tagline (default):**
+```
+Made for gym enthusiasts who value their time
+© 2026 Beerock Studios
+```
+
+**Without tagline:**
+```
+© 2026 Beerock Studios
+```
+
+### Code Examples
+
+```tsx
+import { Footer } from '@/components/ui'
+
+// Default footer with tagline
+<Footer />
+
+// Without tagline
+<Footer showTagline={false} />
+
+// With animation (e.g., in AuthLayout)
+<Footer
+  className="opacity-0 animate-fade-in-up"
+  style={{ animationDelay: '0.2s' }}
+/>
+```
+
+### Design Features
+
+- **Border:** Top border `border-t border-gray-200/50`
+- **Padding:** `py-6` with max-width container
+- **Typography:** DM Sans, centered text
+- **Tagline:** `text-sm text-gray-500`
+- **Copyright:** `text-xs text-gray-400`
+- **Position:** `mt-auto` for flex layouts (sticks to bottom)
+
+### Accessibility
+
+- ✅ Semantic `<footer>` element
+- ✅ Sufficient color contrast for text
+- ✅ No interactive elements require focus management
+
+---
+
 ## Usage Guidelines
 
 ### General Best Practices
@@ -2229,6 +2370,14 @@ Before shipping a component:
 ---
 
 ## Version History
+
+**v2.16 (January 2, 2026):**
+- Added Header component (`components/ui/Header.tsx`) - production header with nav, user dropdown, mobile menu
+- Added Footer component (`components/ui/Footer.tsx`) - standard footer with copyright and tagline
+- Footer applied to all front-end pages (dashboard, auth, landing, prototypes)
+- Header extracted from EditorialLayout for reusability
+- Component prototype page updated with new component showcases (Button, Badge, Alert, StatusIndicator, StatCard, Divider, Footer)
+- Total: 18 components documented
 
 **v2.15 (January 2, 2026):**
 - Updated StatCard grid example with mobile-first responsive classes (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`)

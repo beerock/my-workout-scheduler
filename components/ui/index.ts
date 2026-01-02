@@ -26,3 +26,7 @@ export { Skeleton, SkeletonCard, SkeletonClassCard, type SkeletonProps } from '.
 export { StatusIndicator } from './StatusIndicator'
 export { StatCard } from './StatCard'
 export { Divider } from './Divider'
+
+// Layout Components
+export { Header } from './Header'
+export { Footer } from './Footer'
