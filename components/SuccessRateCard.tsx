@@ -135,30 +135,6 @@ export default function SuccessRateCard({ successRate, animationDelay = '0.1s' }
                   }}
                 />
 
-                {/* Tick marks at 0%, 50%, 100% positions */}
-                {[0, 50, 100].map((tick) => {
-                  const angle = Math.PI - (tick / 100) * Math.PI
-                  const outerRadius = normalizedRadius + strokeWidth / 2 + 8
-                  const innerRadius = normalizedRadius + strokeWidth / 2 + 3
-                  const x1 = 90 + Math.cos(angle) * innerRadius
-                  const y1 = 90 + Math.sin(angle) * innerRadius
-                  const x2 = 90 + Math.cos(angle) * outerRadius
-                  const y2 = 90 + Math.sin(angle) * outerRadius
-
-                  return (
-                    <line
-                      key={tick}
-                      x1={x1}
-                      y1={y1 - 80}
-                      x2={x2}
-                      y2={y2 - 80}
-                      stroke="#d1d5db"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                    />
-                  )
-                })}
-
                 {/* Center label - inside SVG for perfect alignment */}
                 <text
                   x="94"
