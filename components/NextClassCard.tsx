@@ -8,6 +8,7 @@ type NextClassCardProps = {
   classType: string
   branch: string
   hoursUntil: number
+  bookingStatus?: 'confirmed' | 'waitlisted' | 'pending'
   onViewSchedule?: () => void
 }
 
@@ -26,6 +27,7 @@ export default function NextClassCard({
   classType,
   branch,
   hoursUntil,
+  bookingStatus = 'pending',
   onViewSchedule,
 }: NextClassCardProps) {
   // Format hours display with unit
@@ -132,43 +134,71 @@ export default function NextClassCard({
         </p>
       </div>
 
-      {/* Right: Unified Countdown Module */}
-      <div className="relative flex items-center gap-3">
-        {/* Countdown Display - unified glass container */}
+      {/* Right: Status & Countdown Module */}
+      <div className="relative w-full sm:w-auto flex items-center">
+        {/* Status Display - bold, readable, full-width on mobile */}
         <div
-          className="relative flex items-center gap-0 rounded-2xl overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.2)',
-          }}
+          className={`relative flex items-center justify-center gap-2 sm:flex-col sm:gap-1 w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl ${
+            bookingStatus === 'confirmed'
+              ? 'bg-success-500/20 ring-1 ring-success-400/40'
+              : bookingStatus === 'waitlisted'
+                ? 'bg-warning-500/20 ring-1 ring-warning-400/40'
+                : 'bg-slate-950/50 ring-1 ring-white/10'
+          }`}
         >
-          {/* Countdown number section */}
-          <div className="px-4 sm:px-5 py-3 sm:py-4 flex flex-col items-center justify-center">
-            <span
-              className="font-sora text-3xl sm:text-4xl font-bold text-white leading-none tracking-tight"
-              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
-            >
-              {countdown.value}
-            </span>
-            {countdown.unit && (
-              <span className="font-dm-sans text-[10px] sm:text-[11px] text-white/60 uppercase tracking-wider mt-0.5">
-                {countdown.unit}
+          {bookingStatus === 'confirmed' ? (
+            <>
+              {/* Confirmed: Circled checkmark + BOOKED (consistent with SuccessRateCard) */}
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-sora text-base sm:text-lg font-bold text-success-400 uppercase tracking-wide">
+                  Booked
+                </span>
+              </div>
+              {/* Time - inline on mobile, below on desktop */}
+              <span className="font-dm-sans text-sm sm:text-base text-success-300/90 font-medium">
+                {countdown.value === 'Now' ? 'Starting now' : `in ${countdown.value} ${countdown.unit}`}
               </span>
-            )}
-          </div>
-
-          {/* Divider */}
-          <div className="w-px h-10 sm:h-12 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
-
-          {/* Label section */}
-          <div className="px-3 sm:px-4 py-3 sm:py-4 flex flex-col items-start justify-center">
-            <span className="font-dm-sans text-[10px] sm:text-[11px] text-white/50 uppercase tracking-wider leading-tight">
-              until
-            </span>
-            <span className="font-dm-sans text-xs sm:text-[13px] text-white/80 font-medium leading-tight">
-              booking
-            </span>
-          </div>
+            </>
+          ) : bookingStatus === 'waitlisted' ? (
+            <>
+              {/* Waitlisted: Hourglass + WAITLIST */}
+              <div className="flex items-center gap-2">
+                <span className="text-lg sm:text-xl">⏳</span>
+                <span className="font-sora text-base sm:text-lg font-bold text-warning-400 uppercase tracking-wide">
+                  Waitlist
+                </span>
+              </div>
+              {/* Time - inline on mobile, below on desktop */}
+              <span className="font-dm-sans text-sm sm:text-base text-warning-300/90 font-medium">
+                {countdown.value === 'Now' ? 'Starting now' : `in ${countdown.value} ${countdown.unit}`}
+              </span>
+            </>
+          ) : (
+            <>
+              {/* Pending: Confident primary - blue accent, clean hierarchy */}
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-sora text-2xl sm:text-4xl font-bold text-white leading-none tracking-tight">
+                  {countdown.value}
+                </span>
+                {countdown.unit && (
+                  <span className="font-dm-sans text-sm sm:text-base text-primary-300 uppercase font-semibold">
+                    {countdown.unit}
+                  </span>
+                )}
+                {/* Mobile only - inline with countdown */}
+                <span className="font-dm-sans text-sm text-white/50 sm:hidden">
+                  until class
+                </span>
+              </div>
+              {/* Desktop only - below countdown */}
+              <span className="hidden sm:inline font-dm-sans text-base text-white/50">
+                until class
+              </span>
+            </>
+          )}
         </div>
 
         {/* View schedule link (desktop only) */}

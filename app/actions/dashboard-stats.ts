@@ -1,8 +1,8 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { startOfWeek, endOfWeek, subDays, format } from 'date-fns'
-import { calculateNextOccurrence } from '@/lib/date-utils'
+import { startOfWeek, endOfWeek, subDays } from 'date-fns'
+import { calculateNextOccurrence, formatTime12Hour } from '@/lib/date-utils'
 
 export type DashboardStats = {
   activeClasses: number
@@ -12,6 +12,8 @@ export type DashboardStats = {
     className: string
     dayTime: string
     hoursUntil: number
+    branch: string
+    bookingStatus: 'confirmed' | 'waitlisted' | 'pending'
   } | null
 }
 
@@ -43,7 +45,7 @@ export async function getDashboardStats(): Promise<{
     // 2. Get recurring class IDs for this user (needed for booking_attempts query)
     const { data: userClasses, error: classesError } = await supabase
       .from('recurring_classes')
-      .select('id, class_type, day_of_week, class_time, timezone')
+      .select('id, class_type, day_of_week, class_time, timezone, branch')
       .eq('user_id', user.id)
 
     if (classesError) {
@@ -101,8 +103,9 @@ export async function getDashboardStats(): Promise<{
 
     if (userClasses && userClasses.length > 0) {
       const now = new Date()
-      let soonest: { className: string; dayTime: string; hoursUntil: number } | null = null
+      let soonest: DashboardStats['nextBooking'] = null
       let soonestTime = Infinity
+      let soonestClassId: string | null = null
 
       for (const cls of userClasses) {
         try {
@@ -115,18 +118,45 @@ export async function getDashboardStats(): Promise<{
 
           if (hoursUntil > 0 && hoursUntil < soonestTime) {
             soonestTime = hoursUntil
+            soonestClassId = cls.id
+
             const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
             const dayName = dayNames[cls.day_of_week]
-            const timeStr = format(nextOccurrence, 'h:mm a')
+            // Use stored class_time directly - no timezone conversion needed
+            const timeStr = formatTime12Hour(cls.class_time)
 
             soonest = {
               className: cls.class_type,
               dayTime: `${dayName} ${timeStr}`,
-              hoursUntil: Math.round(hoursUntil)
+              hoursUntil: Math.round(hoursUntil),
+              branch: cls.branch,
+              bookingStatus: 'pending' // Default, will be updated below
             }
           }
         } catch (e) {
           console.error('Error calculating next occurrence:', e)
+        }
+      }
+
+      // Query booking status for the soonest class
+      // Look for confirmed/waitlisted bookings that happened after the booking window opened
+      // (typically 26 hours before class, but we use 7 days as a safe window for weekly classes)
+      if (soonest && soonestClassId) {
+        // For weekly recurring classes, look for recent bookings (within last 7 days)
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+        const { data: bookingAttempt } = await supabase
+          .from('booking_attempts')
+          .select('status')
+          .eq('recurring_class_id', soonestClassId)
+          .gte('attempt_timestamp', sevenDaysAgo)
+          .in('status', ['confirmed', 'waitlisted'])
+          .order('attempt_timestamp', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (bookingAttempt) {
+          soonest.bookingStatus = bookingAttempt.status as 'confirmed' | 'waitlisted'
         }
       }
 

@@ -4,7 +4,7 @@
 
 This document provides complete API documentation, usage examples, and best practices for all reusable UI components in the My Workout Scheduler design system.
 
-**Version:** 2.16
+**Version:** 2.17
 **Last Updated:** January 2, 2026
 **Location:** `components/ui/`
 
@@ -42,8 +42,11 @@ This document provides complete API documentation, usage examples, and best prac
 17. [Header](#header)
 18. [Footer](#footer)
 
+**Feature Components:**
+19. [NextClassCard](#nextclasscard)
+
 **Guidelines:**
-19. [Usage Guidelines](#usage-guidelines)
+20. [Usage Guidelines](#usage-guidelines)
 
 ---
 
@@ -2297,6 +2300,91 @@ import { Footer } from '@/components/ui'
 - ✅ Semantic `<footer>` element
 - ✅ Sufficient color contrast for text
 - ✅ No interactive elements require focus management
+
+---
+
+## NextClassCard
+
+**File:** `components/NextClassCard.tsx`
+
+**Purpose:** Featured dark gradient card displaying the user's next scheduled class with booking status. Hero component on dashboard.
+
+**When to use:**
+- ✅ Dashboard homepage to show upcoming class
+- ✅ Schedule page header
+
+**When NOT to use:**
+- ❌ Listing multiple classes (use class list components)
+- ❌ Historical bookings (use booking history components)
+
+### API
+
+```typescript
+interface NextClassCardProps {
+  className?: string        // Additional CSS classes
+  dayTime: string          // e.g., "Saturday 9:30 AM"
+  classType: string        // e.g., "BODYPUMP"
+  branch: string           // e.g., "Woodfin YMCA"
+  hoursUntil: number       // Hours until class starts
+  bookingStatus?: 'confirmed' | 'waitlisted' | 'pending'  // Default: 'pending'
+  onViewSchedule?: () => void  // Callback for "View" link (desktop only)
+}
+```
+
+### Usage
+
+```tsx
+import NextClassCard from '@/components/NextClassCard'
+
+// Confirmed booking
+<NextClassCard
+  dayTime="Saturday 9:30 AM"
+  classType="BODYPUMP"
+  branch="Woodfin YMCA"
+  hoursUntil={23}
+  bookingStatus="confirmed"
+/>
+
+// Waitlisted
+<NextClassCard
+  dayTime="Monday 6:00 PM"
+  classType="Cycle"
+  branch="Downtown YMCA"
+  hoursUntil={48}
+  bookingStatus="waitlisted"
+/>
+
+// Pending (not yet booked)
+<NextClassCard
+  dayTime="Wednesday 4:15 PM"
+  classType="Yoga Flow"
+  branch="Asheville YMCA"
+  hoursUntil={72}
+  bookingStatus="pending"
+/>
+```
+
+### Booking Status States
+
+| Status | Background | Display |
+|--------|------------|---------|
+| `confirmed` | Green tint (`bg-success-500/20`) | ✓ Booked • in X hrs |
+| `waitlisted` | Amber tint (`bg-warning-500/20`) | ⏳ Waitlist • in X hrs |
+| `pending` | Dark glass (`bg-slate-950/50`) | X DAYS until class |
+
+### Visual Features
+
+- **Dark gradient background** with diagonal clip-path
+- **Glass morphism** status modules with ring borders
+- **Pulsing indicator** on "Next Class" label
+- **Category emoji** based on class type (💪 strength, 🚴 cycling, 🧘 yoga, etc.)
+- **Responsive layout**: Stacked on mobile, side-by-side on desktop
+
+### Countdown Logic
+
+- `< 1 hour`: Shows "Now"
+- `< 24 hours`: Shows hours (e.g., "5 hrs")
+- `≥ 24 hours`: Shows days (e.g., "3 days")
 
 ---
 
