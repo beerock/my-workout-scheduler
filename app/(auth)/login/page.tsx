@@ -4,7 +4,8 @@ import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Button, Input, Card } from '@/components/ui'
+import { Button, Input } from '@/components/ui'
+import AuthLayout from '@/components/AuthLayout'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -90,11 +91,8 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md" padding="lg">
-        <h1 className="font-sora text-2xl font-bold text-gray-900 mb-6">Login</h1>
-
-        <form onSubmit={handleLogin} className="space-y-4">
+    <AuthLayout title="Welcome back" subtitle="Sign in to your account to continue">
+      <form onSubmit={handleLogin} className="space-y-4">
           <Input
             label="Email"
             type="email"
@@ -161,18 +159,17 @@ function LoginForm() {
             loading={loading}
             className="w-full"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
 
         <p className="mt-6 text-center font-dm-sans text-sm text-gray-600">
           Don't have an account?{' '}
           <Link href="/signup" className="text-primary-600 hover:text-primary-700 hover:underline font-medium">
-            Sign up
+            Create one now
           </Link>
         </p>
-      </Card>
-    </div>
+    </AuthLayout>
   )
 }
 

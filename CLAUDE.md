@@ -233,7 +233,7 @@ Skip buttons disabled when paused/inactive with tooltips. Uses `calculateBooking
 
 ### 13. Design System v2 & Component Library (CRITICAL)
 
-**Version:** v2.13 (December 2025)
+**Version:** v2.15 (January 2026)
 **Status:** MANDATORY for all frontend AND email development
 
 **All UI/UX work MUST use Design System v2 patterns and the component library.**
@@ -250,15 +250,15 @@ This skill ensures production-grade, polished designs that avoid generic AI aest
 
 Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'`
 
-**Available Components (15 total):**
+**Available Components (16 total):**
 
 | Category | Components |
 |----------|------------|
 | Core | Button, Badge, Card, Modal |
 | Form | Input, Select, Checkbox, FormField |
 | Navigation | DropdownMenu, Tabs (with TabPanel) |
-| Feedback | Toast, Skeleton (+ SkeletonCard, SkeletonClassCard) |
-| Display | StatusIndicator, StatCard |
+| Feedback | Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard) |
+| Display | StatusIndicator, StatCard, Divider |
 
 #### Design Tokens (Tailwind Config)
 
@@ -284,6 +284,33 @@ Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'
 3. ❌ NEVER use arbitrary colors - use design tokens from tailwind.config.ts
 4. ✅ ALWAYS import from `components/ui/`
 5. ✅ ALWAYS run `/frontend-design` skill for new visual design work
+6. ✅ ALWAYS use mobile-first responsive classes (design for 320px, enhance with sm:/lg:)
+7. ✅ ALWAYS add `overflow-x-hidden` to layout root containers (prevents mobile horizontal scroll)
+
+**Mobile-First Responsive Patterns:**
+```tsx
+// Grid: Single column on mobile, expand on larger screens
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+
+// Padding: Tighter on mobile
+<div className="p-4 sm:p-6 lg:p-8">
+
+// Typography: Larger hero text on mobile when visual elements hidden
+<p className="text-5xl sm:text-4xl lg:text-7xl">  // 5xl mobile, scales down then up
+
+// Visibility: Hide non-essential elements on mobile
+<div className="hidden sm:block">  // Only visible sm+
+<div className="hidden sm:flex">   // Flex only on sm+
+
+// Buttons: Allow wrapping, responsive padding
+<div className="flex flex-wrap gap-2 sm:gap-3">
+<button className="px-3 sm:px-5 py-2 sm:py-2.5">
+```
+
+**Adaptive Component Example - SuccessRateCard:**
+- Mobile (< 640px): Large percentage as hero, gauge hidden, legend hidden
+- Tablet (640px+): Gauge visible (144px), legend visible
+- Desktop (1024px+): Prominent gauge (240px), full visualization
 
 **Email Templates:**
 - **Location:** `lib/email/templates/`

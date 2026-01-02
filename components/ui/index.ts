@@ -18,9 +18,11 @@ export { DropdownMenu, type DropdownMenuProps, type DropdownMenuItem } from './D
 export { Tabs, TabPanel, type TabsProps, type Tab, type TabPanelProps } from './Tabs'
 
 // Feedback Components
+export { Alert, type AlertProps } from './Alert'
 export { Toast, type ToastProps, type ToastVariant } from './Toast'
 export { Skeleton, SkeletonCard, SkeletonClassCard, type SkeletonProps } from './Skeleton'
 
 // Status & Display
 export { StatusIndicator } from './StatusIndicator'
 export { StatCard } from './StatCard'
+export { Divider } from './Divider'
