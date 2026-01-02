@@ -3,6 +3,16 @@
 import { useState } from 'react'
 import { sora, dmSans } from '@/lib/fonts'
 import Link from 'next/link'
+import {
+  Button,
+  Badge,
+  Card,
+  Alert,
+  StatusIndicator,
+  StatCard,
+  Divider,
+  Footer,
+} from '@/components/ui'
 
 export default function DesignSystemComponentsPage() {
   // Form states
@@ -1013,6 +1023,307 @@ export default function DesignSystemComponentsPage() {
             </div>
           </div>
         </section>
+
+        {/* Editorial Divider */}
+        <Divider variant="editorial" />
+
+        {/* ============================================
+            SECTION 5: COMPONENT LIBRARY - BUTTON
+            ============================================ */}
+        <section className="animate-fadeInUp-delay-4">
+          <div className="flex items-center gap-4 mb-8">
+            <h2 className="font-sora text-3xl font-bold text-gray-900">
+              Button Component
+            </h2>
+            <Badge variant="info">Component Library</Badge>
+          </div>
+
+          <Card padding="lg">
+            <div className="space-y-8">
+              {/* Variants */}
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Variants</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Button variant="primary">Primary</Button>
+                  <Button variant="secondary">Secondary</Button>
+                  <Button variant="success">Success</Button>
+                  <Button variant="danger">Danger</Button>
+                  <Button variant="purple">Purple</Button>
+                  <Button variant="ghost">Ghost</Button>
+                  <Button variant="outline">Outline</Button>
+                  <Button variant="outline-primary">Outline Primary</Button>
+                  <Button variant="outline-danger">Outline Danger</Button>
+                </div>
+              </div>
+
+              {/* Sizes */}
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Sizes</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Button size="sm">Small</Button>
+                  <Button size="md">Medium</Button>
+                  <Button size="lg">Large</Button>
+                </div>
+              </div>
+
+              {/* States */}
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">States</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Button loading>Loading</Button>
+                  <Button disabled>Disabled</Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </section>
+
+        {/* Editorial Divider */}
+        <Divider variant="editorial" />
+
+        {/* ============================================
+            SECTION 6: COMPONENT LIBRARY - BADGE
+            ============================================ */}
+        <section className="animate-fadeInUp-delay-4">
+          <div className="flex items-center gap-4 mb-8">
+            <h2 className="font-sora text-3xl font-bold text-gray-900">
+              Badge Component
+            </h2>
+            <Badge variant="purple">Component Library</Badge>
+          </div>
+
+          <Card padding="lg">
+            <div className="space-y-8">
+              {/* Status Badges */}
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Status Badges (with icons)</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Badge status="confirmed">Booked</Badge>
+                  <Badge status="pending">Pending</Badge>
+                  <Badge status="waitlisted">Waitlisted</Badge>
+                  <Badge status="failed">Failed</Badge>
+                  <Badge status="skipped">Skipped</Badge>
+                  <Badge status="retrying">Retrying</Badge>
+                </div>
+              </div>
+
+              {/* Variant Badges */}
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Variant Badges</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Badge variant="default">Default</Badge>
+                  <Badge variant="success">Success</Badge>
+                  <Badge variant="warning">Warning</Badge>
+                  <Badge variant="danger">Danger</Badge>
+                  <Badge variant="info">Info</Badge>
+                  <Badge variant="purple">Purple</Badge>
+                </div>
+              </div>
+
+              {/* Sizes */}
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Sizes</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Badge size="sm" variant="success">Small</Badge>
+                  <Badge size="md" variant="success">Medium</Badge>
+                  <Badge size="lg" variant="success">Large</Badge>
+                </div>
+              </div>
+
+              {/* Non-diagonal */}
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Rounded (non-diagonal)</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Badge diagonal={false} variant="success">Rounded Badge</Badge>
+                  <Badge diagonal={false} variant="info">Info Pill</Badge>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </section>
+
+        {/* Editorial Divider */}
+        <Divider variant="editorial" />
+
+        {/* ============================================
+            SECTION 7: COMPONENT LIBRARY - ALERT
+            ============================================ */}
+        <section className="animate-fadeInUp-delay-4">
+          <div className="flex items-center gap-4 mb-8">
+            <h2 className="font-sora text-3xl font-bold text-gray-900">
+              Alert Component
+            </h2>
+            <Badge variant="warning">Component Library</Badge>
+          </div>
+
+          <Card padding="lg">
+            <div className="space-y-4">
+              <Alert variant="success">Class booked successfully! You&apos;re all set for Monday 4:15 PM.</Alert>
+              <Alert variant="error">Failed to book class. The class may be full or cancelled.</Alert>
+              <Alert variant="warning">Class is almost full. Book soon to secure your spot!</Alert>
+              <Alert variant="info">Schedule sync in progress. Your bookings will be updated shortly.</Alert>
+            </div>
+          </Card>
+        </section>
+
+        {/* Editorial Divider */}
+        <Divider variant="editorial" />
+
+        {/* ============================================
+            SECTION 8: COMPONENT LIBRARY - STATUS INDICATOR
+            ============================================ */}
+        <section className="animate-fadeInUp-delay-4">
+          <div className="flex items-center gap-4 mb-8">
+            <h2 className="font-sora text-3xl font-bold text-gray-900">
+              Status Indicator
+            </h2>
+            <Badge variant="success">Component Library</Badge>
+          </div>
+
+          <Card padding="lg">
+            <div className="space-y-6">
+              {/* With Labels */}
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">With Labels</h3>
+                <div className="flex flex-wrap items-center gap-6">
+                  <StatusIndicator status="confirmed" />
+                  <StatusIndicator status="pending" />
+                  <StatusIndicator status="waitlisted" />
+                  <StatusIndicator status="failed" />
+                  <StatusIndicator status="skipped" />
+                  <StatusIndicator status="retrying" />
+                </div>
+              </div>
+
+              {/* Dots Only */}
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Dots Only (no label)</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <StatusIndicator status="confirmed" showLabel={false} />
+                  <StatusIndicator status="pending" showLabel={false} />
+                  <StatusIndicator status="waitlisted" showLabel={false} />
+                  <StatusIndicator status="failed" showLabel={false} />
+                  <StatusIndicator status="skipped" showLabel={false} />
+                  <StatusIndicator status="retrying" showLabel={false} />
+                </div>
+              </div>
+
+              {/* Sizes */}
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Sizes</h3>
+                <div className="flex flex-wrap items-center gap-6">
+                  <StatusIndicator status="confirmed" size="sm" />
+                  <StatusIndicator status="confirmed" size="md" />
+                  <StatusIndicator status="confirmed" size="lg" />
+                </div>
+              </div>
+            </div>
+          </Card>
+        </section>
+
+        {/* Editorial Divider */}
+        <Divider variant="editorial" />
+
+        {/* ============================================
+            SECTION 9: COMPONENT LIBRARY - STAT CARD
+            ============================================ */}
+        <section className="animate-fadeInUp-delay-4">
+          <div className="flex items-center gap-4 mb-8">
+            <h2 className="font-sora text-3xl font-bold text-gray-900">
+              Stat Card
+            </h2>
+            <Badge variant="danger">Component Library</Badge>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              label="Classes Booked"
+              value="24"
+              trend={{ value: 12, direction: 'up' }}
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+            />
+            <StatCard
+              label="Success Rate"
+              value="92%"
+              variant="success"
+              trend={{ value: 5, direction: 'up' }}
+            />
+            <StatCard
+              label="On Waitlist"
+              value="3"
+              variant="warning"
+              trend={{ value: 2, direction: 'neutral' }}
+            />
+            <StatCard
+              label="Missed Classes"
+              value="1"
+              variant="danger"
+              trend={{ value: 50, direction: 'down' }}
+            />
+          </div>
+        </section>
+
+        {/* Editorial Divider */}
+        <Divider variant="editorial" />
+
+        {/* ============================================
+            SECTION 10: COMPONENT LIBRARY - DIVIDER
+            ============================================ */}
+        <section className="animate-fadeInUp-delay-4">
+          <div className="flex items-center gap-4 mb-8">
+            <h2 className="font-sora text-3xl font-bold text-gray-900">
+              Divider Component
+            </h2>
+            <Badge variant="default">Component Library</Badge>
+          </div>
+
+          <Card padding="lg">
+            <div className="space-y-2">
+              <p className="font-dm-sans text-sm text-gray-600 mb-4">Default Divider</p>
+              <Divider />
+
+              <p className="font-dm-sans text-sm text-gray-600 mb-4 mt-8">Gradient Divider</p>
+              <Divider variant="gradient" />
+
+              <p className="font-dm-sans text-sm text-gray-600 mb-4 mt-8">Editorial Divider</p>
+              <Divider variant="editorial" />
+            </div>
+          </Card>
+        </section>
+
+        {/* Editorial Divider */}
+        <Divider variant="editorial" />
+
+        {/* ============================================
+            SECTION 11: COMPONENT LIBRARY - FOOTER
+            ============================================ */}
+        <section className="animate-fadeInUp-delay-4">
+          <div className="flex items-center gap-4 mb-8">
+            <h2 className="font-sora text-3xl font-bold text-gray-900">
+              Footer Component
+            </h2>
+            <Badge variant="info">New</Badge>
+          </div>
+
+          <Card padding="lg">
+            <div className="space-y-8">
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">With Tagline (default)</h3>
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <Footer />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Without Tagline</h3>
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <Footer showTagline={false} />
+                </div>
+              </div>
+            </div>
+          </Card>
+        </section>
+
       </div>
 
       {/* ============================================
@@ -1360,6 +1671,9 @@ export default function DesignSystemComponentsPage() {
           animation: slideInRight 0.3s ease-out both;
         }
       `}</style>
+
+      {/* Page Footer */}
+      <Footer />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Button, Card } from '@/components/ui'
+import { Button, Card, Footer } from '@/components/ui'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -160,13 +160,7 @@ export default async function Home() {
         </main>
 
         {/* Footer */}
-        <footer className="py-6 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto text-center">
-            <p className="font-dm-sans text-sm text-gray-500">
-              Made for gym enthusiasts who value their time
-            </p>
-          </div>
-        </footer>
+        <Footer />
       </div>
     </div>
   )
