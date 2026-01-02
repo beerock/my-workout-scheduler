@@ -84,7 +84,7 @@ export default function PrototypePage() {
           {/* Prototype Navigation */}
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
-              href="/dashboard/prototype/scheduler-v2"
+              href="/prototype/scheduler-v2"
               className="px-6 py-3 bg-gradient-to-r from-[#1a6fff] to-[#0052e6] text-white font-dm-sans font-medium rounded-lg hover:-translate-y-0.5 transition-all duration-200"
               style={{
                 boxShadow: '0 4px 12px rgba(26, 111, 255, 0.25)'
@@ -93,7 +93,7 @@ export default function PrototypePage() {
               Scheduler Redesign
             </Link>
             <Link
-              href="/dashboard/prototype/design-system-components"
+              href="/prototype/design-system-components"
               className="px-6 py-3 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white font-dm-sans font-medium rounded-lg hover:-translate-y-0.5 transition-all duration-200"
               style={{
                 boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)'
@@ -775,7 +775,7 @@ export default function PrototypePage() {
 
               <div className="mt-10 pt-8 border-t border-white/10">
                 <p className="font-dm-sans text-slate-400 text-sm">
-                  Component library fully extracted. See /dashboard/prototype/design-system-components for interactive showcase.
+                  Component library fully extracted. See /prototype/design-system-components for interactive showcase.
                 </p>
               </div>
             </div>

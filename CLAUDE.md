@@ -323,9 +323,9 @@ Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'
 
 #### Reference Prototypes
 
-- Main hub: `/dashboard/prototype` - Design system showcase
-- Scheduler redesign: `/dashboard/prototype/scheduler-v2`
-- Component showcase: `/dashboard/prototype/design-system-components`
+- Main hub: `/prototype` - Design system showcase
+- Scheduler redesign: `/prototype/scheduler-v2`
+- Component showcase: `/prototype/design-system-components`
 
 **Files:**
 - `tailwind.config.ts` - Design token definitions
