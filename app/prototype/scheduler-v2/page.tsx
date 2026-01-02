@@ -74,7 +74,7 @@ export default function SchedulerV2Page() {
               </p>
             </div>
             <Link
-              href="/dashboard/prototype"
+              href="/prototype"
               className="font-dm-sans text-sm text-gray-600 hover:text-[#1a6fff] transition-colors"
             >
               ← Back to Prototypes
