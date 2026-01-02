@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { saveGymCredentials, type GymCredentialsFormData } from '@/app/actions/gym-credentials'
 import { useRouter } from 'next/navigation'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, Alert } from '@/components/ui'
 
 type Credentials = {
   id: string
@@ -115,7 +115,8 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
   )
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="max-w-xl">
+      <form onSubmit={handleSubmit} className="space-y-6">
       <Input
         label="Gym URL"
         name="gym_url"
@@ -193,15 +194,11 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
       />
 
       {error && (
-        <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm font-dm-sans">
-          {error}
-        </div>
+        <Alert variant="error">{error}</Alert>
       )}
 
       {success && (
-        <div className="p-4 bg-success-50 border border-success-200 rounded-lg text-success-700 text-sm font-dm-sans">
-          Credentials saved successfully!
-        </div>
+        <Alert variant="success">Credentials saved successfully!</Alert>
       )}
 
       <div className="flex items-center justify-between">
@@ -220,6 +217,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
         )}
       </div>
     </form>
+    </div>
   )
 }
 

@@ -127,9 +127,11 @@ const config: Config = {
         'btn-purple': '0 4px 12px rgba(139, 92, 246, 0.25)',
       },
       keyframes: {
+        // Using CSS 'translate' property (not 'transform') so hover transforms still work
+        // The 'translate' and 'transform' properties are independent in modern CSS
         fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(20px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+          '0%': { opacity: '0', translate: '0 20px' },
+          '100%': { opacity: '1', translate: '0 0' },
         },
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
@@ -145,6 +147,8 @@ const config: Config = {
         },
       },
       animation: {
+        // Using 'forwards' keeps elements visible after animation
+        // Hover transforms work because animation uses 'translate' (not 'transform')
         'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
         'fade-in-up-delay-1': 'fadeInUp 0.5s ease-out 0.1s forwards',
         'fade-in-up-delay-2': 'fadeInUp 0.5s ease-out 0.2s forwards',

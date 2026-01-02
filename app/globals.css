@@ -181,6 +181,111 @@
   }
 }
 
+/* ===========================================
+   Form Validation - Design System v2
+   Suppress browser defaults, integrate with editorial aesthetic
+   =========================================== */
+
+/* Hide browser validation bubbles completely */
+input::-webkit-validation-bubble,
+input::-webkit-validation-bubble-message,
+input::-webkit-validation-bubble-arrow-clipper,
+input::-webkit-validation-bubble-arrow,
+input::-webkit-validation-bubble-heading,
+input::-webkit-validation-bubble-body,
+input::-webkit-validation-bubble-icon,
+select::-webkit-validation-bubble,
+select::-webkit-validation-bubble-message,
+textarea::-webkit-validation-bubble,
+textarea::-webkit-validation-bubble-message {
+  display: none !important;
+}
+
+/* Style invalid inputs only after user interaction (modern browsers)
+   Falls back gracefully - :user-invalid supported in Chrome 119+, Firefox 88+, Safari 16.5+ */
+input:user-invalid,
+select:user-invalid,
+textarea:user-invalid {
+  border-color: #f43f5e !important; /* danger-500 */
+  background-color: rgba(244, 63, 94, 0.02); /* subtle danger tint */
+}
+
+input:user-invalid:focus,
+select:user-invalid:focus,
+textarea:user-invalid:focus {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.15) !important;
+  outline: none;
+}
+
+/* Focus accent bar turns danger color on invalid */
+.focus-accent-bar:has(input:user-invalid)::before,
+.focus-accent-bar:has(select:user-invalid)::before,
+.focus-accent-bar:has(textarea:user-invalid)::before {
+  background: linear-gradient(to bottom, #f43f5e, #e11d48) !important;
+  opacity: 1;
+}
+
+/* Fallback for browsers without :user-invalid -
+   Only show invalid state on blur (via JS class) or form submission */
+input.touched:invalid,
+select.touched:invalid,
+textarea.touched:invalid {
+  border-color: #f43f5e !important;
+  background-color: rgba(244, 63, 94, 0.02);
+}
+
+input.touched:invalid:focus,
+select.touched:invalid:focus,
+textarea.touched:invalid:focus {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.15) !important;
+}
+
+/* Custom validation message tooltip - appears below input */
+.validation-message {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  color: #f43f5e;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  animation: validation-fade-in 0.2s ease-out;
+}
+
+.validation-message::before {
+  content: '';
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23f43f5e'%3E%3Cpath fill-rule='evenodd' d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-size: contain;
+  flex-shrink: 0;
+}
+
+@keyframes validation-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Shake animation for invalid submit attempts */
+@keyframes validation-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.validation-shake {
+  animation: validation-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
@@ -191,7 +296,9 @@
   .animate-slide-in-right,
   .animate-slide-in-up,
   .shimmer,
-  .shimmer-diagonal {
+  .shimmer-diagonal,
+  .validation-message,
+  .validation-shake {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { forwardRef } from 'react'
+import React, { forwardRef, useState, useCallback } from 'react'
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string
@@ -9,6 +9,8 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   hint?: string
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
+  /** Show native browser validation message styled with design system */
+  showNativeValidation?: boolean
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -22,14 +24,39 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       rightIcon,
       className = '',
       id,
+      showNativeValidation = false,
+      onInvalid,
+      onBlur,
       ...props
     },
     ref
   ) => {
     const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`
+    const [nativeError, setNativeError] = useState<string | null>(null)
+    const [touched, setTouched] = useState(false)
+
+    // Handle invalid event - prevent browser bubble and capture message
+    const handleInvalid = useCallback((e: React.InvalidEvent<HTMLInputElement>) => {
+      e.preventDefault() // Prevent browser tooltip bubble
+      if (showNativeValidation) {
+        setNativeError(e.target.validationMessage)
+      }
+      onInvalid?.(e)
+    }, [showNativeValidation, onInvalid])
+
+    // Track touched state for CSS fallback styling
+    const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+      setTouched(true)
+      // Clear native error if now valid
+      if (showNativeValidation && e.target.validity.valid) {
+        setNativeError(null)
+      }
+      onBlur?.(e)
+    }, [showNativeValidation, onBlur])
 
     // Determine state for styling
-    const hasError = !!error
+    const displayError = error || (showNativeValidation ? nativeError : null)
+    const hasError = !!displayError
     const hasSuccess = !!success
 
     // Base input styles
@@ -76,11 +103,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
-            className={`${baseInputStyles} ${stateStyles} ${iconPadding}`}
+            className={`${baseInputStyles} ${stateStyles} ${iconPadding} ${touched ? 'touched' : ''}`}
             aria-invalid={hasError}
             aria-describedby={
-              error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined
+              displayError ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined
             }
+            onInvalid={handleInvalid}
+            onBlur={handleBlur}
             {...props}
           />
 
@@ -93,22 +122,22 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         </div>
 
         {/* Error message */}
-        {error && (
+        {displayError && (
           <p
             id={`${inputId}-error`}
             className="mt-2 font-dm-sans text-sm text-danger-500 flex items-center gap-1"
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
-            {error}
+            {displayError}
           </p>
         )}
 
         {/* Success message */}
-        {success && !error && (
+        {success && !displayError && (
           <p className="mt-2 font-dm-sans text-sm text-success-500 flex items-center gap-1">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
             {success}
@@ -116,7 +145,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
 
         {/* Hint text */}
-        {hint && !error && !success && (
+        {hint && !displayError && !success && (
           <p
             id={`${inputId}-hint`}
             className="mt-2 font-dm-sans text-sm text-gray-500"

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { updateEmail, updatePassword, deleteAccount } from '@/app/actions/profile'
 import { useRouter } from 'next/navigation'
-import { Button, Input, Modal, Card } from '@/components/ui'
+import { Button, Input, Modal, Card, Alert } from '@/components/ui'
 
 type Props = {
   userEmail: string | undefined
@@ -164,7 +164,7 @@ export default function ProfileForm({ userEmail }: Props) {
   )
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-xl space-y-6">
       {/* Email Update Section */}
       <div className="border-b border-gray-200 pb-8">
         <h2 className="text-lg font-sora font-semibold text-gray-900 mb-4">Update Email Address</h2>
@@ -207,15 +207,13 @@ export default function ProfileForm({ userEmail }: Props) {
           />
 
           {emailError && (
-            <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm font-dm-sans">
-              {emailError}
-            </div>
+            <Alert variant="error">{emailError}</Alert>
           )}
 
           {emailSuccess && (
-            <div className="p-4 bg-success-50 border border-success-200 rounded-lg text-success-700 text-sm font-dm-sans">
+            <Alert variant="success">
               Confirmation email sent! Please check your inbox and confirm the new email address.
-            </div>
+            </Alert>
           )}
 
           <Button type="submit" variant="primary" loading={emailLoading}>
@@ -287,15 +285,11 @@ export default function ProfileForm({ userEmail }: Props) {
           />
 
           {passwordError && (
-            <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm font-dm-sans">
-              {passwordError}
-            </div>
+            <Alert variant="error">{passwordError}</Alert>
           )}
 
           {passwordSuccess && (
-            <div className="p-4 bg-success-50 border border-success-200 rounded-lg text-success-700 text-sm font-dm-sans">
-              Password updated successfully!
-            </div>
+            <Alert variant="success">Password updated successfully!</Alert>
           )}
 
           <Button type="submit" variant="primary" loading={passwordLoading}>

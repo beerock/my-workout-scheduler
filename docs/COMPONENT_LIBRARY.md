@@ -4,8 +4,8 @@
 
 This document provides complete API documentation, usage examples, and best practices for all reusable UI components in the My Workout Scheduler design system.
 
-**Version:** 2.13
-**Last Updated:** December 29, 2025
+**Version:** 2.14
+**Last Updated:** January 1, 2026
 **Location:** `components/ui/`
 
 ---
@@ -29,15 +29,17 @@ This document provides complete API documentation, usage examples, and best prac
 10. [Tabs](#tabs)
 
 **Feedback:**
-11. [Toast](#toast)
-12. [Skeleton](#skeleton)
+11. [Alert](#alert)
+12. [Toast](#toast)
+13. [Skeleton](#skeleton)
 
 **Display:**
-13. [StatusIndicator](#statusindicator)
-14. [StatCard](#statcard)
+14. [StatusIndicator](#statusindicator)
+15. [StatCard](#statcard)
+16. [Divider](#divider)
 
 **Guidelines:**
-15. [Usage Guidelines](#usage-guidelines)
+17. [Usage Guidelines](#usage-guidelines)
 
 ---
 
@@ -1517,6 +1519,94 @@ interface TabPanelProps {
 
 ---
 
+## Alert
+
+**File:** `components/ui/Alert.tsx`
+
+**Purpose:** Inline alert messages for form-level feedback, validation errors, and success confirmations. Features diagonal accent bar matching the design system.
+
+**When to use:**
+- ✅ Form validation errors (at form level, not field level)
+- ✅ Success confirmations (form submitted, saved)
+- ✅ Warning messages (password will be changed)
+- ✅ Informational notices (email verification needed)
+
+**When NOT to use:**
+- ❌ Field-level validation (use Input `error` prop)
+- ❌ Temporary notifications (use Toast instead)
+- ❌ System-level alerts (use Toast or Modal)
+
+### API
+
+```typescript
+interface AlertProps {
+  variant: 'success' | 'error' | 'warning' | 'info'
+  children: React.ReactNode
+  onDismiss?: () => void
+  className?: string
+}
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| variant | `'success' \| 'error' \| 'warning' \| 'info'` | **required** | Visual style and icon |
+| children | `ReactNode` | **required** | Alert message content |
+| onDismiss | `() => void` | - | Shows dismiss button when provided |
+| className | `string` | `''` | Additional classes |
+
+### Visual Design
+
+Each variant includes:
+- **Left accent bar** with diagonal clipPath
+- **Variant-specific icon** (error exclamation, success check, etc.)
+- **Variant-specific colors** matching design tokens
+
+| Variant | Background | Border | Text | Accent |
+|---------|-----------|--------|------|--------|
+| error | `rose-50` | `rose-200` | `rose-700` | `#f43f5e` |
+| success | `green-50` | `green-200` | `green-700` | `#00c853` |
+| warning | `orange-50` | `orange-200` | `orange-700` | `#ff9500` |
+| info | `blue-50` | `blue-200` | `blue-700` | `#1a6fff` |
+
+### Usage Examples
+
+**Error Alert:**
+```tsx
+import { Alert } from '@/components/ui'
+
+{formError && (
+  <Alert variant="error">{formError}</Alert>
+)}
+```
+
+**Success Alert:**
+```tsx
+{isSubmitted && (
+  <Alert variant="success">
+    Your changes have been saved successfully.
+  </Alert>
+)}
+```
+
+**Dismissible Alert:**
+```tsx
+const [showWarning, setShowWarning] = useState(true)
+
+{showWarning && (
+  <Alert variant="warning" onDismiss={() => setShowWarning(false)}>
+    Your password will be changed after confirmation.
+  </Alert>
+)}
+```
+
+### Accessibility
+
+- Uses semantic HTML with proper color contrast
+- Icon provides visual reinforcement of message type
+- Dismiss button has proper aria-label
+
+---
+
 ## Toast
 
 **File:** `components/ui/Toast.tsx`
@@ -1944,8 +2034,8 @@ interface StatCardProps {
   onClick={() => router.push('/dashboard/actions')}
 />
 
-// Dashboard grid
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+// Dashboard grid - mobile-first responsive
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
   <StatCard
     label="Classes This Week"
     value="12"
@@ -2010,6 +2100,61 @@ interface StatCardProps {
   value="12"
   trend={{ value: 20, direction: 'up' }}
 />
+```
+
+---
+
+## Divider
+
+**File:** `components/ui/Divider.tsx`
+
+**Purpose:** Visual separator for content sections. Supports multiple variants including an editorial style with centered label.
+
+**When to use:**
+- ✅ Separating major page sections
+- ✅ Visual break between form sections
+- ✅ Editorial layouts (with text label)
+
+**When NOT to use:**
+- ❌ Tight spacing (use CSS margin/padding instead)
+- ❌ Table rows (use table-specific styling)
+
+### API
+
+```typescript
+interface DividerProps {
+  variant?: 'default' | 'subtle' | 'editorial'
+  label?: string
+  className?: string
+}
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| variant | `'default' \| 'subtle' \| 'editorial'` | `'default'` | Visual style |
+| label | `string` | - | Text label (editorial variant) |
+| className | `string` | `''` | Additional classes |
+
+### Variants
+
+| Variant | Description |
+|---------|-------------|
+| `default` | Standard gray divider line |
+| `subtle` | Lighter, less prominent divider |
+| `editorial` | Centered text label with decorative lines |
+
+### Usage Examples
+
+**Default Divider:**
+```tsx
+import { Divider } from '@/components/ui'
+
+<Divider />
+```
+
+**Editorial Divider:**
+```tsx
+<Divider variant="editorial" className="my-8" />
 ```
 
 ---
@@ -2085,7 +2230,14 @@ Before shipping a component:
 
 ## Version History
 
-**v2.13 (December 30, 2025):**
+**v2.15 (January 2, 2026):**
+- Updated StatCard grid example with mobile-first responsive classes (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`)
+- Documented mobile-first responsive patterns
+- Updated responsive gap sizing (`gap-4 sm:gap-5`)
+- Added `overflow-x-hidden` requirement for layout containers (prevents mobile horizontal scroll)
+- Updated SuccessRateCard adaptive sizes: Tablet 144px, Desktop 240px gauge
+
+**v2.14 (January 1, 2026):**
 - Added 8 new Design System v2 components: Input, Select, Checkbox, DropdownMenu (v2), Tabs, Toast, Skeleton
 - Updated Table of Contents with categorized component list
 - Total: 15 components documented
