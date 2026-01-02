@@ -2,6 +2,7 @@
 
 import { sora, dmSans } from '@/lib/fonts'
 import Link from 'next/link'
+import { Footer } from '@/components/ui'
 
 export default function PrototypePage() {
   return (
@@ -783,6 +784,9 @@ export default function PrototypePage() {
         </section>
 
       </div>
+
+      {/* Footer */}
+      <Footer />
 
       {/* CSS Animations */}
       <style jsx>{`

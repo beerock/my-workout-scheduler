@@ -2,6 +2,7 @@
 
 import { sora, dmSans } from '@/lib/fonts'
 import Link from 'next/link'
+import { Footer } from '@/components/ui'
 
 export default function SchedulerV2Page() {
   return (
@@ -517,6 +518,9 @@ export default function SchedulerV2Page() {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
 
       {/* CSS Animations */}
       <style jsx>{`

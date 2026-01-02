@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Card } from '@/components/ui'
+import { Card, Footer } from '@/components/ui'
 
 interface AuthLayoutProps {
   title: string
@@ -40,61 +40,59 @@ export default function AuthLayout({ title, subtitle, children }: AuthLayoutProp
         }}
       />
 
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:py-12 relative z-10">
-        {/* Logo/Brand */}
-        <Link
-          href="/"
-          className="mb-6 sm:mb-8 opacity-0 animate-fade-in-up"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg">
-              <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+      <div className="min-h-screen flex flex-col relative z-10">
+        {/* Main content - centered */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12">
+          {/* Logo/Brand */}
+          <Link
+            href="/"
+            className="mb-6 sm:mb-8 opacity-0 animate-fade-in-up"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg">
+                <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <span className="font-sora text-lg sm:text-xl font-bold text-gray-900">
+                My Workout Scheduler
+              </span>
             </div>
-            <span className="font-sora text-lg sm:text-xl font-bold text-gray-900">
-              My Workout Scheduler
-            </span>
-          </div>
-        </Link>
+          </Link>
 
-        {/* Auth Card */}
-        <Card
-          className="w-full max-w-md opacity-0 animate-fade-in-up"
-          padding="lg"
-          style={{ animationDelay: '0.1s' }}
-        >
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="font-sora text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              {title}
-            </h1>
-            {subtitle && (
-              <p className="font-dm-sans text-sm text-gray-600">
-                {subtitle}
-              </p>
-            )}
-          </div>
+          {/* Auth Card */}
+          <Card
+            className="w-full max-w-md opacity-0 animate-fade-in-up"
+            padding="lg"
+            style={{ animationDelay: '0.1s' }}
+          >
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h1 className="font-sora text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                {title}
+              </h1>
+              {subtitle && (
+                <p className="font-dm-sans text-sm text-gray-600">
+                  {subtitle}
+                </p>
+              )}
+            </div>
 
-          {/* Diagonal accent bar */}
-          <div
-            className="h-0.5 sm:h-1 mb-6 rounded-full"
-            style={{
-              background: 'linear-gradient(to right, #1a6fff, #00c853, #8B5CF6)',
-              clipPath: 'polygon(2% 0%, 98% 0%, 100% 100%, 0% 100%)',
-            }}
-          />
+            {/* Diagonal accent bar */}
+            <div
+              className="h-0.5 sm:h-1 mb-6 rounded-full"
+              style={{
+                background: 'linear-gradient(to right, #1a6fff, #00c853, #8B5CF6)',
+                clipPath: 'polygon(2% 0%, 98% 0%, 100% 100%, 0% 100%)',
+              }}
+            />
 
-          {children}
-        </Card>
+            {children}
+          </Card>
+        </div>
 
         {/* Footer */}
-        <p
-          className="mt-6 sm:mt-8 font-dm-sans text-xs text-gray-500 opacity-0 animate-fade-in-up"
-          style={{ animationDelay: '0.2s' }}
-        >
-          Automated gym class booking
-        </p>
+        <Footer className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }} />
       </div>
     </div>
   )
