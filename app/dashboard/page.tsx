@@ -58,8 +58,9 @@ export default async function DashboardPage() {
           <NextClassCard
             dayTime={stats.nextBooking.dayTime}
             classType={stats.nextBooking.className}
-            branch="YMCA"
+            branch={stats.nextBooking.branch}
             hoursUntil={stats.nextBooking.hoursUntil}
+            bookingStatus={stats.nextBooking.bookingStatus}
           />
         </div>
       ) : null}
