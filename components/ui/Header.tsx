@@ -37,7 +37,7 @@ export function Header({ className = '' }: HeaderProps) {
 
   // Main nav only has Schedule - Credentials moved to dropdown
   const navLinks = [
-    { href: '/dashboard/schedule', label: 'Schedule' },
+    { href: '/dashboard/schedule', label: 'My Schedule' },
   ]
 
   return (
