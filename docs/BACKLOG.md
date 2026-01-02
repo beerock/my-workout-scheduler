@@ -886,6 +886,87 @@ ALTER TABLE booking_attempts ADD COLUMN retry_count INTEGER DEFAULT 0;
 
 ---
 
+## NextClassCard Failure Handling (Phase 2)
+
+### Overview
+Enhance the NextClassCard component to handle failure states and retry scenarios. Phase 1 (v2.17) added booking status display (confirmed/waitlisted/pending). Phase 2 adds failure handling.
+
+### Context
+From v2.17 implementation:
+- NextClassCard now shows booking status (confirmed ✓, waitlisted ⏳, pending countdown)
+- Currently does NOT handle failed bookings or retry states
+- User requested failure handling be deferred to Phase 2
+
+### Requirements
+
+**1. Retrying State Display**
+When a booking is being retried (e.g., class full, window not open):
+- Show "Retrying" state on the card
+- Display next retry attempt time
+- Example: `🔄 Retrying | at 3:15 PM`
+
+**2. Failed Booking Handling**
+When a booking permanently fails:
+- Skip the failed class in NextClassCard
+- Show the next bookable class instead
+- Display failure alert banner above the card with:
+  - Class name, day, time
+  - Error message
+  - Optional "Retry" button (consider for future)
+
+**3. Waitlist Promotion Check**
+Currently if user is waitlisted, system doesn't check if they got promoted to confirmed:
+- Consider adding periodic check to scrape YMCA for status
+- Update booking_attempts status from "waitlisted" → "confirmed" if promoted
+- Email notification when promoted off waitlist
+
+### Proposed UI
+
+**Retrying State:**
+```
+┌──────────────────────────────────────────────┐
+│ 🟡 NEXT CLASS                                │
+│ Saturday 9:30 AM                             │
+│ 💪 BODYPUMP • Woodfin YMCA                   │
+│                              🔄 | Retrying   │
+│                                 | 3:15 PM    │
+└──────────────────────────────────────────────┘
+```
+
+**Failed Alert Banner (above card):**
+```
+┌──────────────────────────────────────────────┐
+│ ⚠️ Booking failed for BODYPUMP - Saturday    │
+│ 9:30 AM @ Woodfin YMCA                       │
+│ Class not found on schedule.                 │
+│                            [Dismiss] [Retry] │
+└──────────────────────────────────────────────┘
+```
+
+### 4. Pending State Design Refinement
+Current pending state uses primary-300 blue accent on unit text with white number. Works but feels generic/boring compared to confirmed (green) and waitlisted (amber) states. Revisit design to find something more distinctive that:
+- Stays within design system (no off-brand colors like coral)
+- No italics (not used elsewhere in system)
+- Creates anticipation/energy for upcoming class
+- Doesn't feel like "AI slop" or trying too hard
+
+Ideas explored but rejected:
+- Warm coral gradient (off-brand, inconsistent)
+- Blue tint background + white text (generic)
+- Lightning bolt icon (too icon-heavy with emoji above)
+
+### Status
+**Status**: Backlogged - Phase 2 of NextClassCard improvements
+**Priority**: Medium (post-MVP UX improvement)
+**Dependencies**:
+- Phase 1 completed (v2.17 - booking status display)
+- Retry status tracking in database
+- Email notifications system (for waitlist promotion)
+**Last Updated**: January 2, 2026
+**Estimated Effort**: 4-6 hours
+
+---
+
 ## Performance Optimizations
 
 ### Browser Session Reuse for Same User
