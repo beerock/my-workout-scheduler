@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import PauseBanner from '@/components/PauseBanner'
 import PausedActiveStatCard from '@/components/PausedActiveStatCard'
 import EmailVerificationNotification from '@/components/EmailVerificationNotification'
@@ -12,6 +13,10 @@ import { Card, Divider } from '@/components/ui'
 import EditorialLayout from '@/components/EditorialLayout'
 import NextClassCard from '@/components/NextClassCard'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Dashboard',
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
