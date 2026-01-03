@@ -2,6 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button, Card, Footer } from '@/components/ui'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'My Workout Scheduler - Auto-Book Gym Classes',
+  description: 'Never miss a popular gym class again. Set your schedule once and we automatically book your gym classes the instant registration opens. Free to use.',
+  alternates: {
+    canonical: '/',
+  },
+}
 
 export default async function Home() {
   const supabase = await createClient()

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
 import { getRecurringClasses } from '@/app/actions/recurring-classes'
 import { getUserSettings } from '@/app/actions/user-settings'
 import { getBookingHistory } from '@/app/actions/booking-history'
@@ -14,6 +15,10 @@ import GetStartedBanner from '@/components/GetStartedBanner'
 import SuccessRateCard from '@/components/SuccessRateCard'
 import Link from 'next/link'
 import { Divider } from '@/components/ui'
+
+export const metadata: Metadata = {
+  title: 'My Schedule',
+}
 
 export default async function SchedulePage() {
   const supabase = await createClient()

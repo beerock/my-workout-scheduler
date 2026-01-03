@@ -1,10 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import ProfileForm from '@/components/ProfileForm'
 import EmailVerificationNotification from '@/components/EmailVerificationNotification'
 import EditorialLayout from '@/components/EditorialLayout'
 import { Card, Badge, Divider } from '@/components/ui'
+
+export const metadata: Metadata = {
+  title: 'Profile',
+}
 
 export default async function ProfilePage() {
   const supabase = await createClient()

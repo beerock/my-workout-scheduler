@@ -1,9 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
 import RecurringClassForm from '@/components/RecurringClassForm'
 import { getRecurringClass } from '@/app/actions/recurring-classes'
 import EditorialLayout from '@/components/EditorialLayout'
 import { Card } from '@/components/ui'
+
+export const metadata: Metadata = {
+  title: 'Add Class',
+}
 
 type Props = {
   searchParams: Promise<{ copyFrom?: string }>

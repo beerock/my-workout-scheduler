@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.18):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard booking status display (confirmed/waitlisted/pending), and custom error pages (404, error boundary, global error) with support contact.
+**Current Version (v2.19):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard booking status display (confirmed/waitlisted/pending), custom error pages (404, error boundary, global error) with support contact, and comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles).
 
 ---
 
@@ -385,6 +385,43 @@ Users can trigger immediate scheduling by unpausing, activating a class, or remo
 
 **Files:** `app/actions/user-settings.ts`, `app/actions/recurring-classes.ts`, `components/PauseToggle.tsx`, `components/SkipButton.tsx`, `components/ScheduleList.tsx`, `lib/inngest/scheduler.ts` (uses existing functions)
 
+### 15. SEO & Metadata
+
+Comprehensive SEO implementation with per-page metadata, dynamic sitemap, robots.txt, and social sharing images.
+
+**Metadata Strategy:**
+- **Public pages** (/, /login, /signup): Full SEO metadata with descriptions, OG tags, canonical URLs
+- **Dashboard pages** (/dashboard/*): Titles only (for browser tabs/UX), not indexed
+- **Auth utility pages** (forgot-password, reset-password, verify-email): Noindex
+- **Prototype pages** (/prototype/*): Noindex
+
+**Title Template:** `%s | My Workout Scheduler` (e.g., "Dashboard | My Workout Scheduler")
+
+**Key Files:**
+- `app/layout.tsx` - Root metadata with metadataBase, title template, OG defaults
+- `app/sitemap.ts` - Dynamic sitemap (/, /login, /signup)
+- `app/robots.ts` - Blocks /dashboard/, /prototype/, /api/
+- `app/icon.svg`, `app/icon.tsx`, `app/apple-icon.tsx` - Favicon assets
+- `app/opengraph-image.tsx`, `app/twitter-image.tsx` - Social sharing images
+
+**Client Component Metadata Pattern:**
+For client components (auth pages, prototype pages), create `layout.tsx` files to export metadata:
+```tsx
+// app/(auth)/login/layout.tsx
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Sign In',
+  description: 'Sign in to manage your automated gym class bookings.',
+}
+
+export default function LoginLayout({ children }: { children: React.ReactNode }) {
+  return children
+}
+```
+
+**Environment Variable:** `NEXT_PUBLIC_SITE_URL` - Used for sitemap, canonical URLs, OG images
+
 ---
 
 ## Operational Notes
@@ -609,4 +646,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** January 2, 2026 (v2.18)
+**Last Updated:** January 2, 2026 (v2.19)
