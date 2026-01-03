@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.17):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, and NextClassCard booking status display (confirmed/waitlisted/pending).
+**Current Version (v2.18):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard booking status display (confirmed/waitlisted/pending), and custom error pages (404, error boundary, global error) with support contact.
 
 ---
 
@@ -609,4 +609,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** January 2, 2026 (v2.17)
+**Last Updated:** January 2, 2026 (v2.18)

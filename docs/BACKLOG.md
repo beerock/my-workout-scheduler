@@ -4246,3 +4246,48 @@ Implement event cancellation when user pauses, deactivates a class, or sets skip
 
 ---
 
+## Review Support Email Before MVP Launch (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - MUST REVIEW BEFORE LAUNCH**
+
+Error pages (404, error boundary, global error) now include `help@beerock.com` as the support contact. Before MVP launch, review whether this email address is still correct or if a different contact method should be used.
+
+### Current Implementation
+
+**Error pages with support email:**
+- `app/not-found.tsx` - 404 page: "Need help? help@beerock.com"
+- `app/error.tsx` - Error boundary: "If this keeps happening, email us at help@beerock.com with the reference above."
+- `app/global-error.tsx` - Global error: Same message with reference included
+
+**Email features:**
+- Mailto links pre-fill subject line with error reference (digest) when available
+- Users can click to open email client with context included
+- Consistent messaging across all error pages
+
+### Pre-Launch Checklist
+
+- [ ] Confirm `help@beerock.com` is the correct support email
+- [ ] Verify email inbox is set up and monitored
+- [ ] Consider if a different contact method is preferred (contact form, other email)
+- [ ] Update error pages if email address changes
+- [ ] Test mailto links work correctly
+
+### Files to Update (if email changes)
+
+1. `app/not-found.tsx` - Line ~150
+2. `app/error.tsx` - Line ~155
+3. `app/global-error.tsx` - Line ~147
+4. `public/preview-global-error.html` - Line ~213 (preview file, can delete after review)
+
+### Status
+**Status**: Pre-MVP - Must review before launch
+**Priority**: Low (quick review, not blocking)
+**Last Updated**: January 2, 2026
+**Next Steps**:
+1. Confirm support email address before MVP
+2. Update error pages if needed
+3. Delete preview file after review complete
+
+---
+
