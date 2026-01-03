@@ -1,9 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
 import { getBookingHistory } from '@/app/actions/booking-history'
 import EditorialLayout from '@/components/EditorialLayout'
 import BookingHistory from '@/components/BookingHistory'
 import { Card } from '@/components/ui'
+
+export const metadata: Metadata = {
+  title: 'Booking History',
+}
 
 export default async function HistoryPage() {
   const supabase = await createClient()
