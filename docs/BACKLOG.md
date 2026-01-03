@@ -4291,3 +4291,66 @@ Error pages (404, error boundary, global error) now include `help@beerock.com` a
 
 ---
 
+## SEO & Marketing (Pre-MVP)
+
+### Overview
+**STATUS: PRE-MVP - COMPLETE BEFORE/AT LAUNCH**
+
+SEO foundation is implemented (v2.19). These items should be completed before or shortly after MVP launch.
+
+### Implemented (v2.19)
+- [x] Per-page metadata (titles, descriptions)
+- [x] Dynamic sitemap (`/sitemap.xml`)
+- [x] Robots.txt (`/robots.txt`)
+- [x] Favicon (SVG + PNG fallbacks)
+- [x] Open Graph images (dynamic generation)
+- [x] Twitter card images
+- [x] Canonical URLs
+- [x] Noindex for protected/prototype pages
+
+### High Priority (Pre-Launch)
+
+- [ ] **Production domain configuration** - Set `NEXT_PUBLIC_SITE_URL` in Vercel environment variables once domain is decided. This enables proper canonical URLs, OG images, and sitemap generation.
+- [ ] **Google Search Console setup** - Verify domain ownership, submit sitemap at `https://yourdomain.com/sitemap.xml`
+- [ ] **Manifest.json (PWA)** - App name, icons, theme colors for "Add to Home Screen" capability
+
+### Medium Priority (Launch or Shortly After)
+
+- [ ] **Structured data (JSON-LD)** - Add WebApplication schema markup for rich search results
+- [ ] **Analytics setup** - Google Analytics 4 or privacy-focused alternative (Plausible, Fathom)
+- [ ] **Core Web Vitals audit** - Run Lighthouse, check LCP, FID, CLS scores, optimize if needed
+
+### Lower Priority (Post-Launch)
+
+- [ ] **Blog/content pages** - For organic traffic targeting "how to book gym classes automatically" searches
+- [ ] **Landing page A/B testing** - Optimize conversion copy and CTA placement
+
+### Technical Notes
+
+**Environment Variable:**
+```
+NEXT_PUBLIC_SITE_URL=https://your-production-domain.com
+```
+
+Used by:
+- `app/layout.tsx` - metadataBase for absolute URLs
+- `app/sitemap.ts` - Sitemap URLs
+- `app/robots.ts` - Sitemap reference
+
+**Sitemap includes:**
+- `/` (priority 1.0)
+- `/login` (priority 0.5)
+- `/signup` (priority 0.8)
+
+**Robots.txt blocks:**
+- `/dashboard/` (protected content)
+- `/prototype/` (internal design demos)
+- `/api/` (API endpoints)
+
+### Status
+**Status**: Pre-MVP - In Progress
+**Priority**: Medium
+**Last Updated**: January 2, 2026
+
+---
+

@@ -1,9 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
 import GymCredentialsForm from '@/components/GymCredentialsForm'
 import { getGymCredentials } from '@/app/actions/gym-credentials'
 import EditorialLayout from '@/components/EditorialLayout'
 import { Card, Badge } from '@/components/ui'
+
+export const metadata: Metadata = {
+  title: 'Gym Credentials',
+}
 
 export default async function CredentialsPage() {
   const supabase = await createClient()
