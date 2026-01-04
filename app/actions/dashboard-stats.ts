@@ -1,12 +1,13 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { startOfWeek, endOfWeek, subDays } from 'date-fns'
+import { startOfWeek, endOfWeek } from 'date-fns'
 import { calculateNextOccurrence, formatTime12Hour } from '@/lib/date-utils'
 
 export type DashboardStats = {
   activeClasses: number
   successRate: number
+  totalBookingAttempts: number
   bookingsThisWeek: number
   nextBooking: {
     className: string
@@ -56,26 +57,27 @@ export async function getDashboardStats(): Promise<{
 
     const classIds = userClasses?.map(c => c.id) || []
 
-    // 3. Calculate success rate from last 30 days
+    // 3. Calculate all-time success rate across ALL booking attempts (active + inactive classes)
+    // This reflects true system reliability, not just current schedule
     let successRate = 0
-    if (classIds.length > 0) {
-      const thirtyDaysAgo = subDays(new Date(), 30).toISOString()
+    let totalBookingAttempts = 0
 
-      const { data: attempts, error: attemptsError } = await supabase
-        .from('booking_attempts')
-        .select('status')
-        .in('recurring_class_id', classIds)
-        .gte('created_at', thirtyDaysAgo)
-        .neq('status', 'pending') // Exclude pending from calculation
+    // Query all booking attempts for this user via join with recurring_classes
+    const { data: allAttempts, error: attemptsError } = await supabase
+      .from('booking_attempts')
+      .select('status, recurring_classes!inner(user_id)')
+      .eq('recurring_classes.user_id', user.id)
+      .neq('status', 'pending')  // Exclude pending (not finalized)
+      .neq('status', 'skipped')  // Exclude skipped (user choice, not system failure)
 
-      if (attemptsError) {
-        console.error('Error fetching booking attempts:', attemptsError)
-      } else if (attempts && attempts.length > 0) {
-        const successful = attempts.filter(
-          a => a.status === 'confirmed' || a.status === 'waitlisted'
-        ).length
-        successRate = Math.round((successful / attempts.length) * 100)
-      }
+    if (attemptsError) {
+      console.error('Error fetching booking attempts:', attemptsError)
+    } else if (allAttempts && allAttempts.length > 0) {
+      totalBookingAttempts = allAttempts.length
+      const successful = allAttempts.filter(
+        a => a.status === 'confirmed' || a.status === 'waitlisted'
+      ).length
+      successRate = Math.round((successful / totalBookingAttempts) * 100)
     }
 
     // 4. Count bookings this week (confirmed + waitlisted)
@@ -177,6 +179,7 @@ export async function getDashboardStats(): Promise<{
       stats: {
         activeClasses: activeClasses || 0,
         successRate,
+        totalBookingAttempts,
         bookingsThisWeek,
         nextBooking
       }

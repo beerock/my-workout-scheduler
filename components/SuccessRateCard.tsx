@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 
 type Props = {
   successRate: number
+  totalAttempts?: number
   animationDelay?: string
 }
 
@@ -14,7 +15,7 @@ type Props = {
  * making the success rate visualization the main visual element
  * rather than an afterthought.
  */
-export default function SuccessRateCard({ successRate, animationDelay = '0.1s' }: Props) {
+export default function SuccessRateCard({ successRate, totalAttempts, animationDelay = '0.1s' }: Props) {
   const [mounted, setMounted] = useState(false)
   const [animatedValue, setAnimatedValue] = useState(0)
 
@@ -83,7 +84,7 @@ export default function SuccessRateCard({ successRate, animationDelay = '0.1s' }
                 <span className="text-3xl sm:text-2xl lg:text-5xl text-gray-400">%</span>
               </p>
               <p className="font-dm-sans text-sm sm:text-sm text-gray-500 mt-2">
-                of bookings confirmed
+                of {totalAttempts ? `${totalAttempts} ` : ''}bookings confirmed
               </p>
             </div>
 
@@ -150,7 +151,7 @@ export default function SuccessRateCard({ successRate, animationDelay = '0.1s' }
             </div>
           </div>
 
-          {/* Bottom row: Mini stats - hidden on mobile (no ring context), visible on sm+ */}
+          {/* Bottom row: Legend - hidden on mobile (no ring context), visible on sm+ */}
           <div className="hidden sm:flex items-center gap-3 sm:gap-6 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-100">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="w-2 h-2 rounded-full bg-success-500" />

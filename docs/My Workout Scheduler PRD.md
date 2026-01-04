@@ -1,6 +1,6 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.21
+**Version:** 2.22
 **Product Owner:** Brock Busby
 **Last Updated:** January 4, 2026
 **Status:** Production - Deployed and Testing
@@ -158,6 +158,13 @@
   - "Already have an account?" section with sign-in guidance
   - 1-hour link expiration notice
   - Duplicate email detection on profile email change with warning alert
+- **v2.22:** Success rate calculation improvements
+  - Changed from active-classes-only/30-day to all-time/all-classes calculation
+  - Formula: `(confirmed + waitlisted) / (confirmed + waitlisted + failed) × 100`
+  - Includes ALL booking attempts regardless of whether class is now active
+  - Excludes skipped (user choice) and pending (not finalized)
+  - Added total bookings count context ("150 bookings total")
+  - SuccessRateCard now displays totalAttempts prop
 - **v2.21:** NextClassCard logic improvements
   - Filters out inactive classes (empty state when no active classes)
   - Skipped classes show occurrence 7 days later (user IS going, just not this week)
