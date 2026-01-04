@@ -67,7 +67,12 @@ export default function ProfileForm({ userEmail }: Props) {
 
         // Success message persists until user dismisses or navigates away
       } else {
-        setEmailError(result.error || 'Failed to update email')
+        // Handle specific error codes
+        if (result.error === 'email_already_exists') {
+          setEmailError('email_already_exists')
+        } else {
+          setEmailError(result.error || 'Failed to update email')
+        }
       }
     } catch (err) {
       setEmailError(err instanceof Error ? err.message : 'An unexpected error occurred')
@@ -207,7 +212,13 @@ export default function ProfileForm({ userEmail }: Props) {
           />
 
           {emailError && (
-            <Alert variant="error">{emailError}</Alert>
+            emailError === 'email_already_exists' ? (
+              <Alert variant="warning">
+                This email is already associated with another account. Please choose a different email address.
+              </Alert>
+            ) : (
+              <Alert variant="error">{emailError}</Alert>
+            )
           )}
 
           {emailSuccess && (

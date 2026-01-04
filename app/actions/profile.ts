@@ -107,6 +107,20 @@ export async function updateEmail(
     )
 
     if (updateError) {
+      // Check for duplicate email error from Supabase
+      // Common error messages: "User already registered", "email address is already registered"
+      const errorMsg = updateError.message.toLowerCase()
+      if (
+        errorMsg.includes('already registered') ||
+        errorMsg.includes('already exists') ||
+        errorMsg.includes('duplicate') ||
+        errorMsg.includes('unique constraint')
+      ) {
+        return {
+          success: false,
+          error: 'email_already_exists',
+        }
+      }
       return {
         success: false,
         error: `Failed to update email: ${updateError.message}`,
