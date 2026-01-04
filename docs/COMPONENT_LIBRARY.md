@@ -4,7 +4,7 @@
 
 This document provides complete API documentation, usage examples, and best practices for all reusable UI components in the My Workout Scheduler design system.
 
-**Version:** 2.19
+**Version:** 2.22
 **Last Updated:** January 4, 2026
 **Location:** `components/ui/`
 
@@ -71,7 +71,7 @@ This document provides complete API documentation, usage examples, and best prac
 
 ```typescript
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'ghost' | 'outline'
+  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'ghost' | 'outline' | 'outline-primary' | 'outline-danger' | 'purple'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   disabled?: boolean
@@ -79,6 +79,8 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string // For rare overrides
 }
 ```
+
+**9 variants available:** primary, secondary, success, danger, ghost, outline, outline-primary, outline-danger, purple
 
 ### Variants
 
@@ -166,6 +168,48 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 - Border: `gray-300`
 - Text: `gray-700`
 - Hover: `gray-50` background
+
+#### Outline-Primary
+**Use for:** Primary-styled outline buttons, secondary emphasis
+
+```tsx
+<Button variant="outline-primary">Add Class</Button>
+<Button variant="outline-primary">Learn More</Button>
+```
+
+**Style:**
+- Background: transparent
+- Border: `primary-500` (blue)
+- Text: `primary-500`
+- Hover: `primary-50` background
+
+#### Outline-Danger
+**Use for:** Destructive actions with less visual weight
+
+```tsx
+<Button variant="outline-danger">Remove</Button>
+<Button variant="outline-danger">Cancel Booking</Button>
+```
+
+**Style:**
+- Background: transparent
+- Border: `danger-500` (red)
+- Text: `danger-500`
+- Hover: `danger-50` background
+
+#### Purple
+**Use for:** Premium features, achievements, special actions
+
+```tsx
+<Button variant="purple">Upgrade</Button>
+<Button variant="purple">View Achievements</Button>
+```
+
+**Style:**
+- Background: `bg-gradient-purple` (`#8B5CF6` → `#7C3AED`)
+- Text: white
+- Hover: Lighter gradient
+- Shadow: `shadow-btn-purple`
 
 ### Sizes
 
@@ -488,13 +532,28 @@ Enable hover effect for interactive cards (e.g., clickable class cards)
 ```typescript
 interface BadgeProps {
   status?: 'confirmed' | 'pending' | 'waitlisted' | 'failed' | 'skipped' | 'retrying'
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info'
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple'
   size?: 'sm' | 'md' | 'lg'
+  diagonal?: boolean // Default: true - Uses clip-diagonal-badge; false uses rounded-full
   icon?: React.ReactNode // Optional icon (e.g., checkmark)
   children: React.ReactNode
   className?: string
 }
 ```
+
+### Shape Control
+
+The `diagonal` prop controls the badge shape:
+
+```tsx
+// Default: Diagonal clip-path (v2 design)
+<Badge status="confirmed">Booked</Badge>
+
+// Pill shape (rounded-full)
+<Badge status="confirmed" diagonal={false}>Booked</Badge>
+```
+
+**Default is `diagonal={true}`** - Uses the signature `clip-diagonal-badge` style. Set `diagonal={false}` for traditional pill-shaped badges.
 
 ### Status Variants (Booking-specific)
 
@@ -582,6 +641,14 @@ interface BadgeProps {
 ```
 - **Color:** Blue background, white text
 - **Use:** Informational labels
+
+#### Purple
+```tsx
+<Badge variant="purple">Premium</Badge>
+<Badge variant="purple">Achievement</Badge>
+```
+- **Color:** Purple gradient (`#8B5CF6` → `#7C3AED`), white text
+- **Use:** Premium features, achievements, special status
 
 ### Sizes
 
@@ -927,12 +994,32 @@ interface ModalProps {
   onClose: () => void
   title?: string
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  variant?: 'default' | 'danger' // Default: 'default'
   closeOnOverlayClick?: boolean // Default: true
   showCloseButton?: boolean // Default: true
   children: React.ReactNode
   footer?: React.ReactNode // Optional footer with actions
 }
 ```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| isOpen | `boolean` | - | Controls modal visibility |
+| onClose | `() => void` | - | Callback when modal closes |
+| title | `string` | - | Modal header title |
+| size | `'sm' \| 'md' \| 'lg' \| 'xl'` | `'md'` | Modal width |
+| variant | `'default' \| 'danger'` | `'default'` | Header accent style |
+| closeOnOverlayClick | `boolean` | `true` | Close when clicking overlay |
+| showCloseButton | `boolean` | `true` | Show X button in header |
+| children | `React.ReactNode` | - | Modal body content |
+| footer | `React.ReactNode` | - | Optional footer actions |
+
+### Variants
+
+| Variant | Description | Use Case |
+|---------|-------------|----------|
+| `default` | Blue-to-green gradient header accent | Standard modals, forms, info |
+| `danger` | Red gradient header accent | Delete confirmations, destructive actions |
 
 ### Sizes
 
@@ -1150,8 +1237,29 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   hint?: string            // Helper text below input
   leftIcon?: React.ReactNode  // Icon on left side
   rightIcon?: React.ReactNode // Icon on right side
+  showNativeValidation?: boolean // Default: false - Enable browser validation API
 }
 ```
+
+### Native Validation
+
+The `showNativeValidation` prop integrates HTML5 browser validation with the component's styling:
+
+```tsx
+// Enable native validation (captures browser validation messages)
+<Input
+  label="Email"
+  type="email"
+  required
+  showNativeValidation
+/>
+```
+
+**How it works:**
+- Captures native validation messages (e.g., "Please enter a valid email")
+- Displays them using the component's error styling
+- Tracks "touched" state to only show errors after user interaction
+- Adds `touched` CSS class for additional styling hooks
 
 ### Code Examples
 
@@ -2131,7 +2239,7 @@ interface StatCardProps {
 
 ```typescript
 interface DividerProps {
-  variant?: 'default' | 'subtle' | 'editorial'
+  variant?: 'default' | 'gradient' | 'editorial'
   label?: string
   className?: string
 }
@@ -2139,7 +2247,7 @@ interface DividerProps {
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| variant | `'default' \| 'subtle' \| 'editorial'` | `'default'` | Visual style |
+| variant | `'default' \| 'gradient' \| 'editorial'` | `'default'` | Visual style |
 | label | `string` | - | Text label (editorial variant) |
 | className | `string` | `''` | Additional classes |
 
@@ -2148,8 +2256,8 @@ interface DividerProps {
 | Variant | Description |
 |---------|-------------|
 | `default` | Standard gray divider line |
-| `subtle` | Lighter, less prominent divider |
-| `editorial` | Centered text label with decorative lines |
+| `gradient` | Primary-to-success gradient line with subtle glow |
+| `editorial` | Centered text label with decorative gradient accent |
 
 ### Usage Examples
 
@@ -2557,6 +2665,15 @@ Before shipping a component:
 ---
 
 ## Version History
+
+**v2.22 (January 4, 2026):**
+- **Button:** Added 3 new variants (`outline-primary`, `outline-danger`, `purple`)
+- **Badge:** Added `diagonal` prop (default: true) and `purple` variant
+- **Input:** Added `showNativeValidation` prop for browser validation API
+- **Modal:** Added `variant` prop (`default` | `danger`) for header accent styling
+- **Divider:** Replaced `subtle` variant with `gradient` variant
+- Synchronized with DESIGN_SYSTEM.md v2.22
+- Total: 20 components documented
 
 **v2.19 (January 4, 2026):**
 - Added full SuccessRateCard documentation with API, usage, and calculation logic

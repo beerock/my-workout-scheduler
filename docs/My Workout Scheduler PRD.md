@@ -171,14 +171,15 @@
   - Countdown threshold changed: hours until 48h, then days (matches human time perception)
   - Day rounding uses Math.round (88 hours = 4 days, not 3)
   - Booking status only shows for current occurrence (fixes stale status from previous week)
-- ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13)**
+- ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13 → v2.22)**
   - Complete design system with editorial diagonal-cut design language
-  - **15 reusable UI components** in `components/ui/`:
+  - **18 reusable UI components** in `components/ui/`:
     - Core: Button, Badge, Card, Modal
     - Form: Input, Select, Checkbox, FormField
     - Navigation: DropdownMenu, Tabs (with TabPanel)
-    - Feedback: Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
-    - Display: StatusIndicator, StatCard
+    - Feedback: Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
+    - Display: StatusIndicator, StatCard, Divider
+    - Layout: Header, Footer
   - Typography: **Sora** (headings) + **DM Sans** (body) - fresher than generic AI fonts
   - Extended Tailwind config with design tokens: colors, gradients, shadows, clip-paths
   - Prototype pages for visual reference:
@@ -947,15 +948,16 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 - Edge network (fast)
 - Free for personal projects
 
-**Design System v2 & Component Library (v2.13):**
+**Design System v2 & Component Library (v2.22):**
 
-- **Tailwind CSS Extended:** Design tokens for colors, gradients (`bg-gradient-primary`), shadows (`shadow-card`), clip-paths (`clip-diagonal-badge`)
-- **Component Library:** **15 reusable UI components** in `components/ui/`:
+- **Tailwind CSS Extended:** Design tokens for colors, gradients (`bg-gradient-primary`), shadows (`shadow-card`, `shadow-btn-*`), clip-paths (`clip-diagonal-badge`)
+- **Component Library:** **18 reusable UI components** in `components/ui/`:
   - Core: Button, Badge, Card, Modal
   - Form: Input, Select, Checkbox, FormField
   - Navigation: DropdownMenu, Tabs (with TabPanel)
-  - Feedback: Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
-  - Display: StatusIndicator, StatCard
+  - Feedback: Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
+  - Display: StatusIndicator, StatCard, Divider
+  - Layout: Header, Footer
 - **Typography:** Sora (headings) + DM Sans (body) - editorial, non-generic aesthetic
 - **Visual Language:** Diagonal-cut badges, rounded buttons, corner-clipped cards
 - **Colors:** Primary (#1a6fff), Success (#00c853), Warning (#ff9500), Danger (#f43f5e), Purple (#8B5CF6)
@@ -963,7 +965,7 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 - **Prototype Pages:** `/dashboard/prototype`, `/scheduler-v2`, `/design-system-components`
 - **Frontend Design Skill:** Use `/frontend-design` for any new visual work (UI, emails, components)
 - **Benefits:** Eliminates duplicate implementations, ensures UI consistency, faster feature development
-- **Responsive:** Desktop-first with mobile optimization
+- **Responsive:** Mobile-first with responsive breakpoints (sm:, lg:)
 - **Accessible:** WCAG AA compliant, keyboard navigation, proper ARIA labels
 
 ### Free Tier Limits (More Than Enough)

@@ -4,8 +4,8 @@
 
 This document defines the complete design system for My Workout Scheduler, establishing a consistent visual language inspired by modern fitness apps like Peloton, ClassPass, and Strava.
 
-**Version:** 2.13
-**Last Updated:** December 29, 2025
+**Version:** 2.22
+**Last Updated:** January 4, 2026
 
 ---
 
@@ -17,9 +17,11 @@ This document defines the complete design system for My Workout Scheduler, estab
 4. [Spacing System](#spacing-system)
 5. [Shadows](#shadows)
 6. [Border Radius](#border-radius)
-7. [Responsive Breakpoints](#responsive-breakpoints)
-8. [Accessibility Requirements](#accessibility-requirements)
-9. [Component Design Principles](#component-design-principles)
+7. [Custom Utilities](#custom-utilities)
+8. [Responsive Breakpoints](#responsive-breakpoints)
+9. [UI Patterns](#ui-patterns)
+10. [Accessibility Requirements](#accessibility-requirements)
+11. [Component Design Principles](#component-design-principles)
 
 ---
 
@@ -49,53 +51,53 @@ This document defines the complete design system for My Workout Scheduler, estab
 
 All colors use a 50-900 scale for consistent theming across the application.
 
-#### Primary (Blue) - Trust & Reliability
-**Use for:** Main actions, links, navigation highlights, informational states
+#### Primary (Electric Blue/Cobalt) - Trust & Action
+**Use for:** Main actions, links, navigation highlights, primary buttons
 
 | Shade | Hex | Use Case |
 |-------|-----|----------|
-| 50 | `#eff6ff` | Backgrounds, hover states |
-| 100 | `#dbeafe` | Light backgrounds |
-| 200 | `#bfdbfe` | Borders, dividers |
-| 300 | `#93c5fd` | Disabled states |
-| 400 | `#60a5fa` | Hover states |
-| 500 | `#3b82f6` | **DEFAULT** - Buttons, links |
-| 600 | `#2563eb` | Active states |
-| 700 | `#1d4ed8` | Pressed states |
-| 800 | `#1e40af` | Dark mode primary |
-| 900 | `#1e3a8a` | Text on light backgrounds |
+| 50 | `#e8f4ff` | Backgrounds, hover states |
+| 100 | `#d4e9ff` | Light backgrounds |
+| 200 | `#b0d7ff` | Borders, dividers |
+| 300 | `#7db9ff` | Disabled states |
+| 400 | `#4a96ff` | Hover states |
+| 500 | `#1a6fff` | **DEFAULT** - Primary buttons, links |
+| 600 | `#0052e6` | Active states |
+| 700 | `#003eb8` | Pressed states |
+| 800 | `#003399` | Dark mode primary |
+| 900 | `#002666` | Text on light backgrounds |
 
-#### Secondary (Orange) - Energy & Action
+#### Secondary (Deep Orange) - Energy & Accent
 **Use for:** Secondary actions, highlights, accent elements
 
 | Shade | Hex | Use Case |
 |-------|-----|----------|
-| 50 | `#fff7ed` | Backgrounds |
-| 100 | `#ffedd5` | Light backgrounds |
-| 200 | `#fed7aa` | Borders |
-| 300 | `#fdba74` | Disabled states |
-| 400 | `#fb923c` | Hover states |
-| 500 | `#f97316` | **DEFAULT** - Secondary buttons |
-| 600 | `#ea580c` | Active states |
-| 700 | `#c2410c` | Pressed states |
-| 800 | `#9a3412` | Dark mode secondary |
-| 900 | `#7c2d12` | Text on light backgrounds |
+| 50 | `#fff3e0` | Backgrounds |
+| 100 | `#ffe0b2` | Light backgrounds |
+| 200 | `#ffcc80` | Borders |
+| 300 | `#ffb74d` | Disabled states |
+| 400 | `#ffa726` | Hover states |
+| 500 | `#ff5722` | **DEFAULT** - Secondary buttons |
+| 600 | `#f4511e` | Active states |
+| 700 | `#e64a19` | Pressed states |
+| 800 | `#d84315` | Dark mode secondary |
+| 900 | `#bf360c` | Text on light backgrounds |
 
-#### Success (Green) - Confirmation & Achievement
+#### Success (Lime Victory) - Confirmation & Achievement
 **Use for:** Success messages, confirmed bookings, positive feedback
 
 | Shade | Hex | Use Case |
 |-------|-----|----------|
 | 50 | `#f0fdf4` | Backgrounds |
-| 100 | `#dcfce7` | Light backgrounds |
-| 200 | `#bbf7d0` | Borders |
-| 300 | `#86efac` | Disabled states |
-| 400 | `#4ade80` | Hover states |
-| 500 | `#22c55e` | **DEFAULT** - Success buttons, confirmed badges |
-| 600 | `#16a34a` | Active states |
-| 700 | `#15803d` | Pressed states |
-| 800 | `#166534` | Dark mode success |
-| 900 | `#14532d` | Text on light backgrounds |
+| 100 | `#d9f9e3` | Light backgrounds |
+| 200 | `#aef2c5` | Borders |
+| 300 | `#6ee79f` | Disabled states |
+| 400 | `#2dd872` | Hover states |
+| 500 | `#00c853` | **DEFAULT** - Success buttons, confirmed badges |
+| 600 | `#00a844` | Active states |
+| 700 | `#008936` | Pressed states |
+| 800 | `#006b2b` | Dark mode success |
+| 900 | `#004d1f` | Text on light backgrounds |
 
 #### Warning (Yellow/Amber) - Attention & Caution
 **Use for:** Warning messages, pending states, attention-needed items
@@ -113,21 +115,37 @@ All colors use a 50-900 scale for consistent theming across the application.
 | 800 | `#92400e` | Dark mode warning |
 | 900 | `#78350f` | Text on light backgrounds |
 
-#### Danger (Red) - Errors & Destructive Actions
+#### Danger (Hot Pink Alert) - Errors & Destructive Actions
 **Use for:** Error messages, failed bookings, destructive actions (delete)
 
 | Shade | Hex | Use Case |
 |-------|-----|----------|
-| 50 | `#fef2f2` | Backgrounds |
-| 100 | `#fee2e2` | Light backgrounds |
-| 200 | `#fecaca` | Borders |
-| 300 | `#fca5a5` | Disabled states |
-| 400 | `#f87171` | Hover states |
-| 500 | `#ef4444` | **DEFAULT** - Error badges, delete buttons |
-| 600 | `#dc2626` | Active states |
-| 700 | `#b91c1c` | Pressed states |
-| 800 | `#991b1b` | Dark mode danger |
-| 900 | `#7f1d1d` | Text on light backgrounds |
+| 50 | `#fff1f2` | Backgrounds |
+| 100 | `#ffe4e6` | Light backgrounds |
+| 200 | `#fecdd3` | Borders |
+| 300 | `#fda4af` | Disabled states |
+| 400 | `#fb7185` | Hover states |
+| 500 | `#f43f5e` | **DEFAULT** - Error badges, delete buttons |
+| 600 | `#e11d48` | Active states |
+| 700 | `#be123c` | Pressed states |
+| 800 | `#9f1239` | Dark mode danger |
+| 900 | `#881337` | Text on light backgrounds |
+
+#### Purple (Electric) - Achievement & Premium
+**Use for:** Achievements, streaks, premium features, accent highlights
+
+| Shade | Hex | Use Case |
+|-------|-----|----------|
+| 50 | `#faf5ff` | Backgrounds |
+| 100 | `#f3e8ff` | Light backgrounds |
+| 200 | `#e9d5ff` | Borders |
+| 300 | `#d8b4fe` | Disabled states |
+| 400 | `#c084fc` | Hover states |
+| 500 | `#8B5CF6` | **DEFAULT** - Purple buttons, badges |
+| 600 | `#7C3AED` | Active states |
+| 700 | `#6d28d9` | Pressed states |
+| 800 | `#5b21b6` | Dark mode purple |
+| 900 | `#4c1d95` | Text on light backgrounds |
 
 ### Status Colors
 
@@ -135,25 +153,27 @@ All colors use a 50-900 scale for consistent theming across the application.
 
 | Status | Color | Hex | Use Case |
 |--------|-------|-----|----------|
-| **Confirmed** | Green | `#22c55e` | Successfully booked classes |
-| **Pending** | Amber | `#f59e0b` | Booking in progress or scheduled |
-| **Waitlisted** | Blue | `#3b82f6` | On waitlist for full classes |
-| **Failed** | Red | `#ef4444` | Failed booking attempts |
-| **Skipped** | Gray | `#6b7280` | User-skipped occurrences |
-| **Retrying** | Amber (pulsing) | `#f59e0b` | Auto-retry in progress |
+| **Confirmed** | Lime Victory | `#00c853` | Successfully booked classes |
+| **Pending** | Bright Orange | `#ff9500` | Booking in progress or scheduled |
+| **Waitlisted** | Cyan | `#00b8ff` | On waitlist for full classes |
+| **Failed** | Hot Pink | `#f43f5e` | Failed booking attempts |
+| **Skipped** | Slate Gray | `#94a3b8` | User-skipped occurrences |
+| **Retrying** | Bright Orange (pulsing) | `#ff9500` | Auto-retry in progress |
 
 ### Class Type Colors
 
-**Optional accent colors for different workout types (use sparingly)**
+**Athletic discipline accent colors for different workout types (use sparingly)**
 
-| Class Type | Color | Hex |
-|------------|-------|-----|
-| Yoga | Purple | `#a855f7` |
-| Cycling | Orange | `#f97316` |
-| Strength | Red | `#ef4444` |
-| Cardio | Blue | `#3b82f6` |
-| Swimming | Cyan | `#06b6d4` |
-| Meditation | Indigo | `#6366f1` |
+| Class Type | Color | Hex | Vibe |
+|------------|-------|-----|------|
+| Yoga | Purple | `#9333ea` | Mindful, spiritual |
+| Cycling | Coral Red | `#ff3d3d` | High energy, cardio |
+| Strength | Electric Blue | `#1a6fff` | Power, intensity |
+| Cardio | Vibrant Orange | `#ff6b00` | Energy, movement |
+| Swimming | Cyan | `#00b8ff` | Water, flow |
+| Meditation | Soft Indigo | `#818cf8` | Calm, centered |
+| HIIT | Magenta | `#ff0080` | Intense, explosive |
+| Pilates | Pink | `#ec4899` | Grace, strength |
 
 ### Neutral Colors
 
@@ -178,14 +198,15 @@ All colors use a 50-900 scale for consistent theming across the application.
 
 ### Font Family
 
-**Primary Font:** Inter (Google Fonts)
-**Fallback:** -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif
+**Display/Headings:** Sora (`font-sora`)
+**Body Text:** DM Sans (`font-dm-sans`)
+**Fallback:** Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif
 
-**Why Inter?**
-- Modern, clean, highly readable
-- Excellent at small sizes
-- Professional yet approachable
-- Athletic/fitness aesthetic when used with proper weights
+**Why Sora + DM Sans?**
+- **Sora:** Bold, striking geometric sans-serif for headings - creates strong visual hierarchy
+- **DM Sans:** Clean, highly readable humanist sans-serif for body text
+- Together they create a modern, athletic aesthetic that feels both professional and energetic
+- Excellent readability across all sizes and devices
 
 ### Font Weights
 
@@ -265,15 +286,29 @@ All colors use a 50-900 scale for consistent theming across the application.
 
 ## Shadows
 
-**Subtle, modern shadows for depth and elevation**
+**4-layer shadow system for depth and elevation**
 
 ### Shadow Definitions (Tailwind Config)
 
+The design system uses a 4-layer shadow approach for cards, creating smooth, natural depth:
+
 | Name | CSS Value | Use Case |
 |------|-----------|----------|
-| **card** | `0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)` | Default cards, containers |
-| **card-hover** | `0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)` | Card hover state |
-| **floating** | `0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)` | Modals, dropdowns, popovers |
+| **card** | `0 1px 2px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.08), 0 8px 16px rgba(0,0,0,0.08)` | Default cards, containers |
+| **card-hover** | `0 2px 4px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.08), 0 8px 16px rgba(0,0,0,0.08), 0 16px 32px rgba(0,0,0,0.08)` | Card hover state, elevated cards |
+| **floating** | `0 4px 16px rgba(0,0,0,0.12), 0 8px 32px rgba(0,0,0,0.08)` | Modals, dropdowns, popovers |
+
+### Button Shadows
+
+Colored shadows that match button variants for a cohesive glow effect:
+
+| Name | CSS Value | Use Case |
+|------|-----------|----------|
+| **btn-primary** | `0 4px 12px rgba(26, 111, 255, 0.25)` | Primary buttons |
+| **btn-primary-lg** | `0 4px 16px rgba(26, 111, 255, 0.3), 0 8px 32px rgba(26, 111, 255, 0.15)` | Large primary buttons |
+| **btn-success** | `0 4px 12px rgba(0, 200, 83, 0.25)` | Success buttons |
+| **btn-danger** | `0 4px 12px rgba(244, 63, 94, 0.25)` | Danger buttons |
+| **btn-purple** | `0 4px 12px rgba(139, 92, 246, 0.25)` | Purple buttons |
 
 ### Shadow Usage
 
@@ -281,6 +316,7 @@ All colors use a 50-900 scale for consistent theming across the application.
 - **card shadow:** Default card state
 - **card-hover shadow:** Card hover, elevated cards
 - **floating shadow:** Modals, dialogs, dropdown menus
+- **btn-* shadows:** Active state glow on solid-color buttons
 
 ---
 
@@ -299,11 +335,69 @@ All colors use a 50-900 scale for consistent theming across the application.
 
 ### Component-Specific Rounding
 
-- **Buttons:** `rounded-md` (6px)
-- **Inputs:** `rounded-md` (6px)
-- **Cards:** `rounded-lg` (8px)
-- **Badges:** `rounded-full` (pill shape)
+- **Buttons:** `rounded-lg` (8px) - clear affordance, not diagonal
+- **Inputs:** `rounded-lg` (8px)
+- **Cards:** `rounded-lg` to `rounded-2xl` (8px-16px)
+- **Badges:** `clip-diagonal-badge` (default) or `rounded-full` (pill shape via `diagonal={false}`)
 - **Modals:** `rounded-xl` (12px)
+
+**UX Decision:** Buttons use rounded corners (not diagonal clip-path) for clear affordance. Only badges use the diagonal clip-path by default.
+
+---
+
+## Custom Utilities
+
+Design System v2 includes custom CSS utilities defined in `app/globals.css`.
+
+### Clip-Path Utilities
+
+Diagonal clip-paths create the signature editorial aesthetic:
+
+| Class | Polygon | Use Case |
+|-------|---------|----------|
+| `clip-diagonal-badge` | `polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%)` | Badge/tag diagonal effect |
+| `clip-diagonal-card-tr` | `polygon(0% 0%, calc(100% - 20px) 0%, 100% 20px, 100% 100%, 0% 100%)` | Card top-right corner cut |
+| `clip-diagonal-card-br` | `polygon(0% 0%, 100% 0%, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0% 100%)` | Card bottom-right corner cut |
+| `clip-diagonal-card-double` | `polygon(0% 0%, calc(100% - 24px) 0%, 100% 24px, 100% calc(100% - 24px), calc(100% - 24px) 100%, 0% 100%)` | Card with both corners cut |
+| `clip-diagonal-toast` | `polygon(0% 5%, 100% 0%, 100% 100%, 0% 95%)` | Toast notification slant |
+| `clip-diagonal-nav-active` | `polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%)` | Navigation active indicator |
+
+### Gradient Utilities
+
+**Background Gradients:**
+
+| Class | Direction | Colors | Use Case |
+|-------|-----------|--------|----------|
+| `bg-gradient-primary` | to right | `#1a6fff` → `#0052e6` | Primary button backgrounds |
+| `bg-gradient-success` | to right | `#00c853` → `#00a844` | Success buttons, confirmed badges |
+| `bg-gradient-danger` | to right | `#f43f5e` → `#e11d48` | Danger buttons, failed badges |
+| `bg-gradient-purple` | to right | `#8B5CF6` → `#7C3AED` | Purple/premium accents |
+| `bg-gradient-warning` | to right | `#ff9500` → `#ff6b00` | Warning/pending states |
+
+**Text Gradients:**
+
+| Class | Direction | Colors | Use Case |
+|-------|-----------|--------|----------|
+| `text-gradient-primary` | to right | `#1a6fff` → `#0052e6` | Gradient text effect |
+| `text-gradient-success` | to right | `#00c853` → `#00a844` | Gradient text effect |
+
+### Focus & Form Utilities
+
+| Class | Description |
+|-------|-------------|
+| `focus-accent-bar` | Left accent bar on input focus (blue→green gradient) |
+| `shimmer` | Horizontal shimmer loading effect |
+| `shimmer-diagonal` | Diagonal shimmer for skeleton loading |
+| `validation-message` | Styled validation error message |
+| `validation-shake` | Form shake animation for invalid submit |
+
+### Component Utilities
+
+| Class | Description |
+|-------|-------------|
+| `editorial-bg` | Three-layer radial gradient background |
+| `modal-header-accent` | Modal header with gradient line |
+| `editorial-divider` | Centered gradient divider line |
 
 ---
 
@@ -371,6 +465,94 @@ Some components adapt their content based on viewport:
 **Action Buttons:**
 - Use `flex-wrap` to allow graceful wrapping on narrow viewports
 - Responsive padding: `px-3 sm:px-5 py-2 sm:py-2.5`
+
+---
+
+## UI Patterns
+
+Production patterns used consistently across the application.
+
+### Editorial Background
+
+Three-layer radial gradient spotlight effect for page backgrounds:
+
+```css
+.editorial-bg::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 40%, rgba(26, 111, 255, 0.12), transparent 50%),
+    radial-gradient(ellipse 60% 50% at 80% 70%, rgba(0, 200, 83, 0.08), transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 20%, rgba(139, 92, 246, 0.06), transparent 50%);
+}
+```
+
+**Use on:** Dashboard pages, auth pages, any full-page layout
+
+### Staggered Animations
+
+Cascade effect using 0.1s increment delays:
+
+```tsx
+// Pattern for staggered fade-in
+<Card className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }} />
+<Card className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }} />
+<Card className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.3s' }} />
+```
+
+**Use on:** Dashboard stat cards, list items, page sections
+
+### Hero Card Spanning
+
+Featured cards span multiple columns in the stats grid:
+
+```tsx
+// SuccessRateCard spans 2 columns as hero element
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+  <SuccessRateCard className="col-span-1 sm:col-span-2" />
+  <StatCard />
+  <StatCard />
+</div>
+```
+
+### Focus Accent Bar
+
+Left gradient bar appears on input focus:
+
+```css
+.focus-accent-bar::before {
+  width: 3px;
+  background: linear-gradient(to bottom, #1a6fff, #00c853);
+  clip-path: polygon(0% 0%, 100% 5%, 100% 95%, 0% 100%);
+}
+```
+
+Changes to danger gradient on invalid input.
+
+### Card Border Accent
+
+Left 4px border with color matching icon background:
+
+```tsx
+<Card className="border-l-4 border-l-primary-500 group-hover:border-l-primary-600">
+  <div className="w-12 h-12 rounded-xl bg-primary-100">
+    <Icon className="text-primary-600" />
+  </div>
+</Card>
+```
+
+**Use on:** Quick action cards, feature cards, navigation cards
+
+### Responsive Text Scaling
+
+Mobile-first text that may decrease on tablet then increase on desktop:
+
+```tsx
+// Hero text: Large on mobile (no gauge), smaller on tablet (with gauge), large on desktop
+<p className="text-5xl sm:text-4xl lg:text-7xl font-bold">
+  {percentage}%
+</p>
+```
+
+**Rationale:** When visual elements (gauges, charts) are hidden on mobile, text becomes the hero and should be larger. When visuals are present, text can be smaller.
 
 ---
 
@@ -508,14 +690,18 @@ All design tokens are defined in `tailwind.config.ts`:
 
 ### Component Library Location
 
-All reusable components live in `components/ui/`:
-- `Button.tsx` - All action buttons
-- `Card.tsx` - Container component
-- `Badge.tsx` - Status indicators
-- `FormField.tsx` - Form input wrapper
-- `Modal.tsx` - Dialog wrapper
-- `StatusIndicator.tsx` - Booking status display
-- `StatCard.tsx` - Dashboard stat widgets
+All reusable components live in `components/ui/` (18 components):
+
+**Core:** Button, Badge, Card, Modal
+**Form:** Input, Select, Checkbox, FormField
+**Navigation:** DropdownMenu, Tabs
+**Feedback:** Alert, Toast, Skeleton
+**Display:** StatusIndicator, StatCard, Divider
+**Layout:** Header, Footer
+
+**Feature Components** (in `components/`):
+- `NextClassCard.tsx` - Hero card for next scheduled class
+- `SuccessRateCard.tsx` - Dashboard success rate with gauge
 
 ### Design System Enforcement
 
@@ -528,6 +714,19 @@ All reusable components live in `components/ui/`:
 ---
 
 ## Version History
+
+**v2.22 (January 4, 2026):**
+- **MAJOR UPDATE:** Fixed all color hex values to match actual tailwind.config.ts
+- Updated typography from Inter to Sora (headings) + DM Sans (body)
+- Updated shadow system to actual 4-layer shadow approach
+- Added button shadows (btn-primary, btn-success, btn-danger, btn-purple)
+- Added Purple (Electric) color scale for achievements/premium
+- Added Custom Utilities section (clip-paths, gradients)
+- Added UI Patterns section (editorial bg, staggered animations, hero spanning)
+- Added 2 additional class types (HIIT, Pilates)
+- Updated Status Colors to match actual config values
+- Updated component library listing (18 components + 2 feature components)
+- Updated border radius notes with UX decision about diagonal badges
 
 **v2.13 (December 29, 2025):**
 - Initial design system documentation
