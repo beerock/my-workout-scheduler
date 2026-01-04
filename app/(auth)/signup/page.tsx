@@ -43,7 +43,7 @@ export default function SignupPage() {
         if (turnstileRef.current.children.length === 0) {
           widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
             sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA', // Test key
-            size: 'invisible',
+            appearance: 'interaction-only',
             callback: (token: string) => {
               setTurnstileToken(token)
               // Clear any previous errors when verification succeeds
@@ -152,8 +152,8 @@ export default function SignupPage() {
             placeholder="Confirm your password"
           />
 
-          {/* Cloudflare Turnstile bot protection (invisible) */}
-          <div ref={turnstileRef} className="hidden"></div>
+          {/* Cloudflare Turnstile bot protection */}
+          <div ref={turnstileRef}></div>
 
           {error && (
             <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 font-dm-sans text-sm">
