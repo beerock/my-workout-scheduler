@@ -74,7 +74,11 @@ export default async function DashboardPage() {
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-6">
           {/* Hero Stat: Success Rate - spans 2 cols */}
-          <SuccessRateCard successRate={stats.successRate} animationDelay="0.1s" />
+          <SuccessRateCard
+            successRate={stats.successRate}
+            totalAttempts={stats.totalBookingAttempts}
+            animationDelay="0.1s"
+          />
 
           {/* Standard Stat: Active Classes - Shows paused variant with Resume when schedule is paused */}
           {isPaused ? (

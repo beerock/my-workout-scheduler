@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.21):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic (filters inactive classes, shows week after skip, accurate countdown display, correct booking status for specific occurrence), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), and improved email handling UX (hedged messaging for signup, duplicate email detection on profile change).
+**Current Version (v2.22):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic (filters inactive classes, shows week after skip, accurate countdown display, correct booking status for specific occurrence), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), improved email handling UX (hedged messaging for signup, duplicate email detection on profile change), and accurate all-time success rate calculation (includes all booking attempts regardless of class active status, excludes skipped/pending).
 
 ---
 
@@ -458,6 +458,30 @@ When changing email in Profile, Supabase errors for duplicate emails are caught 
 - `app/actions/profile.ts` - Duplicate email detection in `updateEmail()`
 - `components/ProfileForm.tsx` - Warning alert for duplicate emails
 
+### 17. Dashboard Success Rate Calculation (v2.22)
+
+The SuccessRateCard displays all-time booking system reliability to build user trust.
+
+**Formula:**
+```
+Success Rate = (confirmed + waitlisted) / (confirmed + waitlisted + failed) × 100
+```
+
+**Scope:**
+- **All classes** - Includes active AND inactive class booking history
+- **All-time** - No time window limit (previously was 30 days only)
+- **Excludes skipped** - User choice, not system failure
+- **Excludes pending** - Not finalized attempts
+
+**Rationale:** Deactivating a class doesn't remove its successful bookings from the calculation. This reflects true system reliability over time, not just current schedule health.
+
+**Total count context:** Shows "X bookings total" to give meaning to the percentage (95% of 150 bookings vs 95% of 3 bookings).
+
+**Files:**
+- `app/actions/dashboard-stats.ts` - `getDashboardStats()` calculates rate via join
+- `components/SuccessRateCard.tsx` - Displays rate with totalAttempts prop
+- `app/dashboard/page.tsx` - Passes stats to component
+
 ---
 
 ## Operational Notes
@@ -682,4 +706,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** January 4, 2026 (v2.21)
+**Last Updated:** January 4, 2026 (v2.22)

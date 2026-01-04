@@ -4,7 +4,7 @@
 
 This document provides complete API documentation, usage examples, and best practices for all reusable UI components in the My Workout Scheduler design system.
 
-**Version:** 2.18
+**Version:** 2.19
 **Last Updated:** January 4, 2026
 **Location:** `components/ui/`
 
@@ -44,9 +44,10 @@ This document provides complete API documentation, usage examples, and best prac
 
 **Feature Components:**
 19. [NextClassCard](#nextclasscard)
+20. [SuccessRateCard](#successratecard)
 
 **Guidelines:**
-20. [Usage Guidelines](#usage-guidelines)
+21. [Usage Guidelines](#usage-guidelines)
 
 ---
 
@@ -2397,6 +2398,95 @@ import NextClassCard from '@/components/NextClassCard'
 
 ---
 
+## SuccessRateCard
+
+**File:** `components/SuccessRateCard.tsx`
+
+**Purpose:** Hero stat card with prominent semi-circular gauge visualization displaying the all-time booking success rate. Dominates the dashboard stats grid.
+
+**When to use:**
+- ✅ Dashboard homepage as hero stat
+- ✅ Stats overview pages
+
+**When NOT to use:**
+- ❌ Inline stats (use StatCard instead)
+- ❌ Multiple success metrics side-by-side
+
+### API
+
+```typescript
+interface SuccessRateCardProps {
+  successRate: number          // 0-100 percentage
+  totalAttempts?: number       // Total booking attempts for context
+  animationDelay?: string      // CSS animation delay (default: '0.1s')
+}
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| successRate | `number` | **required** | Percentage 0-100 |
+| totalAttempts | `number` | - | Integrates into subtitle: "of X bookings confirmed" |
+| animationDelay | `string` | `'0.1s'` | Animation delay for staggered fade-in |
+
+### Usage
+
+```tsx
+import SuccessRateCard from '@/components/SuccessRateCard'
+
+// Basic usage
+<SuccessRateCard successRate={95} />
+
+// With total context
+<SuccessRateCard
+  successRate={95}
+  totalAttempts={150}
+  animationDelay="0.1s"
+/>
+```
+
+### Visual Features
+
+- **Large percentage display** - Hero element on all screens
+- **Contextual subtitle** - "of X bookings confirmed" integrates sample size with stat
+- **Semi-circular gauge** - Animated arc visualization (hidden on mobile)
+- **Legend row** - Confirmed/Waitlisted/Failed indicators (hidden on mobile)
+- **Gradient glow** - Subtle success-500 glow effect behind gauge
+- **Hover interaction** - Slight lift on hover
+
+### Success Rate Calculation (v2.22)
+
+The success rate reflects **all-time system reliability**:
+
+**Formula:**
+```
+Success Rate = (confirmed + waitlisted) / (confirmed + waitlisted + failed) × 100
+```
+
+**Scope:**
+- **All classes** - Includes active AND inactive class booking history
+- **All-time** - No time window limit (not just 30 days)
+- **Excludes skipped** - User choice, not system failure
+- **Excludes pending** - Not finalized attempts
+
+**Rationale:** This builds user trust by showing true lifetime system reliability. Deactivating a class doesn't remove its successful bookings from the calculation.
+
+### Responsive Design
+
+| Breakpoint | Gauge Size | Legend | Subtitle |
+|------------|------------|--------|----------|
+| Mobile (< 640px) | Hidden | Hidden | "of X bookings confirmed" |
+| Tablet (640px+) | 144px | Visible | "of X bookings confirmed" |
+| Desktop (1024px+) | 240px | Visible | "of X bookings confirmed" |
+
+### Accessibility
+
+- ✅ Semantic HTML structure
+- ✅ Animation respects `prefers-reduced-motion`
+- ✅ Color not sole indicator (percentage text always visible)
+- ✅ Sufficient color contrast
+
+---
+
 ## Usage Guidelines
 
 ### General Best Practices
@@ -2467,6 +2557,12 @@ Before shipping a component:
 ---
 
 ## Version History
+
+**v2.19 (January 4, 2026):**
+- Added full SuccessRateCard documentation with API, usage, and calculation logic
+- Documented new `totalAttempts` prop for showing booking count context
+- Added to Table of Contents under Feature Components
+- Total: 20 components documented
 
 **v2.18 (January 4, 2026):**
 - Updated NextClassCard countdown logic documentation
