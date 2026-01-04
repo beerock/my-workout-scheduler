@@ -354,7 +354,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
           <Alert variant="success">Class saved successfully!</Alert>
         )}
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
             <Button
               type="submit"
@@ -374,9 +374,9 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
           </div>
 
           {initialClass && !isCopy && (
-            <div className="text-sm text-gray-500 font-dm-sans">
+            <p className="text-sm text-gray-500 font-dm-sans">
               Created: {new Date(initialClass.created_at).toLocaleDateString()}
-            </div>
+            </p>
           )}
         </div>
       </form>

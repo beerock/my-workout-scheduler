@@ -252,7 +252,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
         <Alert variant="success">Credentials saved successfully!</Alert>
       )}
 
-      <div className="flex flex-col items-start gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <Button
           type="submit"
           variant="primary"
