@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.22):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic (filters inactive classes, shows week after skip, accurate countdown display, correct booking status for specific occurrence), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), improved email handling UX (hedged messaging for signup, duplicate email detection on profile change), and accurate all-time success rate calculation (includes all booking attempts regardless of class active status, excludes skipped/pending).
+**Current Version (v2.23):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic (filters inactive classes, shows week after skip, accurate countdown display, correct booking status for specific occurrence), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), improved email handling UX (hedged messaging for signup, duplicate email detection on profile change), and accurate all-time success rate calculation (includes all booking attempts regardless of class active status, excludes skipped/pending).
 
 ---
 
@@ -233,7 +233,7 @@ Skip buttons disabled when paused/inactive with tooltips. Uses `calculateBooking
 
 ### 13. Design System v2 & Component Library (CRITICAL)
 
-**Version:** v2.15 (January 2026)
+**Version:** v2.22 (January 2026)
 **Status:** MANDATORY for all frontend AND email development
 
 **All UI/UX work MUST use Design System v2 patterns and the component library.**
@@ -335,6 +335,13 @@ Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'
 - ✅ Test in Gmail/Outlook/Apple Mail
 
 **UX Decision:** Buttons use `rounded-lg` (not diagonal) for clear affordance. Only badges use diagonal clip-path.
+
+**Documentation Maintenance:**
+When making significant changes to design tokens, components, or UI patterns:
+1. ✅ Update `docs/DESIGN_SYSTEM.md` for token/pattern changes (colors, shadows, utilities)
+2. ✅ Update `docs/COMPONENT_LIBRARY.md` for component API changes (new props, variants)
+3. ✅ Update CLAUDE.md section 13 version reference if docs updated
+4. ✅ Update PRD design system section for major changes (component counts, features)
 
 #### Reference Prototypes
 
@@ -706,4 +713,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** January 4, 2026 (v2.22)
+**Last Updated:** January 4, 2026 (v2.23)
