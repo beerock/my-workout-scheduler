@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.19):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard booking status display (confirmed/waitlisted/pending), custom error pages (404, error boundary, global error) with support contact, and comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles).
+**Current Version (v2.20):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard booking status display (confirmed/waitlisted/pending), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), and improved email handling UX (hedged messaging for signup, duplicate email detection on profile change).
 
 ---
 
@@ -422,6 +422,42 @@ export default function LoginLayout({ children }: { children: React.ReactNode })
 
 **Environment Variable:** `NEXT_PUBLIC_SITE_URL` - Used for sitemap, canonical URLs, OG images
 
+### 16. Email Handling UX (v2.20)
+
+Improved UX for email-related scenarios that balances security with user experience.
+
+**Signup with Existing Email (Hedged Messaging):**
+
+Supabase Auth intentionally doesn't reveal if an email exists (prevents email enumeration attacks). The verify-email page uses hedged language to handle both new and existing email scenarios:
+
+- **Headline:** "Check your inbox" (not "We sent an email")
+- **Copy:** "If this is a new account, we've sent a verification link to:"
+- **Guidance:** "Already have an account?" section explains why email might not arrive
+- **Actions:** Prominent "Sign in instead" button + "Forgot password?" link
+
+**Key UX elements:**
+- 1-hour link expiration notice with clock icon
+- Collapsible tips section ("Didn't receive an email?")
+- Resend button with 60-second cooldown
+- "Wrong email? Sign up again" link
+
+**Profile Email Change (Duplicate Detection):**
+
+When changing email in Profile, Supabase errors for duplicate emails are caught and shown as user-friendly warnings:
+
+- **Error code:** `email_already_exists` returned from server action
+- **Display:** Warning Alert (amber) instead of error Alert (red)
+- **Copy:** "This email is already associated with another account. Please choose a different email address."
+
+**Why this design:**
+- Signup: Security-first (no email enumeration) with helpful UX guidance
+- Profile: UX-first (explicit feedback) since user is already authenticated
+
+**Files:**
+- `app/(auth)/verify-email/page.tsx` - Verify email page with hedged messaging
+- `app/actions/profile.ts` - Duplicate email detection in `updateEmail()`
+- `components/ProfileForm.tsx` - Warning alert for duplicate emails
+
 ---
 
 ## Operational Notes
@@ -646,4 +682,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** January 2, 2026 (v2.19)
+**Last Updated:** January 3, 2026 (v2.20)
