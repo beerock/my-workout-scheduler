@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { getAuthCallbackUrl } from '@/lib/env'
-import { Button, Input, Card } from '@/components/ui'
+import { Button, Input, Alert } from '@/components/ui'
 import AuthLayout from '@/components/AuthLayout'
+import { validateEmail } from '@/lib/validation'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -14,6 +15,10 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(0)
   const supabase = createClient()
+
+  // Email validation
+  const [emailTouched, setEmailTouched] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -118,8 +123,8 @@ export default function ForgotPasswordPage() {
         </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 font-dm-sans text-sm">
-            {error}
+          <div className="mb-4">
+            <Alert variant="error">{error}</Alert>
           </div>
         )}
 
@@ -157,15 +162,26 @@ export default function ForgotPasswordPage() {
           label="Email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            // Clear error as user types if they're fixing it
+            if (emailTouched && emailError) {
+              setEmailError(validateEmail(e.target.value))
+            }
+          }}
+          onBlur={() => {
+            setEmailTouched(true)
+            if (email) {
+              setEmailError(validateEmail(email))
+            }
+          }}
+          error={emailTouched ? emailError || undefined : undefined}
           required
           placeholder="you@example.com"
         />
 
         {error && (
-          <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 font-dm-sans text-sm">
-            {error}
-          </div>
+          <Alert variant="error">{error}</Alert>
         )}
 
         <Button

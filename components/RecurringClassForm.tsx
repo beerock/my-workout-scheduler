@@ -5,7 +5,7 @@ import { saveRecurringClass, type RecurringClassFormData } from '@/app/actions/r
 import { useRouter } from 'next/navigation'
 import { COMMON_TIMEZONES, formatDateInGymTimezone, getDayName, formatTime12Hour } from '@/lib/date-utils'
 import type { RecurringClass } from '@/lib/database.types'
-import { Button, Modal, Input, Select } from '@/components/ui'
+import { Button, Modal, Input, Select, Alert } from '@/components/ui'
 
 type Props = {
   initialClass?: RecurringClass | null
@@ -25,6 +25,10 @@ const DAYS_OF_WEEK = [
 
 export default function RecurringClassForm({ initialClass, isCopy = false, onSuccess }: Props) {
   const router = useRouter()
+
+  // Form reset key - increment to reset Input/Select component state after success
+  const [formKey, setFormKey] = useState(0)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -121,6 +125,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
 
       if (result.success) {
         setSuccess(true)
+        setFormKey(k => k + 1) // Reset form to clear touched state
 
         // Check if booking window is already open (server-side check)
         if (result.bookingWindowAlreadyOpen && result.id) {
@@ -275,6 +280,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
         <Select
+          key={`day_of_week-${formKey}`}
           label="Day of Week"
           name="day_of_week"
           value={formData.day_of_week.toString()}
@@ -283,6 +289,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         />
 
         <Input
+          key={`class_time-${formKey}`}
           label="Class Time"
           name="class_time"
           type="time"
@@ -293,6 +300,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         />
 
         <Input
+          key={`class_type-${formKey}`}
           label="Class Type"
           name="class_type"
           type="text"
@@ -304,6 +312,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         />
 
         <Input
+          key={`branch-${formKey}`}
           label="Branch"
           name="branch"
           type="text"
@@ -315,6 +324,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         />
 
         <Input
+          key={`booking_window_hours-${formKey}`}
           label="Booking Window Hours"
           name="booking_window_hours"
           type="number"
@@ -327,6 +337,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         />
 
         <Select
+          key={`timezone-${formKey}`}
           label="Timezone"
           name="timezone"
           value={formData.timezone}
@@ -336,15 +347,11 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         />
 
         {error && (
-          <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm font-dm-sans">
-            {error}
-          </div>
+          <Alert variant="error">{error}</Alert>
         )}
 
         {success && (
-          <div className="p-4 bg-success-50 border border-success-200 rounded-lg text-success-700 text-sm font-dm-sans">
-            Class saved successfully!
-          </div>
+          <Alert variant="success">Class saved successfully!</Alert>
         )}
 
         <div className="flex items-center justify-between">

@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.20
+**Version:** 2.21
 **Product Owner:** Brock Busby
-**Last Updated:** January 3, 2026
+**Last Updated:** January 4, 2026
 **Status:** Production - Deployed and Testing
 
 
@@ -158,6 +158,12 @@
   - "Already have an account?" section with sign-in guidance
   - 1-hour link expiration notice
   - Duplicate email detection on profile email change with warning alert
+- **v2.21:** NextClassCard logic improvements
+  - Filters out inactive classes (empty state when no active classes)
+  - Skipped classes show occurrence 7 days later (user IS going, just not this week)
+  - Countdown threshold changed: hours until 48h, then days (matches human time perception)
+  - Day rounding uses Math.round (88 hours = 4 days, not 3)
+  - Booking status only shows for current occurrence (fixes stale status from previous week)
 - ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13)**
   - Complete design system with editorial diagonal-cut design language
   - **15 reusable UI components** in `components/ui/`:

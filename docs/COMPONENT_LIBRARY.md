@@ -4,8 +4,8 @@
 
 This document provides complete API documentation, usage examples, and best practices for all reusable UI components in the My Workout Scheduler design system.
 
-**Version:** 2.17
-**Last Updated:** January 2, 2026
+**Version:** 2.18
+**Last Updated:** January 4, 2026
 **Location:** `components/ui/`
 
 ---
@@ -2382,9 +2382,18 @@ import NextClassCard from '@/components/NextClassCard'
 
 ### Countdown Logic
 
-- `< 1 hour`: Shows "Now"
-- `< 24 hours`: Shows hours (e.g., "5 hrs")
-- `≥ 24 hours`: Shows days (e.g., "3 days")
+**Tiered precision model** (matches human time perception):
+
+| Time Range | Display | Example | Rationale |
+|------------|---------|---------|-----------|
+| `< 1 hour` | "Now" | "Now" | Urgency |
+| `1-47 hours` | Hours | "40 hrs" | Precise planning window |
+| `≥ 48 hours` | Days (rounded) | "4 days" | Calendar-based thinking |
+
+**Key UX decisions:**
+- **48-hour threshold**: Under 48 hours, people think in hours; over 48, they think in days
+- **Math.round for days**: 88 hours → 4 days (not 3), matching user intuition of counting calendar days
+- **Day name provides context**: "40 hrs" paired with "Wednesday 4:15 PM" is immediately clear
 
 ---
 
@@ -2458,6 +2467,12 @@ Before shipping a component:
 ---
 
 ## Version History
+
+**v2.18 (January 4, 2026):**
+- Updated NextClassCard countdown logic documentation
+- New tiered precision model: hours until 48h, then days
+- Changed from Math.floor to Math.round for day calculation (matches user intuition)
+- Added UX rationale for countdown thresholds
 
 **v2.16 (January 2, 2026):**
 - Added Header component (`components/ui/Header.tsx`) - production header with nav, user dropdown, mobile menu

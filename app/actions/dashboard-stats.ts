@@ -42,11 +42,12 @@ export async function getDashboardStats(): Promise<{
       return { success: false, error: 'Failed to fetch active classes' }
     }
 
-    // 2. Get recurring class IDs for this user (needed for booking_attempts query)
+    // 2. Get active recurring classes for this user (needed for booking_attempts query and next class)
     const { data: userClasses, error: classesError } = await supabase
       .from('recurring_classes')
-      .select('id, class_type, day_of_week, class_time, timezone, branch')
+      .select('id, class_type, day_of_week, class_time, timezone, branch, skip_next_occurrence')
       .eq('user_id', user.id)
+      .eq('active', true)
 
     if (classesError) {
       console.error('Error fetching user classes:', classesError)
@@ -106,19 +107,27 @@ export async function getDashboardStats(): Promise<{
       let soonest: DashboardStats['nextBooking'] = null
       let soonestTime = Infinity
       let soonestClassId: string | null = null
+      let soonestOccurrence: Date | null = null
 
       for (const cls of userClasses) {
         try {
-          const nextOccurrence = calculateNextOccurrence(
+          let nextOccurrence = calculateNextOccurrence(
             cls.day_of_week,
             cls.class_time,
             cls.timezone
           )
+
+          // If class is skipped, show the occurrence AFTER the skip (next week)
+          if (cls.skip_next_occurrence) {
+            nextOccurrence = new Date(nextOccurrence.getTime() + 7 * 24 * 60 * 60 * 1000)
+          }
+
           const hoursUntil = (nextOccurrence.getTime() - now.getTime()) / (1000 * 60 * 60)
 
           if (hoursUntil > 0 && hoursUntil < soonestTime) {
             soonestTime = hoursUntil
             soonestClassId = cls.id
+            soonestOccurrence = nextOccurrence
 
             const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
             const dayName = dayNames[cls.day_of_week]
@@ -139,17 +148,17 @@ export async function getDashboardStats(): Promise<{
       }
 
       // Query booking status for the soonest class
-      // Look for confirmed/waitlisted bookings that happened after the booking window opened
-      // (typically 26 hours before class, but we use 7 days as a safe window for weekly classes)
-      if (soonest && soonestClassId) {
-        // For weekly recurring classes, look for recent bookings (within last 7 days)
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      // Only look for bookings made AFTER the booking window opened for this specific occurrence
+      // (booking window typically opens 26 hours before class)
+      if (soonest && soonestClassId && soonestOccurrence) {
+        // Calculate when booking window opened for this occurrence (26 hours before class)
+        const bookingWindowOpen = new Date(soonestOccurrence.getTime() - 26 * 60 * 60 * 1000).toISOString()
 
         const { data: bookingAttempt } = await supabase
           .from('booking_attempts')
           .select('status')
           .eq('recurring_class_id', soonestClassId)
-          .gte('attempt_timestamp', sevenDaysAgo)
+          .gte('attempt_timestamp', bookingWindowOpen)
           .in('status', ['confirmed', 'waitlisted'])
           .order('attempt_timestamp', { ascending: false })
           .limit(1)
