@@ -342,6 +342,8 @@ When making significant changes to design tokens, components, or UI patterns:
 2. ✅ Update `docs/COMPONENT_LIBRARY.md` for component API changes (new props, variants)
 3. ✅ Update CLAUDE.md section 13 version reference if docs updated
 4. ✅ Update PRD design system section for major changes (component counts, features)
+5. ✅ Update `app/prototype/design-system-components/page.tsx` for new components or significant component updates
+6. ✅ Update version number in prototype page and `components/PrototypeNav.tsx` header (must match `docs/DESIGN_SYSTEM.md` version)
 
 #### Reference Prototypes
 
