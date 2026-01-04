@@ -466,6 +466,28 @@ Some components adapt their content based on viewport:
 - Use `flex-wrap` to allow graceful wrapping on narrow viewports
 - Responsive padding: `px-3 sm:px-5 py-2 sm:py-2.5`
 
+**Form Button Layouts (with metadata):**
+
+When a form has a submit button alongside metadata (e.g., "Last updated", "Created" dates):
+
+```tsx
+// Mobile: Stack vertically | Tablet+: Horizontal with metadata right-aligned
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+  <Button type="submit" variant="primary">
+    Save Changes
+  </Button>
+  <p className="text-sm text-gray-500 font-dm-sans">
+    Last updated: {date}
+  </p>
+</div>
+```
+
+- **Mobile (< sm):** Button stacked above metadata text
+- **Tablet+ (sm):** Horizontal layout, button left, metadata right-aligned
+- **Semantic:** Use `<p>` for metadata text, not `<div>`
+
+**Used in:** GymCredentialsForm, RecurringClassForm
+
 ---
 
 ## UI Patterns
