@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.13
+**Version:** 2.20
 **Product Owner:** Brock Busby
-**Last Updated:** December 30, 2025
+**Last Updated:** January 3, 2026
 **Status:** Production - Deployed and Testing
 
 
@@ -153,6 +153,11 @@
   - Three-zone cleanup logic for intelligent pause/inactive interaction
   - Disabled skip buttons with helpful tooltips when paused or inactive
   - Time-based skip field management (preserve future skips, clear past skips)
+- **v2.20:** Email handling UX improvements
+  - Hedged messaging on verify-email page (handles existing email gracefully)
+  - "Already have an account?" section with sign-in guidance
+  - 1-hour link expiration notice
+  - Duplicate email detection on profile email change with warning alert
 - ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13)**
   - Complete design system with editorial diagonal-cut design language
   - **15 reusable UI components** in `components/ui/`:
@@ -177,6 +182,18 @@
   - Consistent UX: All three scenarios (unpause/activate/unskip) use same dialog pattern
   - Sequential dialogs: Multiple classes with open windows presented one-by-one with progress indicator
   - Real-world fix: User unpauses Sunday 11:30 AM → event scheduled for Monday 2:15 PM → booking succeeds
+- ✅ **COMPLETED: Email Handling UX Improvements (v2.20)**
+  - **Signup with existing email:** Hedged messaging prevents email enumeration while improving UX
+    - "Check your inbox" headline (not "We sent an email")
+    - "If this is a new account..." conditional language
+    - "Already have an account?" section with "Sign in instead" button
+    - Collapsible troubleshooting tips
+    - 1-hour link expiration notice with clock icon
+  - **Profile email change:** Duplicate email detection with user-friendly warning
+    - Catches Supabase duplicate email errors
+    - Shows amber warning alert (not error) for duplicate emails
+    - Clear message: "This email is already associated with another account"
+  - Balances security (no email enumeration on signup) with UX (clear feedback when authenticated)
 
 ---
 
@@ -242,6 +259,8 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 | **Resend Verification on Login** | Resend verification email from login page for unverified accounts | High | ✅ |
 | **Bot Protection** | Cloudflare Turnstile captcha on signup page | High | ✅ |
 | **Persistent Notifications** | User-controlled dismissal for all auth notifications | Medium | ✅ |
+| **Existing Email Handling** | Hedged messaging on verify-email page for signup with existing email | High | ✅ |
+| **Duplicate Email Detection** | Warning alert when changing email to one already in system | High | ✅ |
 
 ### 3.2 Schedule Management ✅ COMPLETE
 
