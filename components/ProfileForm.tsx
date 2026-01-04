@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { updateEmail, updatePassword, deleteAccount } from '@/app/actions/profile'
 import { useRouter } from 'next/navigation'
 import { Button, Input, Modal, Card, Alert } from '@/components/ui'
+import { validateEmail, validatePassword } from '@/lib/validation'
 
 type Props = {
   userEmail: string | undefined
@@ -12,6 +13,10 @@ type Props = {
 export default function ProfileForm({ userEmail }: Props) {
   const router = useRouter()
 
+  // Form reset keys - increment to reset Input component state after success
+  const [emailFormKey, setEmailFormKey] = useState(0)
+  const [passwordFormKey, setPasswordFormKey] = useState(0)
+
   // Email update state
   const [newEmail, setNewEmail] = useState('')
   const [emailPassword, setEmailPassword] = useState('')
@@ -19,6 +24,8 @@ export default function ProfileForm({ userEmail }: Props) {
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [emailSuccess, setEmailSuccess] = useState(false)
+  const [newEmailTouched, setNewEmailTouched] = useState(false)
+  const [newEmailValidationError, setNewEmailValidationError] = useState<string | null>(null)
 
   // Password update state
   const [currentPassword, setCurrentPassword] = useState('')
@@ -30,6 +37,27 @@ export default function ProfileForm({ userEmail }: Props) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // Password validation
+  const passwordValidation = validatePassword(newPassword)
+  const strengthLevel = [
+    passwordValidation.minLength,
+    passwordValidation.hasLowercase,
+    passwordValidation.hasUppercase,
+    passwordValidation.hasDigit
+  ].filter(Boolean).length
+
+  const strengthConfig: Record<number, { label: string; color: string; width: string }> = {
+    0: { label: '', color: 'bg-gray-200', width: '0%' },
+    1: { label: 'Weak', color: 'bg-danger-500', width: '25%' },
+    2: { label: 'Fair', color: 'bg-warning-500', width: '50%' },
+    3: { label: 'Good', color: 'bg-primary-500', width: '75%' },
+    4: { label: 'Strong', color: 'bg-success-500', width: '100%' }
+  }
+
+  // Confirm password validation
+  const passwordsMatch = confirmNewPassword.length > 0 && newPassword === confirmNewPassword
+  const showPasswordMismatch = confirmNewPassword.length > 0 && newPassword !== confirmNewPassword
 
   // Account deletion state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -64,6 +92,9 @@ export default function ProfileForm({ userEmail }: Props) {
         setEmailSuccess(true)
         setNewEmail('')
         setEmailPassword('')
+        setNewEmailTouched(false)
+        setNewEmailValidationError(null)
+        setEmailFormKey(k => k + 1) // Reset form to clear touched state
 
         // Success message persists until user dismisses or navigates away
       } else {
@@ -101,8 +132,8 @@ export default function ProfileForm({ userEmail }: Props) {
       return
     }
 
-    if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters long')
+    if (!passwordValidation.isValid) {
+      setPasswordError('Password must be at least 8 characters with uppercase, lowercase, and a number')
       setPasswordLoading(false)
       return
     }
@@ -115,6 +146,7 @@ export default function ProfileForm({ userEmail }: Props) {
         setCurrentPassword('')
         setNewPassword('')
         setConfirmNewPassword('')
+        setPasswordFormKey(k => k + 1) // Reset form to clear touched state
 
         // Success message persists until user dismisses or navigates away
       } else {
@@ -182,16 +214,31 @@ export default function ProfileForm({ userEmail }: Props) {
           />
 
           <Input
+            key={`new-email-${emailFormKey}`}
             label="New Email Address"
             type="email"
             value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
+            onChange={(e) => {
+              setNewEmail(e.target.value)
+              // Clear validation error as user types if they've already been shown an error
+              if (newEmailTouched && newEmailValidationError) {
+                setNewEmailValidationError(validateEmail(e.target.value))
+              }
+            }}
+            onBlur={() => {
+              setNewEmailTouched(true)
+              if (newEmail) {
+                setNewEmailValidationError(validateEmail(newEmail))
+              }
+            }}
+            error={newEmailTouched ? newEmailValidationError || undefined : undefined}
             required
             placeholder="Enter new email address"
-            hint="You will receive a confirmation email at the new address"
+            hint={!newEmailValidationError ? "You will receive a confirmation email at the new address" : undefined}
           />
 
           <Input
+            key={`email-password-${emailFormKey}`}
             label="Current Password"
             type={showEmailPassword ? 'text' : 'password'}
             value={emailPassword}
@@ -205,6 +252,7 @@ export default function ProfileForm({ userEmail }: Props) {
                 onClick={() => setShowEmailPassword(!showEmailPassword)}
                 className="text-gray-500 hover:text-gray-700"
                 tabIndex={-1}
+                aria-label={showEmailPassword ? 'Hide password' : 'Show password'}
               >
                 {showEmailPassword ? EyeOffIcon : EyeIcon}
               </button>
@@ -238,6 +286,7 @@ export default function ProfileForm({ userEmail }: Props) {
         <h2 className="text-lg font-sora font-semibold text-gray-900 mb-4">Change Password</h2>
         <form onSubmit={handlePasswordSubmit} className="space-y-4">
           <Input
+            key={`current-password-${passwordFormKey}`}
             label="Current Password"
             type={showCurrentPassword ? 'text' : 'password'}
             value={currentPassword}
@@ -250,48 +299,128 @@ export default function ProfileForm({ userEmail }: Props) {
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 className="text-gray-500 hover:text-gray-700"
                 tabIndex={-1}
+                aria-label={showCurrentPassword ? 'Hide password' : 'Show password'}
               >
                 {showCurrentPassword ? EyeOffIcon : EyeIcon}
               </button>
             }
           />
 
-          <Input
-            label="New Password"
-            type={showNewPassword ? 'text' : 'password'}
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            placeholder="Enter new password"
-            hint="Must be at least 6 characters long"
-            rightIcon={
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="text-gray-500 hover:text-gray-700"
-                tabIndex={-1}
-              >
-                {showNewPassword ? EyeOffIcon : EyeIcon}
-              </button>
-            }
-          />
+          <div>
+            <Input
+              key={`new-password-${passwordFormKey}`}
+              label="New Password"
+              type={showNewPassword ? 'text' : 'password'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              placeholder="Enter new password"
+              rightIcon={
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="text-gray-500 hover:text-gray-700"
+                  tabIndex={-1}
+                  aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showNewPassword ? EyeOffIcon : EyeIcon}
+                </button>
+              }
+            />
+
+            {/* Password Strength Meter */}
+            {newPassword && (
+              <div className="mt-3 space-y-2">
+                {/* Strength bar */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${strengthConfig[strengthLevel].color} transition-all duration-300 ease-out`}
+                      style={{ width: strengthConfig[strengthLevel].width }}
+                      role="progressbar"
+                      aria-valuenow={strengthLevel}
+                      aria-valuemin={0}
+                      aria-valuemax={4}
+                    />
+                  </div>
+                  <span className={`text-xs font-dm-sans font-medium min-w-[48px] ${
+                    strengthLevel <= 1 ? 'text-danger-600' :
+                    strengthLevel === 2 ? 'text-warning-600' :
+                    strengthLevel === 3 ? 'text-primary-600' : 'text-success-600'
+                  }`}>
+                    {strengthConfig[strengthLevel].label}
+                  </span>
+                </div>
+
+                {/* Requirements checklist */}
+                <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-dm-sans" aria-label="Password requirements">
+                  <li className={`flex items-center gap-1.5 transition-colors ${passwordValidation.minLength ? 'text-success-600' : 'text-gray-400'}`}>
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      {passwordValidation.minLength
+                        ? <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        : <circle cx="10" cy="10" r="3" />
+                      }
+                    </svg>
+                    8+ characters
+                  </li>
+                  <li className={`flex items-center gap-1.5 transition-colors ${passwordValidation.hasLowercase ? 'text-success-600' : 'text-gray-400'}`}>
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      {passwordValidation.hasLowercase
+                        ? <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        : <circle cx="10" cy="10" r="3" />
+                      }
+                    </svg>
+                    Lowercase (a-z)
+                  </li>
+                  <li className={`flex items-center gap-1.5 transition-colors ${passwordValidation.hasUppercase ? 'text-success-600' : 'text-gray-400'}`}>
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      {passwordValidation.hasUppercase
+                        ? <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        : <circle cx="10" cy="10" r="3" />
+                      }
+                    </svg>
+                    Uppercase (A-Z)
+                  </li>
+                  <li className={`flex items-center gap-1.5 transition-colors ${passwordValidation.hasDigit ? 'text-success-600' : 'text-gray-400'}`}>
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      {passwordValidation.hasDigit
+                        ? <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        : <circle cx="10" cy="10" r="3" />
+                      }
+                    </svg>
+                    Number (0-9)
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
 
           <Input
+            key={`confirm-password-${passwordFormKey}`}
             label="Confirm New Password"
             type={showConfirmPassword ? 'text' : 'password'}
             value={confirmNewPassword}
             onChange={(e) => setConfirmNewPassword(e.target.value)}
             required
             placeholder="Confirm new password"
+            error={showPasswordMismatch ? "Passwords don't match" : undefined}
+            success={passwordsMatch ? "Passwords match" : undefined}
             rightIcon={
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="text-gray-500 hover:text-gray-700"
-                tabIndex={-1}
-              >
-                {showConfirmPassword ? EyeOffIcon : EyeIcon}
-              </button>
+              passwordsMatch ? (
+                <svg className="w-5 h-5 text-success-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="text-gray-500 hover:text-gray-700"
+                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? EyeOffIcon : EyeIcon}
+                </button>
+              )
             }
           />
 

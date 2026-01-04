@@ -31,13 +31,15 @@ export default function NextClassCard({
   onViewSchedule,
 }: NextClassCardProps) {
   // Format hours display with unit
+  // UX: Under 48 hours, people think in hours; over 48, they think in days
   const formatCountdown = (hours: number): { value: string; unit: string } => {
     if (hours < 1) {
       return { value: 'Now', unit: '' }
-    } else if (hours < 24) {
+    } else if (hours < 48) {
       return { value: `${hours}`, unit: 'hrs' }
     } else {
-      const days = Math.floor(hours / 24)
+      // Use Math.round to match user intuition (88 hours = 4 days, not 3)
+      const days = Math.round(hours / 24)
       return { value: `${days}`, unit: days === 1 ? 'day' : 'days' }
     }
   }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { saveGymCredentials, type GymCredentialsFormData } from '@/app/actions/gym-credentials'
 import { useRouter } from 'next/navigation'
 import { Button, Input, Alert } from '@/components/ui'
+import { validateEmail } from '@/lib/validation'
 
 type Credentials = {
   id: string
@@ -20,6 +21,10 @@ type Props = {
 
 export default function GymCredentialsForm({ initialCredentials }: Props) {
   const router = useRouter()
+
+  // Form reset key - increment to reset Input component state after success
+  const [formKey, setFormKey] = useState(0)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -32,6 +37,14 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [confirmPassword, setConfirmPassword] = useState('')
+
+  // Username validation (only if it looks like an email)
+  const [usernameTouched, setUsernameTouched] = useState(false)
+  const [usernameValidationError, setUsernameValidationError] = useState<string | null>(null)
+
+  // Confirm password validation
+  const passwordsMatch = confirmPassword.length > 0 && formData.password === confirmPassword
+  const showPasswordMismatch = confirmPassword.length > 0 && formData.password !== confirmPassword
 
   // Update form when initialCredentials change
   useEffect(() => {
@@ -79,8 +92,11 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
         setSuccess(true)
         setFormData(prev => ({ ...prev, password: '' })) // Clear password field
         setConfirmPassword('') // Clear confirm password field
+        setUsernameTouched(false) // Reset validation state
+        setUsernameValidationError(null)
+        setFormKey(k => k + 1) // Reset form to clear touched state
         router.refresh() // Refresh to get updated credentials
-        
+
         // Clear success message after 3 seconds
         setTimeout(() => setSuccess(false), 3000)
       } else {
@@ -118,6 +134,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
     <div className="max-w-xl">
       <form onSubmit={handleSubmit} className="space-y-6">
       <Input
+        key={`gym_url-${formKey}`}
         label="Gym URL"
         name="gym_url"
         type="url"
@@ -129,17 +146,40 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
       />
 
       <Input
+        key={`username-${formKey}`}
         label="Username"
         name="username"
         type="text"
         value={formData.username}
-        onChange={handleChange}
+        onChange={(e) => {
+          handleChange(e)
+          // Clear error as user types if they're fixing it
+          if (usernameTouched && usernameValidationError) {
+            const value = e.target.value
+            if (value.includes('@')) {
+              setUsernameValidationError(validateEmail(value))
+            } else {
+              setUsernameValidationError(null)
+            }
+          }
+        }}
+        onBlur={() => {
+          setUsernameTouched(true)
+          // Only validate as email if it contains @
+          if (formData.username.includes('@')) {
+            setUsernameValidationError(validateEmail(formData.username))
+          } else {
+            setUsernameValidationError(null)
+          }
+        }}
+        error={usernameTouched ? usernameValidationError || undefined : undefined}
         required
         placeholder="Email or phone number"
         hint="Your YMCA login username (email or phone number)"
       />
 
       <Input
+        key={`password-${formKey}`}
         label={initialCredentials ? "Password" : "Password *"}
         name="password"
         type={showPassword ? 'text' : 'password'}
@@ -154,6 +194,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
             onClick={() => setShowPassword(!showPassword)}
             className="text-gray-500 hover:text-gray-700"
             tabIndex={-1}
+            aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? EyeOffIcon : EyeIcon}
           </button>
@@ -162,6 +203,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
 
       {(formData.password || !initialCredentials) && (
         <Input
+          key={`confirmPassword-${formKey}`}
           label="Confirm Password"
           name="confirmPassword"
           type={showConfirmPassword ? 'text' : 'password'}
@@ -169,21 +211,30 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
           onChange={(e) => setConfirmPassword(e.target.value)}
           required={!!formData.password}
           placeholder="Confirm your gym password"
-          hint={initialCredentials ? "Re-enter your password to confirm the change" : "Re-enter your password to confirm"}
+          hint={passwordsMatch ? "Passwords match" : (initialCredentials ? "Re-enter your password to confirm the change" : "Re-enter your password to confirm")}
+          error={showPasswordMismatch ? "Passwords don't match" : undefined}
           rightIcon={
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="text-gray-500 hover:text-gray-700"
-              tabIndex={-1}
-            >
-              {showConfirmPassword ? EyeOffIcon : EyeIcon}
-            </button>
+            passwordsMatch ? (
+              <svg className="w-5 h-5 text-success-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="text-gray-500 hover:text-gray-700"
+                tabIndex={-1}
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                {showConfirmPassword ? EyeOffIcon : EyeIcon}
+              </button>
+            )
           }
         />
       )}
 
       <Input
+        key={`default_branch-${formKey}`}
         label="Default Branch"
         name="default_branch"
         type="text"
