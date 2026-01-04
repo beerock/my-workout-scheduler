@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { sora, dmSans } from '@/lib/fonts'
 import Link from 'next/link'
+import { sora, dmSans } from '@/lib/fonts'
 import {
   Button,
   Badge,
@@ -13,6 +13,7 @@ import {
   Divider,
   Footer,
 } from '@/components/ui'
+import { PrototypeNav } from '@/components/PrototypeNav'
 
 export default function DesignSystemComponentsPage() {
   // Form states
@@ -50,7 +51,7 @@ export default function DesignSystemComponentsPage() {
 
   return (
     <div
-      className={`min-h-screen relative ${sora.variable} ${dmSans.variable}`}
+      className={`min-h-screen relative overflow-x-hidden ${sora.variable} ${dmSans.variable}`}
       style={{
         background: '#f8f9fa'
       }}
@@ -90,37 +91,24 @@ export default function DesignSystemComponentsPage() {
         }}
       ></div>
 
-      {/* Header */}
-      <header className="relative bg-white/80 backdrop-blur-sm border-b border-gray-200/50">
-        <div
-          className="absolute bottom-0 left-0 right-0 h-1"
-          style={{
-            background: 'linear-gradient(to right, #1a6fff, #00c853, #8B5CF6)',
-            clipPath: 'polygon(0% 0%, 100% 0%, 99.5% 100%, 0.5% 100%)'
-          }}
-        ></div>
+      {/* Navigation */}
+      <PrototypeNav />
 
-        <div className="max-w-7xl mx-auto py-12 px-8">
-          <div className="flex justify-between items-center">
-            <div className="animate-fadeInUp">
-              <h1 className="font-sora text-5xl font-bold text-gray-900 tracking-tight">
-                Component Library
-              </h1>
-              <p className="font-dm-sans text-gray-600 mt-2">
-                Phase 1 • Forms, Navigation, Modals & UI Elements
-              </p>
-            </div>
-            <Link
-              href="/prototype"
-              className="font-dm-sans text-sm text-gray-600 hover:text-[#1a6fff] transition-colors"
-            >
-              ← Back to Prototypes
-            </Link>
+      {/* Page Header */}
+      <header className="relative pt-8 pb-6 px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-fadeInUp">
+            <h1 className="font-sora text-4xl sm:text-5xl font-bold text-gray-900 tracking-tight">
+              Component Library
+            </h1>
+            <p className="font-dm-sans text-gray-600 mt-2">
+              18 Production-Ready Components • Forms, Navigation, Modals & UI Elements
+            </p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-8 space-y-20 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 sm:space-y-20 relative">
 
         {/* ============================================
             SECTION 1: FORMS
@@ -1671,6 +1659,27 @@ export default function DesignSystemComponentsPage() {
           animation: slideInRight 0.3s ease-out both;
         }
       `}</style>
+
+      {/* Bottom Navigation */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="max-w-2xl mx-auto">
+          <Link
+            href="/prototype"
+            className="flex items-center justify-between p-4 sm:p-6 bg-white rounded-xl border border-gray-200/50 hover:border-primary-200 hover:-translate-y-0.5 transition-all group"
+            style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)' }}
+          >
+            <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center group-hover:bg-primary-100 transition-colors">
+              <svg className="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <p className="font-dm-sans text-sm text-gray-500">Back</p>
+              <p className="font-sora font-semibold text-gray-900">← Case Study</p>
+            </div>
+          </Link>
+        </div>
+      </div>
 
       {/* Page Footer */}
       <Footer />

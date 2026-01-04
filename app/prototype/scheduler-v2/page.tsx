@@ -1,13 +1,14 @@
 'use client'
 
-import { sora, dmSans } from '@/lib/fonts'
 import Link from 'next/link'
+import { sora, dmSans } from '@/lib/fonts'
 import { Footer } from '@/components/ui'
+import { PrototypeNav } from '@/components/PrototypeNav'
 
 export default function SchedulerV2Page() {
   return (
     <div
-      className={`min-h-screen relative ${sora.variable} ${dmSans.variable}`}
+      className={`min-h-screen relative overflow-x-hidden ${sora.variable} ${dmSans.variable}`}
       style={{
         background: '#f8f9fa'
       }}
@@ -53,38 +54,24 @@ export default function SchedulerV2Page() {
         }}
       ></div>
 
-      {/* Header with diagonal accent bar */}
-      <header className="relative bg-white/80 backdrop-blur-sm border-b border-gray-200/50">
-        {/* Diagonal gradient accent bar */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-1"
-          style={{
-            background: 'linear-gradient(to right, #1a6fff, #00c853, #8B5CF6)',
-            clipPath: 'polygon(0% 0%, 100% 0%, 99.5% 100%, 0.5% 100%)'
-          }}
-        ></div>
+      {/* Navigation */}
+      <PrototypeNav />
 
-        <div className="max-w-7xl mx-auto py-12 px-8">
-          <div className="flex justify-between items-center">
-            <div className="animate-fadeInUp">
-              <h1 className="font-sora text-5xl font-bold text-gray-900 tracking-tight">
-                My Workout Scheduler
-              </h1>
-              <p className="font-dm-sans text-gray-600 mt-2">
-                Design System v2 • Scheduler Prototype
-              </p>
-            </div>
-            <Link
-              href="/prototype"
-              className="font-dm-sans text-sm text-gray-600 hover:text-[#1a6fff] transition-colors"
-            >
-              ← Back to Prototypes
-            </Link>
+      {/* Page Header */}
+      <header className="relative pt-8 pb-6 px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-fadeInUp">
+            <h1 className="font-sora text-4xl sm:text-5xl font-bold text-gray-900 tracking-tight">
+              My Workout Scheduler
+            </h1>
+            <p className="font-dm-sans text-gray-600 mt-2">
+              Design System v2 applied to a real product dashboard
+            </p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-8 space-y-16 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 sm:space-y-16 relative">
         {/* Global Pause Banner - with diagonal resume button */}
         <div
           className="relative bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-8 border border-amber-200/50 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 animate-fadeInUp-delay-1"
@@ -92,7 +79,7 @@ export default function SchedulerV2Page() {
             boxShadow: '0 8px 32px rgba(245, 158, 11, 0.12)'
           }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
                 <svg className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
@@ -100,17 +87,17 @@ export default function SchedulerV2Page() {
                 </svg>
               </div>
               <div>
-                <h2 className="font-sora text-2xl font-bold text-gray-900">
+                <h2 className="font-sora text-xl sm:text-2xl font-bold text-gray-900">
                   All Bookings Paused
                 </h2>
-                <p className="font-dm-sans text-gray-600 mt-1">
+                <p className="font-dm-sans text-gray-600 mt-1 text-sm sm:text-base">
                   Your schedule is preserved. Resume automatic bookings when you're ready.
                 </p>
               </div>
             </div>
             {/* Rounded Resume Button */}
             <button
-              className="px-6 py-3 bg-gradient-to-r from-[#00c853] to-[#00a844] text-white font-dm-sans font-medium rounded-lg hover:-translate-y-0.5 transition-all"
+              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-[#00c853] to-[#00a844] text-white font-dm-sans font-medium rounded-lg hover:-translate-y-0.5 transition-all flex-shrink-0"
               style={{
                 boxShadow: '0 4px 12px rgba(0, 200, 83, 0.25)'
               }}
@@ -121,10 +108,10 @@ export default function SchedulerV2Page() {
         </div>
 
         {/* Stats Dashboard - Asymmetric grid (2/3 + 1/3) */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Large stat card - spans 2 columns (standard rounded) */}
           <div
-            className="col-span-2 bg-white rounded-2xl p-10 border border-gray-200/50 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 animate-fadeInUp-delay-2"
+            className="col-span-1 md:col-span-2 bg-white rounded-2xl p-10 border border-gray-200/50 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 animate-fadeInUp-delay-2"
             style={{
               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.08), 0 8px 16px rgba(0, 0, 0, 0.08)'
             }}
@@ -192,7 +179,7 @@ export default function SchedulerV2Page() {
 
           {/* FEATURED: Next Class Card - DIAGONAL CORNER (hybrid approach) */}
           <div
-            className="col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 p-6 relative overflow-hidden flex items-center justify-between hover:-translate-y-1 transition-all duration-300 animate-fadeInUp-delay-5"
+            className="col-span-1 md:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 p-6 relative overflow-hidden flex items-center justify-between hover:-translate-y-1 transition-all duration-300 animate-fadeInUp-delay-5"
             style={{
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15), 0 8px 32px rgba(0, 0, 0, 0.1)',
               clipPath: 'polygon(0% 0%, calc(100% - 20px) 0%, 100% 20px, 100% 100%, 0% 100%)'
@@ -516,6 +503,27 @@ export default function SchedulerV2Page() {
             </div>
             <div className="text-7xl">🔥</div>
           </div>
+        </div>
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="max-w-2xl mx-auto">
+          <Link
+            href="/prototype/design-system-components"
+            className="flex items-center justify-between p-4 sm:p-6 bg-white rounded-xl border border-gray-200/50 hover:border-purple-200 hover:-translate-y-0.5 transition-all group"
+            style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08)' }}
+          >
+            <div>
+              <p className="font-dm-sans text-sm text-gray-500">Next</p>
+              <p className="font-sora font-semibold text-gray-900">Explore Components →</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+              <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
         </div>
       </div>
 
