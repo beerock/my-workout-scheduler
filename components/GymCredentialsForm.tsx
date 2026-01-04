@@ -252,7 +252,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
         <Alert variant="success">Credentials saved successfully!</Alert>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <Button
           type="submit"
           variant="primary"
@@ -262,9 +262,9 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
         </Button>
 
         {initialCredentials && (
-          <div className="text-sm text-gray-500 font-dm-sans">
+          <p className="text-sm text-gray-500 font-dm-sans">
             Last updated: {new Date(initialCredentials.updated_at).toLocaleDateString()}
-          </div>
+          </p>
         )}
       </div>
     </form>
