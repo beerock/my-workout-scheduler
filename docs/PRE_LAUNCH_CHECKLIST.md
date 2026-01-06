@@ -60,21 +60,85 @@ Open Tracking: ✅ Enabled (optional)
 
 ---
 
-## 🌐 Environment Variables
+## 🌐 Environment Variables & URL Configuration
+
+### Vercel Production Environment Variables
 
 **Verify these are set in Vercel Production:**
 
 ```
-✅ NEXT_PUBLIC_SITE_URL=https://my-workout-scheduler.vercel.app
+✅ NEXT_PUBLIC_SITE_URL=https://[your-production-domain]
 ✅ RESEND_API_KEY=[Production API Key]
-✅ RESEND_FROM_EMAIL=noreply@beerock.com
+✅ RESEND_FROM_EMAIL=noreply@beerock.com (or your production email)
 ✅ ENCRYPTION_KEY=[Unique production key]
 ✅ SUPABASE_SERVICE_ROLE_KEY=[Production service role key]
+✅ NEXT_PUBLIC_TURNSTILE_SITE_KEY=[Production Turnstile key]
 ```
 
 **⚠️ CRITICAL:**
 - Use **different** `ENCRYPTION_KEY` for production than dev/preview
 - Ensure all **⚠️ SENSITIVE** variables have "Sensitive" checkbox enabled in Vercel
+- Update `NEXT_PUBLIC_SITE_URL` to match your final production domain
+
+### URL Configuration Checklist
+
+**Verify production domain is configured in ALL services:**
+
+1. **Vercel Domain:**
+   - [ ] Production domain configured in Vercel project settings
+   - [ ] SSL certificate active (automatic with Vercel)
+   - [ ] `NEXT_PUBLIC_SITE_URL` environment variable matches production domain
+
+2. **Supabase Auth Redirect URLs:**
+   - [ ] Go to: **Supabase Dashboard** → **Authentication** → **URL Configuration**
+   - [ ] Add production redirect URLs:
+     - `https://[your-domain]/auth/callback`
+     - `https://[your-domain]/auth/reset-password`
+   - [ ] Site URL set to: `https://[your-domain]`
+
+3. **Resend Domain Verification:**
+   - [ ] Domain verified in Resend Dashboard (currently: beerock.com)
+   - [ ] DKIM records verified
+   - [ ] SPF records configured
+   - [ ] Confirm this is the correct domain for production emails
+
+4. **Cloudflare Turnstile:**
+   - [ ] Production site key created for final domain
+   - [ ] `NEXT_PUBLIC_TURNSTILE_SITE_KEY` updated in Vercel
+
+**Why this matters:**
+- Incorrect URLs break authentication redirects, email links, and API callbacks
+- Must be configured before first production user signup
+
+---
+
+## 🤖 Bot Protection
+
+### Cloudflare Turnstile Production Key
+
+**Current Configuration (Testing):**
+```
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+```
+
+**⚠️ ACTION REQUIRED BEFORE MVP LAUNCH:**
+
+Replace test key with production Turnstile site key:
+
+1. Go to: **Cloudflare Dashboard** → **Turnstile** → **Add Site**
+2. Create site key for production domain (e.g., `my-workout-scheduler.vercel.app` or custom domain)
+3. Update Vercel Production environment variable:
+   - Variable: `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+   - Value: [Your production site key]
+   - Environment: Production only
+
+**Why this is required:**
+- **Current:** Test key (always passes - allows all signups including bots)
+- **Production:** Real key (validates human interaction, prevents spam signups)
+
+**Documentation:**
+- Get site key: https://dash.cloudflare.com/ → Turnstile
+- Test key only works in development, must be replaced for production
 
 ---
 
