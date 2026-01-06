@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import { Button } from '@/components/ui'
 
 type NotificationType = 'success' | 'error' | null
 
@@ -10,7 +11,6 @@ export default function EmailVerificationNotification() {
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [verificationType, setVerificationType] = useState<string>('signup')
   const searchParams = useSearchParams()
-  const router = useRouter()
 
   useEffect(() => {
     // Check for email verification success or error in URL hash
@@ -78,10 +78,10 @@ export default function EmailVerificationNotification() {
       : 'Your email address has been verified. You\'re all set!'
 
     return (
-      <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+      <div className="mb-6 p-4 bg-success-50 border border-success-200 rounded-lg shadow-card">
         <div className="flex items-start space-x-3">
           <svg
-            className="h-6 w-6 text-green-600 flex-shrink-0 mt-0.5"
+            className="h-6 w-6 text-success-600 flex-shrink-0 mt-0.5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -94,20 +94,22 @@ export default function EmailVerificationNotification() {
             />
           </svg>
           <div className="flex-1">
-            <h3 className="font-semibold text-green-900">{title}</h3>
-            <p className="text-sm text-green-800 mt-1">
+            <h3 className="font-sora font-semibold text-success-900">{title}</h3>
+            <p className="font-dm-sans text-sm text-success-800 mt-1">
               {message}
             </p>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setNotification(null)}
-            className="text-green-600 hover:text-green-800"
             aria-label="Close notification"
+            className="text-success-600 hover:text-success-800 hover:bg-success-100"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
       </div>
     )
@@ -115,10 +117,10 @@ export default function EmailVerificationNotification() {
 
   if (notification === 'error') {
     return (
-      <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+      <div className="mb-6 p-4 bg-danger-50 border border-danger-200 rounded-lg shadow-card">
         <div className="flex items-start space-x-3">
           <svg
-            className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5"
+            className="h-6 w-6 text-danger-600 flex-shrink-0 mt-0.5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -131,25 +133,27 @@ export default function EmailVerificationNotification() {
             />
           </svg>
           <div className="flex-1">
-            <h3 className="font-semibold text-red-900">Verification Error</h3>
-            <p className="text-sm text-red-800 mt-1">
+            <h3 className="font-sora font-semibold text-danger-900">Verification Error</h3>
+            <p className="font-dm-sans text-sm text-danger-800 mt-1">
               {errorMessage}
             </p>
             {errorMessage.toLowerCase().includes('expired') && (
-              <p className="text-sm text-red-700 mt-2">
+              <p className="font-dm-sans text-sm text-danger-700 mt-2">
                 The verification link has expired. Please request a new email change from your profile settings.
               </p>
             )}
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setNotification(null)}
-            className="text-red-600 hover:text-red-800"
             aria-label="Close notification"
+            className="text-danger-600 hover:text-danger-800 hover:bg-danger-100"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
       </div>
     )

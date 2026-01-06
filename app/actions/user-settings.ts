@@ -2,11 +2,18 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { calculateBookingWindowOpen } from '@/lib/inngest/scheduler'
+import { calculateBookingWindowOpen, scheduleBooking } from '@/lib/inngest/scheduler'
 
 export type UserSettingsResult = {
   success: boolean
   error?: string
+  classesWithOpenWindows?: Array<{
+    id: string
+    class_type: string
+    day_of_week: number
+    class_time: string
+    branch: string
+  }>
 }
 
 /**
@@ -192,6 +199,63 @@ export async function updateSchedulePaused(
         return {
           success: false,
           error: `Failed to create settings: ${error.message}`,
+        }
+      }
+    }
+
+    // If UNPAUSING (paused = false), check all active classes for scheduling
+    if (paused === false) {
+      const { data: activeClasses } = await supabase
+        .from('recurring_classes')
+        .select('id, class_type, day_of_week, class_time, booking_window_hours, timezone, branch')
+        .eq('user_id', user.id)
+        .eq('active', true)
+
+      if (activeClasses && activeClasses.length > 0) {
+        const classesWithOpenWindows = []
+        let scheduledCount = 0
+
+        for (const classItem of activeClasses) {
+          try {
+            // Calculate booking window
+            const bookingTime = calculateBookingWindowOpen(
+              classItem.day_of_week,
+              classItem.class_time,
+              classItem.booking_window_hours || 26,
+              classItem.timezone || 'America/New_York'
+            )
+
+            const isWindowOpen = bookingTime.getTime() <= Date.now()
+
+            if (isWindowOpen) {
+              // Booking window open - add to list for user prompt
+              classesWithOpenWindows.push({
+                id: classItem.id,
+                class_type: classItem.class_type,
+                day_of_week: classItem.day_of_week,
+                class_time: classItem.class_time,
+                branch: classItem.branch
+              })
+            } else {
+              // Window not open yet - schedule silently
+              await scheduleBooking(classItem)
+              scheduledCount++
+            }
+          } catch (error) {
+            console.error(`Failed to process class ${classItem.id}:`, error)
+          }
+        }
+
+        console.log(`[Unpause] Scheduled ${scheduledCount} classes, ${classesWithOpenWindows.length} need user decision`)
+
+        // Return classes with open windows to show dialog
+        if (classesWithOpenWindows.length > 0) {
+          revalidatePath('/dashboard')
+          revalidatePath('/dashboard/schedule')
+          return {
+            success: true,
+            classesWithOpenWindows
+          }
         }
       }
     }

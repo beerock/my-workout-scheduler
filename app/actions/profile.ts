@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { validateEmail, validatePassword, getPasswordErrorMessage } from '@/lib/validation'
 
 export type ProfileResult = {
   success: boolean
@@ -55,12 +56,12 @@ export async function updateEmail(
   try {
     const supabase = await createClient()
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(newEmail)) {
+    // Validate email format using shared utility
+    const emailError = validateEmail(newEmail)
+    if (emailError) {
       return {
         success: false,
-        error: 'Invalid email format',
+        error: emailError,
       }
     }
 
@@ -107,6 +108,20 @@ export async function updateEmail(
     )
 
     if (updateError) {
+      // Check for duplicate email error from Supabase
+      // Common error messages: "User already registered", "email address is already registered"
+      const errorMsg = updateError.message.toLowerCase()
+      if (
+        errorMsg.includes('already registered') ||
+        errorMsg.includes('already exists') ||
+        errorMsg.includes('duplicate') ||
+        errorMsg.includes('unique constraint')
+      ) {
+        return {
+          success: false,
+          error: 'email_already_exists',
+        }
+      }
       return {
         success: false,
         error: `Failed to update email: ${updateError.message}`,
@@ -136,11 +151,12 @@ export async function updatePassword(
   try {
     const supabase = await createClient()
 
-    // Validate new password
-    if (newPassword.length < 6) {
+    // Validate new password using shared utility
+    const passwordValidation = validatePassword(newPassword)
+    if (!passwordValidation.isValid) {
       return {
         success: false,
-        error: 'Password must be at least 6 characters long',
+        error: getPasswordErrorMessage(),
       }
     }
 

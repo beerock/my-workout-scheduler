@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.11
+**Version:** 2.22
 **Product Owner:** Brock Busby
-**Last Updated:** November 29, 2025
+**Last Updated:** January 4, 2026
 **Status:** Production - Deployed and Testing
 
 
@@ -153,6 +153,61 @@
   - Three-zone cleanup logic for intelligent pause/inactive interaction
   - Disabled skip buttons with helpful tooltips when paused or inactive
   - Time-based skip field management (preserve future skips, clear past skips)
+- **v2.20:** Email handling UX improvements
+  - Hedged messaging on verify-email page (handles existing email gracefully)
+  - "Already have an account?" section with sign-in guidance
+  - 1-hour link expiration notice
+  - Duplicate email detection on profile email change with warning alert
+- **v2.22:** Success rate calculation improvements
+  - Changed from active-classes-only/30-day to all-time/all-classes calculation
+  - Formula: `(confirmed + waitlisted) / (confirmed + waitlisted + failed) × 100`
+  - Includes ALL booking attempts regardless of whether class is now active
+  - Excludes skipped (user choice) and pending (not finalized)
+  - Added total bookings count context ("150 bookings total")
+  - SuccessRateCard now displays totalAttempts prop
+- **v2.21:** NextClassCard logic improvements
+  - Filters out inactive classes (empty state when no active classes)
+  - Skipped classes show occurrence 7 days later (user IS going, just not this week)
+  - Countdown threshold changed: hours until 48h, then days (matches human time perception)
+  - Day rounding uses Math.round (88 hours = 4 days, not 3)
+  - Booking status only shows for current occurrence (fixes stale status from previous week)
+- ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13 → v2.22)**
+  - Complete design system with editorial diagonal-cut design language
+  - **18 reusable UI components** in `components/ui/`:
+    - Core: Button, Badge, Card, Modal
+    - Form: Input, Select, Checkbox, FormField
+    - Navigation: DropdownMenu, Tabs (with TabPanel)
+    - Feedback: Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
+    - Display: StatusIndicator, StatCard, Divider
+    - Layout: Header, Footer
+  - Typography: **Sora** (headings) + **DM Sans** (body) - fresher than generic AI fonts
+  - Extended Tailwind config with design tokens: colors, gradients, shadows, clip-paths
+  - Prototype pages for visual reference:
+    - `/dashboard/prototype` - Design system showcase
+    - `/dashboard/prototype/scheduler-v2` - Scheduler redesign
+    - `/dashboard/prototype/design-system-components` - Component showcase
+  - **Use `/frontend-design` skill** for any new visual design work (UI, emails, components)
+  - Email templates follow design system colors and aesthetic
+  - Component documentation (DESIGN_SYSTEM.md, COMPONENT_LIBRARY.md)
+- ✅ **COMPLETED: Immediate scheduling on unpause, activate, and unskip (v2.13)**
+  - Silent scheduling: Classes with future booking windows scheduled automatically in background
+  - User prompts: "Book Now" dialogs for classes with already-open booking windows
+  - Prevents missed bookings when user actions occur between now and midnight UTC
+  - Consistent UX: All three scenarios (unpause/activate/unskip) use same dialog pattern
+  - Sequential dialogs: Multiple classes with open windows presented one-by-one with progress indicator
+  - Real-world fix: User unpauses Sunday 11:30 AM → event scheduled for Monday 2:15 PM → booking succeeds
+- ✅ **COMPLETED: Email Handling UX Improvements (v2.20)**
+  - **Signup with existing email:** Hedged messaging prevents email enumeration while improving UX
+    - "Check your inbox" headline (not "We sent an email")
+    - "If this is a new account..." conditional language
+    - "Already have an account?" section with "Sign in instead" button
+    - Collapsible troubleshooting tips
+    - 1-hour link expiration notice with clock icon
+  - **Profile email change:** Duplicate email detection with user-friendly warning
+    - Catches Supabase duplicate email errors
+    - Shows amber warning alert (not error) for duplicate emails
+    - Clear message: "This email is already associated with another account"
+  - Balances security (no email enumeration on signup) with UX (clear feedback when authenticated)
 
 ---
 
@@ -218,6 +273,8 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 | **Resend Verification on Login** | Resend verification email from login page for unverified accounts | High | ✅ |
 | **Bot Protection** | Cloudflare Turnstile captcha on signup page | High | ✅ |
 | **Persistent Notifications** | User-controlled dismissal for all auth notifications | Medium | ✅ |
+| **Existing Email Handling** | Hedged messaging on verify-email page for signup with existing email | High | ✅ |
+| **Duplicate Email Detection** | Warning alert when changing email to one already in system | High | ✅ |
 
 ### 3.2 Schedule Management ✅ COMPLETE
 
@@ -270,9 +327,66 @@ Intelligent skip field management when pausing or deactivating:
 
 **Example Configuration:**
 
-- Monday 4:15 PM BODYPUMP @ Downtown YMCA (books 26 hours prior)  
-- Wednesday 4:15 PM BODYPUMP @ Downtown YMCA (books 26 hours prior)  
+- Monday 4:15 PM BODYPUMP @ Downtown YMCA (books 26 hours prior)
+- Wednesday 4:15 PM BODYPUMP @ Downtown YMCA (books 26 hours prior)
 - Saturday 9:30 AM BODYPUMP @ Downtown YMCA (books 26 hours prior)
+
+#### 3.2.2 Immediate Scheduling (v2.13)
+
+**Problem Solved:**
+Users could miss bookings if they unpause, activate a class, or remove a skip between the current time and midnight UTC (when the daily scheduler runs).
+
+**Real-world example:**
+- Sunday 11:30 AM: User unpauses schedule
+- Sunday 2:15 PM: Booking window opens for Monday 4:15 PM class
+- Before v2.13: Nothing scheduled until midnight UTC → booking missed ❌
+- With v2.13: Event scheduled immediately at 11:30 AM → booking succeeds at 2:15 PM ✓
+
+**How It Works:**
+
+**Silent Scheduling (No User Interaction):**
+- When booking window is NOT yet open (future)
+- System calls `scheduleBooking()` silently in background
+- User sees no dialogs, classes scheduled automatically
+- Common case: Most schedules don't have open booking windows
+
+**User Prompts (Book Now Dialogs):**
+- When booking window IS already open
+- System shows "Book Now" dialog with class details
+- User chooses: "Yes, Book Now" (triggers immediate booking) or "Skip This Week" (no action)
+- Dialog includes: Class type, day, time, branch (e.g., "BODYPUMP - Monday 4:15 PM @ Downtown YMCA")
+
+**Three Trigger Scenarios:**
+
+1. **Global Unpause** (`updateSchedulePaused(false)`)
+   - Checks all active classes
+   - Schedules classes with future windows silently
+   - Shows sequential dialogs for classes with open windows
+   - Progress indicator: "Class 1 of 3" when multiple dialogs
+
+2. **Individual Class Activate** (`toggleRecurringClassActive(true)`)
+   - Checks single class booking window
+   - Silent schedule or single dialog based on window status
+
+3. **Skip Removal** (`setSkipNextOccurrence(null)`)
+   - Checks single class booking window (only if class is active)
+   - Silent schedule or single dialog based on window status
+
+**Duplicate Prevention:**
+- `scheduleBooking()` sends `booking/cancel` event FIRST
+- Cancels any existing event for that class+date combination
+- Then sends new `booking/attempt` event
+- Only one event exists per class+date at any time
+
+**Error Handling:**
+- Scheduling failures don't break user actions
+- Errors logged to console but don't throw
+- Daily scheduler at midnight UTC provides fallback safety net
+
+**Implementation:**
+- Backend: `app/actions/user-settings.ts`, `app/actions/recurring-classes.ts`
+- Frontend: `components/PauseToggle.tsx`, `components/SkipButton.tsx`, `components/ScheduleList.tsx` (activate), `components/RecurringClassForm.tsx` (existing dialog updated)
+- Scheduling: Uses existing `scheduleBooking()` and `calculateBookingWindowOpen()` from `lib/inngest/scheduler.ts`
 
 ### 3.3 Automated Booking Engine ✅ COMPLETE
 
@@ -285,6 +399,7 @@ Intelligent skip field management when pausing or deactivating:
 | **Error Handling** | Detect failures, log errors, send notification | High | ✅ |
 | **Status Updates** | Write booking results back to database | High | ✅ |
 | **Daily Scheduler** | Midnight UTC cron ensures all active classes are scheduled | High | ✅ |
+| **Immediate Scheduling** | Schedule bookings immediately on unpause/activate/unskip (silent or user prompt) | High | ✅ |
 
 **Booking Flow (Production Architecture):**
 
@@ -316,24 +431,29 @@ Intelligent skip field management when pausing or deactivating:
    - **Success or permanent failure** → Stop
 7. **Daily scheduler** (midnight UTC) → Re-schedules all active classes for next occurrence
 
-### 3.4 Dashboard & Monitoring (Minimal)
+### 3.4 Dashboard & Monitoring ✅ ENHANCED (v2.13)
 
-| Feature | Description | Priority |
-| :---- | :---- | :---- |
-| **Upcoming Classes View** | Simple list of scheduled classes | High |
-| **Booking Status** | Status badge: Pending, Confirmed, Waitlisted, Failed | High |
-| **Email Notifications** | Send confirmation/failure emails | High |
-| **Basic History** | Show last 30 days of booking attempts | Medium |
+| Feature | Description | Priority | Status |
+| :---- | :---- | :---- | :---- |
+| **Rich Dashboard Overview** | Stat widgets, upcoming classes, recent activity, action items | High | ✅ |
+| **Upcoming Classes View** | Next 7 days with booking status badges | High | ✅ |
+| **Booking Status Badges** | Visual indicators: Confirmed, Pending, Waitlisted, Failed, Skipped | High | ✅ |
+| **Quick Stats** | Classes this week, active classes, success rate, action items count | High | ✅ |
+| **Recent Activity Timeline** | Last 5 booking attempts with results | High | ✅ |
+| **Action Items** | Failed bookings and credential issues requiring attention | High | ✅ |
+| **Email Notifications** | Designed and ready for integration (Phase 4) | High | 🔜 |
+| **Basic History** | Show last 30 days of booking attempts | Medium | 📋 |
 
-### 3.5 What's NOT Included (Prototype)
+### 3.5 What's NOT Included / Future Enhancements
 
-- ❌ Pretty design (functional Bootstrap/Tailwind only)  
-- ❌ Calendar view (just lists)  
-- ❌ Manual trigger buttons (edit schedule to retry)  
-- ❌ Multi-branch fallback (add to v2)  
-- ❌ Advanced error recovery (manual intervention required)  
-- ❌ Mobile app (responsive web only)  
+- ✅ ~~Pretty design (functional Bootstrap/Tailwind only)~~ → **COMPLETED in v2.13** (Modern fitness app design system)
+- ❌ Calendar view (currently list view with next booking dates)
+- ❌ Manual trigger buttons (edit schedule to retry)
+- ❌ Multi-branch fallback (add to v2)
+- ❌ Advanced error recovery (manual intervention required)
+- ❌ Mobile app (responsive web only)
 - ❌ Class listing scraper (manual entry for now)
+- 🔜 Email notifications (designed in v2.13, ready for integration)
 
 ---
 
@@ -488,7 +608,11 @@ booking\_attempts (
 - Gym credentials encrypted using application-level AES-256-GCM encryption (Node.js crypto module)
   - Encryption key stored in environment variables (never sent to database)
   - Password encrypted before storage, decrypted only when needed for automation
-- GitHub Personal Access Token with `workflow` scope for triggering GitHub Actions
+- GitHub App authentication for triggering GitHub Actions workflows
+  - Repository-scoped permissions (Actions: Read/Write only)
+  - Auto-rotating installation tokens (1-hour expiration, generated on-demand)
+  - No manual token renewal required (eliminates expiration management)
+  - Better security than personal access tokens (minimal permissions, single repository)
 - GitHub Actions secrets for Supabase and encryption keys
 - HTTPS everywhere (Vercel default)
 - Vercel environment variables for production (Supabase, Inngest, GitHub credentials)
@@ -502,7 +626,9 @@ booking\_attempts (
 - `ENCRYPTION_KEY` - AES-256-GCM encryption key for gym credentials
 - `INNGEST_EVENT_KEY` - Inngest event key for sending events
 - `INNGEST_SIGNING_KEY` - Inngest signing key for webhook verification
-- `GITHUB_TOKEN` - GitHub Personal Access Token with `workflow` and `repo` scopes
+- `GITHUB_APP_ID` - GitHub App ID for workflow authentication (replaces personal access token)
+- `GITHUB_APP_INSTALLATION_ID` - GitHub App installation ID
+- `GITHUB_APP_PRIVATE_KEY` - GitHub App private key (auto-rotating tokens, no manual renewal)
 - `GITHUB_REPOSITORY` - GitHub repository (e.g., `beerock/my-workout-scheduler`)
 
 **GitHub Actions Secrets:**
@@ -823,10 +949,30 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 
 **Vercel:**
 
-- Zero-config Next.js deployment  
-- Automatic HTTPS  
-- Edge network (fast)  
+- Zero-config Next.js deployment
+- Automatic HTTPS
+- Edge network (fast)
 - Free for personal projects
+
+**Design System v2 & Component Library (v2.22):**
+
+- **Tailwind CSS Extended:** Design tokens for colors, gradients (`bg-gradient-primary`), shadows (`shadow-card`, `shadow-btn-*`), clip-paths (`clip-diagonal-badge`)
+- **Component Library:** **18 reusable UI components** in `components/ui/`:
+  - Core: Button, Badge, Card, Modal
+  - Form: Input, Select, Checkbox, FormField
+  - Navigation: DropdownMenu, Tabs (with TabPanel)
+  - Feedback: Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
+  - Display: StatusIndicator, StatCard, Divider
+  - Layout: Header, Footer
+- **Typography:** Sora (headings) + DM Sans (body) - editorial, non-generic aesthetic
+- **Visual Language:** Diagonal-cut badges, rounded buttons, corner-clipped cards
+- **Colors:** Primary (#1a6fff), Success (#00c853), Warning (#ff9500), Danger (#f43f5e), Purple (#8B5CF6)
+- **Component Documentation:** `docs/DESIGN_SYSTEM.md` and `docs/COMPONENT_LIBRARY.md`
+- **Prototype Pages:** `/dashboard/prototype`, `/scheduler-v2`, `/design-system-components`
+- **Frontend Design Skill:** Use `/frontend-design` for any new visual work (UI, emails, components)
+- **Benefits:** Eliminates duplicate implementations, ensures UI consistency, faster feature development
+- **Responsive:** Mobile-first with responsive breakpoints (sm:, lg:)
+- **Accessible:** WCAG AA compliant, keyboard navigation, proper ARIA labels
 
 ### Free Tier Limits (More Than Enough)
 

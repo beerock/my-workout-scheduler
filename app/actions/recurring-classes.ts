@@ -22,6 +22,12 @@ export type RecurringClassResult = {
   bookingTime?: Date
   skipClearWarning?: boolean
   skipDate?: string | null
+  classDetails?: {
+    class_type: string
+    day_of_week: number
+    class_time: string
+    branch: string
+  }
 }
 
 /**
@@ -465,6 +471,51 @@ export async function toggleRecurringClassActive(
       }
     }
 
+    // If ACTIVATING (active = true), check if booking window is open
+    if (active === true) {
+      try {
+        const { data: classData } = await supabase
+          .from('recurring_classes')
+          .select('id, class_type, day_of_week, class_time, booking_window_hours, timezone, branch')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single()
+
+        if (classData) {
+          const bookingTime = calculateBookingWindowOpen(
+            classData.day_of_week,
+            classData.class_time,
+            classData.booking_window_hours || 26,
+            classData.timezone || 'America/New_York'
+          )
+
+          const isWindowOpen = bookingTime.getTime() <= Date.now()
+
+          if (isWindowOpen) {
+            // Window open - return for user prompt
+            console.log(`[Activate] Booking window open for class ${id}, prompting user`)
+            revalidatePath('/dashboard/schedule')
+            return {
+              success: true,
+              bookingWindowAlreadyOpen: true,
+              classDetails: {
+                class_type: classData.class_type,
+                day_of_week: classData.day_of_week,
+                class_time: classData.class_time,
+                branch: classData.branch
+              }
+            }
+          } else {
+            // Window not open - schedule silently
+            await scheduleBooking(classData)
+            console.log(`[Activate] Scheduled class ${id} for ${bookingTime.toISOString()}`)
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to process activated class ${id}:`, error)
+      }
+    }
+
     revalidatePath('/dashboard/schedule')
     return {
       success: true,
@@ -521,6 +572,51 @@ export async function setSkipNextOccurrence(
       return {
         success: false,
         error: `Failed to update skip: ${error.message}`,
+      }
+    }
+
+    // If CLEARING SKIP (skipTargetDatetime = null), check if booking window is open
+    if (skipTargetDatetime === null) {
+      try {
+        const { data: classData } = await supabase
+          .from('recurring_classes')
+          .select('id, class_type, day_of_week, class_time, booking_window_hours, timezone, branch, active')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single()
+
+        if (classData && classData.active) {
+          const bookingTime = calculateBookingWindowOpen(
+            classData.day_of_week,
+            classData.class_time,
+            classData.booking_window_hours || 26,
+            classData.timezone || 'America/New_York'
+          )
+
+          const isWindowOpen = bookingTime.getTime() <= Date.now()
+
+          if (isWindowOpen) {
+            // Window open - return for user prompt
+            console.log(`[Unskip] Booking window open for class ${id}, prompting user`)
+            revalidatePath('/dashboard/schedule')
+            return {
+              success: true,
+              bookingWindowAlreadyOpen: true,
+              classDetails: {
+                class_type: classData.class_type,
+                day_of_week: classData.day_of_week,
+                class_time: classData.class_time,
+                branch: classData.branch
+              }
+            }
+          } else {
+            // Window not open - schedule silently
+            await scheduleBooking(classData)
+            console.log(`[Unskip] Scheduled class ${id} for ${bookingTime.toISOString()}`)
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to process unskipped class ${id}:`, error)
       }
     }
 

@@ -174,23 +174,33 @@ export const bookClassFunction = inngest.createFunction(
     // Step 3: Trigger GitHub Actions workflow
     console.log(`[Inngest] Triggering GitHub Actions workflow for class "${className}" (${classId})...`);
     const workflowResult = await step.run('trigger-github-actions', async () => {
-      const githubToken = process.env.GITHUB_TOKEN;
+      const { createAppAuth } = await import('@octokit/auth-app');
       const githubRepo = process.env.GITHUB_REPOSITORY || 'beerock/my-workout-scheduler';
 
-      if (!githubToken) {
-        throw new Error('GITHUB_TOKEN environment variable is required');
+      // Validate GitHub App credentials
+      if (!process.env.GITHUB_APP_ID || !process.env.GITHUB_APP_PRIVATE_KEY || !process.env.GITHUB_APP_INSTALLATION_ID) {
+        throw new Error('Missing GitHub App environment variables (GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, GITHUB_APP_INSTALLATION_ID)');
       }
 
       const [owner, repo] = githubRepo.split('/');
 
       try {
+        // Generate installation access token using GitHub App
+        const auth = createAppAuth({
+          appId: process.env.GITHUB_APP_ID,
+          privateKey: process.env.GITHUB_APP_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          installationId: process.env.GITHUB_APP_INSTALLATION_ID,
+        });
+
+        const { token } = await auth({ type: 'installation' });
+
         // Trigger the workflow using GitHub API
         const response = await fetch(
           `https://api.github.com/repos/${owner}/${repo}/actions/workflows/booking-automation.yml/dispatches`,
           {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${githubToken}`,
+              'Authorization': `Bearer ${token}`,
               'Accept': 'application/vnd.github+json',
               'X-GitHub-Api-Version': '2022-11-28',
               'Content-Type': 'application/json',

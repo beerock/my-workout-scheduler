@@ -33,6 +33,7 @@
   },
   "homepage": "https://github.com/beerock/my-workout-scheduler#readme",
   "dependencies": {
+    "@octokit/auth-app": "^8.1.2",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.80.0",
     "@types/node": "^24.10.0",

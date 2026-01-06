@@ -105,7 +105,9 @@ const envVars = [
   { name: 'RESEND_API_KEY', value: process.env.RESEND_API_KEY, sensitive: true },
   { name: 'RESEND_FROM_EMAIL', value: process.env.RESEND_FROM_EMAIL },
   { name: 'RESEND_FROM_NAME', value: process.env.RESEND_FROM_NAME },
-  { name: 'GITHUB_TOKEN', value: process.env.GITHUB_TOKEN, sensitive: true },
+  { name: 'GITHUB_APP_ID', value: process.env.GITHUB_APP_ID },
+  { name: 'GITHUB_APP_INSTALLATION_ID', value: process.env.GITHUB_APP_INSTALLATION_ID },
+  { name: 'GITHUB_APP_PRIVATE_KEY', value: process.env.GITHUB_APP_PRIVATE_KEY, sensitive: true },
   { name: 'GITHUB_REPOSITORY', value: process.env.GITHUB_REPOSITORY },
 ]
 

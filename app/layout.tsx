@@ -1,12 +1,34 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { sora, dmSans } from '@/lib/fonts'
+import { ToastProvider } from '@/contexts/ToastContext'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
-
 export const metadata: Metadata = {
-  title: 'My Workout Scheduler',
-  description: 'Automatically book gym classes when registration opens',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://myworkoutscheduler.com'),
+  title: {
+    default: 'My Workout Scheduler - Auto-Book Gym Classes',
+    template: '%s | My Workout Scheduler',
+  },
+  description: 'Never miss a popular gym class again. Set your schedule once and we automatically book your gym classes the instant registration opens. Free to use.',
+  keywords: ['gym booking', 'fitness class scheduler', 'automated booking', 'workout scheduler', 'class reservation', 'gym class automation'],
+  authors: [{ name: 'My Workout Scheduler' }],
+  creator: 'My Workout Scheduler',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    siteName: 'My Workout Scheduler',
+    title: 'My Workout Scheduler - Auto-Book Gym Classes',
+    description: 'Never miss a popular gym class again. Set your schedule once and we automatically book your gym classes the instant registration opens.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'My Workout Scheduler - Auto-Book Gym Classes',
+    description: 'Never miss a popular gym class again. Set your schedule once and we automatically book your gym classes the instant registration opens.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({
@@ -15,8 +37,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className={`${sora.variable} ${dmSans.variable}`}>
+      <body className="font-dm-sans antialiased">
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+      </body>
     </html>
   )
 }

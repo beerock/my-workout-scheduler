@@ -1,10 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
-import LogoutButton from '@/components/LogoutButton'
-import PauseToggle from '@/components/PauseToggle'
+import type { Metadata } from 'next'
+import PauseBanner from '@/components/PauseBanner'
+import PausedActiveStatCard from '@/components/PausedActiveStatCard'
 import EmailVerificationNotification from '@/components/EmailVerificationNotification'
+import GetStartedBanner from '@/components/GetStartedBanner'
+import SuccessRateCard from '@/components/SuccessRateCard'
 import { getUserSettings } from '@/app/actions/user-settings'
+import { getDashboardStats } from '@/app/actions/dashboard-stats'
+import { Card, Divider } from '@/components/ui'
+import EditorialLayout from '@/components/EditorialLayout'
+import NextClassCard from '@/components/NextClassCard'
+import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Dashboard',
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -14,88 +26,241 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  // Get user settings for pause toggle
-  const settingsResult = await getUserSettings()
+  // Get user settings and dashboard stats in parallel
+  const [settingsResult, statsResult] = await Promise.all([
+    getUserSettings(),
+    getDashboardStats(),
+  ])
+
   const settings = settingsResult.success ? settingsResult.settings : null
+  const stats = statsResult.success ? statsResult.stats : null
+  const isPaused = settings?.schedule_paused ?? false
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <h1 className="text-xl font-semibold text-gray-900">
-              My Workout Scheduler
-            </h1>
-            <LogoutButton />
+    <EditorialLayout
+      title="Dashboard"
+      subtitle={`Welcome back! Your automated booking is ${isPaused ? 'paused' : 'active'}.`}
+      actions={
+        // Show inline pause control in header - only when classes exist AND not paused
+        // (When paused, the content area banner provides the Resume action)
+        (stats?.activeClasses ?? 0) > 0 && !isPaused && (
+          <PauseBanner isPaused={isPaused} variant="inline" />
+        )
+      }
+    >
+      <Suspense fallback={null}>
+        <EmailVerificationNotification />
+      </Suspense>
+
+      {/* Pause Banner OR Next Class Card OR Get Started Banner - mutually exclusive */}
+      {/* Show GetStartedBanner when no classes, regardless of pause state */}
+      {(stats?.activeClasses ?? 0) === 0 ? (
+        <GetStartedBanner />
+      ) : isPaused ? (
+        <PauseBanner isPaused={isPaused} variant="banner" />
+      ) : stats?.nextBooking ? (
+        <div className="mb-6">
+          <NextClassCard
+            dayTime={stats.nextBooking.dayTime}
+            classType={stats.nextBooking.className}
+            branch={stats.nextBooking.branch}
+            hoursUntil={stats.nextBooking.hoursUntil}
+            bookingStatus={stats.nextBooking.bookingStatus}
+          />
+        </div>
+      ) : null}
+
+      {/* Stats Grid - Asymmetric layout with Success Rate as hero */}
+      {stats && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-6">
+          {/* Hero Stat: Success Rate - spans 2 cols */}
+          <SuccessRateCard
+            successRate={stats.successRate}
+            totalAttempts={stats.totalBookingAttempts}
+            animationDelay="0.1s"
+          />
+
+          {/* Standard Stat: Active Classes - Shows paused variant with Resume when schedule is paused */}
+          {isPaused ? (
+            <PausedActiveStatCard
+              activeCount={stats.activeClasses}
+              variant="standard"
+              animationDelay="0.15s"
+            />
+          ) : (
+            <div
+              className="opacity-0 animate-fade-in-up"
+              style={{ animationDelay: '0.15s' }}
+            >
+              <div
+                className="relative overflow-hidden bg-white rounded-2xl p-5 sm:p-6 h-full hover:-translate-y-1 transition-all duration-300"
+                style={{
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(0, 0, 0, 0.06), 0 8px 16px rgba(0, 0, 0, 0.06)',
+                }}
+              >
+                {/* Subtle accent */}
+                <div
+                  className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-500/10 to-transparent rounded-full blur-2xl"
+                  aria-hidden="true"
+                />
+
+                <div className="relative">
+                  {/* Icon badge */}
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary-100 flex items-center justify-center mb-3">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+
+                  {/* Label */}
+                  <p className="font-dm-sans text-xs sm:text-sm text-gray-500 uppercase tracking-wider mb-1">
+                    Active Classes
+                  </p>
+
+                  {/* Value */}
+                  <p className="font-sora text-2xl sm:text-3xl font-bold text-gray-900">
+                    {stats.activeClasses}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Standard Stat: This Week */}
+          <div
+            className="opacity-0 animate-fade-in-up"
+            style={{ animationDelay: '0.2s' }}
+          >
+            <div
+              className="relative overflow-hidden bg-white rounded-2xl p-5 sm:p-6 h-full hover:-translate-y-1 transition-all duration-300"
+              style={{
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(0, 0, 0, 0.06), 0 8px 16px rgba(0, 0, 0, 0.06)',
+              }}
+            >
+              {/* Subtle accent */}
+              <div
+                className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-500/10 to-transparent rounded-full blur-2xl"
+                aria-hidden="true"
+              />
+
+              <div className="relative">
+                {/* Icon badge */}
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary-100 flex items-center justify-center mb-3">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+
+                {/* Label */}
+                <p className="font-dm-sans text-xs sm:text-sm text-gray-500 uppercase tracking-wider mb-1">
+                  This Week
+                </p>
+
+                {/* Value */}
+                <p className="font-sora text-2xl sm:text-3xl font-bold text-gray-900">
+                  {stats.bookingsThisWeek}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </nav>
+      )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h2>
-              <p className="text-gray-600">
-                Welcome, {user.email}! Manage your workout schedule and settings.
-              </p>
-            </div>
-            <PauseToggle initialPaused={settings?.schedule_paused ?? false} />
-          </div>
+      {/* Editorial Divider */}
+      <Divider variant="editorial" className="my-6 sm:my-8" />
 
-          <Suspense fallback={null}>
-            <EmailVerificationNotification />
-          </Suspense>
-
-          <div className="space-y-4">
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Schedule Management</h3>
-              <div className="space-y-2">
-                <a
-                  href="/dashboard/schedule"
-                  className="block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-center"
-                >
-                  Manage Schedule
-                </a>
-                <p className="text-sm text-gray-500 mt-2">
-                  Add, edit, and manage your recurring class schedule
+      {/* Quick Actions Grid - Mobile: 1 col, Desktop: 3 cols */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        {/* Schedule Management */}
+        <Link href="/dashboard/schedule" className="group">
+          <Card
+            variant="outlined"
+            padding="md"
+            hover
+            className="h-full opacity-0 animate-fade-in-up border-l-4 border-l-primary-500 group-hover:border-l-primary-600 transition-colors"
+            style={{ animationDelay: '0.3s' }}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary-200 transition-colors">
+                <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-sora text-lg font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
+                  My Schedule
+                </h3>
+                <p className="font-dm-sans text-sm text-gray-500 mt-1">
+                  Add, edit, and manage your recurring classes
                 </p>
               </div>
+              <svg className="w-5 h-5 text-gray-400 group-hover:text-primary-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </div>
+          </Card>
+        </Link>
 
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Gym Credentials</h3>
-              <div className="space-y-2">
-                <a
-                  href="/dashboard/credentials"
-                  className="block px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-center"
-                >
-                  Manage Gym Credentials
-                </a>
-                <p className="text-sm text-gray-500 mt-2">
-                  Store your gym website login credentials securely
+        {/* Gym Credentials */}
+        <Link href="/dashboard/credentials" className="group">
+          <Card
+            variant="outlined"
+            padding="md"
+            hover
+            className="h-full opacity-0 animate-fade-in-up border-l-4 border-l-secondary-500 group-hover:border-l-secondary-600 transition-colors"
+            style={{ animationDelay: '0.35s' }}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-secondary-100 flex items-center justify-center flex-shrink-0 group-hover:bg-secondary-200 transition-colors">
+                <svg className="w-6 h-6 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-sora text-lg font-bold text-gray-900 group-hover:text-secondary-600 transition-colors">
+                  Gym Credentials
+                </h3>
+                <p className="font-dm-sans text-sm text-gray-500 mt-1">
+                  Securely store your gym login credentials
                 </p>
               </div>
+              <svg className="w-5 h-5 text-gray-400 group-hover:text-secondary-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </div>
+          </Card>
+        </Link>
 
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Profile Settings</h3>
-              <div className="space-y-2">
-                <a
-                  href="/dashboard/profile"
-                  className="block px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-center"
-                >
-                  Manage Profile
-                </a>
-                <p className="text-sm text-gray-500 mt-2">
-                  Update email, password, and account settings
+        {/* Profile Settings */}
+        <Link href="/dashboard/profile" className="group">
+          <Card
+            variant="outlined"
+            padding="md"
+            hover
+            className="h-full opacity-0 animate-fade-in-up border-l-4 border-l-success-500 group-hover:border-l-success-600 transition-colors"
+            style={{ animationDelay: '0.4s' }}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-success-100 flex items-center justify-center flex-shrink-0 group-hover:bg-success-200 transition-colors">
+                <svg className="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-sora text-lg font-bold text-gray-900 group-hover:text-success-600 transition-colors">
+                  Profile
+                </h3>
+                <p className="font-dm-sans text-sm text-gray-500 mt-1">
+                  Update email, password, and settings
                 </p>
               </div>
+              <svg className="w-5 h-5 text-gray-400 group-hover:text-success-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </div>
-          </div>
-        </div>
-      </main>
-    </div>
+          </Card>
+        </Link>
+      </div>
+    </EditorialLayout>
   )
 }
-

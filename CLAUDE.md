@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.12):** Production-ready with skip edit confirmation and intelligent pause/inactive interaction using three-zone cleanup logic.
+**Current Version (v2.24):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic (filters inactive classes, shows week after skip, accurate countdown display, correct booking status for specific occurrence), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), improved email handling UX (hedged messaging for signup, duplicate email detection on profile change), accurate all-time success rate calculation (includes all booking attempts regardless of class active status, excludes skipped/pending), and GitHub App authentication (auto-rotating tokens, no manual renewal, better security).
 
 ---
 
@@ -230,6 +230,285 @@ Skip buttons disabled when paused/inactive with tooltips. Uses `calculateBooking
 **See detailed docs:** `docs/ENVIRONMENT_VARIABLES_STRATEGY.md`, `docs/ENV_QUICK_REFERENCE.md`, `.env.example`
 
 **Files:** `lib/env-utils.ts`
+
+### 13. Design System v2 & Component Library (CRITICAL)
+
+**Version:** v2.22 (January 2026)
+**Status:** MANDATORY for all frontend AND email development
+
+**All UI/UX work MUST use Design System v2 patterns and the component library.**
+
+#### Using the Frontend Design Skill (IMPORTANT)
+
+For any new visual design work (pages, components, email templates, redesigns):
+```
+/frontend-design
+```
+This skill ensures production-grade, polished designs that avoid generic AI aesthetics.
+
+#### Component Library: `components/ui/`
+
+Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'`
+
+**Available Components (18 total):**
+
+| Category | Components |
+|----------|------------|
+| Core | Button, Badge, Card, Modal |
+| Form | Input, Select, Checkbox, FormField |
+| Navigation | DropdownMenu, Tabs (with TabPanel) |
+| Feedback | Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard) |
+| Display | StatusIndicator, StatCard, Divider |
+| Layout | Header, Footer |
+
+#### Design Tokens (Tailwind Config)
+
+**Typography:** `font-sora` (headings), `font-dm-sans` (body)
+
+**Colors:**
+- Primary: `primary-*` (#1a6fff) - main actions
+- Success: `success-*` (#00c853) - confirmations, booked status
+- Warning: `warning-*` (#ff9500) - pending status
+- Danger: `danger-*` (#f43f5e) - destructive actions, failed status
+- Purple: `purple-*` (#8B5CF6) - achievements, streaks, premium
+
+**Visual Effects:**
+- Gradients: `bg-gradient-primary`, `bg-gradient-success`, `bg-gradient-danger`, `bg-gradient-purple`
+- Shadows: `shadow-card`, `shadow-floating`, `shadow-btn-primary`, `shadow-btn-success`
+- Clip-paths: `clip-diagonal-badge`, `clip-diagonal-card-tr`, `clip-diagonal-card-br`
+
+#### Development Rules
+
+**Web UI:**
+1. ❌ NEVER create inline buttons - use `<Button>` component
+2. ❌ NEVER create inline form fields - use `<Input>`, `<Select>`, `<Checkbox>`
+3. ❌ NEVER use arbitrary colors - use design tokens from tailwind.config.ts
+4. ❌ NEVER create inline footers - use `<Footer>` component on ALL pages
+5. ✅ ALWAYS import from `components/ui/`
+6. ✅ ALWAYS run `/frontend-design` skill for new visual design work
+7. ✅ ALWAYS use mobile-first responsive classes (design for 320px, enhance with sm:/lg:)
+8. ✅ ALWAYS add `overflow-x-hidden` to layout root containers (prevents mobile horizontal scroll)
+9. ✅ ALWAYS include `<Footer>` at bottom of every page
+
+**Layout Components:**
+- **Header:** Use `<Header>` for dashboard/protected pages (via EditorialLayout). Auth pages and landing page have custom headers.
+- **Footer:** Use `<Footer>` on ALL pages. Props: `showTagline` (default: true), `className`, `style`
+
+```tsx
+// Standard footer with tagline
+<Footer />
+
+// Footer without tagline
+<Footer showTagline={false} />
+```
+
+**Mobile-First Responsive Patterns:**
+```tsx
+// Grid: Single column on mobile, expand on larger screens
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+
+// Padding: Tighter on mobile
+<div className="p-4 sm:p-6 lg:p-8">
+
+// Typography: Larger hero text on mobile when visual elements hidden
+<p className="text-5xl sm:text-4xl lg:text-7xl">  // 5xl mobile, scales down then up
+
+// Visibility: Hide non-essential elements on mobile
+<div className="hidden sm:block">  // Only visible sm+
+<div className="hidden sm:flex">   // Flex only on sm+
+
+// Buttons: Allow wrapping, responsive padding
+<div className="flex flex-wrap gap-2 sm:gap-3">
+<button className="px-3 sm:px-5 py-2 sm:py-2.5">
+```
+
+**Adaptive Component Example - SuccessRateCard:**
+- Mobile (< 640px): Large percentage as hero, gauge hidden, legend hidden
+- Tablet (640px+): Gauge visible (144px), legend visible
+- Desktop (1024px+): Prominent gauge (240px), full visualization
+
+**Email Templates:**
+- **Location:** `lib/email/templates/`
+- ✅ Use design token colors (primary #1a6fff, success #00c853, warning #ff9500, danger #f43f5e)
+- ✅ Follow diagonal accent aesthetic where applicable
+- ✅ Match responsive layout patterns from existing templates
+- ✅ Test in Gmail/Outlook/Apple Mail
+
+**UX Decision:** Buttons use `rounded-lg` (not diagonal) for clear affordance. Only badges use diagonal clip-path.
+
+**Documentation Maintenance:**
+When making significant changes to design tokens, components, or UI patterns:
+1. ✅ Update `docs/DESIGN_SYSTEM.md` for token/pattern changes (colors, shadows, utilities)
+2. ✅ Update `docs/COMPONENT_LIBRARY.md` for component API changes (new props, variants)
+3. ✅ Update CLAUDE.md section 13 version reference if docs updated
+4. ✅ Update PRD design system section for major changes (component counts, features)
+5. ✅ Update `app/prototype/design-system-components/page.tsx` for new components or significant component updates
+6. ✅ Update version number in prototype page and `components/PrototypeNav.tsx` header (must match `docs/DESIGN_SYSTEM.md` version)
+
+**Pre-Launch Items:**
+When you identify tasks that must be completed before MVP launch, categorize them:
+
+**Configuration/Infrastructure Tasks** → Add to `docs/PRE_LAUNCH_CHECKLIST.md`:
+1. ✅ Add to appropriate section in PRE_LAUNCH_CHECKLIST.md
+2. ✅ Use for config changes, verifications, or infrastructure setup
+3. ✅ Examples: Environment variables, rate limits, API keys, domain verification, security settings
+
+**Development/Code Tasks** → Add to `docs/BACKLOG.md`:
+1. ✅ Add to "Pre-MVP Development Tasks" section at top of BACKLOG.md
+2. ✅ Include: Status, Priority, Summary, Location reference to full section
+3. ✅ Mark the full detailed section in backlog with "PRE-MVP" status
+4. ✅ Examples: New features, password requirements, contact forms, testing tasks
+
+**When to update documentation:**
+- Do this at the end of the session when updating documentation
+- Keep PRE_LAUNCH_CHECKLIST.md for system configuration only
+- Keep BACKLOG.md "Pre-MVP Development Tasks" section for code implementation
+
+#### Reference Prototypes
+
+- Main hub: `/prototype` - Design system showcase
+- Scheduler redesign: `/prototype/scheduler-v2`
+- Component showcase: `/prototype/design-system-components`
+
+**Files:**
+- `tailwind.config.ts` - Design token definitions
+- `components/ui/index.ts` - Barrel export (import all components from here)
+- `docs/DESIGN_SYSTEM.md` - Complete design system documentation
+- `docs/COMPONENT_LIBRARY.md` - Component usage guide with full API docs
+
+### 14. Immediate Scheduling (v2.13)
+
+Users can trigger immediate scheduling by unpausing, activating a class, or removing a skip. System automatically schedules classes without waiting for midnight UTC daily scheduler.
+
+**Two scheduling modes:**
+
+**Silent Scheduling (Future Windows):**
+- Booking window not yet open (`bookingTime > now`)
+- Call `scheduleBooking()` in background
+- No user dialogs or interruption
+- Most common case
+
+**User Prompt (Open Windows):**
+- Booking window already open (`bookingTime <= now`)
+- Show "Book Now" dialog with class details
+- User decides: Book immediately or skip this week
+- Sequential dialogs for multiple classes (unpause scenario)
+
+**Implementation locations:**
+
+**Backend:**
+- `app/actions/user-settings.ts` - `updateSchedulePaused()` checks all active classes when unpausing
+- `app/actions/recurring-classes.ts` - `toggleRecurringClassActive()` and `setSkipNextOccurrence()` check single class
+- Return `classesWithOpenWindows` or `bookingWindowAlreadyOpen` + `classDetails` for UI prompts
+
+**Frontend:**
+- `components/PauseToggle.tsx` - Sequential dialogs for multiple classes (progress indicator)
+- `components/SkipButton.tsx` - Single dialog for unskip
+- `components/ScheduleList.tsx` - Single dialog for activate
+- `components/RecurringClassForm.tsx` - Existing dialog updated with class details
+
+**Dialog format:** "Booking window is open for **{CLASS_TYPE} - {DAY} {TIME} @ {BRANCH}**. Would you like to book now?"
+
+**Duplicate prevention:** `scheduleBooking()` sends `booking/cancel` first, then new event. Only one event exists per class+date.
+
+**Files:** `app/actions/user-settings.ts`, `app/actions/recurring-classes.ts`, `components/PauseToggle.tsx`, `components/SkipButton.tsx`, `components/ScheduleList.tsx`, `lib/inngest/scheduler.ts` (uses existing functions)
+
+### 15. SEO & Metadata
+
+Comprehensive SEO implementation with per-page metadata, dynamic sitemap, robots.txt, and social sharing images.
+
+**Metadata Strategy:**
+- **Public pages** (/, /login, /signup): Full SEO metadata with descriptions, OG tags, canonical URLs
+- **Dashboard pages** (/dashboard/*): Titles only (for browser tabs/UX), not indexed
+- **Auth utility pages** (forgot-password, reset-password, verify-email): Noindex
+- **Prototype pages** (/prototype/*): Noindex
+
+**Title Template:** `%s | My Workout Scheduler` (e.g., "Dashboard | My Workout Scheduler")
+
+**Key Files:**
+- `app/layout.tsx` - Root metadata with metadataBase, title template, OG defaults
+- `app/sitemap.ts` - Dynamic sitemap (/, /login, /signup)
+- `app/robots.ts` - Blocks /dashboard/, /prototype/, /api/
+- `app/icon.svg`, `app/icon.tsx`, `app/apple-icon.tsx` - Favicon assets
+- `app/opengraph-image.tsx`, `app/twitter-image.tsx` - Social sharing images
+
+**Client Component Metadata Pattern:**
+For client components (auth pages, prototype pages), create `layout.tsx` files to export metadata:
+```tsx
+// app/(auth)/login/layout.tsx
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Sign In',
+  description: 'Sign in to manage your automated gym class bookings.',
+}
+
+export default function LoginLayout({ children }: { children: React.ReactNode }) {
+  return children
+}
+```
+
+**Environment Variable:** `NEXT_PUBLIC_SITE_URL` - Used for sitemap, canonical URLs, OG images
+
+### 16. Email Handling UX (v2.20)
+
+Improved UX for email-related scenarios that balances security with user experience.
+
+**Signup with Existing Email (Hedged Messaging):**
+
+Supabase Auth intentionally doesn't reveal if an email exists (prevents email enumeration attacks). The verify-email page uses hedged language to handle both new and existing email scenarios:
+
+- **Headline:** "Check your inbox" (not "We sent an email")
+- **Copy:** "If this is a new account, we've sent a verification link to:"
+- **Guidance:** "Already have an account?" section explains why email might not arrive
+- **Actions:** Prominent "Sign in instead" button + "Forgot password?" link
+
+**Key UX elements:**
+- 1-hour link expiration notice with clock icon
+- Collapsible tips section ("Didn't receive an email?")
+- Resend button with 60-second cooldown
+- "Wrong email? Sign up again" link
+
+**Profile Email Change (Duplicate Detection):**
+
+When changing email in Profile, Supabase errors for duplicate emails are caught and shown as user-friendly warnings:
+
+- **Error code:** `email_already_exists` returned from server action
+- **Display:** Warning Alert (amber) instead of error Alert (red)
+- **Copy:** "This email is already associated with another account. Please choose a different email address."
+
+**Why this design:**
+- Signup: Security-first (no email enumeration) with helpful UX guidance
+- Profile: UX-first (explicit feedback) since user is already authenticated
+
+**Files:**
+- `app/(auth)/verify-email/page.tsx` - Verify email page with hedged messaging
+- `app/actions/profile.ts` - Duplicate email detection in `updateEmail()`
+- `components/ProfileForm.tsx` - Warning alert for duplicate emails
+
+### 17. Dashboard Success Rate Calculation (v2.22)
+
+The SuccessRateCard displays all-time booking system reliability to build user trust.
+
+**Formula:**
+```
+Success Rate = (confirmed + waitlisted) / (confirmed + waitlisted + failed) × 100
+```
+
+**Scope:**
+- **All classes** - Includes active AND inactive class booking history
+- **All-time** - No time window limit (previously was 30 days only)
+- **Excludes skipped** - User choice, not system failure
+- **Excludes pending** - Not finalized attempts
+
+**Rationale:** Deactivating a class doesn't remove its successful bookings from the calculation. This reflects true system reliability over time, not just current schedule health.
+
+**Total count context:** Shows "X bookings total" to give meaning to the percentage (95% of 150 bookings vs 95% of 3 bookings).
+
+**Files:**
+- `app/actions/dashboard-stats.ts` - `getDashboardStats()` calculates rate via join
+- `components/SuccessRateCard.tsx` - Displays rate with totalAttempts prop
+- `app/dashboard/page.tsx` - Passes stats to component
 
 ---
 
@@ -455,4 +734,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** November 29, 2025 (v2.11)
+**Last Updated:** January 4, 2026 (v2.23)

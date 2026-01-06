@@ -1,9 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import LogoutButton from '@/components/LogoutButton'
+import type { Metadata } from 'next'
 import GymCredentialsForm from '@/components/GymCredentialsForm'
 import { getGymCredentials } from '@/app/actions/gym-credentials'
-import Link from 'next/link'
+import EditorialLayout from '@/components/EditorialLayout'
+import { Card, Badge } from '@/components/ui'
+
+export const metadata: Metadata = {
+  title: 'Gym Credentials',
+}
 
 export default async function CredentialsPage() {
   const supabase = await createClient()
@@ -15,46 +20,65 @@ export default async function CredentialsPage() {
 
   // Get existing credentials
   const { credentials } = await getGymCredentials()
+  const hasCredentials = !!credentials
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-xl font-semibold text-gray-900">
-                My Workout Scheduler
-              </Link>
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-600">Gym Credentials</span>
-            </div>
-            <LogoutButton />
+    <EditorialLayout
+      title="Gym Credentials"
+      subtitle="Store your gym login securely. Your password is encrypted before being stored."
+      backLink={{ href: '/dashboard', label: 'Dashboard' }}
+    >
+      {/* Security Notice */}
+      <Card
+        variant="outlined"
+        padding="md"
+        className="mb-6 border-l-4 border-l-primary-500 bg-gradient-to-br from-primary-50/50 to-blue-50/30 opacity-0 animate-fade-in-up"
+      >
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
           </div>
-        </div>
-      </nav>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Gym Credentials</h1>
-            <p className="text-gray-600 text-sm">
-              Store your gym website login credentials securely. Your password is encrypted before being stored.
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-sora text-base font-bold text-gray-900">
+                Secure Storage
+              </h3>
+              <Badge variant="success" size="sm">AES-256 Encrypted</Badge>
+            </div>
+            <p className="font-dm-sans text-sm text-gray-600">
+              Your gym password is encrypted with AES-256-GCM before storage. We never store plain text passwords.
             </p>
           </div>
-
-          <GymCredentialsForm initialCredentials={credentials} />
         </div>
+      </Card>
 
-        <div className="mt-6">
-          <Link
-            href="/dashboard"
-            className="text-blue-600 hover:text-blue-700 text-sm"
-          >
-            ← Back to Dashboard
-          </Link>
+      {/* Status Card */}
+      <Card
+        variant="outlined"
+        padding="md"
+        className="mb-6 opacity-0 animate-fade-in-up"
+        style={{ animationDelay: '0.1s' }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-3 h-3 rounded-full ${hasCredentials ? 'bg-success-500' : 'bg-gray-300'}`} />
+            <span className="font-dm-sans text-sm text-gray-700">
+              {hasCredentials ? 'Credentials configured' : 'No credentials saved yet'}
+            </span>
+          </div>
+          <Badge variant={hasCredentials ? 'success' : 'default'} size="sm">
+            {hasCredentials ? 'Active' : 'Not Set'}
+          </Badge>
         </div>
-      </main>
-    </div>
+      </Card>
+
+      {/* Credentials Form */}
+      <Card className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
+        <GymCredentialsForm initialCredentials={credentials} />
+      </Card>
+    </EditorialLayout>
   )
 }
 
