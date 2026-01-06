@@ -608,7 +608,11 @@ booking\_attempts (
 - Gym credentials encrypted using application-level AES-256-GCM encryption (Node.js crypto module)
   - Encryption key stored in environment variables (never sent to database)
   - Password encrypted before storage, decrypted only when needed for automation
-- GitHub Personal Access Token with `workflow` scope for triggering GitHub Actions
+- GitHub App authentication for triggering GitHub Actions workflows
+  - Repository-scoped permissions (Actions: Read/Write only)
+  - Auto-rotating installation tokens (1-hour expiration, generated on-demand)
+  - No manual token renewal required (eliminates expiration management)
+  - Better security than personal access tokens (minimal permissions, single repository)
 - GitHub Actions secrets for Supabase and encryption keys
 - HTTPS everywhere (Vercel default)
 - Vercel environment variables for production (Supabase, Inngest, GitHub credentials)
@@ -622,7 +626,9 @@ booking\_attempts (
 - `ENCRYPTION_KEY` - AES-256-GCM encryption key for gym credentials
 - `INNGEST_EVENT_KEY` - Inngest event key for sending events
 - `INNGEST_SIGNING_KEY` - Inngest signing key for webhook verification
-- `GITHUB_TOKEN` - GitHub Personal Access Token with `workflow` and `repo` scopes
+- `GITHUB_APP_ID` - GitHub App ID for workflow authentication (replaces personal access token)
+- `GITHUB_APP_INSTALLATION_ID` - GitHub App installation ID
+- `GITHUB_APP_PRIVATE_KEY` - GitHub App private key (auto-rotating tokens, no manual renewal)
 - `GITHUB_REPOSITORY` - GitHub repository (e.g., `beerock/my-workout-scheduler`)
 
 **GitHub Actions Secrets:**

@@ -91,7 +91,7 @@ User creates/edits class in Next.js
 10. ✅ Configured all environment variables
 
 **Environment Variables Required:**
-- Vercel: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `GITHUB_TOKEN`, `GITHUB_REPOSITORY`
+- Vercel: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_REPOSITORY`
 - GitHub Actions: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ENCRYPTION_KEY`
 
 **Why Inngest vs Other Options:**
