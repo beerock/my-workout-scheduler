@@ -4,6 +4,54 @@ This document contains features and improvements that are planned for future imp
 
 ---
 
+## 🚀 Pre-Launch Requirements
+
+**⚠️ BEFORE LAUNCHING TO PRODUCTION:** Complete all items below
+
+### Configuration & Infrastructure
+See [PRE_LAUNCH_CHECKLIST.md](PRE_LAUNCH_CHECKLIST.md) for system configuration, rate limits, environment variables, and testing.
+
+**Status:** 🚧 NOT PRODUCTION READY
+
+---
+
+### Pre-MVP Development Tasks
+
+**These features/tasks require code implementation before MVP launch:**
+
+1. **Password Security Requirements** (BACKLOG line ~2603)
+   - **Status:** PRE-MVP - MUST COMPLETE BEFORE LAUNCH
+   - **Priority:** High (security requirement)
+   - **Summary:** Implement industry-standard password requirements (currently only requires 8 chars)
+   - **Location:** See "Password Security Improvements (v2.10)" section below
+
+2. **Contact/Support Form** (BACKLOG line ~3028)
+   - **Status:** PRE-MVP - MUST COMPLETE BEFORE LAUNCH
+   - **Priority:** High (required for user support and trust)
+   - **Summary:** Add help@beerock.com contact form or direct email link
+   - **Location:** See "Add Contact/Support Form Page" section below
+
+3. **Skip/Pause Interaction Behavior** (BACKLOG line ~3604)
+   - **Status:** PRE-MVP - MUST DETERMINE BEFORE LAUNCH
+   - **Summary:** Define behavior when skip_next_occurrence interacts with pause/unpause
+   - **Location:** See "Skip Next Interaction with Pause/Unpause" section below
+
+4. **Three-Zone Skip Cleanup Testing** (BACKLOG line ~3918)
+   - **Status:** PRE-MVP - PRODUCTION TESTING REQUIRED
+   - **Priority:** High (must verify before MVP launch)
+   - **Summary:** Test skip cleanup logic in production with real time-based zones
+   - **Location:** See "Test Three-Zone Skip Cleanup Logic" section below
+
+5. **Review Support Email** (BACKLOG line ~4252)
+   - **Status:** PRE-MVP - MUST REVIEW BEFORE LAUNCH
+   - **Priority:** Low (quick review, not blocking)
+   - **Summary:** Confirm help@beerock.com is correct or update if needed
+   - **Location:** See "Review Support Email Before MVP Launch" section below
+
+**Note:** This list is maintained manually. When adding new pre-MVP development tasks to the backlog, add them to this section AND mark the full section with "PRE-MVP" status.
+
+---
+
 ## Operational Notes & Reminders
 
 ### Production Deployment Status

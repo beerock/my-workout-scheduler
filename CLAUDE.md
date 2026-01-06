@@ -345,6 +345,25 @@ When making significant changes to design tokens, components, or UI patterns:
 5. ✅ Update `app/prototype/design-system-components/page.tsx` for new components or significant component updates
 6. ✅ Update version number in prototype page and `components/PrototypeNav.tsx` header (must match `docs/DESIGN_SYSTEM.md` version)
 
+**Pre-Launch Items:**
+When you identify tasks that must be completed before MVP launch, categorize them:
+
+**Configuration/Infrastructure Tasks** → Add to `docs/PRE_LAUNCH_CHECKLIST.md`:
+1. ✅ Add to appropriate section in PRE_LAUNCH_CHECKLIST.md
+2. ✅ Use for config changes, verifications, or infrastructure setup
+3. ✅ Examples: Environment variables, rate limits, API keys, domain verification, security settings
+
+**Development/Code Tasks** → Add to `docs/BACKLOG.md`:
+1. ✅ Add to "Pre-MVP Development Tasks" section at top of BACKLOG.md
+2. ✅ Include: Status, Priority, Summary, Location reference to full section
+3. ✅ Mark the full detailed section in backlog with "PRE-MVP" status
+4. ✅ Examples: New features, password requirements, contact forms, testing tasks
+
+**When to update documentation:**
+- Do this at the end of the session when updating documentation
+- Keep PRE_LAUNCH_CHECKLIST.md for system configuration only
+- Keep BACKLOG.md "Pre-MVP Development Tasks" section for code implementation
+
 #### Reference Prototypes
 
 - Main hub: `/prototype` - Design system showcase
