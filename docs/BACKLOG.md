@@ -20,7 +20,7 @@ See [PRE_LAUNCH_CHECKLIST.md](PRE_LAUNCH_CHECKLIST.md) for system configuration,
 **These features/tasks require code implementation before MVP launch:**
 
 1. **Password Security Requirements** (BACKLOG line ~2603)
-   - **Status:** PRE-MVP - MUST COMPLETE BEFORE LAUNCH
+   - **Status:** ✅ COMPLETED (v2.25) - January 2026
    - **Priority:** High (security requirement)
    - **Summary:** Implement industry-standard password requirements (currently only requires 8 chars)
    - **Location:** See "Password Security Improvements (v2.10)" section below
@@ -2112,7 +2112,7 @@ The following critical improvements have been implemented:
 ### Remaining (Priority 2 - Post-MVP)
 
 1. **Password Strength Meter**
-   - **Status**: Backlogged
+   - **Status**: ✅ COMPLETED (v2.25)
    - **Description**: Visual indicator showing password strength (Weak/Fair/Good/Strong)
    - **Library**: Consider using zxcvbn for strength calculation
    - **UI**: Progress bar below password field with color coding
@@ -2128,7 +2128,7 @@ The following critical improvements have been implemented:
    - **Benefit**: Keeps database clean, prevents email squatting
 
 3. **Password Complexity Requirements**
-   - **Status**: Backlogged
+   - **Status**: ✅ COMPLETED (v2.25)
    - **Description**: Enforce minimum password complexity rules
    - **Requirements**:
      - At least 1 uppercase letter
@@ -2648,7 +2648,7 @@ APPLE_PRIVATE_KEY=... (or path to .p8 file)
 ## Password Security Requirements (Pre-MVP)
 
 ### Overview
-**STATUS: PRE-MVP - MUST COMPLETE BEFORE LAUNCH**
+**STATUS: ✅ COMPLETED (v2.25) - January 2026**
 
 Implement industry-standard password security requirements to protect user accounts. Currently, passwords only require 8 characters with no complexity requirements. While this is a casual site without highly sensitive data, basic password security is essential.
 
@@ -3053,21 +3053,9 @@ export function validatePassword(password: string): PasswordValidation {
 - "Suggest Strong Password" button
 
 ### Status
-**Status**: Pre-MVP - Must be completed before launch
+**Status**: ✅ COMPLETED (v2.25) - January 2026
 **Priority**: High (security requirement)
-**Last Updated**: November 19, 2025
-**Blocks**: MVP launch
-**Next Steps**:
-1. Create password validation utility (`lib/password-validation.ts`)
-2. Update signup page with requirements and validation
-3. Update profile password change with validation
-4. Implement forced password reset for existing users with weak passwords
-5. Add server-side validation to all password entry points
-6. Test all password flows thoroughly
-7. Document password requirements for users
-
-**Timeline:** Should be completed before MVP ships to production users
-
+**Last Updated**: January 6, 2026
 ---
 
 ## Contact/Support Form (Pre-MVP)

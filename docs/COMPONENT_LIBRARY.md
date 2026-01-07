@@ -4,8 +4,8 @@
 
 This document provides complete API documentation, usage examples, and best practices for all reusable UI components in the My Workout Scheduler design system.
 
-**Version:** 2.22
-**Last Updated:** January 4, 2026
+**Version:** 2.25
+**Last Updated:** January 6, 2026
 **Location:** `components/ui/`
 
 ---
@@ -1309,6 +1309,23 @@ The `showNativeValidation` prop integrates HTML5 browser validation with the com
 - ✅ `aria-invalid` set when error present
 - ✅ `aria-describedby` links to error/hint text
 - ✅ Focus ring visible for keyboard navigation
+
+
+### Form Validation Patterns
+
+**See also:** Section 18 in CLAUDE.md for complete implementation details.
+
+The Input component is used with consistent validation patterns across all forms. Key patterns include:
+
+1. **Email Validation (On Blur)** - Validate format after user leaves field, not on every keystroke
+2. **Password Strength Meter** - 4-level visualization (Weak/Fair/Good/Strong) with requirements checklist
+3. **Confirm Password Matching** - Real-time feedback with success state showing "Passwords match" + checkmark
+4. **Form Reset Keys** - Use \`key={\`field-\${formKey}\`}\` pattern to reset touched state after submission
+5. **Show/Hide Password** - Eye icon in \`rightIcon\` prop with aria-labels for accessibility
+
+**Validation utilities:** \`lib/validation.ts\` provides shared \`validateEmail()\` and \`validatePassword()\` functions used consistently across client and server.
+
+**Forms using these patterns:** Signup, Login, Reset Password, Profile, Gym Credentials, Recurring Classes
 
 ---
 
@@ -2666,7 +2683,7 @@ Before shipping a component:
 
 ## Version History
 
-**v2.22 (January 4, 2026):**
+**v2.22 (January 6, 2026):**
 - **Button:** Added 3 new variants (`outline-primary`, `outline-danger`, `purple`)
 - **Badge:** Added `diagonal` prop (default: true) and `purple` variant
 - **Input:** Added `showNativeValidation` prop for browser validation API
@@ -2675,13 +2692,13 @@ Before shipping a component:
 - Synchronized with DESIGN_SYSTEM.md v2.22
 - Total: 20 components documented
 
-**v2.19 (January 4, 2026):**
+**v2.19 (January 6, 2026):**
 - Added full SuccessRateCard documentation with API, usage, and calculation logic
 - Documented new `totalAttempts` prop for showing booking count context
 - Added to Table of Contents under Feature Components
 - Total: 20 components documented
 
-**v2.18 (January 4, 2026):**
+**v2.18 (January 6, 2026):**
 - Updated NextClassCard countdown logic documentation
 - New tiered precision model: hours until 48h, then days
 - Changed from Math.floor to Math.round for day calculation (matches user intuition)
