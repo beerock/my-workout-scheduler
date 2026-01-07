@@ -5,7 +5,7 @@ import { saveRecurringClass, type RecurringClassFormData } from '@/app/actions/r
 import { useRouter } from 'next/navigation'
 import { COMMON_TIMEZONES, formatDateInGymTimezone, getDayName, formatTime12Hour } from '@/lib/date-utils'
 import type { RecurringClass } from '@/lib/database.types'
-import { Button, Modal, Input, Select, Alert } from '@/components/ui'
+import { Button, Modal, Input, Select, Alert, TimeInput } from '@/components/ui'
 
 type Props = {
   initialClass?: RecurringClass | null
@@ -133,17 +133,17 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
           setSavedClassId(result.id)
           setShowBookNowDialog(true)
         } else {
-          // Booking window not open - just redirect/refresh
-          if (onSuccess) {
-            onSuccess()
-          } else {
-            router.push('/dashboard/schedule')
-            router.refresh()
-          }
-
-          // Clear success message after 3 seconds
-          setTimeout(() => setSuccess(false), 3000)
+          // Booking window not open - delay redirect so user sees success state
+          setTimeout(() => {
+            if (onSuccess) {
+              onSuccess()
+            } else {
+              router.push('/dashboard/schedule')
+              router.refresh()
+            }
+          }, 1500) // 1.5 second delay to show success button
         }
+
       } else {
         setError(result.error || 'Failed to save class')
       }
@@ -279,61 +279,46 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Select
-          key={`day_of_week-${formKey}`}
-          label="Day of Week"
-          name="day_of_week"
-          value={formData.day_of_week.toString()}
-          onChange={handleChange}
-          options={DAYS_OF_WEEK}
-        />
-
-        <Input
-          key={`class_time-${formKey}`}
-          label="Class Time"
-          name="class_time"
-          type="time"
-          value={formData.class_time}
-          onChange={handleChange}
-          required
-          hint="The time when the class starts"
-        />
-
+        {/* Group 1: Class Identity (WHAT & WHERE) */}
         <Input
           key={`class_type-${formKey}`}
-          label="Class Type"
+          label="Class Name"
           name="class_type"
           type="text"
           value={formData.class_type}
           onChange={handleChange}
           required
           placeholder="e.g., BODYPUMP"
-          hint="The name or type of the class"
         />
 
         <Input
           key={`branch-${formKey}`}
-          label="Branch"
+          label="Location"
           name="branch"
           type="text"
           value={formData.branch}
           onChange={handleChange}
           required
           placeholder="e.g., Downtown YMCA"
-          hint="The gym branch where this class is held"
         />
 
-        <Input
-          key={`booking_window_hours-${formKey}`}
-          label="Booking Window Hours"
-          name="booking_window_hours"
-          type="number"
-          min={1}
-          max={168}
-          value={formData.booking_window_hours}
+        {/* Group 2: Schedule (WHEN) */}
+        <Select
+          key={`day_of_week-${formKey}`}
+          label="Day"
+          name="day_of_week"
+          value={formData.day_of_week.toString()}
           onChange={handleChange}
+          options={DAYS_OF_WEEK}
+        />
+
+        <TimeInput
+          key={`class_time-${formKey}`}
+          label="Time"
+          name="class_time"
+          value={formData.class_time}
+          onChange={(value) => setFormData(prev => ({ ...prev, class_time: value }))}
           required
-          hint="Hours before class when registration opens (default: 26)"
         />
 
         <Select
@@ -343,7 +328,21 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
           value={formData.timezone}
           onChange={handleChange}
           options={timezoneOptions}
-          hint="Gym/Class location timezone. This is the timezone where the class takes place."
+          hint="Where the gym is located"
+        />
+
+        {/* Group 3: System Settings */}
+        <Input
+          key={`booking_window_hours-${formKey}`}
+          label="Registration Opens"
+          name="booking_window_hours"
+          type="number"
+          min={1}
+          max={168}
+          value={formData.booking_window_hours}
+          onChange={handleChange}
+          required
+          hint="Hours before class (default: 26)"
         />
 
         {error && (
@@ -360,6 +359,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
               type="submit"
               variant="primary"
               loading={loading}
+              disabled={loading}
             >
               {(initialClass && !isCopy) ? 'Update Class' : 'Add Class'}
             </Button>
