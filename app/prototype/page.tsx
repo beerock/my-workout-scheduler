@@ -352,10 +352,10 @@ export default function PrototypePage() {
                 </div>
               </div>
 
-              {/* v2.26 - Current */}
+              {/* v2.22 - Current */}
               <div className="flex gap-6 lg:gap-8 items-start">
                 <div className="flex-shrink-0 w-14 h-14 lg:w-16 lg:h-16 rounded-full bg-gradient-to-br from-success-400 to-success-500 flex items-center justify-center relative z-10 ring-4 ring-success-100">
-                  <span className="font-sora text-sm lg:text-base font-bold text-white">v2.26</span>
+                  <span className="font-sora text-sm lg:text-base font-bold text-white">v2.22</span>
                 </div>
                 <div className="flex-1 pt-1">
                   <div className="flex flex-wrap items-center gap-2 lg:gap-3 mb-2">

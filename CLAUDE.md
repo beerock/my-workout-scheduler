@@ -342,8 +342,13 @@ When making significant changes to design tokens, components, or UI patterns:
 2. ✅ Update `docs/COMPONENT_LIBRARY.md` for component API changes (new props, variants)
 3. ✅ Update CLAUDE.md section 13 version reference if docs updated
 4. ✅ Update PRD design system section for major changes (component counts, features)
-5. ✅ Update `app/prototype/design-system-components/page.tsx` for new components or significant component updates
-6. ✅ Update version number in prototype page and `components/PrototypeNav.tsx` header (must match `docs/DESIGN_SYSTEM.md` version)
+5. ✅ Update `app/prototype/design-system-components/page.tsx` subtitle for: version number, component count, new component demos
+
+**Prototype Pages Strategy:**
+- **Case study** (`/prototype`) - Frozen at v2.22 (historical narrative, do NOT update)
+- **Component library** (`/prototype/design-system-components`) - Living documentation, update subtitle as design system evolves
+- **Scheduler prototype** (`/prototype/scheduler-v2`) - Demo page, no version needed
+- **PrototypeNav** - No version badge (clean navigation)
 
 **Pre-Launch Items:**
 When you identify tasks that must be completed before MVP launch, categorize them:

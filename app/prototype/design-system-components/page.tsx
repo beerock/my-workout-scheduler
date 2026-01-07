@@ -102,7 +102,16 @@ export default function DesignSystemComponentsPage() {
               Component Library
             </h1>
             <p className="font-dm-sans text-gray-600 mt-2">
-              18 Production-Ready Components • Forms, Navigation, Modals & UI Elements
+              19 Production-Ready Components • Forms, Navigation, Modals & UI Elements
+              <span
+                className="ml-2 px-2 py-0.5 text-xs font-medium text-white inline-block align-middle relative -top-px"
+                style={{
+                  background: 'linear-gradient(to right, #00c853, #00a844)',
+                  clipPath: 'polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%)'
+                }}
+              >
+                v2.26
+              </span>
             </p>
           </div>
         </div>
