@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { saveGymCredentials, type GymCredentialsFormData } from '@/app/actions/gym-credentials'
 import { useRouter } from 'next/navigation'
 import { Button, Input, Alert } from '@/components/ui'
-import { validateEmail } from '@/lib/validation'
 
 type Credentials = {
   id: string
@@ -37,10 +36,6 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [confirmPassword, setConfirmPassword] = useState('')
-
-  // Username validation (only if it looks like an email)
-  const [usernameTouched, setUsernameTouched] = useState(false)
-  const [usernameValidationError, setUsernameValidationError] = useState<string | null>(null)
 
   // Confirm password validation
   const passwordsMatch = confirmPassword.length > 0 && formData.password === confirmPassword
@@ -92,8 +87,6 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
         setSuccess(true)
         setFormData(prev => ({ ...prev, password: '' })) // Clear password field
         setConfirmPassword('') // Clear confirm password field
-        setUsernameTouched(false) // Reset validation state
-        setUsernameValidationError(null)
         setFormKey(k => k + 1) // Reset form to clear touched state
         router.refresh() // Refresh to get updated credentials
 
@@ -144,38 +137,16 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
         placeholder="https://ops1.operations.daxko.com/Online/4032/GXP/ClassSchedule.mvc"
         hint="The URL where you log in to book classes"
       />
-
       <Input
         key={`username-${formKey}`}
-        label="Username"
+        label="Gym Login"
         name="username"
         type="text"
         value={formData.username}
-        onChange={(e) => {
-          handleChange(e)
-          // Clear error as user types if they're fixing it
-          if (usernameTouched && usernameValidationError) {
-            const value = e.target.value
-            if (value.includes('@')) {
-              setUsernameValidationError(validateEmail(value))
-            } else {
-              setUsernameValidationError(null)
-            }
-          }
-        }}
-        onBlur={() => {
-          setUsernameTouched(true)
-          // Only validate as email if it contains @
-          if (formData.username.includes('@')) {
-            setUsernameValidationError(validateEmail(formData.username))
-          } else {
-            setUsernameValidationError(null)
-          }
-        }}
-        error={usernameTouched ? usernameValidationError || undefined : undefined}
+        onChange={handleChange}
         required
-        placeholder="Email or phone number"
-        hint="Your YMCA login username (email or phone number)"
+        placeholder="Enter your gym login"
+        hint="Use the same login you use to access your gym's website (email, phone, member ID, etc.)"
       />
 
       <Input
