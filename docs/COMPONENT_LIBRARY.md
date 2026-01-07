@@ -4,7 +4,7 @@
 
 This document provides complete API documentation, usage examples, and best practices for all reusable UI components in the My Workout Scheduler design system.
 
-**Version:** 2.25
+**Version:** 2.26
 **Last Updated:** January 6, 2026
 **Location:** `components/ui/`
 
@@ -21,33 +21,34 @@ This document provides complete API documentation, usage examples, and best prac
 **Form Components:**
 5. [Input](#input)
 6. [Select](#select)
-7. [Checkbox](#checkbox)
-8. [FormField](#formfield)
+7. [TimeInput](#timeinput)
+8. [Checkbox](#checkbox)
+9. [FormField](#formfield)
 
 **Navigation:**
-9. [DropdownMenu](#dropdownmenu)
-10. [Tabs](#tabs)
+10. [DropdownMenu](#dropdownmenu)
+11. [Tabs](#tabs)
 
 **Feedback:**
-11. [Alert](#alert)
-12. [Toast](#toast)
-13. [Skeleton](#skeleton)
+12. [Alert](#alert)
+13. [Toast](#toast)
+14. [Skeleton](#skeleton)
 
 **Display:**
-14. [StatusIndicator](#statusindicator)
-15. [StatCard](#statcard)
-16. [Divider](#divider)
+15. [StatusIndicator](#statusindicator)
+16. [StatCard](#statcard)
+17. [Divider](#divider)
 
 **Layout:**
-17. [Header](#header)
-18. [Footer](#footer)
+18. [Header](#header)
+19. [Footer](#footer)
 
 **Feature Components:**
-19. [NextClassCard](#nextclasscard)
-20. [SuccessRateCard](#successratecard)
+20. [NextClassCard](#nextclasscard)
+21. [SuccessRateCard](#successratecard)
 
 **Guidelines:**
-21. [Usage Guidelines](#usage-guidelines)
+22. [Usage Guidelines](#usage-guidelines)
 
 ---
 
@@ -1414,6 +1415,104 @@ interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>
 
 ---
 
+## TimeInput
+
+**File:** `components/ui/TimeInput.tsx`
+
+**Purpose:** User-friendly time picker with 12-hour format display, hour/minute dropdowns, and AM/PM toggle. Stores values in 24-hour format internally.
+
+**When to use:**
+- ✅ Class time selection
+- ✅ Any time input where 12-hour format is preferred
+- ✅ When native browser time inputs are too inconsistent
+
+**When NOT to use:**
+- ❌ Date/time combined (use separate date and time inputs)
+- ❌ Duration input (use number input with units)
+
+### API
+
+```typescript
+interface TimeInputProps {
+  label?: string
+  error?: string
+  hint?: string
+  value?: string          // HH:MM format (24-hour, e.g., "16:30")
+  onChange?: (value: string) => void
+  required?: boolean
+  disabled?: boolean
+  className?: string
+  name?: string           // For form submission
+}
+```
+
+### Code Examples
+
+```tsx
+// Basic usage
+<TimeInput
+  label="Time"
+  value={formData.class_time}
+  onChange={(value) => setFormData(prev => ({ ...prev, class_time: value }))}
+/>
+
+// With error
+<TimeInput
+  label="Start Time"
+  value={startTime}
+  onChange={setStartTime}
+  error="Please select a valid time"
+/>
+
+// With hint
+<TimeInput
+  label="Class Time"
+  value={classTime}
+  onChange={setClassTime}
+  hint="When the class starts"
+/>
+
+// Disabled state
+<TimeInput
+  label="Time"
+  value="09:00"
+  disabled
+/>
+
+// In a form with name (for hidden input submission)
+<TimeInput
+  label="Time"
+  name="class_time"
+  value={formData.class_time}
+  onChange={handleTimeChange}
+  required
+/>
+```
+
+### Design Features
+
+- **12-Hour Display:** Hour (1-12), minute (00-55 in 5-min increments), AM/PM toggle
+- **24-Hour Storage:** Converts to/from 24-hour format for database compatibility
+- **Clock Icon:** Visual indicator on the left
+- **AM/PM Toggle:** Button group with active state highlighting
+- **Consistent Styling:** Matches Select component appearance (borders, focus states)
+
+### Behavior
+
+- **Hour dropdown:** 1-12
+- **Minute dropdown:** 00, 05, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
+- **AM/PM toggle:** Clickable buttons, active state shows primary color
+- **Hidden input:** When `name` prop provided, renders hidden input for form submission
+
+### Accessibility
+
+- ✅ Keyboard accessible (Tab through dropdowns and toggle)
+- ✅ ARIA labels on each control ("Hour", "Minute", "AM", "PM")
+- ✅ `aria-pressed` on AM/PM toggle buttons
+- ✅ Focus rings on all interactive elements
+
+---
+
 ## Checkbox
 
 **File:** `components/ui/Checkbox.tsx`
@@ -2710,7 +2809,7 @@ Before shipping a component:
 - Footer applied to all front-end pages (dashboard, auth, landing, prototypes)
 - Header extracted from EditorialLayout for reusability
 - Component prototype page updated with new component showcases (Button, Badge, Alert, StatusIndicator, StatCard, Divider, Footer)
-- Total: 18 components documented
+- Total: 19 components documented
 
 **v2.15 (January 2, 2026):**
 - Updated StatCard grid example with mobile-first responsive classes (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`)
