@@ -173,9 +173,9 @@
   - Booking status only shows for current occurrence (fixes stale status from previous week)
 - ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13 → v2.22)**
   - Complete design system with editorial diagonal-cut design language
-  - **18 reusable UI components** in `components/ui/`:
+  - **19 reusable UI components** in `components/ui/`:
     - Core: Button, Badge, Card, Modal
-    - Form: Input, Select, Checkbox, FormField
+    - Form: Input, Select, TimeInput, Checkbox, FormField
     - Navigation: DropdownMenu, Tabs (with TabPanel)
     - Feedback: Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
     - Display: StatusIndicator, StatCard, Divider
@@ -208,6 +208,31 @@
     - Shows amber warning alert (not error) for duplicate emails
     - Clear message: "This email is already associated with another account"
   - Balances security (no email enumeration on signup) with UX (clear feedback when authenticated)
+- ✅ **COMPLETED: Form Validation UX (v2.25)**
+  - **Password Strength Meter:** Real-time 4-level visualization (Weak/Fair/Good/Strong) with animated progress bar
+    - 2-column requirements checklist with checkmarks (8+ chars, lowercase, uppercase, digit)
+    - Used on: Signup, Reset Password, Profile password change
+  - **Email Validation (On Blur):** Format validation after user leaves field (not on every keystroke)
+    - Clear error message: "Please enter a valid email address"
+    - Used on: Signup, Login, Forgot Password, Profile email change
+  - **Confirm Password Matching:** Real-time validation with success state
+    - Red error "Passwords don't match" when mismatched
+    - Green success "Passwords match" with checkmark icon when matched
+    - Green border on match using Input \`success\` prop
+    - Used on: Signup, Reset Password, Profile password change, Gym Credentials
+  - **Form Reset Keys:** Prevents red borders on empty fields after successful submission
+    - React \`key\` prop pattern: increment \`formKey\` state to remount Input components
+    - Clears all "touched" validation state
+    - Applied to: ProfileForm, GymCredentialsForm, RecurringClassForm
+  - **Show/Hide Password Toggles:** Eye icon buttons on all password fields
+    - Accessible with aria-labels ("Show password" / "Hide password")
+    - Confirm password field shows checkmark when matched instead of eye icon
+  - **Input Component Success State:** New \`success\` prop for positive validation feedback
+    - Shows green border and success message
+    - Used for confirm password matching
+  - **Server-Side Validation:** Defense-in-depth with shared utilities (\`lib/validation.ts\`)
+    - All client validation replicated server-side
+    - Prevents bypassing via DevTools
 
 ---
 
@@ -957,9 +982,9 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 **Design System v2 & Component Library (v2.22):**
 
 - **Tailwind CSS Extended:** Design tokens for colors, gradients (`bg-gradient-primary`), shadows (`shadow-card`, `shadow-btn-*`), clip-paths (`clip-diagonal-badge`)
-- **Component Library:** **18 reusable UI components** in `components/ui/`:
+- **Component Library:** **19 reusable UI components** in `components/ui/`:
   - Core: Button, Badge, Card, Modal
-  - Form: Input, Select, Checkbox, FormField
+  - Form: Input, Select, TimeInput, Checkbox, FormField
   - Navigation: DropdownMenu, Tabs (with TabPanel)
   - Feedback: Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
   - Display: StatusIndicator, StatCard, Divider

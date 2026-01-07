@@ -27,7 +27,7 @@ const navItems: NavItem[] = [
     href: '/prototype/design-system-components',
     label: 'Components',
     shortLabel: 'Toolkit',
-    description: '18 Components'
+    description: '19 Components'
   }
 ]
 
@@ -106,15 +106,8 @@ export function PrototypeNav() {
             })}
           </div>
 
-          {/* Version badge */}
-          <div
-            className="px-2 sm:px-3 py-1 flex-shrink-0 bg-gradient-to-r from-success-500 to-success-600 text-white font-dm-sans text-xs sm:text-sm font-medium"
-            style={{
-              clipPath: 'polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%)'
-            }}
-          >
-            v2.22
-          </div>
+          {/* Spacer for layout balance (matches home icon width) */}
+          <div className="w-9" />
         </div>
       </div>
     </nav>

@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.24):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic (filters inactive classes, shows week after skip, accurate countdown display, correct booking status for specific occurrence), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), improved email handling UX (hedged messaging for signup, duplicate email detection on profile change), accurate all-time success rate calculation (includes all booking attempts regardless of class active status, excludes skipped/pending), and GitHub App authentication (auto-rotating tokens, no manual renewal, better security).
+**Current Version (v2.26):** Production-ready with Design System v2 component library (19 components including new TimeInput), Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic (filters inactive classes, shows week after skip, accurate countdown display, correct booking status for specific occurrence), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), improved email handling UX (hedged messaging for signup, duplicate email detection on profile change), accurate all-time success rate calculation (includes all booking attempts regardless of class active status, excludes skipped/pending), GitHub App authentication (auto-rotating tokens, no manual renewal, better security), comprehensive form validation UX (password strength meter, email validation on blur, form reset keys prevent red border bug, Input success state for confirm password matching), and improved RecurringClassForm UX (logical field grouping, simplified labels, 12-hour time picker, 1.5s delayed redirect after save).
 
 ---
 
@@ -233,7 +233,7 @@ Skip buttons disabled when paused/inactive with tooltips. Uses `calculateBooking
 
 ### 13. Design System v2 & Component Library (CRITICAL)
 
-**Version:** v2.22 (January 2026)
+**Version:** v2.26 (January 2026)
 **Status:** MANDATORY for all frontend AND email development
 
 **All UI/UX work MUST use Design System v2 patterns and the component library.**
@@ -250,12 +250,12 @@ This skill ensures production-grade, polished designs that avoid generic AI aest
 
 Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'`
 
-**Available Components (18 total):**
+**Available Components (19 total):**
 
 | Category | Components |
 |----------|------------|
 | Core | Button, Badge, Card, Modal |
-| Form | Input, Select, Checkbox, FormField |
+| Form | Input, Select, TimeInput, Checkbox, FormField |
 | Navigation | DropdownMenu, Tabs (with TabPanel) |
 | Feedback | Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard) |
 | Display | StatusIndicator, StatCard, Divider |
@@ -342,8 +342,13 @@ When making significant changes to design tokens, components, or UI patterns:
 2. ✅ Update `docs/COMPONENT_LIBRARY.md` for component API changes (new props, variants)
 3. ✅ Update CLAUDE.md section 13 version reference if docs updated
 4. ✅ Update PRD design system section for major changes (component counts, features)
-5. ✅ Update `app/prototype/design-system-components/page.tsx` for new components or significant component updates
-6. ✅ Update version number in prototype page and `components/PrototypeNav.tsx` header (must match `docs/DESIGN_SYSTEM.md` version)
+5. ✅ Update `app/prototype/design-system-components/page.tsx` subtitle for: version number, component count, new component demos
+
+**Prototype Pages Strategy:**
+- **Case study** (`/prototype`) - Frozen at v2.22 (historical narrative, do NOT update)
+- **Component library** (`/prototype/design-system-components`) - Living documentation, update subtitle as design system evolves
+- **Scheduler prototype** (`/prototype/scheduler-v2`) - Demo page, no version needed
+- **PrototypeNav** - No version badge (clean navigation)
 
 **Pre-Launch Items:**
 When you identify tasks that must be completed before MVP launch, categorize them:
@@ -509,6 +514,95 @@ Success Rate = (confirmed + waitlisted) / (confirmed + waitlisted + failed) × 1
 - `app/actions/dashboard-stats.ts` - `getDashboardStats()` calculates rate via join
 - `components/SuccessRateCard.tsx` - Displays rate with totalAttempts prop
 - `app/dashboard/page.tsx` - Passes stats to component
+
+---
+
+### 18. Form Validation UX (v2.25)
+
+Comprehensive form validation UX improvements across authentication and dashboard forms to prevent user errors and provide clear feedback.
+
+**Key Features:**
+
+**1. Password Strength Meter (Account Passwords Only)**
+- Real-time strength visualization with 4 levels: Weak (red), Fair (orange), Good (blue), Strong (green)
+- Animated progress bar fills 25%/50%/75%/100% based on requirements met
+- 2-column requirements checklist with checkmarks (8+ chars, lowercase, uppercase, digit)
+- Password requirements: 8+ characters, uppercase, lowercase, digit (no special characters required)
+- Used on: Signup, Reset Password, Profile (password change)
+
+**2. Email Validation (On Blur)**
+- Validates email format only after user clicks away from field (not on every keystroke)
+- Clear error message: "Please enter a valid email address"
+- Error clears immediately when valid format entered
+- Used on: Signup, Login, Forgot Password, Profile (email change)
+
+**3. Confirm Password Matching**
+- Real-time validation as user types
+- Shows red error "Passwords don't match" when mismatch detected
+- Shows green success "Passwords match" with checkmark icon when matched
+- Green border on match (uses Input `success` prop)
+- Green checkmark replaces eye icon when passwords match
+- Used on: Signup, Reset Password, Profile (password change), Gym Credentials
+
+**4. Form Reset Keys (Red Border Bug Fix)**
+- Prevented red borders appearing on empty required fields after successful form submission
+- Uses React `key` prop pattern: increment `formKey` state after success to remount Input components
+- Pattern: `<Input key={`field-${formKey}`} />` with `setFormKey(k => k + 1)` on success
+- Clears all "touched" validation state by forcing component remount
+- Applied to: ProfileForm (email + password), GymCredentialsForm, RecurringClassForm (add + edit)
+
+**5. Show/Hide Password Toggles**
+- Eye icon buttons on all password fields
+- Toggles between visible text and hidden dots
+- Icon changes between eye and eye-off
+- Accessible with aria-labels ("Show password" / "Hide password")
+- Confirm password field: Shows eye icon when mismatched, checkmark when matched
+- Used on: Signup (both fields), Login, Reset Password (both fields), Profile (all 3 fields), Gym Credentials (both fields)
+
+**6. Input Component Success State**
+- New `success` prop on Input component for positive validation feedback
+- Shows green border and green success message below field
+- Used for confirm password matching ("Passwords match")
+- Provides visual confirmation to users
+
+**7. Server-Side Validation (Defense-in-Depth)**
+- All client-side validation replicated server-side in server actions
+- Prevents bypassing validation via DevTools
+- Returns structured error messages to client
+- Files: `app/actions/profile.ts`, `app/actions/auth.ts` (signup, reset password)
+
+**Implementation:**
+
+**Shared Validation Utilities** (`lib/validation.ts`):
+- `validateEmail(email: string)` - Email format validation
+- `validatePassword(password: string)` - Returns PasswordValidation object with individual requirement checks
+- `getPasswordErrorMessage()` - Consistent error message for server-side validation
+
+**Component Updates:**
+- `components/ProfileForm.tsx` - Email validation, password strength, confirm password, form reset keys
+- `components/GymCredentialsForm.tsx` - Confirm password, form reset keys
+- `components/RecurringClassForm.tsx` - Form reset keys
+- `app/(auth)/signup/page.tsx` - Full validation suite (email, password strength, confirm password, show/hide toggles)
+- `app/(auth)/login/page.tsx` - Email validation, show/hide toggle
+- `app/(auth)/forgot-password/page.tsx` - Email validation
+- `app/(auth)/reset-password/page.tsx` - Password strength, confirm password, show/hide toggles
+
+**Server Actions:**
+- `app/actions/profile.ts` - Email and password validation with `validateEmail()` and `validatePassword()`
+- Uses shared validation utilities for consistency between client and server
+
+**Benefits:**
+- Prevents common user errors (weak passwords, typo'd emails, password mismatches)
+- Clear, real-time feedback reduces frustration
+- Professional UX matches expectations from modern web apps
+- Accessibility-compliant (ARIA labels, keyboard navigation, screen reader support)
+- Consistent patterns across all forms
+
+**Files:**
+- `lib/validation.ts` - Shared validation utilities
+- `components/ui/Input.tsx` - Success prop support
+- `components/ProfileForm.tsx`, `components/GymCredentialsForm.tsx`, `components/RecurringClassForm.tsx` - Form reset keys
+- All auth pages (`signup`, `login`, `forgot-password`, `reset-password`) - Validation patterns
 
 ---
 
@@ -734,4 +828,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** January 4, 2026 (v2.23)
+**Last Updated:** January 6, 2026 (v2.26)

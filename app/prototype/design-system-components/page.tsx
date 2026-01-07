@@ -102,7 +102,16 @@ export default function DesignSystemComponentsPage() {
               Component Library
             </h1>
             <p className="font-dm-sans text-gray-600 mt-2">
-              18 Production-Ready Components • Forms, Navigation, Modals & UI Elements
+              19 Production-Ready Components • Forms, Navigation, Modals & UI Elements
+              <span
+                className="ml-2 px-2 py-0.5 text-xs font-medium text-white inline-block align-middle relative -top-px"
+                style={{
+                  background: 'linear-gradient(to right, #00c853, #00a844)',
+                  clipPath: 'polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%)'
+                }}
+              >
+                v2.26
+              </span>
             </p>
           </div>
         </div>
@@ -270,6 +279,38 @@ export default function DesignSystemComponentsPage() {
                       </svg>
                     </div>
                   </div>
+                </div>
+
+                {/* Time Input */}
+                <div className="space-y-2">
+                  <label className="font-dm-sans text-sm font-medium text-gray-700">Class Time</label>
+                  <div className="flex items-center gap-2">
+                    {/* Clock icon */}
+                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {/* Hour dropdown */}
+                    <select className="px-3 py-3 bg-white border border-gray-200 rounded-lg font-dm-sans text-gray-900 appearance-none cursor-pointer hover:border-gray-300 focus:border-[#1a6fff] focus:ring-2 focus:ring-[#1a6fff]/20 outline-none w-[72px] text-center">
+                      <option>9</option>
+                      <option>10</option>
+                      <option>11</option>
+                      <option>12</option>
+                    </select>
+                    <span className="font-dm-sans text-xl text-gray-400 font-medium">:</span>
+                    {/* Minute dropdown */}
+                    <select className="px-3 py-3 bg-white border border-gray-200 rounded-lg font-dm-sans text-gray-900 appearance-none cursor-pointer hover:border-gray-300 focus:border-[#1a6fff] focus:ring-2 focus:ring-[#1a6fff]/20 outline-none w-[72px] text-center">
+                      <option>00</option>
+                      <option>15</option>
+                      <option>30</option>
+                      <option>45</option>
+                    </select>
+                    {/* AM/PM toggle */}
+                    <div className="flex rounded-lg border border-gray-200 overflow-hidden ml-1">
+                      <button className="px-3 py-2.5 font-dm-sans text-sm font-medium bg-[#1a6fff] text-white">AM</button>
+                      <button className="px-3 py-2.5 font-dm-sans text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 border-l border-gray-200">PM</button>
+                    </div>
+                  </div>
+                  <p className="font-dm-sans text-xs text-gray-500">12-hour format with AM/PM toggle</p>
                 </div>
 
                 {/* Checkboxes */}

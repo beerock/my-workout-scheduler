@@ -4,8 +4,8 @@
 
 This document defines the complete design system for My Workout Scheduler, establishing a consistent visual language inspired by modern fitness apps like Peloton, ClassPass, and Strava.
 
-**Version:** 2.22
-**Last Updated:** January 4, 2026
+**Version:** 2.26
+**Last Updated:** January 6, 2026
 
 ---
 
@@ -712,10 +712,10 @@ All design tokens are defined in `tailwind.config.ts`:
 
 ### Component Library Location
 
-All reusable components live in `components/ui/` (18 components):
+All reusable components live in `components/ui/` (19 components):
 
 **Core:** Button, Badge, Card, Modal
-**Form:** Input, Select, Checkbox, FormField
+**Form:** Input, Select, TimeInput, Checkbox, FormField
 **Navigation:** DropdownMenu, Tabs
 **Feedback:** Alert, Toast, Skeleton
 **Display:** StatusIndicator, StatCard, Divider
@@ -747,7 +747,7 @@ All reusable components live in `components/ui/` (18 components):
 - Added UI Patterns section (editorial bg, staggered animations, hero spanning)
 - Added 2 additional class types (HIIT, Pilates)
 - Updated Status Colors to match actual config values
-- Updated component library listing (18 components + 2 feature components)
+- Updated component library listing (19 components + 2 feature components)
 - Updated border radius notes with UX decision about diagonal badges
 
 **v2.13 (December 29, 2025):**
