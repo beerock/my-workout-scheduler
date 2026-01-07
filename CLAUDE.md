@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.25):** Production-ready with Design System v2 component library, Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic (filters inactive classes, shows week after skip, accurate countdown display, correct booking status for specific occurrence), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), improved email handling UX (hedged messaging for signup, duplicate email detection on profile change), accurate all-time success rate calculation (includes all booking attempts regardless of class active status, excludes skipped/pending), and GitHub App authentication (auto-rotating tokens, no manual renewal, better security), and comprehensive form validation UX (password strength meter, email validation on blur, form reset keys prevent red border bug, Input success state for confirm password matching).
+**Current Version (v2.26):** Production-ready with Design System v2 component library (19 components including new TimeInput), Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic (filters inactive classes, shows week after skip, accurate countdown display, correct booking status for specific occurrence), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), improved email handling UX (hedged messaging for signup, duplicate email detection on profile change), accurate all-time success rate calculation (includes all booking attempts regardless of class active status, excludes skipped/pending), GitHub App authentication (auto-rotating tokens, no manual renewal, better security), comprehensive form validation UX (password strength meter, email validation on blur, form reset keys prevent red border bug, Input success state for confirm password matching), and improved RecurringClassForm UX (logical field grouping, simplified labels, 12-hour time picker, 1.5s delayed redirect after save).
 
 ---
 
@@ -233,7 +233,7 @@ Skip buttons disabled when paused/inactive with tooltips. Uses `calculateBooking
 
 ### 13. Design System v2 & Component Library (CRITICAL)
 
-**Version:** v2.22 (January 2026)
+**Version:** v2.26 (January 2026)
 **Status:** MANDATORY for all frontend AND email development
 
 **All UI/UX work MUST use Design System v2 patterns and the component library.**
@@ -250,12 +250,12 @@ This skill ensures production-grade, polished designs that avoid generic AI aest
 
 Import from barrel: `import { Button, Badge, Modal, ... } from '@/components/ui'`
 
-**Available Components (18 total):**
+**Available Components (19 total):**
 
 | Category | Components |
 |----------|------------|
 | Core | Button, Badge, Card, Modal |
-| Form | Input, Select, Checkbox, FormField |
+| Form | Input, Select, TimeInput, Checkbox, FormField |
 | Navigation | DropdownMenu, Tabs (with TabPanel) |
 | Feedback | Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard) |
 | Display | StatusIndicator, StatCard, Divider |
@@ -823,4 +823,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** January 6, 2026 (v2.25)
+**Last Updated:** January 6, 2026 (v2.26)

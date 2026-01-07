@@ -173,9 +173,9 @@
   - Booking status only shows for current occurrence (fixes stale status from previous week)
 - ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13 → v2.22)**
   - Complete design system with editorial diagonal-cut design language
-  - **18 reusable UI components** in `components/ui/`:
+  - **19 reusable UI components** in `components/ui/`:
     - Core: Button, Badge, Card, Modal
-    - Form: Input, Select, Checkbox, FormField
+    - Form: Input, Select, TimeInput, Checkbox, FormField
     - Navigation: DropdownMenu, Tabs (with TabPanel)
     - Feedback: Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
     - Display: StatusIndicator, StatCard, Divider
@@ -982,9 +982,9 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 **Design System v2 & Component Library (v2.22):**
 
 - **Tailwind CSS Extended:** Design tokens for colors, gradients (`bg-gradient-primary`), shadows (`shadow-card`, `shadow-btn-*`), clip-paths (`clip-diagonal-badge`)
-- **Component Library:** **18 reusable UI components** in `components/ui/`:
+- **Component Library:** **19 reusable UI components** in `components/ui/`:
   - Core: Button, Badge, Card, Modal
-  - Form: Input, Select, Checkbox, FormField
+  - Form: Input, Select, TimeInput, Checkbox, FormField
   - Navigation: DropdownMenu, Tabs (with TabPanel)
   - Feedback: Alert, Toast, Skeleton (+ SkeletonCard, SkeletonClassCard presets)
   - Display: StatusIndicator, StatCard, Divider

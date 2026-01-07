@@ -27,7 +27,7 @@ const navItems: NavItem[] = [
     href: '/prototype/design-system-components',
     label: 'Components',
     shortLabel: 'Toolkit',
-    description: '18 Components'
+    description: '19 Components'
   }
 ]
 
