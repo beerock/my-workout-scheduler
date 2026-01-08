@@ -22,10 +22,10 @@ export async function GET() {
       )
     }
 
-    // Test query - try to read from gym_credentials (should return empty or user's data)
+    // Test query - check if gym credentials exist (don't expose actual data)
     const { data: credentials, error: dbError } = await supabase
       .from('gym_credentials')
-      .select('*')
+      .select('id')
       .eq('user_id', user.id)
       .maybeSingle()
 
@@ -37,7 +37,7 @@ export async function GET() {
       },
       database: {
         connected: true,
-        credentials: credentials || null,
+        hasCredentials: !!credentials,
         error: dbError?.message || null,
       },
     })
