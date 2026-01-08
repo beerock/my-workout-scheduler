@@ -167,12 +167,12 @@ export async function GET() {
       )
     }
 
-    // Test query - try to read from gym_credentials (should return empty or user's data)
+    // Test query - check if gym credentials exist (don't expose actual data)
     const { data: credentials, error: dbError } = await supabase
       .from('gym_credentials')
-      .select('*')
+      .select('id')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     return NextResponse.json({
       success: true,
@@ -182,7 +182,7 @@ export async function GET() {
       },
       database: {
         connected: true,
-        credentials: credentials || null,
+        hasCredentials: !!credentials,
         error: dbError?.message || null,
       },
     })
@@ -214,13 +214,13 @@ export async function GET() {
   },
   "database": {
     "connected": true,
-    "credentials": null,
+    "hasCredentials": false,
     "error": null
   }
 }
 ```
 
-If `credentials` is `null`, that's expected - you haven't created any yet!
+If `hasCredentials` is `false`, that's expected - you haven't created any yet! Note: This endpoint only returns whether credentials exist (not the actual data) for security.
 
 ## Step 6: Test RLS Policies
 
