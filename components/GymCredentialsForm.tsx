@@ -134,7 +134,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
         value={formData.gym_url}
         onChange={handleChange}
         required
-        placeholder="https://ops1.operations.daxko.com/Online/4032/GXP/ClassSchedule.mvc"
+        placeholder="https://operations.daxko.com/online/4032/GXP/ClassSchedule.mvc"
         hint="The URL where you log in to book classes"
       />
       <Input
