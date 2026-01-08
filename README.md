@@ -4,7 +4,7 @@ My Workout Scheduler automates class reservations for recurring fitness sessions
 
 ## Tech Stack
 
-- **Framework:** Next.js 14 (App Router)
+- **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
 - **Database & Auth:** Supabase

@@ -510,7 +510,7 @@ Users could miss bookings if they unpause, activate a class, or remove a skip be
 
 **1\. Web Application**
 
-- **Framework:** Next.js 14 (App Router)  
+- **Framework:** Next.js 16 (App Router)
 - **UI:** Tailwind CSS (functional, not fancy)  
 - **Hosting:** Vercel (free tier)  
 - **Features:** Auth pages, schedule management forms, status dashboard
