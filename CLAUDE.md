@@ -20,7 +20,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 ## Tech Stack
 
-- **Frontend/Backend:** Next.js 14 (App Router) with TypeScript
+- **Frontend/Backend:** Next.js 16 (App Router) with TypeScript
 - **Styling:** Tailwind CSS
 - **Database & Auth:** Supabase (PostgreSQL + built-in auth)
 - **Automation:** Inngest (event-driven orchestration) + Puppeteer (headless Chrome)
