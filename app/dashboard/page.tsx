@@ -231,8 +231,8 @@ export default async function DashboardPage() {
           </Card>
         </Link>
 
-        {/* Profile Settings */}
-        <Link href="/dashboard/profile" className="group">
+        {/* Account Settings */}
+        <Link href="/dashboard/account" className="group">
           <Card
             variant="outlined"
             padding="md"
@@ -248,10 +248,10 @@ export default async function DashboardPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-sora text-lg font-bold text-gray-900 group-hover:text-success-600 transition-colors">
-                  Profile
+                  Account
                 </h3>
                 <p className="font-dm-sans text-sm text-gray-500 mt-1">
-                  Update email, password, and settings
+                  Notifications, email, and password
                 </p>
               </div>
               <svg className="w-5 h-5 text-gray-400 group-hover:text-success-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

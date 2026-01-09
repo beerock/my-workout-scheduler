@@ -58,6 +58,35 @@ Open Tracking: ✅ Enabled (optional)
 
 **No action required** - Current settings are production-ready.
 
+### Email Notification System (v2.27)
+
+**⚠️ ACTION REQUIRED BEFORE MVP LAUNCH:**
+
+1. **Verify Admin Toggles:**
+   - [ ] `ADMIN_DISABLE_ALL_EMAILS` is NOT set or set to `false` in production
+   - [ ] `ADMIN_DISABLE_BOOKING_EMAILS` is NOT set or set to `false` in production
+   - [ ] `ADMIN_DISABLE_ERROR_EMAILS` is NOT set or set to `false` in production
+
+2. **Test Email Flow:**
+   - [ ] Test welcome email: Signup new user → Verify email → Receive welcome email
+   - [ ] Test booking notification: Trigger booking → Receive confirmation email
+   - [ ] Test notification preferences: Change settings → Verify changes respected
+
+3. **Verify Environment Variables:**
+   - [ ] `RESEND_API_KEY` is set in Vercel Production
+   - [ ] `NEXT_PUBLIC_APP_URL` or `NEXT_PUBLIC_SITE_URL` points to production domain
+   - [ ] `RESEND_FROM_EMAIL` is `noreply@beerock.com` (verified domain)
+
+4. **Database Migration:**
+   - [ ] Run migration 010_notification_system.sql in production Supabase
+   - [ ] Run migration 011_pause_reminder.sql in production Supabase
+   - [ ] Verify user_settings table has notification columns
+   - [ ] Verify notification_log table exists
+
+5. **Inngest Function Sync:**
+   - [ ] Verify `pauseReminderFunction` is visible in Inngest Dashboard
+   - [ ] Sync Inngest functions after deployment (see CLAUDE.md section on Inngest sync)
+
 ---
 
 ## 🌐 Environment Variables & URL Configuration

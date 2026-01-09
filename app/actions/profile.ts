@@ -128,7 +128,7 @@ export async function updateEmail(
       }
     }
 
-    revalidatePath('/dashboard/profile')
+    revalidatePath('/dashboard/account')
     return {
       success: true,
       requiresEmailConfirmation: true,
@@ -196,7 +196,7 @@ export async function updatePassword(
       }
     }
 
-    revalidatePath('/dashboard/profile')
+    revalidatePath('/dashboard/account')
     return {
       success: true,
     }
