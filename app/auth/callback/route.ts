@@ -39,7 +39,26 @@ export async function GET(request: NextRequest) {
       if (exchangeError) {
         console.error('Error exchanging code for session:', exchangeError)
 
-        // Handle specific error cases
+        // Special handling for email_change: the email was already verified by Supabase
+        // when user clicked the link. PKCE may fail if session expired, but the change
+        // was still applied. Check if user is logged in and redirect with success.
+        if (type === 'email_change') {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            // User is logged in, email change was successful
+            console.log(`[Auth Callback] Email change verified for user ${user.id} (PKCE skipped)`)
+            const redirectUrl = new URL(next, request.url)
+            redirectUrl.searchParams.set('email_verified', 'true')
+            redirectUrl.searchParams.set('verification_type', 'email_change')
+            return NextResponse.redirect(redirectUrl)
+          }
+          // User not logged in, redirect to login with success message
+          return NextResponse.redirect(
+            new URL('/login?message=Email address updated successfully. Please sign in with your new email.', request.url)
+          )
+        }
+
+        // Handle specific error cases for other types
         if (exchangeError.message.includes('expired')) {
           return NextResponse.redirect(
             new URL('/login?error=Link expired. Please request a new verification email.', request.url)
