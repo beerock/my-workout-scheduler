@@ -44,11 +44,13 @@ This document provides Claude with essential context about the My Workout Schedu
    - `gym_credentials` - Encrypted gym login info
    - `recurring_classes` - Schedule configuration (includes `skip_next_occurrence`, `skip_target_datetime`)
    - `booking_attempts` - Booking history (status: pending, confirmed, waitlisted, failed, skipped)
-   - `user_settings` - Global settings (`schedule_paused`)
+   - `user_settings` - Global settings (`schedule_paused`, notification preferences)
+   - `notification_log` - Email notification audit trail (v2.27)
 
 3. **Inngest Functions** (`/inngest`)
    - `bookClass.ts` - Core booking with intelligent retry logic
    - `scheduleBookings.ts` - Daily scheduler (midnight UTC)
+   - `pauseReminderFunction` - 7-day pause reminder with cancelOn unpause (v2.27)
    - Event-driven: triggers at exact booking window times
 
 4. **Puppeteer Automation** (`/scripts`)
@@ -77,7 +79,7 @@ my-workout-scheduler/
 │   ├── dashboard/                       # Protected pages
 │   │   ├── credentials/                 # Gym credentials management
 │   │   ├── schedule/                    # Schedule management
-│   │   └── profile/                     # User profile settings
+│   │   └── account/                     # Account settings (notifications, security)
 │   └── api/inngest/                     # Inngest webhook endpoint
 ├── components/                           # React components
 ├── lib/

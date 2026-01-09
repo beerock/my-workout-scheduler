@@ -21,8 +21,18 @@ export type BookingFailureCriticalEmailProps = {
   branchName: string;
   errorMessage: string; // User-friendly error from ERROR_MESSAGES.md
   dashboardUrl: string;
+  credentialsUrl: string; // Link to credentials page for login-related errors
   settingsUrl: string;
 };
+
+/**
+ * Check if error is credentials/login related
+ */
+function isCredentialsError(errorMessage: string): boolean {
+  const message = errorMessage.toLowerCase();
+  const credentialsKeywords = ['login', 'password', 'credentials', 'sign in', 'authentication'];
+  return credentialsKeywords.some(keyword => message.includes(keyword));
+}
 
 export function bookingFailureCriticalEmail(props: BookingFailureCriticalEmailProps): { subject: string; html: string } {
   const subject = `🔴 Action Required: ${props.className} booking failed`;
@@ -65,13 +75,18 @@ export function bookingFailureCriticalEmail(props: BookingFailureCriticalEmailPr
     </p>
   `;
 
+  // Determine CTA based on error type
+  const isCredentialsProblem = isCredentialsError(props.errorMessage);
+  const ctaText = isCredentialsProblem ? 'Update Credentials' : 'Go to Dashboard';
+  const ctaLink = isCredentialsProblem ? props.credentialsUrl : props.dashboardUrl;
+
   const html = baseEmailTemplate({
     title: `Action Required: ${props.className} Booking Failed`,
     preheader: `We couldn't book ${props.className} on ${props.dayOfWeek} - action required`,
     body,
     severity: 'error',
-    ctaText: 'Fix in Dashboard',
-    ctaLink: props.dashboardUrl,
+    ctaText,
+    ctaLink,
     showUnsubscribe: false, // Critical emails CANNOT be unsubscribed
     dashboardUrl: props.dashboardUrl,
     settingsUrl: props.settingsUrl,

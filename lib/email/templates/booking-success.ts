@@ -16,6 +16,7 @@ export type BookingSuccessEmailProps = {
   branchName: string;
   bookingTimestamp: string; // When booking was made
   dashboardUrl: string;
+  scheduleUrl: string; // Link to schedule page (CTA destination)
   settingsUrl: string;
 };
 
@@ -66,7 +67,7 @@ export function bookingSuccessEmail(props: BookingSuccessEmailProps): { subject:
     body,
     severity: 'success',
     ctaText: 'View My Schedule',
-    ctaLink: props.dashboardUrl,
+    ctaLink: props.scheduleUrl,
     showUnsubscribe: true, // Success emails can be unsubscribed
     dashboardUrl: props.dashboardUrl,
     settingsUrl: props.settingsUrl,

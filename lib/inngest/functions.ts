@@ -496,7 +496,7 @@ export const pauseReminderFunction = inngest.createFunction(
       // Get environment-specific URLs
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       const dashboardUrl = `${appUrl}/dashboard`;
-      const settingsUrl = `${appUrl}/dashboard/profile`;
+      const settingsUrl = `${appUrl}/dashboard/account`;
 
       // Generate email
       const { subject, html } = pauseReminderEmail({

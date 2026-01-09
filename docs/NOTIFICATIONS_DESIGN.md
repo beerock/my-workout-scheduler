@@ -783,7 +783,7 @@ notification_frequency TEXT DEFAULT 'immediate', -- 'immediate', 'daily_digest',
 -- Email settings
 email_on_success BOOLEAN DEFAULT TRUE,
 email_on_waitlist BOOLEAN DEFAULT TRUE,
-email_on_failure BOOLEAN DEFAULT TRUE,
+-- Note: No email_on_failure - critical/failure emails are ALWAYS sent (cannot be disabled)
 email_on_retry BOOLEAN DEFAULT TRUE, -- First failure only
 
 -- SMS settings (optional)
@@ -918,7 +918,7 @@ ADD COLUMN notification_email BOOLEAN DEFAULT TRUE,
 ADD COLUMN notification_frequency TEXT DEFAULT 'immediate',
 ADD COLUMN email_on_success BOOLEAN DEFAULT TRUE,
 ADD COLUMN email_on_waitlist BOOLEAN DEFAULT TRUE,
-ADD COLUMN email_on_failure BOOLEAN DEFAULT TRUE,
+-- Note: No email_on_failure - critical/failure emails are ALWAYS sent
 ADD COLUMN email_on_retry BOOLEAN DEFAULT TRUE;
 ```
 

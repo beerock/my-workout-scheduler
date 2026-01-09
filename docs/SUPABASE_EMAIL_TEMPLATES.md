@@ -437,7 +437,7 @@ After updating templates in Supabase:
 
 1. **Email Verification:** Create a new test account
 2. **Password Reset:** Use "Forgot Password" on login page
-3. **Email Change:** Change email in Profile settings
+3. **Email Change:** Change email in Account settings
 4. **Magic Link:** If enabled, use "Sign in with magic link"
 
 Test in multiple email clients:

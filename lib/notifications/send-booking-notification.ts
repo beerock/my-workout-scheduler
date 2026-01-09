@@ -67,7 +67,7 @@ export async function sendBookingNotification(
   const notificationFrequency = settings?.notification_frequency ?? 'immediate';
   const emailOnSuccess = settings?.email_on_success ?? true;
   const emailOnWaitlist = settings?.email_on_waitlist ?? true;
-  const emailOnFailure = settings?.email_on_failure ?? true;
+  // Note: No emailOnFailure setting - critical/failure emails are ALWAYS sent
   const emailOnRetry = settings?.email_on_retry ?? true;
 
   // 3. Check if notifications are globally disabled
@@ -138,13 +138,8 @@ export async function sendBookingNotification(
     };
   }
 
-  if (params.status === 'failed' && !emailOnFailure) {
-    console.log(`[Notification] User ${params.userId} has failure emails disabled`);
-    return {
-      sent: false,
-      reason: 'User has failure email notifications disabled',
-    };
-  }
+  // Note: No check for emailOnFailure - failure/critical emails are ALWAYS sent
+  // Users cannot disable them (login failures, class cancelled, etc. are too important)
 
   // 8. Special case: "Class full" retry emails (first failure only)
   if (params.status === 'failed' && isClassFullError(params.errorMessage || '')) {
@@ -178,10 +173,12 @@ export async function sendBookingNotification(
     };
   }
 
-  // 10. Get environment-specific dashboard and settings URLs
+  // 10. Get environment-specific URLs for email CTAs
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const dashboardUrl = `${appUrl}/dashboard`;
-  const settingsUrl = `${appUrl}/dashboard/profile`;
+  const scheduleUrl = `${appUrl}/dashboard/schedule`;
+  const credentialsUrl = `${appUrl}/dashboard/credentials`;
+  const settingsUrl = `${appUrl}/dashboard/account`;
 
   // 11. Prepare email data
   const emailData: BookingEmailData = {
@@ -200,6 +197,8 @@ export async function sendBookingNotification(
       timeStyle: 'short',
     }),
     dashboardUrl,
+    scheduleUrl,
+    credentialsUrl,
     settingsUrl,
   };
 

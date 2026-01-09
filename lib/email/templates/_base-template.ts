@@ -100,7 +100,7 @@ export function baseEmailTemplate(props: BaseEmailProps): string {
                       <a href="${props.settingsUrl}" style="color: ${emailDesign.colors.primary}; text-decoration: none;">Notification Settings</a>
                       ${props.showUnsubscribe ? `
                       &nbsp;|&nbsp;
-                      <a href="${props.settingsUrl}?unsubscribe=success" style="color: ${emailDesign.colors.neutralLight}; text-decoration: none;">Unsubscribe</a>
+                      <a href="${props.settingsUrl}?unsubscribe=true" style="color: ${emailDesign.colors.neutralLight}; text-decoration: none;">Unsubscribe</a>
                       ` : ''}
                     </p>
                     <p style="margin: ${emailDesign.spacing.sm} 0 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.tiny}; line-height: 1.4;">

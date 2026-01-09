@@ -70,9 +70,9 @@ The following items were identified during Email Notification System implementat
    - **Implementation:** Similar to daily digest but weekly cron
 
 3. **Dedicated Unsubscribe Page**
-   - **Status:** Post-MVP (currently links to profile settings)
+   - **Status:** Post-MVP (currently links to account settings)
    - **Summary:** One-click unsubscribe page for success emails
-   - **Current:** Unsubscribe links go to /dashboard/profile with ?unsubscribe param
+   - **Current:** Unsubscribe links go to /dashboard/account with ?unsubscribe param
 
 4. **Email Delivery Tracking via Resend Webhooks**
    - **Status:** Post-MVP
@@ -87,6 +87,28 @@ The following items were identified during Email Notification System implementat
 6. **Credentials Updated Email**
    - **Status:** Post-MVP (notification type in schema)
    - **Summary:** Confirmation when gym password changed (security email)
+
+7. **Pause Reminder Email Unpause Modal**
+   - **Status:** Post-MVP
+   - **Summary:** Add confirmation modal when clicking "Unpause My Schedule" CTA from pause reminder email
+   - **Current:** CTA goes to dashboard where PauseBanner shows Resume button (user self-serves)
+   - **Enhancement:** Add `?action=unpause` query param that triggers confirmation modal: "Resume your automated bookings?"
+   - **Benefit:** More direct action from email, clearer intent confirmation
+
+---
+
+### Post-MVP: Case Studies / Portfolio
+
+**STATUS: POST-MVP (Planning document created)**
+
+Portfolio case studies showcasing design decisions and implementation process.
+
+1. **Email Notification System Case Study**
+   - **Status:** Post-MVP (planning complete)
+   - **Summary:** Case study for `/prototype/email-notifications` page
+   - **Planning document:** `docs/CASE_STUDY_PLANNING.md`
+   - **Narrative:** Error categorization, template design decisions, preference system, UX details
+   - **Format:** Follow Design System v2 case study structure at `/prototype`
 
 ---
 
@@ -1876,7 +1898,7 @@ Email verification success notifications are now displayed on both the dashboard
 **Component Location:**
 - `components/EmailVerificationNotification.tsx` - Success notification component
 - `app/dashboard/page.tsx` - Dashboard displays notification
-- `app/dashboard/profile/page.tsx` - Profile page displays notification
+- `app/dashboard/account/page.tsx` - Profile page displays notification
 
 **Related Features:**
 - Email update requires password verification (security)
@@ -2480,7 +2502,7 @@ export async function GET(request: Request) {
   return redirect('/dashboard')
 }
 
-// app/dashboard/profile/page.tsx - Add Connected Accounts section
+// app/dashboard/account/page.tsx - Add Connected Accounts section
 // Show list of connected providers
 // Add/remove OAuth connections
 // Set password for OAuth-only users
@@ -2541,7 +2563,7 @@ CREATE TABLE user_oauth_providers (
 - `app/(auth)/login/page.tsx` - Add OAuth buttons
 - `app/(auth)/signup/page.tsx` - Add OAuth buttons (same as login)
 - `app/auth/callback/route.ts` - Handle OAuth callback (may need to create)
-- `app/dashboard/profile/page.tsx` - Add Connected Accounts section
+- `app/dashboard/account/page.tsx` - Add Connected Accounts section
 - `middleware.ts` - May need to handle OAuth callback routes
 
 **Environment Variables:**

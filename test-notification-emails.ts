@@ -71,8 +71,9 @@ const sampleBookingData = {
 // Build URLs
 const appUrl = getSiteUrl()
 const dashboardUrl = `${appUrl}/dashboard`
-const settingsUrl = `${appUrl}/dashboard/profile`
+const scheduleUrl = `${appUrl}/dashboard/schedule`
 const credentialsUrl = `${appUrl}/dashboard/credentials`
+const settingsUrl = `${appUrl}/dashboard/account`
 
 // Define all templates
 const templates: Record<string, { name: string; generate: () => { subject: string; html: string } }> = {
@@ -89,6 +90,7 @@ const templates: Record<string, { name: string; generate: () => { subject: strin
     generate: () => bookingSuccessEmail({
       ...sampleBookingData,
       dashboardUrl,
+      scheduleUrl,
       settingsUrl,
     }),
   },
@@ -102,6 +104,7 @@ const templates: Record<string, { name: string; generate: () => { subject: strin
       branchName: 'Westside YMCA',
       bookingTimestamp: new Date().toLocaleString(),
       dashboardUrl,
+      scheduleUrl,
       settingsUrl,
     }),
   },
@@ -116,6 +119,7 @@ const templates: Record<string, { name: string; generate: () => { subject: strin
       bookingTimestamp: new Date().toLocaleString(),
       retryCount: 5,
       dashboardUrl,
+      scheduleUrl,
       settingsUrl,
     }),
   },
@@ -125,6 +129,7 @@ const templates: Record<string, { name: string; generate: () => { subject: strin
       ...sampleBookingData,
       errorMessage: 'We couldn\'t log into your gym account. Your password may have changed or your membership may have expired.',
       dashboardUrl,
+      credentialsUrl,
       settingsUrl,
     }),
   },
@@ -147,6 +152,7 @@ const templates: Record<string, { name: string; generate: () => { subject: strin
       branchName: 'Eastside YMCA',
       errorMessage: 'We encountered a temporary technical issue. We\'ll automatically retry this booking.',
       dashboardUrl,
+      scheduleUrl,
       settingsUrl,
     }),
   },

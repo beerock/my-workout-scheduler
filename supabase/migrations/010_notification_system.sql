@@ -13,7 +13,6 @@ ADD COLUMN IF NOT EXISTS notification_frequency TEXT DEFAULT 'immediate'
   CHECK (notification_frequency IN ('immediate', 'daily_digest', 'critical_only', 'off')),
 ADD COLUMN IF NOT EXISTS email_on_success BOOLEAN DEFAULT TRUE,
 ADD COLUMN IF NOT EXISTS email_on_waitlist BOOLEAN DEFAULT TRUE,
-ADD COLUMN IF NOT EXISTS email_on_failure BOOLEAN DEFAULT TRUE,
 ADD COLUMN IF NOT EXISTS email_on_retry BOOLEAN DEFAULT TRUE,
 ADD COLUMN IF NOT EXISTS daily_digest_time TIME DEFAULT '08:00:00',
 ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'America/New_York';
@@ -22,7 +21,6 @@ COMMENT ON COLUMN user_settings.notification_email IS 'Master toggle for all ema
 COMMENT ON COLUMN user_settings.notification_frequency IS 'How often user receives emails: immediate, daily_digest, critical_only, or off';
 COMMENT ON COLUMN user_settings.email_on_success IS 'Send email when booking confirmed (immediate mode only)';
 COMMENT ON COLUMN user_settings.email_on_waitlist IS 'Send email when waitlisted (immediate mode only)';
-COMMENT ON COLUMN user_settings.email_on_failure IS 'Send email when booking fails (immediate mode only)';
 COMMENT ON COLUMN user_settings.email_on_retry IS 'Send email on first retry when class full (immediate mode only)';
 COMMENT ON COLUMN user_settings.daily_digest_time IS 'Time of day to send daily digest (in user timezone)';
 COMMENT ON COLUMN user_settings.timezone IS 'User timezone for daily digest scheduling (IANA timezone identifier)';
@@ -177,7 +175,6 @@ SET
   notification_frequency = COALESCE(notification_frequency, 'immediate'),
   email_on_success = COALESCE(email_on_success, TRUE),
   email_on_waitlist = COALESCE(email_on_waitlist, TRUE),
-  email_on_failure = COALESCE(email_on_failure, TRUE),
   email_on_retry = COALESCE(email_on_retry, TRUE),
   daily_digest_time = COALESCE(daily_digest_time, '08:00:00'::TIME),
   timezone = COALESCE(timezone, 'America/New_York')
@@ -186,7 +183,6 @@ WHERE
   OR notification_frequency IS NULL
   OR email_on_success IS NULL
   OR email_on_waitlist IS NULL
-  OR email_on_failure IS NULL
   OR email_on_retry IS NULL
   OR daily_digest_time IS NULL
   OR timezone IS NULL;
@@ -195,7 +191,7 @@ WHERE
 -- MIGRATION COMPLETE
 -- =============================================================================
 -- Summary of changes:
---   1. Extended user_settings with 8 notification preference columns
+--   1. Extended user_settings with 7 notification preference columns
 --   2. Created notification_log table with RLS policies
 --   3. Created notification_digest_queue table with RLS policies (post-MVP)
 --   4. Added indexes for query performance

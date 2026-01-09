@@ -35,7 +35,7 @@ export type TemplateInfo = {
 
 const sampleUrls = {
   dashboardUrl: 'https://example.com/dashboard',
-  settingsUrl: 'https://example.com/dashboard/profile',
+  settingsUrl: 'https://example.com/dashboard/account',
   credentialsUrl: 'https://example.com/dashboard/credentials',
   scheduleUrl: 'https://example.com/dashboard/schedule',
 }
@@ -80,6 +80,7 @@ export async function getEmailTemplatePreview(
         branchName: 'Downtown YMCA',
         bookingTimestamp: new Date().toISOString(),
         dashboardUrl: sampleUrls.dashboardUrl,
+        scheduleUrl: sampleUrls.scheduleUrl,
         settingsUrl: sampleUrls.settingsUrl,
       })
       return {
@@ -99,6 +100,7 @@ export async function getEmailTemplatePreview(
         branchName: 'Westside YMCA',
         bookingTimestamp: new Date().toISOString(),
         dashboardUrl: sampleUrls.dashboardUrl,
+        scheduleUrl: sampleUrls.scheduleUrl,
         settingsUrl: sampleUrls.settingsUrl,
       })
       return {
@@ -119,6 +121,7 @@ export async function getEmailTemplatePreview(
         bookingTimestamp: new Date().toISOString(),
         retryCount: 3,
         dashboardUrl: sampleUrls.dashboardUrl,
+        scheduleUrl: sampleUrls.scheduleUrl,
         settingsUrl: sampleUrls.settingsUrl,
       })
       return {
@@ -139,6 +142,7 @@ export async function getEmailTemplatePreview(
         errorMessage:
           "We couldn't log into your gym account. Your password may have changed, or there may be an issue with your membership.",
         dashboardUrl: sampleUrls.dashboardUrl,
+        credentialsUrl: sampleUrls.credentialsUrl,
         settingsUrl: sampleUrls.settingsUrl,
       })
       return {
@@ -179,6 +183,7 @@ export async function getEmailTemplatePreview(
         errorMessage:
           'We encountered a technical issue while trying to book your class. This may be temporary.',
         dashboardUrl: sampleUrls.dashboardUrl,
+        scheduleUrl: sampleUrls.scheduleUrl,
         settingsUrl: sampleUrls.settingsUrl,
       })
       return {

@@ -17,6 +17,7 @@ export type BookingRetrySuccessfulEmailProps = {
   bookingTimestamp: string;
   retryCount: number; // How many times we tried before success
   dashboardUrl: string;
+  scheduleUrl: string; // Link to schedule page (CTA destination)
   settingsUrl: string;
 };
 
@@ -71,7 +72,7 @@ export function bookingRetrySuccessfulEmail(props: BookingRetrySuccessfulEmailPr
     body,
     severity: 'success',
     ctaText: 'View My Schedule',
-    ctaLink: props.dashboardUrl,
+    ctaLink: props.scheduleUrl,
     showUnsubscribe: true, // Success emails can be unsubscribed
     dashboardUrl: props.dashboardUrl,
     settingsUrl: props.settingsUrl,

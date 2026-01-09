@@ -108,7 +108,7 @@ ADD COLUMN IF NOT EXISTS notification_email BOOLEAN DEFAULT TRUE,
 ADD COLUMN IF NOT EXISTS notification_frequency TEXT DEFAULT 'immediate' CHECK (notification_frequency IN ('immediate', 'daily_digest', 'critical_only', 'off')),
 ADD COLUMN IF NOT EXISTS email_on_success BOOLEAN DEFAULT TRUE,
 ADD COLUMN IF NOT EXISTS email_on_waitlist BOOLEAN DEFAULT TRUE,
-ADD COLUMN IF NOT EXISTS email_on_failure BOOLEAN DEFAULT TRUE,
+-- Note: No email_on_failure column - critical/failure emails are ALWAYS sent (cannot be disabled)
 ADD COLUMN IF NOT EXISTS email_on_retry BOOLEAN DEFAULT TRUE, -- First failure only
 ADD COLUMN IF NOT EXISTS daily_digest_time TIME DEFAULT '08:00:00', -- Local time for digest
 ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'America/New_York'; -- For digest scheduling
@@ -627,7 +627,7 @@ export async function sendBookingNotification(params: {
   // Check individual preferences
   if (isSuccess && !settings.email_on_success) return
   if (isWaitlist && !settings.email_on_waitlist) return
-  if (isFailure && !isRetrying && !settings.email_on_failure) return
+  // Note: No check for email_on_failure - critical/failure emails are ALWAYS sent
   if (isRetrying && !settings.email_on_retry) return
 
   // Step 4: Get email template
@@ -947,7 +947,7 @@ export default function NotificationPreferencesForm({ settings }: any) {
     notification_frequency: settings.notification_frequency ?? 'immediate',
     email_on_success: settings.email_on_success ?? true,
     email_on_waitlist: settings.email_on_waitlist ?? true,
-    email_on_failure: settings.email_on_failure ?? true,
+    // Note: No email_on_failure - critical/failure emails are ALWAYS sent
     email_on_retry: settings.email_on_retry ?? true,
   })
 
@@ -1067,14 +1067,10 @@ export default function NotificationPreferencesForm({ settings }: any) {
               <span>Class full (first attempt)</span>
             </label>
 
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={formData.email_on_failure}
-                onChange={(e) => setFormData({ ...formData, email_on_failure: e.target.checked })}
-              />
-              <span>Booking failures</span>
-            </label>
+            {/* Note: No toggle for failure emails - critical/failure emails are ALWAYS sent */}
+            <p className="text-sm text-gray-500">
+              Critical alerts (login failures, etc.) are always sent.
+            </p>
           </div>
         )}
       </div>
@@ -1116,7 +1112,7 @@ export async function updateNotificationPreferences(data: {
   notification_frequency: string
   email_on_success: boolean
   email_on_waitlist: boolean
-  email_on_failure: boolean
+  // Note: No email_on_failure - critical/failure emails are ALWAYS sent
   email_on_retry: boolean
 }): Promise<{ success: boolean; error?: string }> {
   const supabase = createClient()
@@ -1138,7 +1134,7 @@ export async function updateNotificationPreferences(data: {
       notification_frequency: data.notification_frequency,
       email_on_success: data.email_on_success,
       email_on_waitlist: data.email_on_waitlist,
-      email_on_failure: data.email_on_failure,
+      // Note: No email_on_failure - critical/failure emails are ALWAYS sent
       email_on_retry: data.email_on_retry,
     })
     .eq('user_id', user.id)

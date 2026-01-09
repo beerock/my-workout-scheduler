@@ -42,6 +42,8 @@ export type BookingEmailData = {
   retryCount?: number; // Number of retries before success (if isRetrySuccess)
   bookingTimestamp: string; // When booking was made
   dashboardUrl: string;
+  scheduleUrl: string; // Link to schedule page (CTA destination for success/waitlist/retry/technical)
+  credentialsUrl: string; // Link to credentials page (CTA destination for login-related errors)
   settingsUrl: string;
 };
 
@@ -111,6 +113,7 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
         bookingTimestamp: data.bookingTimestamp,
         retryCount: data.retryCount || 1,
         dashboardUrl: data.dashboardUrl,
+        scheduleUrl: data.scheduleUrl,
         settingsUrl: data.settingsUrl,
       };
 
@@ -131,6 +134,7 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
       branchName: data.branchName,
       bookingTimestamp: data.bookingTimestamp,
       dashboardUrl: data.dashboardUrl,
+      scheduleUrl: data.scheduleUrl,
       settingsUrl: data.settingsUrl,
     };
 
@@ -152,6 +156,7 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
       branchName: data.branchName,
       bookingTimestamp: data.bookingTimestamp,
       dashboardUrl: data.dashboardUrl,
+      scheduleUrl: data.scheduleUrl,
       settingsUrl: data.settingsUrl,
     };
 
@@ -180,6 +185,7 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
         branchName: data.branchName,
         errorMessage: data.errorMessage,
         dashboardUrl: data.dashboardUrl,
+        credentialsUrl: data.credentialsUrl,
         settingsUrl: data.settingsUrl,
       };
 
@@ -220,6 +226,7 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
       branchName: data.branchName,
       errorMessage: data.errorMessage,
       dashboardUrl: data.dashboardUrl,
+      scheduleUrl: data.scheduleUrl,
       settingsUrl: data.settingsUrl,
     };
 

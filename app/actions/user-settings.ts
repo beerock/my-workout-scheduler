@@ -305,7 +305,6 @@ export async function updateNotificationPreferences(preferences: {
   notification_frequency: 'immediate' | 'critical_only' | 'off'
   email_on_success: boolean
   email_on_waitlist: boolean
-  email_on_failure: boolean
   email_on_retry: boolean
   email_on_pause_reminder: boolean
 }): Promise<UserSettingsResult> {
@@ -337,7 +336,6 @@ export async function updateNotificationPreferences(preferences: {
           notification_frequency: preferences.notification_frequency,
           email_on_success: preferences.email_on_success,
           email_on_waitlist: preferences.email_on_waitlist,
-          email_on_failure: preferences.email_on_failure,
           email_on_retry: preferences.email_on_retry,
           email_on_pause_reminder: preferences.email_on_pause_reminder,
         })
@@ -360,7 +358,6 @@ export async function updateNotificationPreferences(preferences: {
           notification_frequency: preferences.notification_frequency,
           email_on_success: preferences.email_on_success,
           email_on_waitlist: preferences.email_on_waitlist,
-          email_on_failure: preferences.email_on_failure,
           email_on_retry: preferences.email_on_retry,
           email_on_pause_reminder: preferences.email_on_pause_reminder,
         })
@@ -373,7 +370,7 @@ export async function updateNotificationPreferences(preferences: {
       }
     }
 
-    revalidatePath('/dashboard/profile')
+    revalidatePath('/dashboard/account')
     return {
       success: true,
     }

@@ -55,7 +55,7 @@ export async function sendWelcomeEmail(userId: string): Promise<WelcomeEmailResu
   // 4. Get environment-specific URLs
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const dashboardUrl = `${appUrl}/dashboard`
-  const settingsUrl = `${appUrl}/dashboard/profile`
+  const settingsUrl = `${appUrl}/dashboard/account`
   const credentialsUrl = `${appUrl}/dashboard/credentials`
 
   // 5. Generate email

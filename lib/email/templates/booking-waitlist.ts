@@ -16,6 +16,7 @@ export type BookingWaitlistEmailProps = {
   branchName: string;
   bookingTimestamp: string;
   dashboardUrl: string;
+  scheduleUrl: string; // Link to schedule page (CTA destination)
   settingsUrl: string;
 };
 
@@ -66,7 +67,7 @@ export function bookingWaitlistEmail(props: BookingWaitlistEmailProps): { subjec
     body,
     severity: 'warning',
     ctaText: 'View My Schedule',
-    ctaLink: props.dashboardUrl,
+    ctaLink: props.scheduleUrl,
     showUnsubscribe: true, // Success-like emails can be unsubscribed
     dashboardUrl: props.dashboardUrl,
     settingsUrl: props.settingsUrl,

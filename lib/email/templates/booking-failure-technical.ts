@@ -22,6 +22,7 @@ export type BookingFailureTechnicalEmailProps = {
   branchName: string;
   errorMessage: string; // User-friendly error from ERROR_MESSAGES.md
   dashboardUrl: string;
+  scheduleUrl: string; // Link to schedule page (CTA destination)
   settingsUrl: string;
 };
 
@@ -75,8 +76,8 @@ export function bookingFailureTechnicalEmail(props: BookingFailureTechnicalEmail
     preheader: `We encountered a technical issue booking ${props.className} on ${props.dayOfWeek}`,
     body,
     severity: 'warning',
-    ctaText: 'View Booking History',
-    ctaLink: props.dashboardUrl,
+    ctaText: 'View My Schedule',
+    ctaLink: props.scheduleUrl,
     showUnsubscribe: false, // Failure emails CANNOT be unsubscribed
     dashboardUrl: props.dashboardUrl,
     settingsUrl: props.settingsUrl,
