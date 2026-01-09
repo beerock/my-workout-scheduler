@@ -8,7 +8,7 @@
  */
 
 import { Resend } from 'resend';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { getEmailConfig } from '@/lib/env-utils';
 
 // Initialize Resend client
@@ -82,7 +82,8 @@ async function logNotification(params: {
   errorMessage?: string;
 }): Promise<void> {
   try {
-    const supabase = await createClient();
+    // Use service role to bypass RLS for logging
+    const supabase = createServiceRoleClient();
 
     const { error } = await supabase.from('notification_log').insert({
       user_id: params.userId,
@@ -204,12 +205,14 @@ export async function sendEmailNotification(params: SendEmailParams): Promise<Se
 /**
  * Helper: Get user email using Supabase Auth Admin API
  * Used by notification functions to fetch recipient email
+ * REQUIRES service role client for auth.admin access
  */
 export async function getUserEmail(userId: string): Promise<string | null> {
   try {
-    const supabase = await createClient();
+    // Must use service role client for auth.admin API
+    const supabase = createServiceRoleClient();
 
-    // Use auth.admin.getUserById() for service role access
+    // Use auth.admin.getUserById() - requires service role
     const { data, error } = await supabase.auth.admin.getUserById(userId);
 
     if (error || !data?.user?.email) {
