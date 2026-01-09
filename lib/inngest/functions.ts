@@ -443,7 +443,7 @@ export const pauseReminderFunction = inngest.createFunction(
     console.log(`[Inngest] Pause reminder scheduled for user ${userId} (7 days from now)`);
 
     // Wait 7 days before sending reminder
-    await step.sleep('wait-7-days', '1m');  // Was '7d'
+    await step.sleep('wait-7-days', '7d');
 
     console.log(`[Inngest] 7 days passed, checking if user ${userId} is still paused...`);
 
