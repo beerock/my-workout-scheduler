@@ -47,17 +47,17 @@ Supabase uses Go template syntax for variables:
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb;">
   <!-- Preheader -->
-  <div style="display: none; max-height: 0; overflow: hidden;">
+  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
     Click to verify your email and start automating your gym bookings.
   </div>
 
   <!-- Email wrapper -->
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f9fafb;">
     <tr>
-      <td align="center" style="padding: 24px 0;">
+      <td align="center" style="padding: 24px 16px;">
 
         <!-- Email container -->
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 6px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 6px;">
 
           <!-- Header -->
           <tr>
@@ -83,7 +83,7 @@ Supabase uses Go template syntax for variables:
               <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td style="border-radius: 6px; background-color: #2563eb;">
-                    <a href="{{ .ConfirmationURL }}" style="display: inline-block; padding: 16px 24px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 16px 24px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                       Verify Email Address
                     </a>
                   </td>
@@ -91,13 +91,17 @@ Supabase uses Go template syntax for variables:
               </table>
 
               <!-- Info Box -->
-              <div style="margin: 24px 0; padding: 16px; background-color: #f9fafb; border-radius: 6px; border-left: 4px solid #2563eb;">
-                <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
-                  This link expires in 1 hour. If you didn't create an account, you can safely ignore this email.
-                </p>
-              </div>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin-top: 24px;">
+                <tr>
+                  <td style="padding: 16px; background-color: #f9fafb; border-radius: 6px; border-left: 4px solid #2563eb;">
+                    <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                      This link expires in 1 hour. If you didn't create an account, you can safely ignore this email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
 
-              <p style="margin: 0; color: #9ca3af; font-size: 14px;">
+              <p style="margin: 24px 0 0; color: #9ca3af; font-size: 14px;">
                 If the button doesn't work, copy and paste this link into your browser:<br>
                 <a href="{{ .ConfirmationURL }}" style="color: #2563eb; word-break: break-all;">{{ .ConfirmationURL }}</a>
               </p>
@@ -107,7 +111,7 @@ Supabase uses Go template syntax for variables:
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 14px;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 14px; line-height: 1.5;">
                 Need help? Email <a href="mailto:help@beerock.com" style="color: #2563eb; text-decoration: none;">help@beerock.com</a>
               </p>
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
@@ -142,17 +146,17 @@ Supabase uses Go template syntax for variables:
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb;">
   <!-- Preheader -->
-  <div style="display: none; max-height: 0; overflow: hidden;">
+  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
     Click to reset your password. This link expires in 1 hour.
   </div>
 
   <!-- Email wrapper -->
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f9fafb;">
     <tr>
-      <td align="center" style="padding: 24px 0;">
+      <td align="center" style="padding: 24px 16px;">
 
         <!-- Email container -->
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 6px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 6px;">
 
           <!-- Header -->
           <tr>
@@ -178,7 +182,7 @@ Supabase uses Go template syntax for variables:
               <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td style="border-radius: 6px; background-color: #f59e0b;">
-                    <a href="{{ .ConfirmationURL }}" style="display: inline-block; padding: 16px 24px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 16px 24px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                       Reset Password
                     </a>
                   </td>
@@ -186,13 +190,17 @@ Supabase uses Go template syntax for variables:
               </table>
 
               <!-- Warning Box -->
-              <div style="margin: 24px 0; padding: 16px; background-color: #f9fafb; border-radius: 6px; border-left: 4px solid #f59e0b;">
-                <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
-                  <strong>Security notice:</strong> This link expires in 1 hour. If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
-                </p>
-              </div>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin-top: 24px;">
+                <tr>
+                  <td style="padding: 16px; background-color: #f9fafb; border-radius: 6px; border-left: 4px solid #f59e0b;">
+                    <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                      <strong>Security notice:</strong> This link expires in 1 hour. If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+                    </p>
+                  </td>
+                </tr>
+              </table>
 
-              <p style="margin: 0; color: #9ca3af; font-size: 14px;">
+              <p style="margin: 24px 0 0; color: #9ca3af; font-size: 14px;">
                 If the button doesn't work, copy and paste this link into your browser:<br>
                 <a href="{{ .ConfirmationURL }}" style="color: #2563eb; word-break: break-all;">{{ .ConfirmationURL }}</a>
               </p>
@@ -202,7 +210,7 @@ Supabase uses Go template syntax for variables:
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 14px;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 14px; line-height: 1.5;">
                 Need help? Email <a href="mailto:help@beerock.com" style="color: #2563eb; text-decoration: none;">help@beerock.com</a>
               </p>
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
@@ -237,17 +245,17 @@ Supabase uses Go template syntax for variables:
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb;">
   <!-- Preheader -->
-  <div style="display: none; max-height: 0; overflow: hidden;">
+  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
     Click to confirm your new email address. This link expires in 1 hour.
   </div>
 
   <!-- Email wrapper -->
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f9fafb;">
     <tr>
-      <td align="center" style="padding: 24px 0;">
+      <td align="center" style="padding: 24px 16px;">
 
         <!-- Email container -->
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 6px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 6px;">
 
           <!-- Header -->
           <tr>
@@ -273,7 +281,7 @@ Supabase uses Go template syntax for variables:
               <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td style="border-radius: 6px; background-color: #2563eb;">
-                    <a href="{{ .ConfirmationURL }}" style="display: inline-block; padding: 16px 24px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 16px 24px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                       Confirm New Email
                     </a>
                   </td>
@@ -281,13 +289,17 @@ Supabase uses Go template syntax for variables:
               </table>
 
               <!-- Info Box -->
-              <div style="margin: 24px 0; padding: 16px; background-color: #f9fafb; border-radius: 6px; border-left: 4px solid #2563eb;">
-                <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
-                  This link expires in 1 hour. If you didn't request this change, you can safely ignore this email. Your current email will remain unchanged.
-                </p>
-              </div>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin-top: 24px;">
+                <tr>
+                  <td style="padding: 16px; background-color: #f9fafb; border-radius: 6px; border-left: 4px solid #2563eb;">
+                    <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                      This link expires in 1 hour. If you didn't request this change, you can safely ignore this email. Your current email will remain unchanged.
+                    </p>
+                  </td>
+                </tr>
+              </table>
 
-              <p style="margin: 0; color: #9ca3af; font-size: 14px;">
+              <p style="margin: 24px 0 0; color: #9ca3af; font-size: 14px;">
                 If the button doesn't work, copy and paste this link into your browser:<br>
                 <a href="{{ .ConfirmationURL }}" style="color: #2563eb; word-break: break-all;">{{ .ConfirmationURL }}</a>
               </p>
@@ -297,7 +309,7 @@ Supabase uses Go template syntax for variables:
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 14px;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 14px; line-height: 1.5;">
                 Need help? Email <a href="mailto:help@beerock.com" style="color: #2563eb; text-decoration: none;">help@beerock.com</a>
               </p>
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
@@ -334,17 +346,17 @@ If you use magic link authentication, use this template.
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb;">
   <!-- Preheader -->
-  <div style="display: none; max-height: 0; overflow: hidden;">
+  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
     Click to sign in to your account. This link expires in 1 hour.
   </div>
 
   <!-- Email wrapper -->
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f9fafb;">
     <tr>
-      <td align="center" style="padding: 24px 0;">
+      <td align="center" style="padding: 24px 16px;">
 
         <!-- Email container -->
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 6px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 6px;">
 
           <!-- Header -->
           <tr>
@@ -370,7 +382,7 @@ If you use magic link authentication, use this template.
               <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td style="border-radius: 6px; background-color: #10b981;">
-                    <a href="{{ .ConfirmationURL }}" style="display: inline-block; padding: 16px 24px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 16px 24px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                       Sign In Now
                     </a>
                   </td>
@@ -378,13 +390,17 @@ If you use magic link authentication, use this template.
               </table>
 
               <!-- Info Box -->
-              <div style="margin: 24px 0; padding: 16px; background-color: #f9fafb; border-radius: 6px; border-left: 4px solid #10b981;">
-                <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
-                  This link expires in 1 hour and can only be used once. If you didn't request this link, you can safely ignore this email.
-                </p>
-              </div>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin-top: 24px;">
+                <tr>
+                  <td style="padding: 16px; background-color: #f9fafb; border-radius: 6px; border-left: 4px solid #10b981;">
+                    <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                      This link expires in 1 hour and can only be used once. If you didn't request this link, you can safely ignore this email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
 
-              <p style="margin: 0; color: #9ca3af; font-size: 14px;">
+              <p style="margin: 24px 0 0; color: #9ca3af; font-size: 14px;">
                 If the button doesn't work, copy and paste this link into your browser:<br>
                 <a href="{{ .ConfirmationURL }}" style="color: #2563eb; word-break: break-all;">{{ .ConfirmationURL }}</a>
               </p>
@@ -394,7 +410,7 @@ If you use magic link authentication, use this template.
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 14px;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 14px; line-height: 1.5;">
                 Need help? Email <a href="mailto:help@beerock.com" style="color: #2563eb; text-decoration: none;">help@beerock.com</a>
               </p>
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">

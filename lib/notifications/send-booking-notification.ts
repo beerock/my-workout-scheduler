@@ -7,7 +7,7 @@
  * Called by Inngest booking functions after booking attempt completes.
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { getEmailTemplate, type BookingEmailData } from '@/lib/email/get-email-template';
 import { sendEmailNotification, getUserEmail } from '@/lib/email/send-notification';
 
@@ -37,7 +37,8 @@ export type NotificationResult = {
 export async function sendBookingNotification(
   params: SendBookingNotificationParams
 ): Promise<NotificationResult> {
-  const supabase = await createClient();
+  // Use service role client to bypass RLS (called from Inngest, no user session)
+  const supabase = createServiceRoleClient();
 
   // 1. Get user email
   const userEmail = await getUserEmail(params.userId);
@@ -271,7 +272,8 @@ function isClassFullError(errorMessage: string): boolean {
  */
 async function hasClassFullEmailBeenSent(userId: string, bookingAttemptId: string): Promise<boolean> {
   try {
-    const supabase = await createClient();
+    // Use service role client to bypass RLS
+    const supabase = createServiceRoleClient();
 
     const { data, error } = await supabase
       .from('notification_log')

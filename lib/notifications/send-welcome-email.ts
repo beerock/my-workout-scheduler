@@ -5,7 +5,7 @@
  * Called from auth callback after successful email verification.
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { getUserEmail, sendEmailNotification } from '@/lib/email/send-notification'
 import { welcomeEmail } from '@/lib/email/templates/welcome'
 
@@ -19,7 +19,8 @@ export type WelcomeEmailResult = {
  * Send welcome email to a newly signed up user
  */
 export async function sendWelcomeEmail(userId: string): Promise<WelcomeEmailResult> {
-  const supabase = await createClient()
+  // Use service role client to bypass RLS for notification_log check
+  const supabase = createServiceRoleClient()
 
   // 1. Get user email
   const userEmail = await getUserEmail(userId)
