@@ -60,10 +60,11 @@ export default function EmailVerificationNotification() {
     if (isEmailVerified) {
       setNotification('success')
 
-      // Clear the hash after showing the message
-      if (hash) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search)
-      }
+      // Clear the hash and verification params after showing the message
+      const cleanUrl = new URL(window.location.href)
+      cleanUrl.searchParams.delete('email_verified')
+      cleanUrl.searchParams.delete('verification_type')
+      window.history.replaceState(null, '', cleanUrl.pathname + (cleanUrl.searchParams.toString() ? `?${cleanUrl.searchParams}` : ''))
 
       // Don't auto-hide - user must manually dismiss
     }
