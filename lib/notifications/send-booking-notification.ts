@@ -174,8 +174,9 @@ export async function sendBookingNotification(
     };
   }
 
-  // 10. Get environment-specific URLs for email CTAs
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  // 10. Get environment-specific URLs for email CTAs using getSiteUrl() for proper Vercel detection
+  const { getSiteUrl } = await import('@/lib/env-utils');
+  const appUrl = getSiteUrl();
   const dashboardUrl = `${appUrl}/dashboard`;
   const scheduleUrl = `${appUrl}/dashboard/schedule`;
   const credentialsUrl = `${appUrl}/dashboard/credentials`;
