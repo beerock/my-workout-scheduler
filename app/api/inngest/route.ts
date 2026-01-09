@@ -7,6 +7,7 @@ import { inngest } from '@/lib/inngest/client';
 import {
   bookClassFunction,
   dailySchedulerFunction,
+  pauseReminderFunction,
 } from '@/lib/inngest/functions';
 
 export const { GET, POST, PUT } = serve({
@@ -14,5 +15,6 @@ export const { GET, POST, PUT } = serve({
   functions: [
     bookClassFunction,       // Handles booking attempts with retries
     dailySchedulerFunction,  // Runs daily to schedule upcoming bookings
+    pauseReminderFunction,   // Sends reminder 7 days after pausing schedule
   ],
 });

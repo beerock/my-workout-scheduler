@@ -108,7 +108,7 @@
   - Clear separation: flag for backend logic, datetime for UI display with timezone formatting
   - Lifecycle: flag cleared immediately after skip, datetime cleared at next booking attempt
   - Database migration now handles PostgreSQL DATE and TIME types correctly with `::TEXT` casting
-- ✅ **COMPLETED: User Profile Management (v2.8)**
+- ✅ **COMPLETED: User Account Management (v2.8)**
   - Email update with password verification and email confirmation
   - Password change with current password verification
   - Account deletion with two-step confirmation
@@ -233,6 +233,23 @@
   - **Server-Side Validation:** Defense-in-depth with shared utilities (\`lib/validation.ts\`)
     - All client validation replicated server-side
     - Prevents bypassing via DevTools
+- ✅ **COMPLETED: Email Notification System (v2.27)**
+  - **Booking Notifications:** Emails sent after booking attempts (success, waitlist, failure)
+    - 6 booking email templates with error categorization (critical/config/technical)
+    - Smart CTA routing: Login errors → credentials page, others → schedule page
+  - **Onboarding:** Welcome email sent after email verification
+    - Guides users through 2-step setup (credentials → first class)
+  - **Reminders:** Pause reminder email after 7 days of paused schedule
+    - Inngest scheduled function with cancelOn unpause
+    - Can be disabled in user preferences
+  - **User Notification Preferences:** Account page settings
+    - Master toggle to enable/disable all emails
+    - Individual toggles: success, waitlist, retry, pause reminder
+    - Critical failure emails always sent (cannot disable)
+  - **Unsubscribe Flow:** Success emails link to Account page with info alert
+    - Query param `?unsubscribe=true` shows preferences guidance
+  - **Account Page:** Renamed from Profile, notifications-first layout
+  - **Database:** Extended user_settings + new notification_log table
 
 ---
 
@@ -289,7 +306,7 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 | **Login** | Basic login page | High | ✅ |
 | **Credential Storage** | Securely store gym website login credentials (Supabase encrypted) | High | ✅ |
 | **Gym Configuration** | Set gym URL and default branch | High | ✅ |
-| **Profile Management** | Update email, password, and account settings | High | ✅ |
+| **Account Management** | Update email, password, and notification settings | High | ✅ |
 | **Email Update** | Change email with password verification and email confirmation | High | ✅ |
 | **Password Update** | Change password with current password verification | High | ✅ |
 | **Account Deletion** | Delete account with two-step confirmation and password verification | Medium | ✅ |
@@ -466,7 +483,7 @@ Users could miss bookings if they unpause, activate a class, or remove a skip be
 | **Quick Stats** | Classes this week, active classes, success rate, action items count | High | ✅ |
 | **Recent Activity Timeline** | Last 5 booking attempts with results | High | ✅ |
 | **Action Items** | Failed bookings and credential issues requiring attention | High | ✅ |
-| **Email Notifications** | Designed and ready for integration (Phase 4) | High | 🔜 |
+| **Email Notifications** | Booking results, welcome email, pause reminders (v2.27) | High | ✅ |
 | **Basic History** | Show last 30 days of booking attempts | Medium | 📋 |
 
 ### 3.5 What's NOT Included / Future Enhancements

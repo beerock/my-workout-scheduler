@@ -2419,7 +2419,7 @@ interface HeaderProps {
 
 - **Logo/Brand:** Calendar icon + "My Workout Scheduler" linking to dashboard
 - **Desktop Navigation:** Schedule link + user dropdown menu
-- **User Dropdown:** Profile, Credentials, Logout options
+- **User Dropdown:** Account, Credentials, Logout options
 - **Mobile Menu:** Hamburger icon with slide-down navigation drawer
 - **Diagonal Accent Bar:** Gradient bar at bottom (blue → green → purple)
 - **Responsive:** Mobile-first design with md breakpoint
