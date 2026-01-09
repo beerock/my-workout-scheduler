@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendWelcomeEmail } from '@/lib/notifications/send-welcome-email'
 
 /**
  * Auth Callback Route
@@ -70,6 +71,20 @@ export async function GET(request: NextRequest) {
         // Pass verification type to notification component for appropriate messaging
         redirectUrl.searchParams.set('email_verified', 'true')
         redirectUrl.searchParams.set('verification_type', type || 'signup')
+
+        // Send welcome email for new signups (not password recovery)
+        if (type === 'signup' || type === 'email' || !type) {
+          try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user?.id) {
+              await sendWelcomeEmail(user.id)
+              console.log(`[Auth Callback] Welcome email sent to user ${user.id}`)
+            }
+          } catch (emailError) {
+            console.error('[Auth Callback] Failed to send welcome email:', emailError)
+            // Non-critical - continue with redirect
+          }
+        }
       }
       return NextResponse.redirect(redirectUrl)
     }

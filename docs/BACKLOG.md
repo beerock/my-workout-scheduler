@@ -52,6 +52,44 @@ See [PRE_LAUNCH_CHECKLIST.md](PRE_LAUNCH_CHECKLIST.md) for system configuration,
 
 ---
 
+### Post-MVP: Email Notification Enhancements
+
+**STATUS: POST-MVP (Email Notification System v2.27 completed)**
+
+The following items were identified during Email Notification System implementation but deferred to post-MVP:
+
+1. **Daily Digest Implementation**
+   - **Status:** Post-MVP (database schema ready, UI hidden)
+   - **Summary:** Send one summary email per day instead of immediate notifications
+   - **Schema ready:** `daily_digest_time`, `timezone` columns exist in user_settings
+   - **Implementation needed:** Inngest cron job, digest aggregation logic, digest template
+
+2. **Weekly Summary Alternative**
+   - **Status:** Post-MVP
+   - **Summary:** Alternative to daily digest for users who want less frequent emails
+   - **Implementation:** Similar to daily digest but weekly cron
+
+3. **Dedicated Unsubscribe Page**
+   - **Status:** Post-MVP (currently links to profile settings)
+   - **Summary:** One-click unsubscribe page for success emails
+   - **Current:** Unsubscribe links go to /dashboard/profile with ?unsubscribe param
+
+4. **Email Delivery Tracking via Resend Webhooks**
+   - **Status:** Post-MVP
+   - **Summary:** Update notification_log delivery_status via Resend webhook callbacks
+   - **Schema ready:** delivery_status column in notification_log supports 'delivered', 'bounced'
+
+5. **First Booking Success Email**
+   - **Status:** Post-MVP (notification type in schema)
+   - **Summary:** Celebrate first successful booking with special email
+   - **Implementation:** Detect first confirmed booking in send-booking-notification
+
+6. **Credentials Updated Email**
+   - **Status:** Post-MVP (notification type in schema)
+   - **Summary:** Confirmation when gym password changed (security email)
+
+---
+
 ## Operational Notes & Reminders
 
 ### Production Deployment Status

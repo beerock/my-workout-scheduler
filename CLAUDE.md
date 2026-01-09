@@ -14,7 +14,7 @@ This document provides Claude with essential context about the My Workout Schedu
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version (v2.26):** Production-ready with Design System v2 component library (19 components including new TimeInput), Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic (filters inactive classes, shows week after skip, accurate countdown display, correct booking status for specific occurrence), custom error pages (404, error boundary, global error) with support contact, comprehensive SEO metadata (sitemap, robots.txt, OG images, per-page titles), improved email handling UX (hedged messaging for signup, duplicate email detection on profile change), accurate all-time success rate calculation (includes all booking attempts regardless of class active status, excludes skipped/pending), GitHub App authentication (auto-rotating tokens, no manual renewal, better security), comprehensive form validation UX (password strength meter, email validation on blur, form reset keys prevent red border bug, Input success state for confirm password matching), and improved RecurringClassForm UX (logical field grouping, simplified labels, 12-hour time picker, 1.5s delayed redirect after save).
+**Current Version (v2.27):** Email Notification System with welcome emails (sent after verification), pause reminders (7-day delay with auto-cancel), booking result notifications (success, waitlist, failure with categorization), user notification preferences UI (frequency modes, individual toggles), admin testing toggles (ADMIN_DISABLE_*_EMAILS). Previous: Design System v2 component library (19 components including TimeInput), Header and Footer layout components, immediate scheduling on unpause/activate/unskip, skip edit confirmation, intelligent pause/inactive interaction using three-zone cleanup logic, NextClassCard with improved logic, custom error pages with support contact, comprehensive SEO metadata, improved email handling UX, accurate all-time success rate calculation, GitHub App authentication, comprehensive form validation UX, and improved RecurringClassForm UX.
 
 ---
 
@@ -606,6 +606,50 @@ Comprehensive form validation UX improvements across authentication and dashboar
 
 ---
 
+### 19. Email Notification System (v2.27)
+
+User-facing email notifications for booking results and onboarding.
+
+**Email Types (MVP):**
+- **Booking Notifications:** success, waitlist, retry successful, failure (critical/config/technical)
+- **Onboarding:** Welcome email (sent after email verification)
+- **Reminders:** Pause reminder (7 days after pausing schedule)
+
+**User Notification Preferences:**
+- **Frequency modes:** Immediate, Critical Only, Off
+- **Individual toggles:** Success, Waitlist, Failure, Retry (Immediate mode only)
+- **Pause reminder toggle:** Enabled by default, can be disabled
+- Daily digest moved to post-MVP (database schema ready, UI hidden)
+
+**Key Features:**
+- Templates use design tokens for consistent styling (`lib/email/design-tokens.ts`)
+- Base template pattern for consistent headers/footers
+- Admin toggles for testing: `ADMIN_DISABLE_ALL_EMAILS`, `ADMIN_DISABLE_BOOKING_EMAILS`, `ADMIN_DISABLE_ERROR_EMAILS`
+- Notification log table tracks all sent emails for audit trail
+- "First failure only" logic prevents spam on class full retries
+- Cancel pause reminder when user unpauses (Inngest cancelOn)
+
+**Trigger Points:**
+- Booking result → Inngest sends notification
+- Email verification → Welcome email sent
+- Schedule paused → 7-day reminder scheduled via Inngest
+
+**File Locations:**
+- Templates: `lib/email/templates/` (welcome.ts, pause-reminder.ts, booking-*.ts)
+- Send utilities: `lib/email/send-notification.ts`
+- Template routing: `lib/email/get-email-template.ts`
+- Booking notifications: `lib/notifications/send-booking-notification.ts`
+- Welcome email: `lib/notifications/send-welcome-email.ts`
+- User preferences UI: `components/NotificationPreferencesForm.tsx`
+- Inngest pause reminder: `lib/inngest/functions.ts` (pauseReminderFunction)
+
+**Database:**
+- `user_settings` extended with notification preferences columns
+- `notification_log` table tracks all sent notifications
+- Migration: `supabase/migrations/010_notification_system.sql`, `011_pause_reminder.sql`
+
+---
+
 ## Operational Notes
 
 ### Event-Driven Architecture (Inngest)
@@ -828,4 +872,4 @@ npx tsx test-resend-email.ts       # Test email sending
 
 ---
 
-**Last Updated:** January 6, 2026 (v2.26)
+**Last Updated:** January 8, 2026 (v2.27)

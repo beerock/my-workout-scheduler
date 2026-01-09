@@ -30,7 +30,8 @@ export type SendEmailParams = {
     | 'welcome'
     | 'first_booking_success'
     | 'credentials_updated'
-    | 'daily_digest';
+    | 'daily_digest'
+    | 'pause_reminder';
 };
 
 export type SendEmailResult = {

@@ -37,8 +37,7 @@ export default async function ProfilePage() {
     email_on_waitlist: settings?.email_on_waitlist ?? true,
     email_on_failure: settings?.email_on_failure ?? true,
     email_on_retry: settings?.email_on_retry ?? true,
-    daily_digest_time: settings?.daily_digest_time ?? '08:00:00',
-    timezone: settings?.timezone ?? 'America/New_York',
+    email_on_pause_reminder: settings?.email_on_pause_reminder ?? true,
   }
 
   return (

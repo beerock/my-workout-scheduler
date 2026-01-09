@@ -422,6 +422,115 @@ export const dailySchedulerFunction = inngest.createFunction(
 );
 
 /**
+ * Pause reminder function - sends email 7 days after user pauses schedule
+ * Cancelled automatically if user unpauses before 7 days
+ */
+export const pauseReminderFunction = inngest.createFunction(
+  {
+    id: 'pause-reminder',
+    // Cancel if user unpauses before 7 days
+    cancelOn: [
+      {
+        event: 'schedule/unpause',
+        if: 'async.data.userId == event.data.userId',
+      },
+    ],
+  },
+  { event: 'schedule/pause' },
+  async ({ event, step }) => {
+    const { userId } = event.data;
+
+    console.log(`[Inngest] Pause reminder scheduled for user ${userId} (7 days from now)`);
+
+    // Wait 7 days before sending reminder
+    await step.sleep('wait-7-days', '7d');
+
+    console.log(`[Inngest] 7 days passed, checking if user ${userId} is still paused...`);
+
+    // Check if user is still paused and has pause reminder enabled
+    const shouldSendReminder = await step.run('check-user-status', async () => {
+      const supabase = createServiceRoleClient();
+
+      // Get user settings
+      const { data: settings, error } = await supabase
+        .from('user_settings')
+        .select('schedule_paused, email_on_pause_reminder, notification_email')
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !settings) {
+        console.log(`[Inngest] Could not fetch settings for user ${userId}:`, error);
+        return false;
+      }
+
+      // Check all conditions
+      const isPaused = settings.schedule_paused === true;
+      const notificationsEnabled = settings.notification_email !== false;
+      const pauseReminderEnabled = settings.email_on_pause_reminder !== false;
+
+      console.log(`[Inngest] User ${userId} status: paused=${isPaused}, notifications=${notificationsEnabled}, pauseReminder=${pauseReminderEnabled}`);
+
+      return isPaused && notificationsEnabled && pauseReminderEnabled;
+    });
+
+    if (!shouldSendReminder) {
+      console.log(`[Inngest] Not sending pause reminder - user unpaused or preference disabled`);
+      return {
+        userId,
+        status: 'skipped',
+        reason: 'User unpaused or reminder preference disabled',
+      };
+    }
+
+    // Send pause reminder email
+    await step.run('send-pause-reminder', async () => {
+      const { getUserEmail, sendEmailNotification } = await import('@/lib/email/send-notification');
+      const { pauseReminderEmail } = await import('@/lib/email/templates/pause-reminder');
+
+      const userEmail = await getUserEmail(userId);
+      if (!userEmail) {
+        console.log(`[Inngest] User ${userId} has no email, skipping pause reminder`);
+        return { sent: false, reason: 'No email address' };
+      }
+
+      // Get environment-specific URLs
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const dashboardUrl = `${appUrl}/dashboard`;
+      const settingsUrl = `${appUrl}/dashboard/profile`;
+
+      // Generate email
+      const { subject, html } = pauseReminderEmail({
+        dashboardUrl,
+        settingsUrl,
+      });
+
+      // Send email
+      const result = await sendEmailNotification({
+        to: userEmail,
+        subject,
+        html,
+        userId,
+        notificationType: 'pause_reminder',
+      });
+
+      if (result.success) {
+        console.log(`[Inngest] Pause reminder sent to user ${userId}`);
+      } else {
+        console.error(`[Inngest] Failed to send pause reminder:`, result.error);
+      }
+
+      return result;
+    });
+
+    return {
+      userId,
+      status: 'sent',
+      message: 'Pause reminder email sent after 7 days',
+    };
+  }
+);
+
+/**
  * Helper function to get day name from day of week number
  */
 function getDayName(dayOfWeek: number): string {

@@ -3,17 +3,20 @@
 import { useState, useEffect } from 'react'
 import { updateNotificationPreferences } from '@/app/actions/user-settings'
 
-type NotificationFrequency = 'immediate' | 'daily_digest' | 'critical_only' | 'off'
+// Frequency options for UI (daily_digest removed as post-MVP)
+type NotificationFrequency = 'immediate' | 'critical_only' | 'off'
+
+// Legacy frequency type includes daily_digest for database compatibility
+type LegacyFrequency = NotificationFrequency | 'daily_digest'
 
 type NotificationPreferences = {
   notification_email: boolean
-  notification_frequency: NotificationFrequency
+  notification_frequency: LegacyFrequency // Allow legacy values from database
   email_on_success: boolean
   email_on_waitlist: boolean
   email_on_failure: boolean
   email_on_retry: boolean
-  daily_digest_time: string
-  timezone: string
+  email_on_pause_reminder: boolean
 }
 
 type Props = {
@@ -23,13 +26,17 @@ type Props = {
 export default function NotificationPreferencesForm({ initialPreferences }: Props) {
   // Form state
   const [notificationEmail, setNotificationEmail] = useState(initialPreferences.notification_email)
-  const [frequency, setFrequency] = useState<NotificationFrequency>(initialPreferences.notification_frequency)
+  // Handle legacy 'daily_digest' frequency by defaulting to 'immediate'
+  const [frequency, setFrequency] = useState<NotificationFrequency>(
+    initialPreferences.notification_frequency === 'daily_digest'
+      ? 'immediate'
+      : initialPreferences.notification_frequency as NotificationFrequency
+  )
   const [emailOnSuccess, setEmailOnSuccess] = useState(initialPreferences.email_on_success)
   const [emailOnWaitlist, setEmailOnWaitlist] = useState(initialPreferences.email_on_waitlist)
   const [emailOnFailure, setEmailOnFailure] = useState(initialPreferences.email_on_failure)
   const [emailOnRetry, setEmailOnRetry] = useState(initialPreferences.email_on_retry)
-  const [digestTime, setDigestTime] = useState(initialPreferences.daily_digest_time)
-  const [timezone, setTimezone] = useState(initialPreferences.timezone)
+  const [emailOnPauseReminder, setEmailOnPauseReminder] = useState(initialPreferences.email_on_pause_reminder ?? true)
 
   // UI state
   const [loading, setLoading] = useState(false)
@@ -65,8 +72,7 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
         email_on_waitlist: emailOnWaitlist,
         email_on_failure: emailOnFailure,
         email_on_retry: emailOnRetry,
-        daily_digest_time: digestTime,
-        timezone,
+        email_on_pause_reminder: emailOnPauseReminder,
       })
 
       if (result.success) {
@@ -132,54 +138,6 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
               <p className="text-sm text-gray-500">
                 Get notified right away when bookings succeed or fail
               </p>
-            </div>
-          </div>
-
-          {/* Daily Digest */}
-          <div className="flex items-start">
-            <div className="flex items-center h-5">
-              <input
-                id="frequency-digest"
-                type="radio"
-                name="frequency"
-                value="daily_digest"
-                checked={frequency === 'daily_digest'}
-                onChange={(e) => setFrequency(e.target.value as NotificationFrequency)}
-                disabled={!notificationEmail}
-                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:opacity-50"
-              />
-            </div>
-            <div className="ml-3 flex-1">
-              <label htmlFor="frequency-digest" className="font-medium text-gray-900">
-                Daily digest
-              </label>
-              <p className="text-sm text-gray-500 mb-2">
-                Receive one summary email per day
-              </p>
-              {frequency === 'daily_digest' && (
-                <div className="flex items-center space-x-3 mt-2">
-                  <label htmlFor="digest-time" className="text-sm text-gray-700">
-                    Send at:
-                  </label>
-                  <input
-                    id="digest-time"
-                    type="time"
-                    value={digestTime}
-                    onChange={(e) => setDigestTime(e.target.value)}
-                    className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <select
-                    value={timezone}
-                    onChange={(e) => setTimezone(e.target.value)}
-                    className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="America/New_York">Eastern (ET)</option>
-                    <option value="America/Chicago">Central (CT)</option>
-                    <option value="America/Denver">Mountain (MT)</option>
-                    <option value="America/Los_Angeles">Pacific (PT)</option>
-                  </select>
-                </div>
-              )}
             </div>
           </div>
 
@@ -311,6 +269,36 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
           </div>
         </div>
       )}
+
+      {/* Pause Reminder Toggle (always visible when notifications enabled) */}
+      <div className="border-t border-gray-200 pt-6">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">
+          Other notifications
+        </h3>
+
+        <div className="space-y-3">
+          <div className="flex items-start">
+            <div className="flex items-center h-5">
+              <input
+                id="email-pause-reminder"
+                type="checkbox"
+                checked={emailOnPauseReminder}
+                onChange={(e) => setEmailOnPauseReminder(e.target.checked)}
+                disabled={!notificationEmail}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+              />
+            </div>
+            <div className="ml-3">
+              <label htmlFor="email-pause-reminder" className="text-sm font-medium text-gray-900">
+                Pause reminder
+              </label>
+              <p className="text-sm text-gray-500">
+                Remind me if my schedule has been paused for 7 days
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Error Message */}
       {error && (

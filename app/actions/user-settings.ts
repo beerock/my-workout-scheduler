@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { calculateBookingWindowOpen, scheduleBooking } from '@/lib/inngest/scheduler'
+import { inngest } from '@/lib/inngest/client'
 
 export type UserSettingsResult = {
   success: boolean
@@ -101,8 +102,19 @@ export async function updateSchedulePaused(
       }
     }
 
-    // If PAUSING (paused = true), check for skips to clean up using three-zone logic
+    // If PAUSING (paused = true), send pause event for reminder and clean up skips
     if (paused === true) {
+      // Send pause event to trigger 7-day reminder
+      try {
+        await inngest.send({
+          name: 'schedule/pause',
+          data: { userId: user.id },
+        })
+        console.log(`[updateSchedulePaused] Sent schedule/pause event for user ${user.id}`)
+      } catch (error) {
+        console.error(`[updateSchedulePaused] Failed to send pause event:`, error)
+        // Non-critical - continue with pause operation
+      }
       // Fetch all user's classes with active skips (need full data for window calculation)
       const { data: classesWithSkips, error: fetchError } = await supabase
         .from('recurring_classes')
@@ -203,8 +215,20 @@ export async function updateSchedulePaused(
       }
     }
 
-    // If UNPAUSING (paused = false), check all active classes for scheduling
+    // If UNPAUSING (paused = false), cancel pause reminder and check all active classes for scheduling
     if (paused === false) {
+      // Send unpause event to cancel any pending pause reminder
+      try {
+        await inngest.send({
+          name: 'schedule/unpause',
+          data: { userId: user.id },
+        })
+        console.log(`[updateSchedulePaused] Sent schedule/unpause event for user ${user.id}`)
+      } catch (error) {
+        console.error(`[updateSchedulePaused] Failed to send unpause event:`, error)
+        // Non-critical - continue with unpause operation
+      }
+
       const { data: activeClasses } = await supabase
         .from('recurring_classes')
         .select('id, class_type, day_of_week, class_time, booking_window_hours, timezone, branch')
@@ -278,13 +302,12 @@ export async function updateSchedulePaused(
  */
 export async function updateNotificationPreferences(preferences: {
   notification_email: boolean
-  notification_frequency: 'immediate' | 'daily_digest' | 'critical_only' | 'off'
+  notification_frequency: 'immediate' | 'critical_only' | 'off'
   email_on_success: boolean
   email_on_waitlist: boolean
   email_on_failure: boolean
   email_on_retry: boolean
-  daily_digest_time: string
-  timezone: string
+  email_on_pause_reminder: boolean
 }): Promise<UserSettingsResult> {
   try {
     const supabase = await createClient()
@@ -316,8 +339,7 @@ export async function updateNotificationPreferences(preferences: {
           email_on_waitlist: preferences.email_on_waitlist,
           email_on_failure: preferences.email_on_failure,
           email_on_retry: preferences.email_on_retry,
-          daily_digest_time: preferences.daily_digest_time,
-          timezone: preferences.timezone,
+          email_on_pause_reminder: preferences.email_on_pause_reminder,
         })
         .eq('user_id', user.id)
 
@@ -340,8 +362,7 @@ export async function updateNotificationPreferences(preferences: {
           email_on_waitlist: preferences.email_on_waitlist,
           email_on_failure: preferences.email_on_failure,
           email_on_retry: preferences.email_on_retry,
-          daily_digest_time: preferences.daily_digest_time,
-          timezone: preferences.timezone,
+          email_on_pause_reminder: preferences.email_on_pause_reminder,
         })
 
       if (error) {
