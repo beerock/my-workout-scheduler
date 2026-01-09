@@ -493,8 +493,9 @@ export const pauseReminderFunction = inngest.createFunction(
         return { sent: false, reason: 'No email address' };
       }
 
-      // Get environment-specific URLs
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      // Get environment-specific URLs using getSiteUrl() for proper Vercel detection
+      const { getSiteUrl } = await import('@/lib/env-utils');
+      const appUrl = getSiteUrl();
       const dashboardUrl = `${appUrl}/dashboard`;
       const settingsUrl = `${appUrl}/dashboard/account`;
 
