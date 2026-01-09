@@ -643,8 +643,9 @@ async function navigateToDay(
       hour: 'numeric',
       minute: 'numeric',
       hour12: false,
+      weekday: 'short', // Get day of week directly from formatter
     })
-    
+
     const parts = formatter.formatToParts(now)
     const gymDate = {
       year: parseInt(parts.find(p => p.type === 'year')!.value),
@@ -653,10 +654,16 @@ async function navigateToDay(
       hour: parseInt(parts.find(p => p.type === 'hour')!.value),
       minute: parseInt(parts.find(p => p.type === 'minute')!.value),
     }
-    
-    // Create a date object representing "today" in gym's timezone
+
+    // Get day of week directly from the timezone-aware formatter
+    // This avoids the bug where new Date() constructor uses local timezone
+    const weekdayPart = parts.find(p => p.type === 'weekday')?.value || ''
+    const weekdayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+    const currentDayOfWeek = weekdayMap[weekdayPart] ?? 0 // 0 = Sunday, 6 = Saturday
+
+    // Create a date object for calculating the target date
+    // Note: This uses local timezone but we only use it for date arithmetic, not getDay()
     const todayInGymTz = new Date(gymDate.year, gymDate.month - 1, gymDate.day, gymDate.hour, gymDate.minute)
-    const currentDayOfWeek = todayInGymTz.getDay() // 0 = Sunday, 6 = Saturday
     
     let daysUntilTarget = dayOfWeek - currentDayOfWeek
     
@@ -687,7 +694,7 @@ async function navigateToDay(
     targetDate.setDate(todayInGymTz.getDate() + daysUntilTarget)
     const dayOfMonth = targetDate.getDate()
     
-    console.log(`Today in ${timezone}: ${gymDate.month}/${gymDate.day}/${gymDate.year}, Current day: ${currentDayOfWeek}`)
+    console.log(`Today in ${timezone}: ${weekdayPart} ${gymDate.month}/${gymDate.day}/${gymDate.year}, Current day: ${currentDayOfWeek}`)
     console.log(`Target day: ${dayOfWeek}, Days until target: ${daysUntilTarget}`)
     console.log(`Target date: ${targetDate.toLocaleDateString('en-US', { timeZone: timezone })}`)
 
