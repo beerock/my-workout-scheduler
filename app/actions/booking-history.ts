@@ -58,10 +58,11 @@ export async function getBookingHistory(days: number = 30): Promise<BookingHisto
     // Get booking attempts
     const { data: attempts, error: attemptsError } = await supabase
       .from('booking_attempts')
-      .select('*')
+      .select('id, recurring_class_id, status, branch_used, error_message, created_at, attempt_timestamp')
       .in('recurring_class_id', classIds)
       .gte('created_at', sinceDate)
       .order('created_at', { ascending: false })
+      .limit(100)
 
     if (attemptsError) {
       console.error('Error fetching booking attempts:', attemptsError)
