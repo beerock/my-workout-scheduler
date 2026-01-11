@@ -137,7 +137,7 @@ Reusable database query functions used by automation and Inngest functions.
 - Uses example email (`user@example.com`)
 - **Before use:** Copy to `scripts/private/` and replace with actual email
 
-**`user-deletion-queries.md`** - Quick reference template
+**`admin-sql-queries.md`** - Quick reference template
 - Preview, deletion, audit, and verification queries
 - Uses example emails throughout
 - **Before use:** Copy to `scripts/private/` and customize
@@ -149,7 +149,7 @@ Reusable database query functions used by automation and Inngest functions.
    ```bash
    cp scripts/delete-users-with-logging.sql scripts/private/
    cp scripts/delete-single-user.sql scripts/private/
-   cp scripts/user-deletion-queries.md scripts/private/
+   cp scripts/admin-sql-queries.md scripts/private/
    ```
 
 2. **Customize with your actual emails:**
@@ -276,7 +276,7 @@ User deletion scripts cascade delete:
    - Or export to CSV
 
 2. **Run preview queries first:**
-   - Use queries from `user-deletion-queries.md`
+   - Use queries from `admin-sql-queries.md`
    - Verify what will be deleted
 
 3. **Test on a single user first:**
