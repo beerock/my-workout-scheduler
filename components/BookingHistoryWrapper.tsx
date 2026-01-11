@@ -69,12 +69,20 @@ export default function BookingHistoryWrapper({ initialHistory, totalCount, stat
     }
   }, [history, statusCounts])
 
-  // Check if there are more items to load
-  const hasMore = history.length < totalCount
+  // Check if there are more items to load from server
+  const hasMoreOnServer = history.length < totalCount
+
+  // Calculate totals based on current filter
+  const filterTotal = filter === 'all' ? totalCount : counts[filter]
+  const filterDisplayed = filteredHistory.length
+  const filterRemaining = filterTotal - filterDisplayed
+
+  // Show Load More if: 1) server has more items AND 2) filter has more items to show
+  const hasMoreForFilter = hasMoreOnServer && filterRemaining > 0
 
   // Load more items
   const handleLoadMore = useCallback(async () => {
-    if (isLoading || !hasMore) return
+    if (isLoading || !hasMoreOnServer) return
 
     setIsLoading(true)
     try {
@@ -87,18 +95,18 @@ export default function BookingHistoryWrapper({ initialHistory, totalCount, stat
     } finally {
       setIsLoading(false)
     }
-  }, [history.length, hasMore, isLoading])
+  }, [history.length, hasMoreOnServer, isLoading])
 
   return (
     <div className="w-full">
       <BookingHistory
         history={filteredHistory}
-        totalCount={filteredHistory.length}
+        totalCount={filterTotal}
         filter={filter}
         onFilterChange={setFilter}
         counts={counts}
-        hasMore={hasMore}
-        remainingCount={totalCount - history.length}
+        hasMore={hasMoreForFilter}
+        remainingCount={filterRemaining}
         isLoadingMore={isLoading}
         onLoadMore={handleLoadMore}
       />

@@ -166,7 +166,7 @@ export default function BookingHistory({
       })}
 
       {/* Load More button - visible but secondary */}
-      {hasMore && onLoadMore && filter === 'all' && (
+      {hasMore && onLoadMore && (
         <div className="pt-8 text-center">
           <button
             onClick={onLoadMore}
@@ -209,19 +209,22 @@ export default function BookingHistory({
 
           {/* Summary text - better contrast */}
           <p className="text-sm text-gray-500 font-dm-sans tracking-wide">
-            {hasMore && filter === 'all' ? (
+            {hasMore ? (
               <>
-                <span className="tabular-nums font-medium text-gray-600">{totalCount}</span>
+                <span className="tabular-nums font-medium text-gray-600">{history.length}</span>
                 <span className="mx-2 text-gray-400">of</span>
-                <span className="tabular-nums font-medium text-gray-600">{totalCount + remainingCount}</span>
+                <span className="tabular-nums font-medium text-gray-600">{totalCount}</span>
                 <span className="ml-1.5">attempts</span>
+                {filter !== 'all' && (
+                  <span className="text-gray-400 ml-2">· {filter === 'confirmed' ? 'booked' : filter}</span>
+                )}
               </>
             ) : (
               <>
                 <span className="tabular-nums font-medium text-gray-600">{totalCount}</span>
                 <span className="ml-1.5">{totalCount === 1 ? 'attempt' : 'attempts'}</span>
                 {filter !== 'all' && (
-                  <span className="text-gray-400 ml-2">· filtered</span>
+                  <span className="text-gray-400 ml-2">· {filter === 'confirmed' ? 'booked' : filter}</span>
                 )}
               </>
             )}
