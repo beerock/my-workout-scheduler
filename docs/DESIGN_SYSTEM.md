@@ -4,8 +4,8 @@
 
 This document defines the complete design system for My Workout Scheduler, establishing a consistent visual language inspired by modern fitness apps like Peloton, ClassPass, and Strava.
 
-**Version:** 2.26
-**Last Updated:** January 6, 2026
+**Version:** 2.28
+**Last Updated:** January 11, 2026
 
 ---
 
@@ -390,6 +390,7 @@ Diagonal clip-paths create the signature editorial aesthetic:
 | `shimmer-diagonal` | Diagonal shimmer for skeleton loading |
 | `validation-message` | Styled validation error message |
 | `validation-shake` | Form shake animation for invalid submit |
+| `scrollbar-hide` | Hide scrollbar while maintaining scroll functionality (cross-browser) |
 
 ### Component Utilities
 
@@ -736,6 +737,10 @@ All reusable components live in `components/ui/` (19 components):
 ---
 
 ## Version History
+
+**v2.28 (January 11, 2026):**
+- Added `scrollbar-hide` utility to Focus & Form Utilities section
+- Synchronized with COMPONENT_LIBRARY.md v2.28
 
 **v2.22 (January 4, 2026):**
 - **MAJOR UPDATE:** Fixed all color hex values to match actual tailwind.config.ts

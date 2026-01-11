@@ -26,14 +26,14 @@ export default async function CredentialsPage() {
     <EditorialLayout
       title="Gym Credentials"
       subtitle="Store your gym login securely. Your password is encrypted before being stored."
-      backLink={{ href: '/dashboard', label: 'Dashboard' }}
     >
-      {/* Security Notice */}
-      <Card
-        variant="outlined"
-        padding="md"
-        className="mb-6 border-l-4 border-l-primary-500 bg-gradient-to-br from-primary-50/50 to-blue-50/30 opacity-0 animate-fade-in-up"
-      >
+      <div className="max-w-2xl mx-auto">
+        {/* Security Notice */}
+        <Card
+          variant="outlined"
+          padding="md"
+          className="mb-6 border-l-4 border-l-primary-500 bg-gradient-to-br from-primary-50/50 to-blue-50/30 opacity-0 animate-fade-in-up"
+        >
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,30 +54,31 @@ export default async function CredentialsPage() {
         </div>
       </Card>
 
-      {/* Status Card */}
-      <Card
-        variant="outlined"
-        padding="md"
-        className="mb-6 opacity-0 animate-fade-in-up"
-        style={{ animationDelay: '0.1s' }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${hasCredentials ? 'bg-success-500' : 'bg-gray-300'}`} />
-            <span className="font-dm-sans text-sm text-gray-700">
-              {hasCredentials ? 'Credentials configured' : 'No credentials saved yet'}
-            </span>
+        {/* Status Card */}
+        <Card
+          variant="outlined"
+          padding="md"
+          className="mb-6 opacity-0 animate-fade-in-up"
+          style={{ animationDelay: '0.1s' }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${hasCredentials ? 'bg-success-500' : 'bg-gray-300'}`} />
+              <span className="font-dm-sans text-sm text-gray-700">
+                {hasCredentials ? 'Credentials configured' : 'No credentials saved yet'}
+              </span>
+            </div>
+            <Badge variant={hasCredentials ? 'success' : 'default'} size="sm">
+              {hasCredentials ? 'Active' : 'Not Set'}
+            </Badge>
           </div>
-          <Badge variant={hasCredentials ? 'success' : 'default'} size="sm">
-            {hasCredentials ? 'Active' : 'Not Set'}
-          </Badge>
-        </div>
-      </Card>
+        </Card>
 
-      {/* Credentials Form */}
-      <Card className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
-        <GymCredentialsForm initialCredentials={credentials} />
-      </Card>
+        {/* Credentials Form */}
+        <Card className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
+          <GymCredentialsForm initialCredentials={credentials} />
+        </Card>
+      </div>
     </EditorialLayout>
   )
 }
