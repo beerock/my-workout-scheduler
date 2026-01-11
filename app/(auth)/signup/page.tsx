@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getAuthCallbackUrl } from '@/lib/env'
 import { Button, Input, Alert } from '@/components/ui'
 import AuthLayout from '@/components/AuthLayout'
 import { validateEmail, validatePassword } from '@/lib/validation'
+import { signupWithTurnstile } from '@/app/actions/auth'
 
 // Extend Window interface for turnstile
 declare global {
@@ -30,7 +29,6 @@ export default function SignupPage() {
   const turnstileRef = useRef<HTMLDivElement>(null)
   const widgetIdRef = useRef<string | null>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   // Email validation
   const [emailTouched, setEmailTouched] = useState(false)
@@ -141,23 +139,19 @@ export default function SignupPage() {
       return
     }
 
-    // Validate turnstile token
+    // Validate turnstile token (client-side check for UX, server validates properly)
     if (!turnstileToken) {
       setError('Please complete the bot protection verification')
       setLoading(false)
       return
     }
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: getAuthCallbackUrl(),
-      },
-    })
+    // Call server action for signup with Turnstile verification
+    // SECURITY: Server validates Turnstile token to prevent bypass
+    const result = await signupWithTurnstile(email, password, turnstileToken)
 
-    if (error) {
-      setError(error.message)
+    if (!result.success) {
+      setError(result.error || 'Unable to create account')
       setLoading(false)
     } else {
       // Redirect to verify email page with email in URL
