@@ -52,6 +52,29 @@ supabase/         → Migrations and RLS policies
 
 ## Workflows & Rules
 
+### Git Branch Safety (CRITICAL)
+
+**At the start of EVERY new session**, before making any file changes (code, docs, configs, migrations, etc.) in any environment (VS Code, Cursor, CLI/terminal, etc.):
+
+1. **Check current branch** using `git branch --show-current`
+
+2. **If on `main` or `master`:**
+   - STOP and alert the user: "You are currently on the main branch."
+   - Show available branches: `git branch -a`
+   - Ask the user to choose:
+     - **Use existing branch:** Select from the list
+     - **Create new branch:** Suggest a descriptive name based on the current task (e.g., `feature/add-email-notifications`, `fix/timezone-bug`, `docs/update-readme`). User can accept the suggestion or provide their own name.
+     - **Continue on main (emergency only):** Requires explicit confirmation ("I confirm this is a hotfix/emergency")
+
+3. **If on a feature branch:**
+   - Show current branch: "You are on branch `feature/xyz`"
+   - Ask: "Continue on this branch, or switch?"
+   - Options: Continue on current branch, switch to existing branch, or create new branch
+
+4. **Once confirmed:** Proceed with changes for the rest of the session without re-prompting
+
+**Branch naming conventions:** `feature/`, `fix/`, `docs/`, `refactor/`, `security/`
+
 ### Reading Order for New Context
 1. Start with [PRD](docs/My%20Workout%20Scheduler%20PRD.md) for full product understanding
 2. Then [BACKLOG.md](docs/BACKLOG.md) for current priorities
@@ -130,4 +153,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: January 11, 2026 (v2.28)*
+*Last Updated: January 11, 2026 (v2.28 + branch safety)*
