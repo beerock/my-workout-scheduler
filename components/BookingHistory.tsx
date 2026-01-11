@@ -138,7 +138,7 @@ export default function BookingHistory({
                 {dateLabel}
               </h3>
               <Badge variant="default" size="sm" diagonal={false}>
-                {items.length} {items.length === 1 ? 'booking' : 'bookings'}
+                {items.length} {items.length === 1 ? 'attempt' : 'attempts'}
               </Badge>
             </div>
 
@@ -160,7 +160,7 @@ export default function BookingHistory({
       {history.length > 0 && (
         <div className="pt-4 text-center">
           <p className="text-sm text-gray-400 font-dm-sans">
-            Showing {totalCount} {totalCount === 1 ? 'booking' : 'bookings'}
+            Showing {totalCount} {totalCount === 1 ? 'attempt' : 'attempts'}
             {filter !== 'all' && ` (filtered)`}
           </p>
         </div>

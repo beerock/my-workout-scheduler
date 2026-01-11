@@ -33,11 +33,12 @@ export default async function EditClassPage({ params }: Props) {
     <EditorialLayout
       title="Edit Class"
       subtitle={`Update ${classResult.class.class_type} on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][classResult.class.day_of_week]}s`}
-      backLink={{ href: '/dashboard/schedule', label: 'Schedule' }}
     >
-      <Card className="opacity-0 animate-fade-in-up max-w-2xl mx-auto">
-        <RecurringClassForm initialClass={classResult.class} />
-      </Card>
+      <div className="max-w-2xl mx-auto">
+        <Card className="opacity-0 animate-fade-in-up">
+          <RecurringClassForm initialClass={classResult.class} />
+        </Card>
+      </div>
     </EditorialLayout>
   )
 }
