@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import BookingHistory from './BookingHistory'
-import { isRetrying } from '@/lib/booking-error-utils'
 import { getBookingHistory } from '@/app/actions/booking-history'
-import type { BookingHistoryItem, BookingStatus, StatusCounts } from '@/app/actions/booking-history'
+import type { BookingHistoryItem, StatusCounts, FilterOption } from '@/app/actions/booking-history'
 
 const PAGE_SIZE = 50
 const DAYS = 90
@@ -15,101 +14,106 @@ type Props = {
   statusCounts?: StatusCounts
 }
 
-// Filter includes 'retrying' which is a derived display status
-type FilterOption = 'all' | BookingStatus | 'retrying'
-
 /**
- * BookingHistoryWrapper - Client wrapper for filtering and pagination
+ * BookingHistoryWrapper - Client wrapper for per-filter fetching and pagination
  *
- * Handles client-side filtering and Load More pagination.
- * 'Class Full' is a derived status from failed bookings where the class was full.
+ * Each filter fetches its own data from the server. This ensures:
+ * - Accurate counts: "Booked (32)" shows all 32 booked items
+ * - Proper pagination: Load More only appears if filter has >50 items
+ * - Simple mental model: each filter is its own independent view
  */
 export default function BookingHistoryWrapper({ initialHistory, totalCount, statusCounts }: Props) {
-  const [history, setHistory] = useState<BookingHistoryItem[]>(initialHistory)
   const [filter, setFilter] = useState<FilterOption>('all')
+  const [history, setHistory] = useState<BookingHistoryItem[]>(initialHistory)
+  const [filterTotal, setFilterTotal] = useState(totalCount)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  // Helper to check if an item is a "class full" situation
-  const isItemClassFull = (item: BookingHistoryItem) =>
-    isRetrying(item.status, item.error_message)
+  // Counts for filter pills (always from server, doesn't change)
+  const counts = statusCounts ? {
+    all: statusCounts.all,
+    confirmed: statusCounts.confirmed,
+    waitlisted: statusCounts.waitlisted,
+    retrying: statusCounts.classFull,
+    failed: statusCounts.failed,
+  } : {
+    all: totalCount,
+    confirmed: 0,
+    waitlisted: 0,
+    retrying: 0,
+    failed: 0,
+  }
 
-  // Filter history based on selected status
-  const filteredHistory = useMemo(() => {
-    if (filter === 'all') return history
-    if (filter === 'retrying') {
-      return history.filter(isItemClassFull)
-    }
-    if (filter === 'failed') {
-      return history.filter(item => item.status === 'failed' && !isItemClassFull(item))
-    }
-    return history.filter(item => item.status === filter)
-  }, [history, filter])
-
-  // Use server-provided counts for filter pills (shows total, not just loaded)
-  // Fall back to computing from loaded history if statusCounts not provided
-  const counts = useMemo(() => {
-    if (statusCounts) {
-      return {
-        all: statusCounts.all,
-        confirmed: statusCounts.confirmed,
-        waitlisted: statusCounts.waitlisted,
-        retrying: statusCounts.classFull,
-        failed: statusCounts.failed,
-      }
-    }
-    // Fallback: compute from loaded history
-    const retryingCount = history.filter(isItemClassFull).length
-    const actualFailedCount = history.filter(h => h.status === 'failed' && !isItemClassFull(h)).length
-    return {
-      all: history.length,
-      confirmed: history.filter(h => h.status === 'confirmed').length,
-      waitlisted: history.filter(h => h.status === 'waitlisted').length,
-      retrying: retryingCount,
-      failed: actualFailedCount,
-    }
-  }, [history, statusCounts])
-
-  // Check if there are more items to load from server
-  const hasMoreOnServer = history.length < totalCount
-
-  // Calculate totals based on current filter
-  const filterTotal = filter === 'all' ? totalCount : counts[filter]
-  const filterDisplayed = filteredHistory.length
-  const filterRemaining = filterTotal - filterDisplayed
-
-  // Show Load More if: 1) server has more items AND 2) filter has more items to show
-  const hasMoreForFilter = hasMoreOnServer && filterRemaining > 0
-
-  // Load more items
-  const handleLoadMore = useCallback(async () => {
-    if (isLoading || !hasMoreOnServer) return
-
+  // Handle filter change - fetch fresh data for the new filter
+  const handleFilterChange = useCallback(async (newFilter: FilterOption) => {
+    // If switching back to 'all' and we have initial data, we could optimize
+    // For now, always fetch fresh to ensure accuracy
+    setFilter(newFilter)
     setIsLoading(true)
+
     try {
-      const result = await getBookingHistory(DAYS, PAGE_SIZE, history.length)
+      const result = await getBookingHistory(DAYS, PAGE_SIZE, 0, newFilter)
+      if (result.success && result.history) {
+        setHistory(result.history)
+        setFilterTotal(result.totalCount ?? 0)
+      }
+    } catch (error) {
+      console.error('Failed to fetch filtered history:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  // Load more items for the current filter
+  const handleLoadMore = useCallback(async () => {
+    if (isLoadingMore || history.length >= filterTotal) return
+
+    setIsLoadingMore(true)
+    try {
+      const result = await getBookingHistory(DAYS, PAGE_SIZE, history.length, filter)
       if (result.success && result.history) {
         setHistory(prev => [...prev, ...result.history!])
       }
     } catch (error) {
       console.error('Failed to load more history:', error)
     } finally {
-      setIsLoading(false)
+      setIsLoadingMore(false)
     }
-  }, [history.length, hasMoreOnServer, isLoading])
+  }, [history.length, filterTotal, filter, isLoadingMore])
+
+  // Check if there are more items to load for the current filter
+  const hasMore = history.length < filterTotal
+  const remainingCount = filterTotal - history.length
 
   return (
     <div className="w-full">
-      <BookingHistory
-        history={filteredHistory}
-        totalCount={filterTotal}
-        filter={filter}
-        onFilterChange={setFilter}
-        counts={counts}
-        hasMore={hasMoreForFilter}
-        remainingCount={filterRemaining}
-        isLoadingMore={isLoading}
-        onLoadMore={handleLoadMore}
-      />
+      {isLoading ? (
+        // Loading skeleton while fetching new filter
+        <div className="space-y-6 animate-pulse">
+          {/* Filter pills skeleton */}
+          <div className="flex flex-wrap gap-2 pb-2">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-8 w-20 bg-gray-200 rounded-lg" />
+            ))}
+          </div>
+          {/* Cards skeleton */}
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-24 bg-gray-100 rounded-xl" />
+          ))}
+        </div>
+      ) : (
+        <BookingHistory
+          history={history}
+          totalCount={filterTotal}
+          filter={filter}
+          onFilterChange={handleFilterChange}
+          counts={counts}
+          hasMore={hasMore}
+          remainingCount={remainingCount}
+          isLoadingMore={isLoadingMore}
+          onLoadMore={handleLoadMore}
+        />
+      )}
     </div>
   )
 }
