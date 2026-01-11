@@ -59,13 +59,14 @@ export async function getDashboardStats(): Promise<{
 
     // 3. Calculate all-time success rate across ALL booking attempts (active + inactive classes)
     // This reflects true system reliability, not just current schedule
+    // IMPORTANT: Exclude active retries (class full + future class time) from failure count
     let successRate = 0
     let totalBookingAttempts = 0
 
     // Query all booking attempts for this user via join with recurring_classes
     const { data: allAttempts, error: attemptsError } = await supabase
       .from('booking_attempts')
-      .select('status, recurring_classes!inner(user_id)')
+      .select('status, error_message, recurring_classes!inner(user_id)')
       .eq('recurring_classes.user_id', user.id)
       .neq('status', 'pending')  // Exclude pending (not finalized)
       .neq('status', 'skipped')  // Exclude skipped (user choice, not system failure)
@@ -73,11 +74,24 @@ export async function getDashboardStats(): Promise<{
     if (attemptsError) {
       console.error('Error fetching booking attempts:', attemptsError)
     } else if (allAttempts && allAttempts.length > 0) {
-      totalBookingAttempts = allAttempts.length
-      const successful = allAttempts.filter(
+      // Helper to check if an attempt is a "class full" situation (informational, not a failure)
+      const isClassFull = (attempt: { status: string; error_message: string | null }) => {
+        if (attempt.status !== 'failed') return false
+        if (!attempt.error_message) return false
+        const msg = attempt.error_message.toLowerCase()
+        return msg.includes('full') && !msg.includes('waitlist')
+      }
+
+      // Filter out "class full" from the failure count - these aren't actual failures
+      const countableAttempts = allAttempts.filter(a => !isClassFull(a))
+      totalBookingAttempts = countableAttempts.length
+
+      const successful = countableAttempts.filter(
         a => a.status === 'confirmed' || a.status === 'waitlisted'
       ).length
-      successRate = Math.round((successful / totalBookingAttempts) * 100)
+      successRate = totalBookingAttempts > 0
+        ? Math.round((successful / totalBookingAttempts) * 100)
+        : 0
     }
 
     // 4. Count bookings this week (confirmed + waitlisted)
