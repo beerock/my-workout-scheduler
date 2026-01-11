@@ -20,6 +20,8 @@ export type SendEmailParams = {
   html: string;
   userId: string;
   bookingAttemptId?: string; // Optional: link to booking attempt
+  recurringClassId?: string; // Optional: for deduplication by class instance
+  classDate?: string; // Optional: for deduplication by class instance (ISO date string)
   notificationType:
     | 'booking_success'
     | 'booking_waitlist'
@@ -27,6 +29,8 @@ export type SendEmailParams = {
     | 'booking_failure_critical'
     | 'booking_failure_config'
     | 'booking_failure_technical'
+    | 'booking_failure_retrying'
+    | 'booking_failure_retrying_4hr'
     | 'welcome'
     | 'first_booking_success'
     | 'credentials_updated'
@@ -74,6 +78,8 @@ function checkAdminToggles(notificationType: SendEmailParams['notificationType']
 async function logNotification(params: {
   userId: string;
   bookingAttemptId?: string;
+  recurringClassId?: string;
+  classDate?: string;
   notificationType: SendEmailParams['notificationType'];
   emailSubject: string;
   emailBody: string;
@@ -88,6 +94,8 @@ async function logNotification(params: {
     const { error } = await supabase.from('notification_log').insert({
       user_id: params.userId,
       booking_attempt_id: params.bookingAttemptId || null,
+      recurring_class_id: params.recurringClassId || null,
+      class_date: params.classDate || null,
       notification_type: params.notificationType,
       sent_at: new Date().toISOString(),
       delivery_status: params.deliveryStatus,
@@ -118,6 +126,8 @@ export async function sendEmailNotification(params: SendEmailParams): Promise<Se
     await logNotification({
       userId: params.userId,
       bookingAttemptId: params.bookingAttemptId,
+      recurringClassId: params.recurringClassId,
+      classDate: params.classDate,
       notificationType: params.notificationType,
       emailSubject: params.subject,
       emailBody: params.html,
@@ -150,6 +160,8 @@ export async function sendEmailNotification(params: SendEmailParams): Promise<Se
       await logNotification({
         userId: params.userId,
         bookingAttemptId: params.bookingAttemptId,
+        recurringClassId: params.recurringClassId,
+        classDate: params.classDate,
         notificationType: params.notificationType,
         emailSubject: params.subject,
         emailBody: params.html,
@@ -167,6 +179,8 @@ export async function sendEmailNotification(params: SendEmailParams): Promise<Se
     await logNotification({
       userId: params.userId,
       bookingAttemptId: params.bookingAttemptId,
+      recurringClassId: params.recurringClassId,
+      classDate: params.classDate,
       notificationType: params.notificationType,
       emailSubject: params.subject,
       emailBody: params.html,
@@ -188,6 +202,8 @@ export async function sendEmailNotification(params: SendEmailParams): Promise<Se
     await logNotification({
       userId: params.userId,
       bookingAttemptId: params.bookingAttemptId,
+      recurringClassId: params.recurringClassId,
+      classDate: params.classDate,
       notificationType: params.notificationType,
       emailSubject: params.subject,
       emailBody: params.html,
