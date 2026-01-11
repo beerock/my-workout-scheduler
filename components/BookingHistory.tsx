@@ -165,63 +165,63 @@ export default function BookingHistory({
         )
       })}
 
-      {/* Load More button */}
+      {/* Load More button - visible but secondary */}
       {hasMore && onLoadMore && filter === 'all' && (
-        <div className="pt-6 text-center">
+        <div className="pt-8 text-center">
           <button
             onClick={onLoadMore}
             disabled={isLoadingMore}
-            className="group inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl
+            className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-xl
               font-dm-sans text-sm font-medium
-              text-gray-500 hover:text-gray-700
-              bg-transparent hover:bg-gray-50
-              border border-transparent hover:border-gray-200
+              text-gray-600 hover:text-gray-800
+              bg-gray-100 hover:bg-gray-200
+              border border-gray-200 hover:border-gray-300
               disabled:opacity-60 disabled:cursor-not-allowed
               transition-all duration-200 ease-out
               hover:shadow-sm"
           >
             {isLoadingMore ? (
               <>
-                <svg className="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <svg className="w-4 h-4 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                <span className="text-gray-400">Loading...</span>
+                <span>Loading...</span>
               </>
             ) : (
               <>
-                <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-500 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
                 <span>Load More</span>
-                <span className="text-gray-400 font-normal">({remainingCount} remaining)</span>
+                <span className="text-gray-600">· {remainingCount} remaining</span>
               </>
             )}
           </button>
         </div>
       )}
 
-      {/* Summary footer - editorial style */}
+      {/* Summary footer - refined but readable */}
       {history.length > 0 && (
-        <div className="pt-8 flex flex-col items-center gap-3">
-          {/* Decorative separator */}
-          <div className="w-12 h-px bg-gray-200" />
+        <div className="pt-10 flex flex-col items-center gap-4">
+          {/* Decorative separator - more visible */}
+          <div className="w-16 h-px bg-gray-300" />
 
-          {/* Summary text */}
-          <p className="text-xs text-gray-400 font-dm-sans tracking-wide">
+          {/* Summary text - better contrast */}
+          <p className="text-sm text-gray-500 font-dm-sans tracking-wide">
             {hasMore && filter === 'all' ? (
               <>
-                <span className="tabular-nums">{totalCount}</span>
-                <span className="mx-1.5 text-gray-300">of</span>
-                <span className="tabular-nums">{totalCount + remainingCount}</span>
-                <span className="ml-1">attempts</span>
+                <span className="tabular-nums font-medium text-gray-600">{totalCount}</span>
+                <span className="mx-2 text-gray-400">of</span>
+                <span className="tabular-nums font-medium text-gray-600">{totalCount + remainingCount}</span>
+                <span className="ml-1.5">attempts</span>
               </>
             ) : (
               <>
-                <span className="tabular-nums">{totalCount}</span>
-                <span className="ml-1">{totalCount === 1 ? 'attempt' : 'attempts'}</span>
+                <span className="tabular-nums font-medium text-gray-600">{totalCount}</span>
+                <span className="ml-1.5">{totalCount === 1 ? 'attempt' : 'attempts'}</span>
                 {filter !== 'all' && (
-                  <span className="text-gray-300 ml-1">· filtered</span>
+                  <span className="text-gray-400 ml-2">· filtered</span>
                 )}
               </>
             )}
