@@ -46,3 +46,16 @@ export const emailDesign = {
 } as const;
 
 export type EmailSeverity = 'success' | 'warning' | 'error' | 'info';
+
+/**
+ * Escape HTML special characters to prevent HTML injection in email templates.
+ * SECURITY: Always use this for any user-controlled content in emails.
+ */
+export function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}

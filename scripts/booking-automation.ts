@@ -1074,9 +1074,13 @@ async function findAndBookClass(
                    tpLower.startsWith(targetTime12.toLowerCase()) ||
                    tpLower.startsWith(targetTime12.replace(' ', '').toLowerCase())
           })) ||
-          // Match time range format like "4:15 PM - 5:15 PM" by checking if it starts with our time
-          classText.match(new RegExp(`\\b${targetTime12.toLowerCase().replace(/[:\s]/g, '[:\s]?')}`, 'i')) ||
-          classText.match(new RegExp(`\\b${targetTime12.replace(' ', '').toLowerCase().replace(/[:\s]/g, '[:\s]?')}`, 'i'))
+          // Match time range format like "4:15 PM - 5:15 PM" by normalizing and checking includes
+          // SECURITY: Using string matching instead of dynamic RegExp to prevent ReDoS
+          (() => {
+            const normalizedClassText = classText.toLowerCase().replace(/[:\s]/g, '')
+            const normalizedTime = targetTime12.toLowerCase().replace(/[:\s]/g, '')
+            return normalizedClassText.includes(normalizedTime)
+          })()
 
         if (matchesType && matchesTime) {
           console.log(`✅ Found matching class!`)

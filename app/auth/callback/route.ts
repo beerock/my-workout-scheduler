@@ -3,6 +3,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendWelcomeEmail } from '@/lib/notifications/send-welcome-email'
 
 /**
+ * Validate and sanitize the redirect path to prevent open redirect attacks.
+ * SECURITY: Only allows internal paths (starting with /) and blocks protocol-relative URLs.
+ */
+function getSafeRedirectPath(next: string | null): string {
+  const defaultPath = '/dashboard'
+
+  // Must start with single / and not be a protocol-relative URL (//)
+  if (next && next.startsWith('/') && !next.startsWith('//')) {
+    return next
+  }
+
+  return defaultPath
+}
+
+/**
  * Auth Callback Route
  * Handles email verification and password reset token exchanges
  *
@@ -17,7 +32,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   const tokenHash = searchParams.get('token_hash')
   const type = searchParams.get('type')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const next = getSafeRedirectPath(searchParams.get('next'))
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
 
