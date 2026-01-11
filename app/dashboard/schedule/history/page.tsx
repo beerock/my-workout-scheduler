@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 }
 
 const DAYS = 90
-const MAX_ITEMS = 500 // Load all history for client-side filtering
+const INITIAL_ITEMS = 50 // Load initial batch, then Load More
 
 export default async function HistoryPage() {
   const supabase = await createClient()
@@ -21,9 +21,11 @@ export default async function HistoryPage() {
     redirect('/login')
   }
 
-  // Load all history for client-side filtering
-  const historyResult = await getBookingHistory(DAYS, MAX_ITEMS, 0)
+  // Load initial batch with total count for pagination and status counts for pills
+  const historyResult = await getBookingHistory(DAYS, INITIAL_ITEMS, 0)
   const history = historyResult.success ? historyResult.history || [] : []
+  const totalCount = historyResult.success ? historyResult.totalCount || 0 : 0
+  const statusCounts = historyResult.success ? historyResult.statusCounts : undefined
 
   return (
     <EditorialLayout
@@ -31,8 +33,8 @@ export default async function HistoryPage() {
       subtitle="Showing the last 90 days of booking activity"
       backLink={{ href: '/dashboard/schedule', label: 'Schedule' }}
     >
-      {history.length > 0 ? (
-        <BookingHistoryWrapper history={history} />
+      {history.length > 0 || totalCount > 0 ? (
+        <BookingHistoryWrapper initialHistory={history} totalCount={totalCount} statusCounts={statusCounts} />
       ) : (
         <Card
           variant="outlined"

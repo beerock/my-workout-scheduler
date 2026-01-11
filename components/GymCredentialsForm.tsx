@@ -124,8 +124,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
   )
 
   return (
-    <div className="max-w-xl">
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <Input
         key={`gym_url-${formKey}`}
         label="Gym URL"
@@ -239,7 +238,6 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
         )}
       </div>
     </form>
-    </div>
   )
 }
 
