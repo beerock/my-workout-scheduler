@@ -3,10 +3,7 @@
 import { Badge } from '@/components/ui'
 import BookingHistoryCard from './BookingHistoryCard'
 import { format } from 'date-fns'
-import type { BookingHistoryItem, BookingStatus } from '@/app/actions/booking-history'
-
-// Filter includes 'retrying' which is a derived display status (not a database status)
-type FilterOption = 'all' | BookingStatus | 'retrying'
+import type { BookingHistoryItem, FilterOption } from '@/app/actions/booking-history'
 
 type FilterCounts = {
   all: number
@@ -37,6 +34,15 @@ const filterButtons: { id: FilterOption; label: string; variant: 'default' | 'su
   { id: 'retrying', label: 'Class Full', variant: 'primary' },
   { id: 'failed', label: 'Failed', variant: 'danger' },
 ]
+
+// Labels for summary footer
+const filterLabels: Record<FilterOption, string> = {
+  all: 'all',
+  confirmed: 'booked',
+  waitlisted: 'waitlisted',
+  retrying: 'class full',
+  failed: 'failed',
+}
 
 /**
  * BookingHistory - Full history list with date grouping and filtering
@@ -216,7 +222,7 @@ export default function BookingHistory({
                 <span className="tabular-nums font-medium text-gray-600">{totalCount}</span>
                 <span className="ml-1.5">attempts</span>
                 {filter !== 'all' && (
-                  <span className="text-gray-400 ml-2">· {filter === 'confirmed' ? 'booked' : filter}</span>
+                  <span className="text-gray-400 ml-2">· {filterLabels[filter]}</span>
                 )}
               </>
             ) : (
@@ -224,7 +230,7 @@ export default function BookingHistory({
                 <span className="tabular-nums font-medium text-gray-600">{totalCount}</span>
                 <span className="ml-1.5">{totalCount === 1 ? 'attempt' : 'attempts'}</span>
                 {filter !== 'all' && (
-                  <span className="text-gray-400 ml-2">· {filter === 'confirmed' ? 'booked' : filter}</span>
+                  <span className="text-gray-400 ml-2">· {filterLabels[filter]}</span>
                 )}
               </>
             )}
