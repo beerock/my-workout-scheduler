@@ -4,8 +4,8 @@
 
 This document provides complete API documentation, usage examples, and best practices for all reusable UI components in the My Workout Scheduler design system.
 
-**Version:** 2.26
-**Last Updated:** January 6, 2026
+**Version:** 2.28
+**Last Updated:** January 11, 2026
 **Location:** `components/ui/`
 
 ---
@@ -72,7 +72,7 @@ This document provides complete API documentation, usage examples, and best prac
 
 ```typescript
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'ghost' | 'outline' | 'outline-primary' | 'outline-danger' | 'purple'
+  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'ghost' | 'ghost-primary' | 'outline' | 'outline-primary' | 'outline-danger' | 'purple'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   disabled?: boolean
@@ -81,7 +81,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 ```
 
-**9 variants available:** primary, secondary, success, danger, ghost, outline, outline-primary, outline-danger, purple
+**10 variants available:** primary, secondary, success, danger, ghost, ghost-primary, outline, outline-primary, outline-danger, purple
 
 ### Variants
 
@@ -154,6 +154,20 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 - Background: transparent
 - Text: `gray-700`
 - Hover: `gray-100` background
+- No shadow
+
+#### Ghost-Primary
+**Use for:** Primary-styled ghost buttons, subtle primary emphasis, secondary actions with primary color
+
+```tsx
+<Button variant="ghost-primary">View All</Button>
+<Button variant="ghost-primary" size="sm">Learn More</Button>
+```
+
+**Style:**
+- Background: `primary-50` (light blue)
+- Text: `primary-600`
+- Hover: `primary-100` background
 - No shadow
 
 #### Outline
@@ -2781,6 +2795,10 @@ Before shipping a component:
 ---
 
 ## Version History
+
+**v2.28 (January 11, 2026):**
+- **Button:** Added `ghost-primary` variant for subtle primary emphasis
+- Total: 20 components documented
 
 **v2.22 (January 6, 2026):**
 - **Button:** Added 3 new variants (`outline-primary`, `outline-danger`, `purple`)
