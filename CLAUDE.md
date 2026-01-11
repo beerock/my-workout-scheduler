@@ -75,7 +75,7 @@ Check PRD and BACKLOG first - many decisions are already documented there.
 - Use arbitrary colors - use design tokens only
 - Commit `.env.local` or credentials
 - Skip dry-run before real booking tests
-- Update `/prototype` case study (frozen at v2.22)
+- Update `/prototype` or `/prototype/scheduler-v2` case studies (frozen at v2.22)
 - Skip auth validation in server actions
 
 ### Code Change Workflows
@@ -100,13 +100,15 @@ Migration → types → server action → component (in that order)
 |-------------|--------|
 | Version bump | CLAUDE.md version line + PRD version history |
 | New feature complete | PRD version history |
-| Design token/pattern | `DESIGN_SYSTEM.md` + consider `/prototype/design-system-components` |
-| Component API | `COMPONENT_LIBRARY.md` + consider `/prototype/design-system-components` |
+| Design token/pattern | `DESIGN_SYSTEM.md` + `/prototype/design-system-components` |
+| Component API | `COMPONENT_LIBRARY.md` + `/prototype/design-system-components` |
 | Bug fix pattern | `ERROR_MESSAGES.md` |
 | Config/infrastructure task | `PRE_LAUNCH_CHECKLIST.md` |
 | Development task | `BACKLOG.md` (Pre-MVP section) |
 
-**Note:** `/prototype` (case study) is frozen at v2.22 - do NOT update.
+**Prototype pages:**
+- `/prototype` and `/prototype/scheduler-v2` are frozen at v2.22 - do NOT update
+- `/prototype/design-system-components` should be updated when adding/modifying components
 
 ---
 
