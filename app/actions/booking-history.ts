@@ -22,10 +22,19 @@ export type BookingHistoryItem = {
   booking_window_hours: number
 }
 
+export type StatusCounts = {
+  all: number
+  confirmed: number
+  waitlisted: number
+  classFull: number  // "Class full" errors (derived from failed)
+  failed: number     // Actual failures (failed minus class full)
+}
+
 export type BookingHistoryResult = {
   success: boolean
   history?: BookingHistoryItem[]
   totalCount?: number // Total matching records for pagination
+  statusCounts?: StatusCounts // Total counts by status for filter pills
   error?: string
 }
 
@@ -84,6 +93,44 @@ export async function getBookingHistory(
       console.error('Error counting booking attempts:', countError)
     }
 
+    // Get counts by status for filter pills (run in parallel)
+    const [confirmedResult, waitlistedResult, failedResult] = await Promise.all([
+      supabase
+        .from('booking_attempts')
+        .select('id', { count: 'exact', head: true })
+        .in('recurring_class_id', classIds)
+        .gte('created_at', sinceDate)
+        .eq('status', 'confirmed'),
+      supabase
+        .from('booking_attempts')
+        .select('id', { count: 'exact', head: true })
+        .in('recurring_class_id', classIds)
+        .gte('created_at', sinceDate)
+        .eq('status', 'waitlisted'),
+      supabase
+        .from('booking_attempts')
+        .select('id, error_message')
+        .in('recurring_class_id', classIds)
+        .gte('created_at', sinceDate)
+        .eq('status', 'failed'),
+    ])
+
+    // Calculate class full vs actual failed counts
+    const failedItems = failedResult.data || []
+    const classFullCount = failedItems.filter(item => {
+      const msg = (item.error_message || '').toLowerCase()
+      return msg.includes('full') && !msg.includes('waitlist')
+    }).length
+    const actualFailedCount = failedItems.length - classFullCount
+
+    const statusCounts: StatusCounts = {
+      all: count ?? 0,
+      confirmed: confirmedResult.count ?? 0,
+      waitlisted: waitlistedResult.count ?? 0,
+      classFull: classFullCount,
+      failed: actualFailedCount,
+    }
+
     // Get booking attempts with pagination (only visible statuses)
     const { data: attempts, error: attemptsError } = await supabase
       .from('booking_attempts')
@@ -121,7 +168,7 @@ export async function getBookingHistory(
       }
     })
 
-    return { success: true, history, totalCount: count ?? 0 }
+    return { success: true, history, totalCount: count ?? 0, statusCounts }
   } catch (error) {
     console.error('Error in getBookingHistory:', error)
     return { success: false, error: 'An unexpected error occurred' }
