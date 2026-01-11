@@ -269,13 +269,23 @@ export const bookClassFunction = inngest.createFunction(
         );
         const formattedDate = format(classStartTime, 'EEEE, MMMM d, yyyy');
         const dayName = format(classStartTime, 'EEEE');
+        // ISO date string for deduplication (YYYY-MM-DD)
+        const classDateISO = format(classStartTime, 'yyyy-MM-dd');
+        // Formatted class start time for email display
+        const classStartTimeFormatted = format(classStartTime, 'EEEE, MMMM d at h:mm a');
 
         // Check if this is a retry success (was previously full, now confirmed)
         const isRetrySuccess = attemptNumber > 1 && status === 'confirmed';
 
+        // First attempt time for "class full" emails
+        const now = new Date();
+        const firstAttemptTimeFormatted = format(now, 'MMM d, yyyy h:mm a');
+
         await sendBookingNotification({
           userId: classData.user_id,
           bookingAttemptId: attemptId,
+          recurringClassId: classId,
+          classDate: classDateISO,
           status: status as 'confirmed' | 'waitlisted' | 'failed' | 'skipped',
           errorMessage,
           className: classData.class_type,
@@ -285,6 +295,8 @@ export const bookClassFunction = inngest.createFunction(
           branchName: classData.branch,
           isRetrySuccess,
           retryCount: attemptNumber,
+          firstAttemptTime: firstAttemptTimeFormatted,
+          classStartTime: classStartTimeFormatted,
         });
 
         console.log(`[Inngest] Notification sent (or skipped per user preferences)`);
