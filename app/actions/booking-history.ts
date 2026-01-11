@@ -3,10 +3,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { subDays } from 'date-fns'
 
+// Only show completed booking statuses (hide pending/skipped)
+export type BookingStatus = 'confirmed' | 'waitlisted' | 'failed'
+
 export type BookingHistoryItem = {
   id: string
   recurring_class_id: string
-  status: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped'
+  status: BookingStatus
   branch_used: string | null
   error_message: string | null
   created_at: string
@@ -16,19 +19,42 @@ export type BookingHistoryItem = {
   day_of_week: number
   class_time: string
   branch: string
+  booking_window_hours: number
+}
+
+export type StatusCounts = {
+  all: number
+  confirmed: number
+  waitlisted: number
+  classFull: number  // "Class full" errors (derived from failed)
+  failed: number     // Actual failures (failed minus class full)
 }
 
 export type BookingHistoryResult = {
   success: boolean
   history?: BookingHistoryItem[]
+  totalCount?: number // Total matching records for pagination
+  statusCounts?: StatusCounts // Total counts by status for filter pills
   error?: string
 }
 
+// Visible statuses for booking history (filter out pending/skipped)
+const VISIBLE_STATUSES: BookingStatus[] = ['confirmed', 'waitlisted', 'failed']
+
 /**
  * Get booking history for the current user
- * Returns the last 30 days of booking attempts
+ * Returns completed booking attempts (confirmed, waitlisted, failed) within the specified time window.
+ * Supports pagination via limit/offset for "Load More" functionality.
+ *
+ * @param days - Number of days to look back (default: 30)
+ * @param limit - Maximum number of records to return (default: 20)
+ * @param offset - Number of records to skip for pagination (default: 0)
  */
-export async function getBookingHistory(days: number = 30): Promise<BookingHistoryResult> {
+export async function getBookingHistory(
+  days: number = 30,
+  limit: number = 20,
+  offset: number = 0
+): Promise<BookingHistoryResult> {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -37,10 +63,10 @@ export async function getBookingHistory(days: number = 30): Promise<BookingHisto
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Get recurring class IDs for this user
+    // Get recurring class IDs for this user (including inactive for history)
     const { data: userClasses, error: classesError } = await supabase
       .from('recurring_classes')
-      .select('id, class_type, day_of_week, class_time, branch')
+      .select('id, class_type, day_of_week, class_time, branch, booking_window_hours')
       .eq('user_id', user.id)
 
     if (classesError) {
@@ -49,20 +75,71 @@ export async function getBookingHistory(days: number = 30): Promise<BookingHisto
     }
 
     if (!userClasses || userClasses.length === 0) {
-      return { success: true, history: [] }
+      return { success: true, history: [], totalCount: 0 }
     }
 
     const classIds = userClasses.map(c => c.id)
     const sinceDate = subDays(new Date(), days).toISOString()
 
-    // Get booking attempts
+    // Get total count for pagination (only visible statuses)
+    const { count, error: countError } = await supabase
+      .from('booking_attempts')
+      .select('id', { count: 'exact', head: true })
+      .in('recurring_class_id', classIds)
+      .gte('created_at', sinceDate)
+      .in('status', VISIBLE_STATUSES)
+
+    if (countError) {
+      console.error('Error counting booking attempts:', countError)
+    }
+
+    // Get counts by status for filter pills (run in parallel)
+    const [confirmedResult, waitlistedResult, failedResult] = await Promise.all([
+      supabase
+        .from('booking_attempts')
+        .select('id', { count: 'exact', head: true })
+        .in('recurring_class_id', classIds)
+        .gte('created_at', sinceDate)
+        .eq('status', 'confirmed'),
+      supabase
+        .from('booking_attempts')
+        .select('id', { count: 'exact', head: true })
+        .in('recurring_class_id', classIds)
+        .gte('created_at', sinceDate)
+        .eq('status', 'waitlisted'),
+      supabase
+        .from('booking_attempts')
+        .select('id, error_message')
+        .in('recurring_class_id', classIds)
+        .gte('created_at', sinceDate)
+        .eq('status', 'failed'),
+    ])
+
+    // Calculate class full vs actual failed counts
+    const failedItems = failedResult.data || []
+    const classFullCount = failedItems.filter(item => {
+      const msg = (item.error_message || '').toLowerCase()
+      return msg.includes('full') && !msg.includes('waitlist')
+    }).length
+    const actualFailedCount = failedItems.length - classFullCount
+
+    const statusCounts: StatusCounts = {
+      all: count ?? 0,
+      confirmed: confirmedResult.count ?? 0,
+      waitlisted: waitlistedResult.count ?? 0,
+      classFull: classFullCount,
+      failed: actualFailedCount,
+    }
+
+    // Get booking attempts with pagination (only visible statuses)
     const { data: attempts, error: attemptsError } = await supabase
       .from('booking_attempts')
       .select('id, recurring_class_id, status, branch_used, error_message, created_at, attempt_timestamp')
       .in('recurring_class_id', classIds)
       .gte('created_at', sinceDate)
+      .in('status', VISIBLE_STATUSES)
       .order('created_at', { ascending: false })
-      .limit(100)
+      .range(offset, offset + limit - 1)
 
     if (attemptsError) {
       console.error('Error fetching booking attempts:', attemptsError)
@@ -78,7 +155,7 @@ export async function getBookingHistory(days: number = 30): Promise<BookingHisto
       return {
         id: attempt.id,
         recurring_class_id: attempt.recurring_class_id,
-        status: attempt.status,
+        status: attempt.status as BookingStatus,
         branch_used: attempt.branch_used,
         error_message: attempt.error_message,
         created_at: attempt.created_at,
@@ -87,10 +164,11 @@ export async function getBookingHistory(days: number = 30): Promise<BookingHisto
         day_of_week: classDetails?.day_of_week || 0,
         class_time: classDetails?.class_time || '',
         branch: classDetails?.branch || '',
+        booking_window_hours: classDetails?.booking_window_hours || 26,
       }
     })
 
-    return { success: true, history }
+    return { success: true, history, totalCount: count ?? 0, statusCounts }
   } catch (error) {
     console.error('Error in getBookingHistory:', error)
     return { success: false, error: 'An unexpected error occurred' }
