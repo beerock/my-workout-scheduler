@@ -3,12 +3,15 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getBookingHistory } from '@/app/actions/booking-history'
 import EditorialLayout from '@/components/EditorialLayout'
-import BookingHistory from '@/components/BookingHistory'
+import BookingHistoryWrapper from '@/components/BookingHistoryWrapper'
 import { Card } from '@/components/ui'
 
 export const metadata: Metadata = {
   title: 'Booking History',
 }
+
+const DAYS = 90
+const MAX_ITEMS = 500 // Load all history for client-side filtering
 
 export default async function HistoryPage() {
   const supabase = await createClient()
@@ -18,18 +21,18 @@ export default async function HistoryPage() {
     redirect('/login')
   }
 
-  // Get full history (last 90 days)
-  const historyResult = await getBookingHistory(90)
+  // Load all history for client-side filtering
+  const historyResult = await getBookingHistory(DAYS, MAX_ITEMS, 0)
   const history = historyResult.success ? historyResult.history || [] : []
 
   return (
     <EditorialLayout
       title="Booking History"
-      subtitle="Complete history of your booking attempts"
+      subtitle="Showing the last 90 days of booking activity"
       backLink={{ href: '/dashboard/schedule', label: 'Schedule' }}
     >
       {history.length > 0 ? (
-        <BookingHistory history={history} />
+        <BookingHistoryWrapper history={history} />
       ) : (
         <Card
           variant="outlined"
