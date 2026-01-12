@@ -90,7 +90,20 @@ export default function EditorialLayout({
       {showHeader && <Header />}
 
       {/* === MAIN CONTENT === */}
-      <main className="relative z-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1">
+      <main className="relative z-0 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1">
+        {/* Back link */}
+        {backLink && (
+          <a
+            href={backLink.href}
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-600 font-dm-sans mb-4 transition-colors opacity-0 animate-fade-in-up"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            {backLink.label}
+          </a>
+        )}
+
         {/* Page header with title and actions */}
         {(title || actions) && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
