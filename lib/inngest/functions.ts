@@ -244,12 +244,67 @@ export const bookClassFunction = inngest.createFunction(
 
     if (!bookingResult) {
       console.log(`[Inngest] ⚠️  Timeout waiting for booking result for "${className}"`);
+
+      // Update attempt status to failed with timeout message
+      await step.run('update-attempt-timeout', async () => {
+        await updateBookingAttempt(attemptId, {
+          status: 'failed',
+          error_message: 'Timeout waiting for GitHub Actions result',
+        });
+      });
+
+      // Check if we should retry (same logic as "class full")
+      const timeoutClassStartTime = calculateClassStartTime(
+        classData.day_of_week,
+        classData.class_time,
+        classData.timezone
+      );
+      const timeoutNow = new Date();
+      const timeoutMinutesUntilClass = differenceInMinutes(timeoutClassStartTime, timeoutNow);
+
+      console.log(`[Inngest] Minutes until class starts: ${timeoutMinutesUntilClass}`);
+
+      if (timeoutMinutesUntilClass > 15) {
+        console.log(`[Inngest] Scheduling retry in 15 minutes after timeout (attempt #${attemptNumber + 1})`);
+
+        await step.sleep('wait-before-timeout-retry', '15m');
+
+        await step.run('send-timeout-retry-event', async () => {
+          const classDate = calculateNextClassDate(
+            classData.day_of_week,
+            classData.class_time,
+            classData.timezone
+          );
+
+          await inngest.send({
+            name: 'booking/attempt',
+            id: `book-retry-${classId}-${classDate}-${attemptNumber + 1}-${crypto.randomUUID().slice(0, 8)}`,
+            data: {
+              classId,
+              className: classData.class_type,
+              attemptNumber: attemptNumber + 1,
+            },
+          });
+        });
+
+        return {
+          classId,
+          className: classData.class_type,
+          attemptId,
+          status: 'timeout_retrying',
+          message: `GitHub Actions timeout - scheduled retry #${attemptNumber + 1} in 15 minutes`,
+          nextAttemptNumber: attemptNumber + 1,
+        };
+      }
+
+      // No time left for retry
+      console.log(`[Inngest] Not retrying after timeout - class starts in ${timeoutMinutesUntilClass} minutes (too soon)`);
       return {
         classId,
         className: classData.class_type,
         attemptId,
         status: 'timeout',
-        message: 'Timeout waiting for GitHub Actions result',
+        message: 'Timeout waiting for GitHub Actions result - no time for retry',
       };
     }
 
