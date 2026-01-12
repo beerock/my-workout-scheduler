@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**My Workout Scheduler** automates YMCA class reservations using Puppeteer to book classes the instant registration opens (26 hours before class time).
+**My Workout Scheduler** automates gym class reservations using Puppeteer to book classes the instant registration opens (e.g. 26 hours before class time).
 
 **Tech Stack:** Next.js 16, TypeScript, Tailwind CSS, Supabase, Inngest, Puppeteer, Resend
 
@@ -23,6 +23,8 @@
 | [BOOKING_AUTOMATION.md](docs/BOOKING_AUTOMATION.md) | Puppeteer flow, retry logic, skip system | Automation changes |
 | [PRE_LAUNCH_CHECKLIST.md](docs/PRE_LAUNCH_CHECKLIST.md) | Infrastructure tasks | Config/deployment |
 | [ERROR_MESSAGES.md](docs/ERROR_MESSAGES.md) | Error catalog | Error handling |
+
+**Reading order:** Start with PRD, then BACKLOG, then specialized docs as needed.
 
 ---
 
@@ -75,21 +77,16 @@ supabase/         → Migrations and RLS policies
 
 **Branch naming conventions:** `feature/`, `fix/`, `docs/`, `refactor/`, `security/`
 
-### Reading Order for New Context
-1. Start with [PRD](docs/My%20Workout%20Scheduler%20PRD.md) for full product understanding
-2. Then [BACKLOG.md](docs/BACKLOG.md) for current priorities
-3. Reference specialized docs as needed
-
-### Before Asking User Questions
-Check PRD and BACKLOG first - many decisions are already documented there.
-
 ### Always Do
+- Check PRD and BACKLOG before asking user questions - many decisions are already documented
 - Import components from `@/components/ui`
 - Use design tokens for colors (never arbitrary values)
 - Use `<Footer>` on every page
 - Use mobile-first responsive classes (320px base)
 - Run `/frontend-design` skill for new visual design work
 - Validate auth in server actions, use `revalidatePath` after mutations
+- Update `/prototype/design-system-components` when adding/modifying components
+- Update `/prototype/email-preview` when adding/updating email templates
 
 ### Never Do
 - Create inline buttons/forms - use component library
@@ -129,10 +126,6 @@ Migration → types → server action → component (in that order)
 | Config/infrastructure task | `PRE_LAUNCH_CHECKLIST.md` |
 | Development task | `BACKLOG.md` (Pre-MVP section) |
 
-**Prototype pages:**
-- `/prototype` and `/prototype/scheduler-v2` are frozen at v2.22 - do NOT update
-- `/prototype/design-system-components` should be updated when adding/modifying components
-
 ---
 
 ## Quick Reference
@@ -153,4 +146,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: January 11, 2026 (v2.28 + branch safety)*
+*Last Updated: January 11, 2026 (v2.28)*
