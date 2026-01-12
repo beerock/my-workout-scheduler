@@ -14,6 +14,7 @@ import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from
 import { differenceInMinutes, format } from 'date-fns';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { sendBookingNotification } from '@/lib/notifications/send-booking-notification';
+import { formatTime12Hour } from '@/lib/date-utils';
 
 /**
  * Main booking function - triggered at exact booking window time
@@ -267,12 +268,12 @@ export const bookClassFunction = inngest.createFunction(
           classData.class_time,
           classData.timezone
         );
-        const formattedDate = format(classStartTime, 'EEEE, MMMM d, yyyy');
+        const formattedDate = format(classStartTime, 'MMMM d, yyyy');
         const dayName = format(classStartTime, 'EEEE');
         // ISO date string for deduplication (YYYY-MM-DD)
         const classDateISO = format(classStartTime, 'yyyy-MM-dd');
         // Formatted class start time for email display
-        const classStartTimeFormatted = format(classStartTime, 'EEEE, MMMM d at h:mm a');
+        const classStartTimeFormatted = format(classStartTime, "EEEE, MMMM d 'at' h:mm a");
 
         // Check if this is a retry success (was previously full, now confirmed)
         const isRetrySuccess = attemptNumber > 1 && status === 'confirmed';
@@ -291,7 +292,7 @@ export const bookClassFunction = inngest.createFunction(
           className: classData.class_type,
           dayOfWeek: dayName,
           date: formattedDate,
-          time: classData.class_time,
+          time: formatTime12Hour(classData.class_time),
           branchName: classData.branch,
           isRetrySuccess,
           retryCount: attemptNumber,

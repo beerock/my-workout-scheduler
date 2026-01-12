@@ -11,6 +11,7 @@ import { bookingRetrySuccessfulEmail } from '@/lib/email/templates/booking-retry
 import { bookingFailureCriticalEmail } from '@/lib/email/templates/booking-failure-critical'
 import { bookingFailureConfigEmail } from '@/lib/email/templates/booking-failure-config'
 import { bookingFailureTechnicalEmail } from '@/lib/email/templates/booking-failure-technical'
+import { bookingFailureRetryingEmail } from '@/lib/email/templates/booking-failure-retrying'
 import { welcomeEmail } from '@/lib/email/templates/welcome'
 import { pauseReminderEmail } from '@/lib/email/templates/pause-reminder'
 import { dailyDigestEmail } from '@/lib/email/templates/daily-digest'
@@ -24,6 +25,7 @@ export type EmailTemplateType =
   | 'bookingFailureCritical'
   | 'bookingFailureConfig'
   | 'bookingFailureTechnical'
+  | 'bookingFailureRetrying'
   | 'dailyDigest'
 
 export type TemplateInfo = {
@@ -78,7 +80,7 @@ export async function getEmailTemplatePreview(
         date: 'January 13, 2026',
         time: '4:15 PM',
         branchName: 'Downtown YMCA',
-        bookingTimestamp: new Date().toISOString(),
+        bookingTimestamp: 'Jan 12, 2026, 2:15 PM',
         dashboardUrl: sampleUrls.dashboardUrl,
         scheduleUrl: sampleUrls.scheduleUrl,
         settingsUrl: sampleUrls.settingsUrl,
@@ -98,7 +100,7 @@ export async function getEmailTemplatePreview(
         date: 'January 14, 2026',
         time: '6:00 AM',
         branchName: 'Westside YMCA',
-        bookingTimestamp: new Date().toISOString(),
+        bookingTimestamp: 'Jan 13, 2026, 4:00 AM',
         dashboardUrl: sampleUrls.dashboardUrl,
         scheduleUrl: sampleUrls.scheduleUrl,
         settingsUrl: sampleUrls.settingsUrl,
@@ -118,7 +120,7 @@ export async function getEmailTemplatePreview(
         date: 'January 15, 2026',
         time: '5:30 PM',
         branchName: 'Downtown YMCA',
-        bookingTimestamp: new Date().toISOString(),
+        bookingTimestamp: 'Jan 14, 2026, 3:30 PM',
         retryCount: 3,
         dashboardUrl: sampleUrls.dashboardUrl,
         scheduleUrl: sampleUrls.scheduleUrl,
@@ -194,6 +196,27 @@ export async function getEmailTemplatePreview(
       }
     }
 
+    case 'bookingFailureRetrying': {
+      const result = bookingFailureRetryingEmail({
+        className: 'BODYPUMP',
+        dayOfWeek: 'Monday',
+        date: 'January 12, 2026',
+        time: '4:15 PM',
+        branchName: 'Asheville YMCA',
+        firstAttemptTime: 'Jan 11, 2026 11:54 PM',
+        classStartTime: "Monday, January 12 at 4:15 PM",
+        dashboardUrl: sampleUrls.dashboardUrl,
+        scheduleUrl: sampleUrls.scheduleUrl,
+        settingsUrl: sampleUrls.settingsUrl,
+      })
+      return {
+        name: 'Class Full - Retrying ("We\'ve Got This")',
+        subject: result.subject,
+        severity: 'info',
+        html: result.html,
+      }
+    }
+
     case 'dailyDigest': {
       const result = dailyDigestEmail({
         items: [
@@ -251,6 +274,7 @@ export async function getAllTemplateTypes(): Promise<
     { type: 'bookingFailureCritical', name: 'Failure - Critical', severity: 'error' },
     { type: 'bookingFailureConfig', name: 'Failure - Configuration', severity: 'warning' },
     { type: 'bookingFailureTechnical', name: 'Failure - Technical', severity: 'warning' },
+    { type: 'bookingFailureRetrying', name: 'Class Full - Retrying', severity: 'info' },
     { type: 'dailyDigest', name: 'Daily Digest (post-MVP)', severity: 'info' },
   ]
 }
