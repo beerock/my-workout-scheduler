@@ -345,7 +345,8 @@ export const bookClassFunction = inngest.createFunction(
 
           await inngest.send({
             name: 'booking/attempt',
-            id: `book-retry-${classId}-${classDate}-${attemptNumber + 1}`, // Unique per retry attempt
+            // SECURITY: Random suffix prevents event ID prediction/enumeration
+            id: `book-retry-${classId}-${classDate}-${attemptNumber + 1}-${crypto.randomUUID().slice(0, 8)}`,
             data: {
               classId,
               className: classData.class_type,

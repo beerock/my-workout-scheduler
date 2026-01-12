@@ -53,7 +53,7 @@
   - Smart retry logic: only retries for temporary failures (class full)
 - ✅ **COMPLETED: Duplicate Booking Prevention (v2.7)**
   - Duplicate run detection (checks for pending attempts within 5 minutes)
-  - Idempotency keys for retry events (format: `book-retry-{classId}-{date}-{attempt}`)
+  - Idempotency keys for retry events (format: `book-retry-{classId}-{date}-{attempt}-{random8}`) - random suffix for security
   - Prevents race conditions when retries trigger simultaneously
   - Inngest-level deduplication (same event ID = single execution)
   - Clean database (no orphaned pending attempts)
