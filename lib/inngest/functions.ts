@@ -282,6 +282,7 @@ export const bookClassFunction = inngest.createFunction(
             data: {
               classId,
               className: classData.class_type,
+              classDate, // Required for cancelOn matching
               attemptNumber: attemptNumber + 1,
             },
           });
@@ -405,6 +406,7 @@ export const bookClassFunction = inngest.createFunction(
             data: {
               classId,
               className: classData.class_type,
+              classDate, // Required for cancelOn matching
               attemptNumber: attemptNumber + 1,
             },
           });

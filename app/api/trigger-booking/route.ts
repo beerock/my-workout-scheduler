@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { inngest } from '@/lib/inngest/client';
 import { createClient } from '@/lib/supabase/server';
+import { calculateNextClassDate } from '@/lib/inngest/scheduler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,9 +30,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the class belongs to the authenticated user
+    // Include fields needed to calculate classDate for cancelOn matching
     const { data: classData, error: classError } = await supabase
       .from('recurring_classes')
-      .select('id, user_id, class_type')
+      .select('id, user_id, class_type, day_of_week, class_time, timezone')
       .eq('id', classId)
       .single();
 
@@ -49,12 +51,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Calculate classDate for cancelOn matching
+    const classDate = calculateNextClassDate(
+      classData.day_of_week,
+      classData.class_time,
+      classData.timezone
+    );
+
     // Trigger Inngest booking event
     await inngest.send({
       name: 'booking/attempt',
       data: {
         classId,
         className: classData.class_type,
+        classDate, // Required for cancelOn matching
         attemptNumber: 1,
       },
     });
