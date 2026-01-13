@@ -310,10 +310,12 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
 
     try {
       // Call saveRecurringClass again with the user's choice
+      // Always pass confirmSkipClear: true because if we're at this dialog,
+      // any skip clear has already been confirmed (or there was no skip)
       const result = await saveRecurringClass(
         deactivatedDialogData.formData,
         deactivatedDialogData.classId,
-        false, // confirmSkipClear - not relevant here
+        true, // confirmSkipClear - skip was already confirmed if needed
         choice // activateChoice
       )
 
