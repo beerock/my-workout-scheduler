@@ -115,12 +115,13 @@ export async function saveRecurringClass(
       }
 
       // Check if schedule changed (day or time)
+      // Use Number() to ensure consistent comparison (form may send string, DB returns number)
       const scheduleChanged =
-        existingClass.day_of_week !== data.day_of_week ||
+        Number(existingClass.day_of_week) !== Number(data.day_of_week) ||
         existingClass.class_time !== data.class_time
 
-      // Check if skip is active
-      const hasActiveSkip = existingClass.skip_next_occurrence === true
+      // Check if skip is active (use Boolean to handle truthy values from DB)
+      const hasActiveSkip = Boolean(existingClass.skip_next_occurrence)
 
       // If schedule changed AND skip active AND user hasn't confirmed
       if (scheduleChanged && hasActiveSkip && !confirmSkipClear) {
