@@ -198,8 +198,18 @@ export async function saveRecurringClass(
 
       const isBookingWindowOpen = bookingTime.getTime() <= Date.now()
 
+      // Only handle booking logic for active classes
+      if (!classData.active) {
+        // Class is inactive - don't schedule or prompt to book
+        revalidatePath('/dashboard/schedule')
+        return {
+          success: true,
+          id: resultId,
+        }
+      }
+
       if (isBookingWindowOpen) {
-        // Booking window is already open
+        // Booking window is already open AND class is active
         // Don't schedule anything yet - let the user decide via dialog
         // If they click "Book Now", /api/trigger-booking will handle it
         // If they click "Skip", the daily scheduler will schedule next week's occurrence
