@@ -12,6 +12,20 @@
 
 ---
 
+## Mandatory Pre-Flight Checklist
+
+**STOP. Before ANY action, verify:**
+
+1. **Branch** - Not on main? (See Git Branch Safety)
+2. **Prior decisions** - Checked PRD/BACKLOG first?
+3. **UI work** - Using component library + design tokens?
+
+**If adding to BACKLOG.md** - Follow strict format below
+
+**If unsure about ANY rule** - Ask user before proceeding
+
+---
+
 ## Key Documentation
 
 | Doc | Purpose | When to Use |
@@ -77,7 +91,7 @@ supabase/         → Migrations and RLS policies
 
 **Branch naming conventions:** `feature/`, `fix/`, `docs/`, `refactor/`, `security/`
 
-### Always Do
+### Always Do (MANDATORY)
 - Check PRD and BACKLOG before asking user questions - many decisions are already documented
 - Import components from `@/components/ui`
 - Use design tokens for colors (never arbitrary values)
@@ -88,7 +102,7 @@ supabase/         → Migrations and RLS policies
 - Update `/prototype/design-system-components` when adding/modifying components
 - Update `/prototype/email-preview` when adding/updating email templates
 
-### Never Do
+### Never Do (VIOLATIONS REQUIRE USER PERMISSION)
 - Create inline buttons/forms - use component library
 - Use `new Date()` without timezone context
 - Parse YYYY-MM-DD as UTC (causes off-by-one-day bugs)
