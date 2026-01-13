@@ -112,6 +112,23 @@ Portfolio case studies showcasing design decisions and implementation process.
 
 ---
 
+### Post-MVP: Security Enhancements
+
+**STATUS: POST-MVP (Low priority for 5-user MVP)**
+
+1. **Rate Limiting on Auth Endpoints**
+   - **Status:** Post-MVP
+   - **Priority:** Medium (low risk with 5 users, important at scale)
+   - **Summary:** Add rate limiting to login, signup, and password reset endpoints to prevent brute force attacks
+   - **Recommended approach:** Upstash Redis (free tier, serverless-compatible with Vercel)
+   - **Endpoints to protect:**
+     - Login: 5 attempts per 15 minutes per IP
+     - Signup: 3 attempts per hour per IP
+     - Password reset: 3 attempts per hour per email
+   - **Why deferred:** Low risk with small user base, Turnstile CAPTCHA provides bot protection on signup
+
+---
+
 ## Operational Notes & Reminders
 
 ### Production Deployment Status
@@ -340,7 +357,7 @@ Successfully implemented intelligent retry logic that handles both clock drift a
 
 **Duplicate Booking Prevention:**
 - ✅ Run-level duplicate detection (checks pending attempts within 5 minutes)
-- ✅ Idempotency keys for retry events (`book-retry-{classId}-{date}-{attempt}`)
+- ✅ Idempotency keys for retry events (`book-retry-{classId}-{date}-{attempt}-{random8}`) - includes random suffix for security
 - ✅ Inngest-level deduplication (same event ID = single execution)
 - ✅ Prevents race conditions when retries trigger simultaneously
 

@@ -14,7 +14,7 @@ import PausedActiveStatCard from '@/components/PausedActiveStatCard'
 import GetStartedBanner from '@/components/GetStartedBanner'
 import SuccessRateCard from '@/components/SuccessRateCard'
 import Link from 'next/link'
-import { Divider } from '@/components/ui'
+import { Button, Divider } from '@/components/ui'
 
 export const metadata: Metadata = {
   title: 'My Schedule',
@@ -29,16 +29,18 @@ export default async function SchedulePage() {
   }
 
   // Get all data in parallel
+  // For recent bookings, fetch 5 items but get 90-day total count (matches history page)
   const [classesResult, settingsResult, historyResult, statsResult] = await Promise.all([
     getRecurringClasses(),
     getUserSettings(),
-    getBookingHistory(30),
+    getBookingHistory(90, 5, 0),
     getDashboardStats(),
   ])
 
   const classes = classesResult.success ? classesResult.classes || [] : []
   const settings = settingsResult.success ? settingsResult.settings : null
   const history = historyResult.success ? historyResult.history || [] : []
+  const historyTotalCount = historyResult.success ? historyResult.totalCount || 0 : 0
   const stats = statsResult.success ? statsResult.stats : null
 
   // Get gym URL for skip button
@@ -54,7 +56,6 @@ export default async function SchedulePage() {
     <EditorialLayout
       title="My Schedule"
       subtitle="Manage your recurring class schedule and booking preferences"
-      backLink={{ href: '/dashboard', label: 'Dashboard' }}
       actions={
         // Show inline pause control in header - only when classes exist AND not paused
         // (When paused, the content area banner provides the Resume action)
@@ -219,18 +220,23 @@ export default async function SchedulePage() {
           <h2 className="font-sora text-xl sm:text-2xl font-bold text-gray-900 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
             Recent Bookings
           </h2>
-          {history.length > 5 && (
+          {historyTotalCount > 5 && (
             <Link
               href="/dashboard/schedule/history"
-              className="font-dm-sans text-sm text-primary-600 hover:text-primary-700 transition-colors opacity-0 animate-fade-in-up"
+              className="opacity-0 animate-fade-in-up"
               style={{ animationDelay: '0.4s' }}
             >
-              See all ({history.length}) →
+              <Button variant="ghost-primary" size="sm" className="gap-1">
+                View all {historyTotalCount}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Button>
             </Link>
           )}
         </div>
 
-        <RecentBookings history={history.slice(0, 5)} />
+        <RecentBookings history={history} />
       </section>
     </EditorialLayout>
   )

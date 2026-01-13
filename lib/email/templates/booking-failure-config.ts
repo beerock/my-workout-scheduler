@@ -10,7 +10,7 @@
  */
 
 import { baseEmailTemplate } from './_base-template';
-import { emailDesign } from '../design-tokens';
+import { emailDesign, escapeHtml } from '../design-tokens';
 
 export type BookingFailureConfigEmailProps = {
   className: string;
@@ -55,7 +55,7 @@ export function bookingFailureConfigEmail(props: BookingFailureConfigEmailProps)
         What went wrong:
       </p>
       <div style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-        ${props.errorMessage}
+        ${escapeHtml(props.errorMessage)}
       </div>
     </div>
 

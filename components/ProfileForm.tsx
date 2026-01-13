@@ -201,7 +201,7 @@ export default function ProfileForm({ userEmail }: Props) {
   )
 
   return (
-    <div className="max-w-xl space-y-6">
+    <div className="space-y-6">
       {/* Email Update Section */}
       <div className="border-b border-gray-200 pb-8">
         <h2 className="text-lg font-sora font-semibold text-gray-900 mb-4">Update Email Address</h2>

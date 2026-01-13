@@ -86,7 +86,7 @@ This guide ensures all scenarios are properly validated in production.
 
 **Where to Check:**
 - Inngest Dashboard → Find the function run → Check for `wait-before-retry` step
-- Look for retry events: `book-retry-{classId}-{date}-{attemptNumber}`
+- Look for retry events: `book-retry-{classId}-{date}-{attemptNumber}-{random8}` (8-char random suffix)
 - Check Inngest logs for "Scheduling retry in 15 minutes"
 
 **Success Criteria:**
@@ -203,13 +203,13 @@ This guide ensures all scenarios are properly validated in production.
 - Check retry event IDs in Inngest
 
 **Expected Result:**
-- ✅ Retry event IDs follow pattern: `book-retry-{classId}-{YYYY-MM-DD}-{attemptNumber}`
-- ✅ Each retry has unique attempt number
+- ✅ Retry event IDs follow pattern: `book-retry-{classId}-{YYYY-MM-DD}-{attemptNumber}-{random8}`
+- ✅ Each retry has unique attempt number and random suffix
 - ✅ Inngest doesn't process duplicate retry events
 
 **Where to Check:**
 - Inngest Dashboard → Events tab → Look for event IDs
-- Pattern should be: `book-retry-abc123-2025-11-20-2`, `book-retry-abc123-2025-11-20-3`, etc.
+- Pattern should be: `book-retry-abc123-2025-11-20-2-f7a2c9b1`, `book-retry-abc123-2025-11-20-3-d4e5f6a7`, etc.
 
 **Success Criteria:**
 - Event IDs are unique

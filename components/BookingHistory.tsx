@@ -1,24 +1,66 @@
 'use client'
 
-import { Card, Badge } from '@/components/ui'
-import { getDayName, formatTime12Hour } from '@/lib/date-utils'
-import { format, formatDistanceToNow } from 'date-fns'
-import type { BookingHistoryItem } from '@/app/actions/booking-history'
+import { Badge } from '@/components/ui'
+import BookingHistoryCard from './BookingHistoryCard'
+import { format } from 'date-fns'
+import type { BookingHistoryItem, FilterOption } from '@/app/actions/booking-history'
+
+type FilterCounts = {
+  all: number
+  confirmed: number
+  waitlisted: number
+  retrying: number
+  failed: number
+}
 
 type Props = {
   history: BookingHistoryItem[]
+  totalCount: number
+  filter?: FilterOption
+  onFilterChange?: (filter: FilterOption) => void
+  counts?: FilterCounts
+  // Load More pagination
+  hasMore?: boolean
+  remainingCount?: number
+  isLoadingMore?: boolean
+  onLoadMore?: () => void
 }
 
-// Status badge mapping aligned with NOTIFICATIONS_DESIGN.md
-const statusConfig: Record<BookingHistoryItem['status'], { variant: 'success' | 'warning' | 'danger' | 'default' | 'info'; label: string }> = {
-  confirmed: { variant: 'success', label: 'Booked' },
-  waitlisted: { variant: 'warning', label: 'Waitlisted' },
-  pending: { variant: 'info', label: 'Pending' },
-  failed: { variant: 'danger', label: 'Failed' },
-  skipped: { variant: 'default', label: 'Skipped' },
+// Filter button configuration
+const filterButtons: { id: FilterOption; label: string; variant: 'default' | 'success' | 'warning' | 'primary' | 'danger' }[] = [
+  { id: 'all', label: 'All', variant: 'default' },
+  { id: 'confirmed', label: 'Booked', variant: 'success' },
+  { id: 'waitlisted', label: 'Waitlisted', variant: 'warning' },
+  { id: 'retrying', label: 'Class Full', variant: 'primary' },
+  { id: 'failed', label: 'Failed', variant: 'danger' },
+]
+
+// Labels for summary footer
+const filterLabels: Record<FilterOption, string> = {
+  all: 'all',
+  confirmed: 'booked',
+  waitlisted: 'waitlisted',
+  retrying: 'class full',
+  failed: 'failed',
 }
 
-export default function BookingHistory({ history }: Props) {
+/**
+ * BookingHistory - Full history list with date grouping and filtering
+ *
+ * Displays booking history grouped by date with expandable error details.
+ * Supports client-side filtering by status (All, Booked, Waitlisted, Failed).
+ */
+export default function BookingHistory({
+  history,
+  totalCount,
+  filter = 'all',
+  onFilterChange,
+  counts,
+  hasMore,
+  remainingCount = 0,
+  isLoadingMore,
+  onLoadMore,
+}: Props) {
   // Group history by date
   const groupedHistory = history.reduce((groups, item) => {
     const date = format(new Date(item.created_at), 'yyyy-MM-dd')
@@ -32,87 +74,169 @@ export default function BookingHistory({ history }: Props) {
   const sortedDates = Object.keys(groupedHistory).sort((a, b) => b.localeCompare(a))
 
   return (
-    <div className="space-y-6">
-      {sortedDates.map((date, dateIndex) => {
+    <div className="w-full space-y-6">
+      {/* Filter buttons */}
+      {onFilterChange && counts && (
+        <div className="flex flex-wrap gap-2 pb-2">
+          {filterButtons.map(btn => {
+            const count = counts[btn.id]
+            const isActive = filter === btn.id
+
+            // Color classes for each variant (active vs inactive)
+            const colorClasses = {
+              success: isActive
+                ? 'bg-success-100 text-success-700 ring-1 ring-success-300'
+                : 'bg-success-50 text-success-600 hover:bg-success-100 border border-success-200',
+              warning: isActive
+                ? 'bg-warning-100 text-warning-700 ring-1 ring-warning-300'
+                : 'bg-warning-50 text-warning-600 hover:bg-warning-100 border border-warning-200',
+              primary: isActive
+                ? 'bg-primary-100 text-primary-700 ring-1 ring-primary-300'
+                : 'bg-primary-50 text-primary-600 hover:bg-primary-100 border border-primary-200',
+              danger: isActive
+                ? 'bg-danger-100 text-danger-700 ring-1 ring-danger-300'
+                : 'bg-danger-50 text-danger-600 hover:bg-danger-100 border border-danger-200',
+              default: isActive
+                ? 'bg-gray-100 text-gray-700 ring-1 ring-gray-300'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200',
+            }
+
+            const countClasses = {
+              success: isActive ? 'bg-success-200 text-success-800' : 'bg-success-100 text-success-700',
+              warning: isActive ? 'bg-warning-200 text-warning-800' : 'bg-warning-100 text-warning-700',
+              primary: isActive ? 'bg-primary-200 text-primary-800' : 'bg-primary-100 text-primary-700',
+              danger: isActive ? 'bg-danger-200 text-danger-800' : 'bg-danger-100 text-danger-700',
+              default: isActive ? 'bg-gray-200 text-gray-800' : 'bg-gray-100 text-gray-600',
+            }
+
+            return (
+              <button
+                key={btn.id}
+                onClick={() => onFilterChange(btn.id)}
+                className={`
+                  inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+                  transition-all duration-200
+                  ${colorClasses[btn.variant]}
+                `}
+              >
+                {btn.label}
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${countClasses[btn.variant]}`}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Empty state for filtered results */}
+      {history.length === 0 && filter !== 'all' && (
+        <div className="text-center py-8">
+          <p className="text-gray-500 font-dm-sans">
+            No {filter === 'confirmed' ? 'booked' : filter === 'retrying' ? 'retrying' : filter} bookings found.
+          </p>
+        </div>
+      )}
+
+      {/* Date-grouped booking cards */}
+      {sortedDates.map((date) => {
         const items = groupedHistory[date]
         const dateObj = new Date(date)
         const isToday = format(new Date(), 'yyyy-MM-dd') === date
         const dateLabel = isToday ? 'Today' : format(dateObj, 'EEEE, MMM d')
 
         return (
-          <div
-            key={date}
-            className="opacity-0 animate-fade-in-up"
-            style={{ animationDelay: `${dateIndex * 0.1}s` }}
-          >
-            <h3 className="font-sora font-semibold text-gray-700 mb-3 flex items-center gap-2">
-              {dateLabel}
-              <Badge variant="default" size="sm">{items.length}</Badge>
-            </h3>
-
-            <div className="space-y-2">
-              {items.map((item, itemIndex) => {
-                const config = statusConfig[item.status]
-
-                return (
-                  <Card
-                    key={item.id}
-                    variant="outlined"
-                    padding="sm"
-                    className="rounded-xl opacity-0 animate-fade-in-up hover:-translate-y-1 transition-all duration-300"
-                    style={{ animationDelay: `${(dateIndex * 0.1) + (itemIndex * 0.05)}s` }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {/* Status indicator */}
-                        <div className={`w-2 h-2 rounded-full ${
-                          item.status === 'confirmed' ? 'bg-success-500' :
-                          item.status === 'waitlisted' ? 'bg-warning-500' :
-                          item.status === 'failed' ? 'bg-danger-500' :
-                          item.status === 'pending' ? 'bg-primary-500' :
-                          'bg-gray-400'
-                        }`} />
-
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-dm-sans font-medium text-gray-900">
-                              {item.class_type}
-                            </span>
-                            <Badge variant={config.variant} size="sm" diagonal>
-                              {config.label}
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-gray-500 font-dm-sans">
-                            {getDayName(item.day_of_week)} {formatTime12Hour(item.class_time)} @ {item.branch}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="text-sm text-gray-500 font-dm-sans">
-                          {format(new Date(item.created_at), 'h:mm a')}
-                        </div>
-                        <div className="text-xs text-gray-400 font-dm-sans">
-                          {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Error message if failed */}
-                    {item.status === 'failed' && item.error_message && (
-                      <div className="mt-2 pt-2 border-t border-gray-100">
-                        <p className="text-sm text-danger-600 font-dm-sans">
-                          {item.error_message}
-                        </p>
-                      </div>
-                    )}
-                  </Card>
-                )
-              })}
+          <section key={date} className="w-full">
+            {/* Date header */}
+            <div className="flex items-center gap-3 mb-4">
+              <h3 className="font-sora font-semibold text-gray-800">
+                {dateLabel}
+              </h3>
+              <Badge variant="default" size="sm" diagonal={false}>
+                {items.length} {items.length === 1 ? 'attempt' : 'attempts'}
+              </Badge>
             </div>
-          </div>
+
+            {/* Booking cards */}
+            <div className="space-y-3">
+              {items.map((item) => (
+                <BookingHistoryCard
+                  key={item.id}
+                  item={item}
+                  compact={false}
+                />
+              ))}
+            </div>
+          </section>
         )
       })}
+
+      {/* Load More button - visible but secondary */}
+      {hasMore && onLoadMore && (
+        <div className="pt-8 text-center">
+          <button
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-xl
+              font-dm-sans text-sm font-medium
+              text-gray-600 hover:text-gray-800
+              bg-gray-100 hover:bg-gray-200
+              border border-gray-200 hover:border-gray-300
+              disabled:opacity-60 disabled:cursor-not-allowed
+              transition-all duration-200 ease-out
+              hover:shadow-sm"
+          >
+            {isLoadingMore ? (
+              <>
+                <svg className="w-4 h-4 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span>Loading...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 text-gray-500 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span>Load More</span>
+                <span className="text-gray-600">· {remainingCount} remaining</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Summary footer - refined but readable */}
+      {history.length > 0 && (
+        <div className="pt-10 flex flex-col items-center gap-4">
+          {/* Decorative separator - more visible */}
+          <div className="w-16 h-px bg-gray-300" />
+
+          {/* Summary text - better contrast */}
+          <p className="text-sm text-gray-500 font-dm-sans tracking-wide">
+            {hasMore ? (
+              <>
+                <span className="tabular-nums font-medium text-gray-600">{history.length}</span>
+                <span className="mx-2 text-gray-400">of</span>
+                <span className="tabular-nums font-medium text-gray-600">{totalCount}</span>
+                <span className="ml-1.5">attempts</span>
+                {filter !== 'all' && (
+                  <span className="text-gray-400 ml-2">· {filterLabels[filter]}</span>
+                )}
+              </>
+            ) : (
+              <>
+                <span className="tabular-nums font-medium text-gray-600">{totalCount}</span>
+                <span className="ml-1.5">{totalCount === 1 ? 'attempt' : 'attempts'}</span>
+                {filter !== 'all' && (
+                  <span className="text-gray-400 ml-2">· {filterLabels[filter]}</span>
+                )}
+              </>
+            )}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

@@ -53,7 +53,7 @@
   - Smart retry logic: only retries for temporary failures (class full)
 - ✅ **COMPLETED: Duplicate Booking Prevention (v2.7)**
   - Duplicate run detection (checks for pending attempts within 5 minutes)
-  - Idempotency keys for retry events (format: `book-retry-{classId}-{date}-{attempt}`)
+  - Idempotency keys for retry events (format: `book-retry-{classId}-{date}-{attempt}-{random8}`) - random suffix for security
   - Prevents race conditions when retries trigger simultaneously
   - Inngest-level deduplication (same event ID = single execution)
   - Clean database (no orphaned pending attempts)
@@ -171,6 +171,12 @@
   - Countdown threshold changed: hours until 48h, then days (matches human time perception)
   - Day rounding uses Math.round (88 hours = 4 days, not 3)
   - Booking status only shows for current occurrence (fixes stale status from previous week)
+- **v2.28:** Booking History UX improvements
+  - "Class Full" status: Derived display status for failed attempts with "full" in error message (shows blue "Retrying" badge, not red "Failed")
+  - Load More pagination: Full history loads 50 items initially, "Load More" button fetches next batch
+  - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
+  - Visual refinements: Improved Load More button and summary footer visibility
+  - Success rate fix: Active retries excluded from failure count
 - ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13 → v2.22)**
   - Complete design system with editorial diagonal-cut design language
   - **19 reusable UI components** in `components/ui/`:

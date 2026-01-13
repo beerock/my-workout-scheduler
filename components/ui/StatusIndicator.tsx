@@ -37,7 +37,7 @@ export const StatusIndicator = React.forwardRef<HTMLSpanElement, StatusIndicator
       waitlisted: 'Waitlisted',
       failed: 'Failed',
       skipped: 'Skipped',
-      retrying: 'Retrying',
+      retrying: 'Class Full',
     }
 
     // Dot sizes

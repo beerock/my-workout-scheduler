@@ -14,6 +14,7 @@ import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from
 import { differenceInMinutes, format } from 'date-fns';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { sendBookingNotification } from '@/lib/notifications/send-booking-notification';
+import { formatTime12Hour } from '@/lib/date-utils';
 
 /**
  * Main booking function - triggered at exact booking window time
@@ -243,12 +244,67 @@ export const bookClassFunction = inngest.createFunction(
 
     if (!bookingResult) {
       console.log(`[Inngest] ⚠️  Timeout waiting for booking result for "${className}"`);
+
+      // Update attempt status to failed with timeout message
+      await step.run('update-attempt-timeout', async () => {
+        await updateBookingAttempt(attemptId, {
+          status: 'failed',
+          error_message: 'Timeout waiting for GitHub Actions result',
+        });
+      });
+
+      // Check if we should retry (same logic as "class full")
+      const timeoutClassStartTime = calculateClassStartTime(
+        classData.day_of_week,
+        classData.class_time,
+        classData.timezone
+      );
+      const timeoutNow = new Date();
+      const timeoutMinutesUntilClass = differenceInMinutes(timeoutClassStartTime, timeoutNow);
+
+      console.log(`[Inngest] Minutes until class starts: ${timeoutMinutesUntilClass}`);
+
+      if (timeoutMinutesUntilClass > 15) {
+        console.log(`[Inngest] Scheduling retry in 15 minutes after timeout (attempt #${attemptNumber + 1})`);
+
+        await step.sleep('wait-before-timeout-retry', '15m');
+
+        await step.run('send-timeout-retry-event', async () => {
+          const classDate = calculateNextClassDate(
+            classData.day_of_week,
+            classData.class_time,
+            classData.timezone
+          );
+
+          await inngest.send({
+            name: 'booking/attempt',
+            id: `book-retry-${classId}-${classDate}-${attemptNumber + 1}-${crypto.randomUUID().slice(0, 8)}`,
+            data: {
+              classId,
+              className: classData.class_type,
+              attemptNumber: attemptNumber + 1,
+            },
+          });
+        });
+
+        return {
+          classId,
+          className: classData.class_type,
+          attemptId,
+          status: 'timeout_retrying',
+          message: `GitHub Actions timeout - scheduled retry #${attemptNumber + 1} in 15 minutes`,
+          nextAttemptNumber: attemptNumber + 1,
+        };
+      }
+
+      // No time left for retry
+      console.log(`[Inngest] Not retrying after timeout - class starts in ${timeoutMinutesUntilClass} minutes (too soon)`);
       return {
         classId,
         className: classData.class_type,
         attemptId,
         status: 'timeout',
-        message: 'Timeout waiting for GitHub Actions result',
+        message: 'Timeout waiting for GitHub Actions result - no time for retry',
       };
     }
 
@@ -267,24 +323,36 @@ export const bookClassFunction = inngest.createFunction(
           classData.class_time,
           classData.timezone
         );
-        const formattedDate = format(classStartTime, 'EEEE, MMMM d, yyyy');
+        const formattedDate = format(classStartTime, 'MMMM d, yyyy');
         const dayName = format(classStartTime, 'EEEE');
+        // ISO date string for deduplication (YYYY-MM-DD)
+        const classDateISO = format(classStartTime, 'yyyy-MM-dd');
+        // Formatted class start time for email display
+        const classStartTimeFormatted = format(classStartTime, "EEEE, MMMM d 'at' h:mm a");
 
         // Check if this is a retry success (was previously full, now confirmed)
         const isRetrySuccess = attemptNumber > 1 && status === 'confirmed';
 
+        // First attempt time for "class full" emails
+        const now = new Date();
+        const firstAttemptTimeFormatted = format(now, 'MMM d, yyyy h:mm a');
+
         await sendBookingNotification({
           userId: classData.user_id,
           bookingAttemptId: attemptId,
+          recurringClassId: classId,
+          classDate: classDateISO,
           status: status as 'confirmed' | 'waitlisted' | 'failed' | 'skipped',
           errorMessage,
           className: classData.class_type,
           dayOfWeek: dayName,
           date: formattedDate,
-          time: classData.class_time,
+          time: formatTime12Hour(classData.class_time),
           branchName: classData.branch,
           isRetrySuccess,
           retryCount: attemptNumber,
+          firstAttemptTime: firstAttemptTimeFormatted,
+          classStartTime: classStartTimeFormatted,
         });
 
         console.log(`[Inngest] Notification sent (or skipped per user preferences)`);
@@ -332,7 +400,8 @@ export const bookClassFunction = inngest.createFunction(
 
           await inngest.send({
             name: 'booking/attempt',
-            id: `book-retry-${classId}-${classDate}-${attemptNumber + 1}`, // Unique per retry attempt
+            // SECURITY: Random suffix prevents event ID prediction/enumeration
+            id: `book-retry-${classId}-${classDate}-${attemptNumber + 1}-${crypto.randomUUID().slice(0, 8)}`,
             data: {
               classId,
               className: classData.class_type,
@@ -443,7 +512,7 @@ export const pauseReminderFunction = inngest.createFunction(
     console.log(`[Inngest] Pause reminder scheduled for user ${userId} (7 days from now)`);
 
     // Wait 7 days before sending reminder
-    await step.sleep('wait-7-days', '1m');  // Was '7d'
+    await step.sleep('wait-7-days', '7d');
 
     console.log(`[Inngest] 7 days passed, checking if user ${userId} is still paused...`);
 
@@ -493,8 +562,9 @@ export const pauseReminderFunction = inngest.createFunction(
         return { sent: false, reason: 'No email address' };
       }
 
-      // Get environment-specific URLs
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      // Get environment-specific URLs using getSiteUrl() for proper Vercel detection
+      const { getSiteUrl } = await import('@/lib/env-utils');
+      const appUrl = getSiteUrl();
       const dashboardUrl = `${appUrl}/dashboard`;
       const settingsUrl = `${appUrl}/dashboard/account`;
 
