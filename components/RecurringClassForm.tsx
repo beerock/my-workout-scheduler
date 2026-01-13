@@ -41,6 +41,11 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
     formData: RecurringClassFormData
     classId: string
   } | null>(null)
+  const [showDeactivatedDialog, setShowDeactivatedDialog] = useState(false)
+  const [deactivatedDialogData, setDeactivatedDialogData] = useState<{
+    formData: RecurringClassFormData
+    classId: string
+  } | null>(null)
   const [savedClassDetails, setSavedClassDetails] = useState<{
     class_type: string
     day_of_week: number
@@ -115,7 +120,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         (initialClass && !isCopy) ? initialClass.id : undefined
       )
 
-      // Check for skip clear warning FIRST (before booking window check)
+      // Check for skip clear warning FIRST (before other checks)
       if (result.skipClearWarning) {
         setSkipClearData({
           skipDate: result.skipDate || null,
@@ -126,6 +131,20 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
           classId: (initialClass && !isCopy) ? initialClass.id : ''
         })
         setShowSkipClearDialog(true)
+        setLoading(false)
+        return
+      }
+
+      // Check for deactivated class warning (before booking window check)
+      if (result.deactivatedWarning) {
+        setDeactivatedDialogData({
+          formData: {
+            ...formData,
+            class_time: timeWithSeconds,
+          },
+          classId: (initialClass && !isCopy) ? initialClass.id : ''
+        })
+        setShowDeactivatedDialog(true)
         setLoading(false)
         return
       }
@@ -266,6 +285,63 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
   const handleCancelSkipClear = () => {
     setShowSkipClearDialog(false)
     setSkipClearData(null)
+    setLoading(false)
+  }
+
+  const handleActivateChoice = async (choice: 'activate' | 'keep_deactivated') => {
+    if (!deactivatedDialogData) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Call saveRecurringClass again with the user's choice
+      const result = await saveRecurringClass(
+        deactivatedDialogData.formData,
+        deactivatedDialogData.classId,
+        false, // confirmSkipClear - not relevant here
+        choice // activateChoice
+      )
+
+      if (!result.success) {
+        setError(result.error || 'Failed to save class')
+        setLoading(false)
+        return
+      }
+
+      // Check for booking window (may happen after activating)
+      if (result.bookingWindowAlreadyOpen && result.id) {
+        // Close deactivated dialog, show booking window dialog
+        setShowDeactivatedDialog(false)
+        setDeactivatedDialogData(null)
+        setSavedClassId(result.id)
+        setSavedClassDetails(result.classDetails || null)
+        setShowBookNowDialog(true)
+        setLoading(false)
+        return
+      }
+
+      // Success, close modal and navigate
+      setShowDeactivatedDialog(false)
+      setDeactivatedDialogData(null)
+      setSuccess(true)
+
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        router.push('/dashboard/schedule')
+        router.refresh()
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCancelDeactivatedDialog = () => {
+    setShowDeactivatedDialog(false)
+    setDeactivatedDialogData(null)
     setLoading(false)
   }
 
@@ -469,6 +545,47 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
             )}
           </strong>. Do you want to continue?
         </p>
+
+        {error && (
+          <div className="mt-4 p-3 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm">
+            {error}
+          </div>
+        )}
+      </Modal>
+
+      {/* Deactivated Class Confirmation Dialog */}
+      <Modal
+        isOpen={showDeactivatedDialog && !!deactivatedDialogData}
+        onClose={handleCancelDeactivatedDialog}
+        title="This Class is Deactivated"
+        size="md"
+        variant="default"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => handleActivateChoice('keep_deactivated')}
+              disabled={loading}
+            >
+              Keep Deactivated
+            </Button>
+            <Button
+              variant="success"
+              onClick={() => handleActivateChoice('activate')}
+              loading={loading}
+            >
+              Activate
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-700 mb-4">
+          You&apos;re editing a class that&apos;s currently deactivated. Would you like to activate it?
+        </p>
+        <ul className="text-sm text-gray-600 space-y-2">
+          <li><strong>Activate:</strong> Auto-booking will resume</li>
+          <li><strong>Keep Deactivated:</strong> Your changes save, but no bookings will be scheduled</li>
+        </ul>
 
         {error && (
           <div className="mt-4 p-3 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm">

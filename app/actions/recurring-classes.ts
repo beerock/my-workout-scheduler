@@ -22,6 +22,7 @@ export type RecurringClassResult = {
   bookingTime?: Date
   skipClearWarning?: boolean
   skipDate?: string | null
+  deactivatedWarning?: boolean  // Signal that class is deactivated and needs user choice
   classDetails?: {
     class_type: string
     day_of_week: number
@@ -36,7 +37,8 @@ export type RecurringClassResult = {
 export async function saveRecurringClass(
   data: RecurringClassFormData,
   id?: string,
-  confirmSkipClear?: boolean
+  confirmSkipClear?: boolean,
+  activateChoice?: 'activate' | 'keep_deactivated'
 ): Promise<RecurringClassResult> {
   try {
     const supabase = await createClient()
@@ -97,10 +99,10 @@ export async function saveRecurringClass(
     let resultId: string
 
     if (id) {
-      // Fetch existing class to check for schedule changes
+      // Fetch existing class to check for schedule changes and active status
       const { data: existingClass, error: fetchError } = await supabase
         .from('recurring_classes')
-        .select('day_of_week, class_time, skip_next_occurrence, skip_target_datetime')
+        .select('day_of_week, class_time, skip_next_occurrence, skip_target_datetime, active')
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
@@ -133,6 +135,23 @@ export async function saveRecurringClass(
       if (scheduleChanged && hasActiveSkip) {
         classData.skip_next_occurrence = false
         classData.skip_target_datetime = null
+      }
+
+      // Check if class is deactivated and user hasn't made a choice yet
+      const isDeactivated = existingClass.active === false
+      if (isDeactivated && !activateChoice) {
+        return {
+          success: false,
+          deactivatedWarning: true,
+        }
+      }
+
+      // Set active status based on user's choice (or default to true for active classes)
+      if (activateChoice === 'keep_deactivated') {
+        classData.active = false
+      } else {
+        // 'activate' or no choice (class was already active) → set to true
+        classData.active = true
       }
 
       // Update existing class
