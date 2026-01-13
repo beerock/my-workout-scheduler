@@ -102,7 +102,7 @@ export async function saveRecurringClass(
       // Fetch existing class to check for field changes and active status
       const { data: existingClass, error: fetchError } = await supabase
         .from('recurring_classes')
-        .select('day_of_week, class_time, class_type, branch, skip_next_occurrence, skip_target_datetime, active')
+        .select('day_of_week, class_time, class_type, branch, booking_window_hours, skip_next_occurrence, skip_target_datetime, active')
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
@@ -114,13 +114,14 @@ export async function saveRecurringClass(
         }
       }
 
-      // Check if ANY meaningful field changed (excludes booking_window_hours which is just config)
+      // Check if ANY field changed - all field changes invalidate skip
       // Use Number() to ensure consistent comparison (form may send string, DB returns number)
       const anyFieldChanged =
         Number(existingClass.day_of_week) !== Number(data.day_of_week) ||
         existingClass.class_time !== data.class_time ||
         existingClass.class_type !== data.class_type ||
-        existingClass.branch !== data.branch
+        existingClass.branch !== data.branch ||
+        Number(existingClass.booking_window_hours) !== Number(data.booking_window_hours)
 
       // Check if skip is active (use Boolean to handle truthy values from DB)
       const hasActiveSkip = Boolean(existingClass.skip_next_occurrence)
