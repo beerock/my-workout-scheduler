@@ -298,8 +298,43 @@ export const bookClassFunction = inngest.createFunction(
         };
       }
 
-      // No time left for retry
+      // No time left for retry - send "gave up" notification
       console.log(`[Inngest] Not retrying after timeout - class starts in ${timeoutMinutesUntilClass} minutes (too soon)`);
+
+      await step.run('send-timeout-exhausted-notification', async () => {
+        try {
+          const formattedDate = format(timeoutClassStartTime, 'MMMM d, yyyy');
+          const dayName = format(timeoutClassStartTime, 'EEEE');
+          const classDateISO = format(timeoutClassStartTime, 'yyyy-MM-dd');
+          const classStartTimeFormatted = format(timeoutClassStartTime, "EEEE, MMMM d 'at' h:mm a");
+          const now = new Date();
+          const firstAttemptTimeFormatted = format(now, 'MMM d, yyyy h:mm a');
+
+          await sendBookingNotification({
+            userId: classData.user_id,
+            bookingAttemptId: attemptId,
+            recurringClassId: classId,
+            classDate: classDateISO,
+            status: 'failed',
+            errorMessage: 'Booking timed out and ran out of time to retry',
+            className: classData.class_type,
+            dayOfWeek: dayName,
+            date: formattedDate,
+            time: formatTime12Hour(classData.class_time),
+            branchName: classData.branch,
+            isRetryExhausted: true,
+            retryCount: attemptNumber,
+            firstAttemptTime: firstAttemptTimeFormatted,
+            classStartTime: classStartTimeFormatted,
+          });
+
+          console.log(`[Inngest] Sent "gave up" notification - timeout retries exhausted`);
+        } catch (error) {
+          console.error(`[Inngest] Failed to send "gave up" notification:`, error);
+          // Don't throw - notification failure shouldn't break flow
+        }
+      });
+
       return {
         classId,
         className: classData.class_type,
@@ -424,6 +459,41 @@ export const bookClassFunction = inngest.createFunction(
         console.log(
           `[Inngest] Not retrying - class starts in ${minutesUntilClass} minutes (too soon)`
         );
+
+        // Send "gave up" notification - retries exhausted, class time arrived
+        await step.run('send-retry-exhausted-notification', async () => {
+          try {
+            const formattedDate = format(classStartTime, 'MMMM d, yyyy');
+            const dayName = format(classStartTime, 'EEEE');
+            const classDateISO = format(classStartTime, 'yyyy-MM-dd');
+            const classStartTimeFormatted = format(classStartTime, "EEEE, MMMM d 'at' h:mm a");
+            const now = new Date();
+            const firstAttemptTimeFormatted = format(now, 'MMM d, yyyy h:mm a');
+
+            await sendBookingNotification({
+              userId: classData.user_id,
+              bookingAttemptId: attemptId,
+              recurringClassId: classId,
+              classDate: classDateISO,
+              status: 'failed',
+              errorMessage: 'Class stayed full until class time - retries exhausted',
+              className: classData.class_type,
+              dayOfWeek: dayName,
+              date: formattedDate,
+              time: formatTime12Hour(classData.class_time),
+              branchName: classData.branch,
+              isRetryExhausted: true,
+              retryCount: attemptNumber,
+              firstAttemptTime: firstAttemptTimeFormatted,
+              classStartTime: classStartTimeFormatted,
+            });
+
+            console.log(`[Inngest] Sent "gave up" notification - retries exhausted`);
+          } catch (error) {
+            console.error(`[Inngest] Failed to send "gave up" notification:`, error);
+            // Don't throw - notification failure shouldn't break flow
+          }
+        });
       }
     }
 

@@ -12,6 +12,7 @@ import { bookingFailureCriticalEmail } from '@/lib/email/templates/booking-failu
 import { bookingFailureConfigEmail } from '@/lib/email/templates/booking-failure-config'
 import { bookingFailureTechnicalEmail } from '@/lib/email/templates/booking-failure-technical'
 import { bookingFailureRetryingEmail } from '@/lib/email/templates/booking-failure-retrying'
+import { bookingFailureFinalEmail } from '@/lib/email/templates/booking-failure-final'
 import { welcomeEmail } from '@/lib/email/templates/welcome'
 import { pauseReminderEmail } from '@/lib/email/templates/pause-reminder'
 import { dailyDigestEmail } from '@/lib/email/templates/daily-digest'
@@ -26,6 +27,7 @@ export type EmailTemplateType =
   | 'bookingFailureConfig'
   | 'bookingFailureTechnical'
   | 'bookingFailureRetrying'
+  | 'bookingFailureFinal'
   | 'dailyDigest'
 
 export type TemplateInfo = {
@@ -217,6 +219,28 @@ export async function getEmailTemplatePreview(
       }
     }
 
+    case 'bookingFailureFinal': {
+      const result = bookingFailureFinalEmail({
+        className: 'BODYPUMP',
+        dayOfWeek: 'Monday',
+        date: 'January 12, 2026',
+        time: '4:15 PM',
+        branchName: 'Asheville YMCA',
+        firstAttemptTime: 'Jan 11, 2026 11:54 PM',
+        classStartTime: "Monday, January 12 at 4:15 PM",
+        retryCount: 5,
+        dashboardUrl: sampleUrls.dashboardUrl,
+        scheduleUrl: sampleUrls.scheduleUrl,
+        settingsUrl: sampleUrls.settingsUrl,
+      })
+      return {
+        name: 'Retries Exhausted ("Could Not Get You In")',
+        subject: result.subject,
+        severity: 'warning',
+        html: result.html,
+      }
+    }
+
     case 'dailyDigest': {
       const result = dailyDigestEmail({
         items: [
@@ -275,6 +299,7 @@ export async function getAllTemplateTypes(): Promise<
     { type: 'bookingFailureConfig', name: 'Failure - Configuration', severity: 'warning' },
     { type: 'bookingFailureTechnical', name: 'Failure - Technical', severity: 'warning' },
     { type: 'bookingFailureRetrying', name: 'Class Full - Retrying', severity: 'info' },
+    { type: 'bookingFailureFinal', name: 'Retries Exhausted', severity: 'warning' },
     { type: 'dailyDigest', name: 'Daily Digest (post-MVP)', severity: 'info' },
   ]
 }

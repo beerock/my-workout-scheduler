@@ -208,8 +208,9 @@ Nice-to-have features that aren't critical.
 - Email delivery tracking via Resend webhooks
 - First booking success celebration email
 - Credentials updated security email
+- 4-hour "still trying" reminder (only if first retry email was >8 hours ago; schema placeholder `booking_failure_retrying_4hr` exists)
 
-**Last Updated:** November 2025
+**Last Updated:** January 2026
 
 ---
 

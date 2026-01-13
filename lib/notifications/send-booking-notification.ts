@@ -24,7 +24,8 @@ export type SendBookingNotificationParams = {
   time: string; // Class time
   branchName: string;
   isRetrySuccess?: boolean; // True if this was a successful retry after being full
-  retryCount?: number; // Number of retries before success
+  isRetryExhausted?: boolean; // True if all retries failed and class time arrived
+  retryCount?: number; // Number of retries
   firstAttemptTime?: string; // When we first tried to book (for retrying emails)
   classStartTime?: string; // When the class starts (for retrying emails)
 };
@@ -147,7 +148,8 @@ export async function sendBookingNotification(
   // Users cannot disable them (login failures, class cancelled, etc. are too important)
 
   // 8. Special case: "Class full" retry emails (first failure only per class instance)
-  if (params.status === 'failed' && isClassFullError(params.errorMessage || '')) {
+  // Skip deduplication check for "gave up" notifications - we ALWAYS send those
+  if (params.status === 'failed' && isClassFullError(params.errorMessage || '') && !params.isRetryExhausted) {
     // Check if we already sent a "class full" email for THIS CLASS INSTANCE
     // Uses recurring_class_id + class_date for deduplication (not booking_attempt_id)
     const alreadySent = await hasClassFullEmailBeenSent(
@@ -201,6 +203,7 @@ export async function sendBookingNotification(
     status: params.status,
     errorMessage: params.errorMessage,
     isRetrySuccess: params.isRetrySuccess,
+    isRetryExhausted: params.isRetryExhausted,
     retryCount: params.retryCount,
     bookingTimestamp: new Date().toLocaleString('en-US', {
       timeZone: 'America/New_York',

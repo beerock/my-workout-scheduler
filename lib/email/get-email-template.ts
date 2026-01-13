@@ -33,6 +33,10 @@ import {
   bookingFailureRetryingEmail,
   type BookingFailureRetryingEmailProps,
 } from './templates/booking-failure-retrying';
+import {
+  bookingFailureFinalEmail,
+  type BookingFailureFinalEmailProps,
+} from './templates/booking-failure-final';
 
 export type BookingEmailData = {
   className: string;
@@ -43,7 +47,8 @@ export type BookingEmailData = {
   status: 'confirmed' | 'waitlisted' | 'failed' | 'skipped';
   errorMessage?: string; // Required if status === 'failed'
   isRetrySuccess?: boolean; // True if this was a successful retry after class was full
-  retryCount?: number; // Number of retries before success (if isRetrySuccess)
+  isRetryExhausted?: boolean; // True if all retries failed and class time arrived
+  retryCount?: number; // Number of retries (for success or exhausted scenarios)
   bookingTimestamp: string; // When booking was made
   firstAttemptTime?: string; // When we first tried to book (for retrying emails)
   classStartTime?: string; // When the class starts (for retrying emails)
@@ -61,7 +66,8 @@ export type EmailTemplate = {
     | 'booking_failure_critical'
     | 'booking_failure_config'
     | 'booking_failure_technical'
-    | 'booking_failure_retrying';
+    | 'booking_failure_retrying'
+    | 'booking_failure_final';
   subject: string;
   html: string;
 };
@@ -189,6 +195,30 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
   if (data.status === 'failed') {
     if (!data.errorMessage) {
       throw new Error('Error message required for failed bookings');
+    }
+
+    // Special case: retries exhausted (class time arrived, couldn't book)
+    if (data.isRetryExhausted) {
+      const emailData: BookingFailureFinalEmailProps = {
+        className: data.className,
+        dayOfWeek: data.dayOfWeek,
+        date: data.date,
+        time: data.time,
+        branchName: data.branchName,
+        firstAttemptTime: data.firstAttemptTime || data.bookingTimestamp,
+        classStartTime: data.classStartTime || 'class start time',
+        retryCount: data.retryCount || 1,
+        dashboardUrl: data.dashboardUrl,
+        scheduleUrl: data.scheduleUrl,
+        settingsUrl: data.settingsUrl,
+      };
+
+      const { subject, html } = bookingFailureFinalEmail(emailData);
+      return {
+        notificationType: 'booking_failure_final',
+        subject,
+        html,
+      };
     }
 
     const failureType = categorizeFailure(data.errorMessage);
