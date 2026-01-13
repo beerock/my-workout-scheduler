@@ -61,5 +61,5 @@ Thumbs.db
 # Claude Code local settings
 .claude/settings.local.json
 
-# Design prototypes (internal only, not for production)
-# /app/dashboard/prototype
+# Claude Code temp files
+tmpclaude*
