@@ -67,10 +67,15 @@ Open Tracking: ✅ Enabled (optional)
    - [ ] `ADMIN_DISABLE_BOOKING_EMAILS` is NOT set or set to `false` in production
    - [ ] `ADMIN_DISABLE_ERROR_EMAILS` is NOT set or set to `false` in production
 
-2. **Test Email Flow:**
-   - [ ] Test welcome email: Signup new user → Verify email → Receive welcome email
-   - [ ] Test booking notification: Trigger booking → Receive confirmation email
-   - [ ] Test notification preferences: Change settings → Verify changes respected
+2. **Test Email Flow:** ✅ All tested Jan 9, 2026
+   - [x] Test welcome email: Signup new user → Verify email → Receive welcome email
+   - [x] Test booking notification: Trigger booking → Receive confirmation email
+   - [x] Test notification preferences: Change settings → Verify changes respected
+   - [x] Test pause reminder: Pause schedule → Verify Inngest run scheduled (7 days)
+   - [x] Test pause cancellation: Unpause → Verify Inngest run cancelled
+   - [x] Test email change verification: Change email → Click verification → See success banner
+   - [x] Test failure email: Booking failure → Receive failure notification
+   - [x] Test waitlist email: Waitlisted booking → Receive waitlist notification
 
 3. **Verify Environment Variables:**
    - [ ] `RESEND_API_KEY` is set in Vercel Production
@@ -252,7 +257,7 @@ If critical auth issues occur after launch:
 
 ---
 
-**Last Updated:** November 19, 2025
+**Last Updated:** January 9, 2026
 **Next Review:** Before MVP launch
 
 ---

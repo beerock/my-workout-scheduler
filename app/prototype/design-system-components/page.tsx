@@ -1079,6 +1079,7 @@ export default function DesignSystemComponentsPage() {
                   <Button variant="danger">Danger</Button>
                   <Button variant="purple">Purple</Button>
                   <Button variant="ghost">Ghost</Button>
+                  <Button variant="ghost-primary">Ghost Primary</Button>
                   <Button variant="outline">Outline</Button>
                   <Button variant="outline-primary">Outline Primary</Button>
                   <Button variant="outline-danger">Outline Danger</Button>

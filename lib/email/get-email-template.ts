@@ -29,6 +29,10 @@ import {
   bookingFailureTechnicalEmail,
   type BookingFailureTechnicalEmailProps,
 } from './templates/booking-failure-technical';
+import {
+  bookingFailureRetryingEmail,
+  type BookingFailureRetryingEmailProps,
+} from './templates/booking-failure-retrying';
 
 export type BookingEmailData = {
   className: string;
@@ -41,6 +45,8 @@ export type BookingEmailData = {
   isRetrySuccess?: boolean; // True if this was a successful retry after class was full
   retryCount?: number; // Number of retries before success (if isRetrySuccess)
   bookingTimestamp: string; // When booking was made
+  firstAttemptTime?: string; // When we first tried to book (for retrying emails)
+  classStartTime?: string; // When the class starts (for retrying emails)
   dashboardUrl: string;
   scheduleUrl: string; // Link to schedule page (CTA destination for success/waitlist/retry/technical)
   credentialsUrl: string; // Link to credentials page (CTA destination for login-related errors)
@@ -54,7 +60,8 @@ export type EmailTemplate = {
     | 'booking_retry_successful'
     | 'booking_failure_critical'
     | 'booking_failure_config'
-    | 'booking_failure_technical';
+    | 'booking_failure_technical'
+    | 'booking_failure_retrying';
   subject: string;
   html: string;
 };
@@ -62,8 +69,16 @@ export type EmailTemplate = {
 /**
  * Categorize failure by error message keywords
  */
-function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'technical' {
+function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'retrying' | 'technical' {
   const message = errorMessage.toLowerCase();
+
+  // Retrying errors (class full, system will retry automatically)
+  // Check this FIRST before other categories
+  const retryingKeywords = [
+    'full',
+    'no spots',
+    'no waitlist option',
+  ];
 
   // Critical errors (user must take action)
   const criticalKeywords = [
@@ -87,10 +102,12 @@ function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'techn
     'class name',
   ];
 
-  // Everything else is technical
+  // Check retrying first - this is the most specific case
+  const isRetrying = retryingKeywords.some(keyword => message.includes(keyword));
   const isCritical = criticalKeywords.some(keyword => message.includes(keyword));
   const isConfig = configKeywords.some(keyword => message.includes(keyword));
 
+  if (isRetrying) return 'retrying';
   if (isCritical) return 'critical';
   if (isConfig) return 'config';
   return 'technical';
@@ -212,6 +229,28 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
       const { subject, html } = bookingFailureConfigEmail(emailData);
       return {
         notificationType: 'booking_failure_config',
+        subject,
+        html,
+      };
+    }
+
+    if (failureType === 'retrying') {
+      const emailData: BookingFailureRetryingEmailProps = {
+        className: data.className,
+        dayOfWeek: data.dayOfWeek,
+        date: data.date,
+        time: data.time,
+        branchName: data.branchName,
+        firstAttemptTime: data.firstAttemptTime || data.bookingTimestamp,
+        classStartTime: data.classStartTime || 'class start time',
+        dashboardUrl: data.dashboardUrl,
+        scheduleUrl: data.scheduleUrl,
+        settingsUrl: data.settingsUrl,
+      };
+
+      const { subject, html } = bookingFailureRetryingEmail(emailData);
+      return {
+        notificationType: 'booking_failure_retrying',
         subject,
         html,
       };

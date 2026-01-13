@@ -3,6 +3,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendWelcomeEmail } from '@/lib/notifications/send-welcome-email'
 
 /**
+ * Validate and sanitize the redirect path to prevent open redirect attacks.
+ * SECURITY: Only allows internal paths (starting with /) and blocks protocol-relative URLs.
+ */
+function getSafeRedirectPath(next: string | null): string {
+  const defaultPath = '/dashboard'
+
+  // Must start with single / and not be a protocol-relative URL (//)
+  if (next && next.startsWith('/') && !next.startsWith('//')) {
+    return next
+  }
+
+  return defaultPath
+}
+
+/**
  * Auth Callback Route
  * Handles email verification and password reset token exchanges
  *
@@ -17,7 +32,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   const tokenHash = searchParams.get('token_hash')
   const type = searchParams.get('type')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const next = getSafeRedirectPath(searchParams.get('next'))
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
 
@@ -39,11 +54,15 @@ export async function GET(request: NextRequest) {
       if (exchangeError) {
         console.error('Error exchanging code for session:', exchangeError)
 
+        // Check if user is already logged in first
+        const { data: { user } } = await supabase.auth.getUser()
+
         // Special handling for email_change: the email was already verified by Supabase
-        // when user clicked the link. PKCE may fail if session expired, but the change
-        // was still applied. Check if user is logged in and redirect with success.
-        if (type === 'email_change') {
-          const { data: { user } } = await supabase.auth.getUser()
+        // when user clicked the link. PKCE may fail because the verification link creates
+        // a new code that the original session doesn't have the verifier for.
+        // Note: Supabase may not always include type=email_change in the URL, so we also
+        // check if the user is logged in (implies they're verifying their own email change)
+        if (type === 'email_change' || user) {
           if (user) {
             // User is logged in, email change was successful
             console.log(`[Auth Callback] Email change verified for user ${user.id} (PKCE skipped)`)
@@ -52,13 +71,13 @@ export async function GET(request: NextRequest) {
             redirectUrl.searchParams.set('verification_type', 'email_change')
             return NextResponse.redirect(redirectUrl)
           }
-          // User not logged in, redirect to login with success message
+          // Not logged in but type is explicitly email_change
           return NextResponse.redirect(
             new URL('/login?message=Email address updated successfully. Please sign in with your new email.', request.url)
           )
         }
 
-        // Handle specific error cases for other types
+        // Handle specific error cases for signup verification (user not logged in)
         if (exchangeError.message.includes('expired')) {
           return NextResponse.redirect(
             new URL('/login?error=Link expired. Please request a new verification email.', request.url)

@@ -273,9 +273,10 @@ export async function updateSchedulePaused(
         console.log(`[Unpause] Scheduled ${scheduledCount} classes, ${classesWithOpenWindows.length} need user decision`)
 
         // Return classes with open windows to show dialog
+        // NOTE: Do NOT call revalidatePath here - it causes the page to re-render
+        // before the modal can be shown. The refresh will happen after the user
+        // finishes with the dialog (via router.refresh in PauseBanner)
         if (classesWithOpenWindows.length > 0) {
-          revalidatePath('/dashboard')
-          revalidatePath('/dashboard/schedule')
           return {
             success: true,
             classesWithOpenWindows

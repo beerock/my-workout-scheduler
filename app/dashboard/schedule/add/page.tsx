@@ -46,11 +46,12 @@ export default async function AddClassPage({ searchParams }: Props) {
       subtitle={classToCopy
         ? 'Copy an existing class and modify as needed'
         : 'Configure a recurring weekly class that will be automatically booked'}
-      backLink={{ href: '/dashboard/schedule', label: 'Schedule' }}
     >
-      <Card className="opacity-0 animate-fade-in-up max-w-2xl mx-auto">
-        <RecurringClassForm initialClass={classToCopy} isCopy={!!classToCopy} />
-      </Card>
+      <div className="max-w-2xl mx-auto">
+        <Card className="opacity-0 animate-fade-in-up">
+          <RecurringClassForm initialClass={classToCopy} isCopy={!!classToCopy} />
+        </Card>
+      </div>
     </EditorialLayout>
   )
 }

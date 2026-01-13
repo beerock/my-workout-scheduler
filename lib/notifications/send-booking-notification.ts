@@ -14,6 +14,8 @@ import { sendEmailNotification, getUserEmail } from '@/lib/email/send-notificati
 export type SendBookingNotificationParams = {
   userId: string;
   bookingAttemptId: string;
+  recurringClassId: string; // For deduplication by class instance
+  classDate: string; // ISO date string (YYYY-MM-DD) for deduplication
   status: 'confirmed' | 'waitlisted' | 'failed' | 'skipped';
   errorMessage?: string; // Required if status === 'failed'
   className: string;
@@ -23,6 +25,8 @@ export type SendBookingNotificationParams = {
   branchName: string;
   isRetrySuccess?: boolean; // True if this was a successful retry after being full
   retryCount?: number; // Number of retries before success
+  firstAttemptTime?: string; // When we first tried to book (for retrying emails)
+  classStartTime?: string; // When the class starts (for retrying emails)
 };
 
 export type NotificationResult = {
@@ -142,16 +146,21 @@ export async function sendBookingNotification(
   // Note: No check for emailOnFailure - failure/critical emails are ALWAYS sent
   // Users cannot disable them (login failures, class cancelled, etc. are too important)
 
-  // 8. Special case: "Class full" retry emails (first failure only)
+  // 8. Special case: "Class full" retry emails (first failure only per class instance)
   if (params.status === 'failed' && isClassFullError(params.errorMessage || '')) {
-    // Check if we already sent a "class full" email for this booking attempt
-    const alreadySent = await hasClassFullEmailBeenSent(params.userId, params.bookingAttemptId);
+    // Check if we already sent a "class full" email for THIS CLASS INSTANCE
+    // Uses recurring_class_id + class_date for deduplication (not booking_attempt_id)
+    const alreadySent = await hasClassFullEmailBeenSent(
+      params.userId,
+      params.recurringClassId,
+      params.classDate
+    );
 
     if (alreadySent) {
-      console.log(`[Notification] Already sent "class full" email for this booking attempt, skipping`);
+      console.log(`[Notification] Already sent "class full" email for class ${params.recurringClassId} on ${params.classDate}, skipping`);
       return {
         sent: false,
-        reason: 'Class full email already sent (first failure only)',
+        reason: 'Class full email already sent for this class instance',
       };
     }
 
@@ -174,8 +183,9 @@ export async function sendBookingNotification(
     };
   }
 
-  // 10. Get environment-specific URLs for email CTAs
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  // 10. Get environment-specific URLs for email CTAs using getSiteUrl() for proper Vercel detection
+  const { getSiteUrl } = await import('@/lib/env-utils');
+  const appUrl = getSiteUrl();
   const dashboardUrl = `${appUrl}/dashboard`;
   const scheduleUrl = `${appUrl}/dashboard/schedule`;
   const credentialsUrl = `${appUrl}/dashboard/credentials`;
@@ -197,6 +207,8 @@ export async function sendBookingNotification(
       dateStyle: 'medium',
       timeStyle: 'short',
     }),
+    firstAttemptTime: params.firstAttemptTime,
+    classStartTime: params.classStartTime,
     dashboardUrl,
     scheduleUrl,
     credentialsUrl,
@@ -223,6 +235,8 @@ export async function sendBookingNotification(
     html: template.html,
     userId: params.userId,
     bookingAttemptId: params.bookingAttemptId,
+    recurringClassId: params.recurringClassId,
+    classDate: params.classDate,
     notificationType: template.notificationType,
   });
 
@@ -267,10 +281,15 @@ function isClassFullError(errorMessage: string): boolean {
 }
 
 /**
- * Check if we've already sent a "class full" email for this booking attempt
+ * Check if we've already sent a "class full" email for this class instance
  * This implements "first failure only" logic for retry notifications
+ * Uses recurring_class_id + class_date for deduplication across retries
  */
-async function hasClassFullEmailBeenSent(userId: string, bookingAttemptId: string): Promise<boolean> {
+async function hasClassFullEmailBeenSent(
+  userId: string,
+  recurringClassId: string,
+  classDate: string
+): Promise<boolean> {
   try {
     // Use service role client to bypass RLS
     const supabase = createServiceRoleClient();
@@ -279,8 +298,9 @@ async function hasClassFullEmailBeenSent(userId: string, bookingAttemptId: strin
       .from('notification_log')
       .select('id')
       .eq('user_id', userId)
-      .eq('booking_attempt_id', bookingAttemptId)
-      .in('notification_type', ['booking_failure_critical', 'booking_failure_config', 'booking_failure_technical'])
+      .eq('recurring_class_id', recurringClassId)
+      .eq('class_date', classDate)
+      .eq('notification_type', 'booking_failure_retrying')
       .limit(1);
 
     if (error) {

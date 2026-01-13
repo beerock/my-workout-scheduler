@@ -104,7 +104,7 @@ export default function ScheduleTabs({
 
       <TabPanel tabId="history" activeTab="">
         {history.length > 0 ? (
-          <BookingHistory history={history} />
+          <BookingHistory history={history} totalCount={history.length} />
         ) : (
           <EmptyState
             title="No booking history yet"
