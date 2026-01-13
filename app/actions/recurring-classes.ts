@@ -190,6 +190,12 @@ export async function saveRecurringClass(
           id: resultId,
           bookingWindowAlreadyOpen: true,
           bookingTime,
+          classDetails: {
+            class_type: data.class_type,
+            day_of_week: data.day_of_week,
+            class_time: data.class_time,
+            branch: data.branch,
+          },
         }
       } else {
         // Booking window is in the future - schedule it normally
