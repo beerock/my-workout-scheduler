@@ -246,6 +246,20 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         true // confirmSkipClear
       )
 
+      // Check for deactivated warning (class was inactive AND had skip)
+      if (result.deactivatedWarning) {
+        // Close skip dialog, show deactivated dialog
+        setShowSkipClearDialog(false)
+        setSkipClearData(null)
+        setDeactivatedDialogData({
+          formData: skipClearData.formData,
+          classId: skipClearData.classId
+        })
+        setShowDeactivatedDialog(true)
+        setLoading(false)
+        return
+      }
+
       if (!result.success) {
         setError(result.error || 'Failed to save class')
         setLoading(false)
