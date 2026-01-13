@@ -41,6 +41,12 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
     formData: RecurringClassFormData
     classId: string
   } | null>(null)
+  const [savedClassDetails, setSavedClassDetails] = useState<{
+    class_type: string
+    day_of_week: number
+    class_time: string
+    branch: string
+  } | null>(null)
   const [formData, setFormData] = useState<RecurringClassFormData>({
     day_of_week: initialClass?.day_of_week ?? 1,
     class_time: initialClass?.class_time ? initialClass.class_time.substring(0, 5) : '',
@@ -51,9 +57,10 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
   })
 
   const formatClassDisplay = (): string => {
-    const dayName = getDayName(formData.day_of_week)
-    const time = formatTime12Hour(formData.class_time)
-    return `${formData.class_type} - ${dayName} ${time} @ ${formData.branch}`
+    const source = savedClassDetails || formData
+    const dayName = getDayName(source.day_of_week)
+    const time = formatTime12Hour(source.class_time)
+    return `${source.class_type} - ${dayName} ${time} @ ${source.branch}`
   }
 
   // Update form when initialClass changes
@@ -131,6 +138,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         if (result.bookingWindowAlreadyOpen && result.id) {
           // Booking window is open - show dialog asking if user wants to book now
           setSavedClassId(result.id)
+          setSavedClassDetails(result.classDetails || null)
           setShowBookNowDialog(true)
         } else {
           // Booking window not open - delay redirect so user sees success state
@@ -177,6 +185,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
 
       // Success! Close dialog and redirect
       setShowBookNowDialog(false)
+      setSavedClassDetails(null)
       setSuccess(true)
 
       if (onSuccess) {
@@ -194,6 +203,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
 
   const handleSkipBooking = () => {
     setShowBookNowDialog(false)
+    setSavedClassDetails(null)
 
     if (onSuccess) {
       onSuccess()
@@ -229,6 +239,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
         setShowSkipClearDialog(false)
         setSkipClearData(null)
         setSavedClassId(result.id)
+        setSavedClassDetails(result.classDetails || null)
         setShowBookNowDialog(true)
         setLoading(false)
         return
