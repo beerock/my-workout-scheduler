@@ -275,7 +275,7 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
     if (!classItem.active) {
       return { variant: 'inactive', label: 'Inactive' }
     }
-    if (classItem.skip_next_occurrence && classItem.skip_target_datetime) {
+    if (classItem.skip_target_datetime && new Date() < new Date(classItem.skip_target_datetime)) {
       return { variant: 'skipped', label: `Skipping ${formatDateInGymTimezone(new Date(classItem.skip_target_datetime), classItem.timezone, 'short')}` }
     }
     // Could show "Active" or nothing for active classes
