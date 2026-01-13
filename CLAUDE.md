@@ -124,7 +124,38 @@ Migration → types → server action → component (in that order)
 | Component API | `COMPONENT_LIBRARY.md` + `/prototype/design-system-components` |
 | Bug fix pattern | `ERROR_MESSAGES.md` |
 | Config/infrastructure task | `PRE_LAUNCH_CHECKLIST.md` |
-| Development task | `BACKLOG.md` (Pre-MVP section) |
+| Development task | `BACKLOG.md` (appropriate section) |
+
+### BACKLOG.md Structure (STRICT)
+
+**ALWAYS follow this format.** If you believe additional detail is essential, ASK the user before adding it.
+
+**Sections (in order):**
+1. **Pre-MVP Required** - Must complete before launch
+2. **Post-MVP: High Priority** - Near-term after launch
+3. **Post-MVP: Low Priority** - Nice-to-have
+4. **Completed (Summary)** - 3-4 line summaries only
+5. **Archived** - Deprioritized/unlikely with brief reason
+6. **Operational Notes** - Key deployment info
+
+**Required entry format:**
+```
+### Feature Name
+**Status:** [status] | **Priority:** [High/Medium/Low]
+
+One paragraph description (2-3 sentences max).
+
+**Requirements:** (3-5 bullets max)
+**Dependencies:** (if any)
+**Last Updated:** [date]
+```
+
+**Rules:**
+- New features → Add to appropriate priority section using format above
+- Completed → Move to "Completed (Summary)", collapse to 3-4 lines with completion date
+- Abandoned → Move to "Archived" with one-line reason
+- **NEVER add:** code examples, testing checklists, implementation details, alternative approaches
+- **If detail seems necessary:** Ask user: "This feature may need more detail than standard format. Should I add [specific thing]?"
 
 ---
 
@@ -146,4 +177,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: January 11, 2026 (v2.28)*
+*Last Updated: January 13, 2026 (v2.28)*
