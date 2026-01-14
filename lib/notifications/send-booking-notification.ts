@@ -24,9 +24,12 @@ export type SendBookingNotificationParams = {
   time: string; // Class time
   branchName: string;
   isRetrySuccess?: boolean; // True if this was a successful retry after being full
-  retryCount?: number; // Number of retries before success
-  firstAttemptTime?: string; // When we first tried to book (for retrying emails)
-  classStartTime?: string; // When the class starts (for retrying emails)
+  isRetryExhausted?: boolean; // True if all retries failed and class time arrived
+  retryCount?: number; // Number of retries
+  firstAttemptTime?: string; // When we first tried to book (for retrying emails) - legacy
+  classStartTime?: string; // When the class starts (for retrying emails) - legacy
+  bookingStartedTime?: string; // When we started trying to book (for final/exhausted emails)
+  stoppedCheckingTime?: string; // When we stopped checking (for final/exhausted emails)
 };
 
 export type NotificationResult = {
@@ -146,8 +149,20 @@ export async function sendBookingNotification(
   // Note: No check for emailOnFailure - failure/critical emails are ALWAYS sent
   // Users cannot disable them (login failures, class cancelled, etc. are too important)
 
+  // 7.5. "Gave up" notifications respect emailOnRetry preference
+  // (closure of retry sequence should follow same preference as retry start)
+  if (params.isRetryExhausted && !emailOnRetry) {
+    console.log(`[Notification] User ${params.userId} has retry emails disabled, skipping retry-exhausted notification`);
+    return {
+      sent: false,
+      reason: 'User has retry email notifications disabled',
+    };
+  }
+
   // 8. Special case: "Class full" retry emails (first failure only per class instance)
-  if (params.status === 'failed' && isClassFullError(params.errorMessage || '')) {
+  // "Gave up" notifications bypass deduplication - they're the final closure email,
+  // separate from the initial "retrying" notification, and users need exactly one of each.
+  if (params.status === 'failed' && isClassFullError(params.errorMessage || '') && !params.isRetryExhausted) {
     // Check if we already sent a "class full" email for THIS CLASS INSTANCE
     // Uses recurring_class_id + class_date for deduplication (not booking_attempt_id)
     const alreadySent = await hasClassFullEmailBeenSent(
@@ -201,6 +216,7 @@ export async function sendBookingNotification(
     status: params.status,
     errorMessage: params.errorMessage,
     isRetrySuccess: params.isRetrySuccess,
+    isRetryExhausted: params.isRetryExhausted,
     retryCount: params.retryCount,
     bookingTimestamp: new Date().toLocaleString('en-US', {
       timeZone: 'America/New_York',
@@ -209,6 +225,8 @@ export async function sendBookingNotification(
     }),
     firstAttemptTime: params.firstAttemptTime,
     classStartTime: params.classStartTime,
+    bookingStartedTime: params.bookingStartedTime,
+    stoppedCheckingTime: params.stoppedCheckingTime,
     dashboardUrl,
     scheduleUrl,
     credentialsUrl,

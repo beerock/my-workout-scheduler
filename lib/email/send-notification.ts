@@ -31,6 +31,7 @@ export type SendEmailParams = {
     | 'booking_failure_technical'
     | 'booking_failure_retrying'
     | 'booking_failure_retrying_4hr'
+    | 'booking_failure_final'
     | 'welcome'
     | 'first_booking_success'
     | 'credentials_updated'

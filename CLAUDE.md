@@ -8,7 +8,7 @@
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version:** v2.29 - Deactivated Class Edit Confirmation (see PRD for full version history)
+**Current Version:** v2.30 - Retry Exhausted Notifications (see PRD for full version history)
 
 ---
 
@@ -191,4 +191,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: January 13, 2026 (v2.29)*
+*Last Updated: January 14, 2026 (v2.30)*
