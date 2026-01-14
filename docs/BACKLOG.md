@@ -198,6 +198,20 @@ Update booking status in UI without page refresh using Supabase Realtime.
 
 Nice-to-have features that aren't critical.
 
+### My Schedule Filtering & Sorting
+**Status:** Backlogged | **Priority:** Low
+
+Add filter and sort controls to the My Schedule page, similar to Booking History. Helps users with multiple classes quickly find and manage specific classes.
+
+**Requirements:**
+- Filter by status: All, Active, Inactive, Skipped
+- Sort options: Day ascending/descending, next booking, class name
+- Persist filter/sort preferences in URL params or localStorage
+
+**Last Updated:** January 13, 2026
+
+---
+
 ### Email Notification Enhancements
 **Status:** Schema ready, implementation deferred | **Priority:** Low
 
