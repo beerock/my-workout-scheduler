@@ -12,6 +12,7 @@ import {
 } from '@/scripts/database-helpers';
 import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
 import { differenceInMinutes, format, subHours } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { sendBookingNotification } from '@/lib/notifications/send-booking-notification';
 import { formatTime12Hour } from '@/lib/date-utils';
@@ -303,10 +304,10 @@ export const bookClassFunction = inngest.createFunction(
 
       await step.run('send-timeout-exhausted-notification', async () => {
         try {
-          const formattedDate = format(timeoutClassStartTime, 'MMMM d, yyyy');
-          const dayName = format(timeoutClassStartTime, 'EEEE');
-          const classDateISO = format(timeoutClassStartTime, 'yyyy-MM-dd');
-          const stoppedCheckingTime = format(timeoutClassStartTime, "EEEE, MMMM d 'at' h:mm a");
+          const formattedDate = formatInTimeZone(timeoutClassStartTime, classData.timezone, 'MMMM d, yyyy');
+          const dayName = formatInTimeZone(timeoutClassStartTime, classData.timezone, 'EEEE');
+          const classDateISO = format(timeoutClassStartTime, 'yyyy-MM-dd'); // Internal use, keep UTC
+          const stoppedCheckingTime = formatInTimeZone(timeoutClassStartTime, classData.timezone, "EEEE, MMMM d 'at' h:mm a");
 
           // Query for actual first attempt time from database
           const supabase = createServiceRoleClient();
@@ -327,7 +328,7 @@ export const bookClassFunction = inngest.createFunction(
             : timeoutClassStartTime;
 
           // Match format with stoppedCheckingTime for consistency
-          const bookingStartedTimeFormatted = format(bookingStartedTime, "EEEE, MMMM d 'at' h:mm a");
+          const bookingStartedTimeFormatted = formatInTimeZone(bookingStartedTime, classData.timezone, "EEEE, MMMM d 'at' h:mm a");
 
           await sendBookingNotification({
             userId: classData.user_id,
@@ -378,19 +379,19 @@ export const bookClassFunction = inngest.createFunction(
           classData.class_time,
           classData.timezone
         );
-        const formattedDate = format(classStartTime, 'MMMM d, yyyy');
-        const dayName = format(classStartTime, 'EEEE');
-        // ISO date string for deduplication (YYYY-MM-DD)
+        const formattedDate = formatInTimeZone(classStartTime, classData.timezone, 'MMMM d, yyyy');
+        const dayName = formatInTimeZone(classStartTime, classData.timezone, 'EEEE');
+        // ISO date string for deduplication (YYYY-MM-DD) - internal use, keep UTC
         const classDateISO = format(classStartTime, 'yyyy-MM-dd');
         // Formatted class start time for email display
-        const classStartTimeFormatted = format(classStartTime, "EEEE, MMMM d 'at' h:mm a");
+        const classStartTimeFormatted = formatInTimeZone(classStartTime, classData.timezone, "EEEE, MMMM d 'at' h:mm a");
 
         // Check if this is a retry success (was previously full, now confirmed)
         const isRetrySuccess = attemptNumber > 1 && status === 'confirmed';
 
-        // First attempt time for "class full" emails
+        // First attempt time for "class full" emails - format in gym timezone
         const now = new Date();
-        const firstAttemptTimeFormatted = format(now, 'MMM d, yyyy h:mm a');
+        const firstAttemptTimeFormatted = formatInTimeZone(now, classData.timezone, 'MMM d, yyyy h:mm a');
 
         await sendBookingNotification({
           userId: classData.user_id,
@@ -482,10 +483,10 @@ export const bookClassFunction = inngest.createFunction(
         // Send "gave up" notification - retries exhausted, class time arrived
         await step.run('send-retry-exhausted-notification', async () => {
           try {
-            const formattedDate = format(classStartTime, 'MMMM d, yyyy');
-            const dayName = format(classStartTime, 'EEEE');
-            const classDateISO = format(classStartTime, 'yyyy-MM-dd');
-            const stoppedCheckingTime = format(classStartTime, "EEEE, MMMM d 'at' h:mm a");
+            const formattedDate = formatInTimeZone(classStartTime, classData.timezone, 'MMMM d, yyyy');
+            const dayName = formatInTimeZone(classStartTime, classData.timezone, 'EEEE');
+            const classDateISO = format(classStartTime, 'yyyy-MM-dd'); // Internal use, keep UTC
+            const stoppedCheckingTime = formatInTimeZone(classStartTime, classData.timezone, "EEEE, MMMM d 'at' h:mm a");
 
             // Query for actual first attempt time from database
             const supabase = createServiceRoleClient();
@@ -506,7 +507,7 @@ export const bookClassFunction = inngest.createFunction(
               : classStartTime;
 
             // Match format with stoppedCheckingTime for consistency
-            const bookingStartedTimeFormatted = format(bookingStartedTime, "EEEE, MMMM d 'at' h:mm a");
+            const bookingStartedTimeFormatted = formatInTimeZone(bookingStartedTime, classData.timezone, "EEEE, MMMM d 'at' h:mm a");
 
             await sendBookingNotification({
               userId: classData.user_id,
