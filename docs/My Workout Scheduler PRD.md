@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.22
+**Version:** 2.29
 **Product Owner:** Brock Busby
-**Last Updated:** January 4, 2026
+**Last Updated:** January 13, 2026
 **Status:** Production - Deployed and Testing
 
 
@@ -177,6 +177,11 @@
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.29:** Deactivated Class Edit Confirmation
+  - Edit deactivated class → save → dialog asks "Activate" or "Keep Deactivated"
+  - Deactivate via 3-dot menu with active skip → confirmation dialog warns skip will be cleared
+  - Edit class with active skip + change ANY field → skip clear warning dialog
+  - Dialog chaining: skip clear → deactivated choice → book now (booking window already open)
 - ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13 → v2.22)**
   - Complete design system with editorial diagonal-cut design language
   - **19 reusable UI components** in `components/ui/`:
