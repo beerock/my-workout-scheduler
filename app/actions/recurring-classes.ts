@@ -22,6 +22,7 @@ export type RecurringClassResult = {
   bookingTime?: Date
   skipClearWarning?: boolean
   skipDate?: string | null
+  deactivatedWarning?: boolean  // Signal that class is deactivated and needs user choice
   classDetails?: {
     class_type: string
     day_of_week: number
@@ -36,7 +37,8 @@ export type RecurringClassResult = {
 export async function saveRecurringClass(
   data: RecurringClassFormData,
   id?: string,
-  confirmSkipClear?: boolean
+  confirmSkipClear?: boolean,
+  activateChoice?: 'activate' | 'keep_deactivated'
 ): Promise<RecurringClassResult> {
   try {
     const supabase = await createClient()
@@ -97,10 +99,10 @@ export async function saveRecurringClass(
     let resultId: string
 
     if (id) {
-      // Fetch existing class to check for schedule changes
+      // Fetch existing class to check for field changes and active status
       const { data: existingClass, error: fetchError } = await supabase
         .from('recurring_classes')
-        .select('day_of_week, class_time, skip_next_occurrence, skip_target_datetime')
+        .select('day_of_week, class_time, class_type, branch, booking_window_hours, skip_next_occurrence, skip_target_datetime, active')
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
@@ -112,16 +114,20 @@ export async function saveRecurringClass(
         }
       }
 
-      // Check if schedule changed (day or time)
-      const scheduleChanged =
-        existingClass.day_of_week !== data.day_of_week ||
-        existingClass.class_time !== data.class_time
+      // Check if ANY field changed - all field changes invalidate skip
+      // Use Number() to ensure consistent comparison (form may send string, DB returns number)
+      const anyFieldChanged =
+        Number(existingClass.day_of_week) !== Number(data.day_of_week) ||
+        existingClass.class_time !== data.class_time ||
+        existingClass.class_type !== data.class_type ||
+        existingClass.branch !== data.branch ||
+        Number(existingClass.booking_window_hours) !== Number(data.booking_window_hours)
 
-      // Check if skip is active
-      const hasActiveSkip = existingClass.skip_next_occurrence === true
+      // Check if skip is active (use Boolean to handle truthy values from DB)
+      const hasActiveSkip = Boolean(existingClass.skip_next_occurrence)
 
-      // If schedule changed AND skip active AND user hasn't confirmed
-      if (scheduleChanged && hasActiveSkip && !confirmSkipClear) {
+      // If ANY field changed AND skip active AND user hasn't confirmed
+      if (anyFieldChanged && hasActiveSkip && !confirmSkipClear) {
         return {
           success: false,
           skipClearWarning: true,
@@ -129,10 +135,27 @@ export async function saveRecurringClass(
         }
       }
 
-      // Clear skip if schedule changed (user already confirmed at this point)
-      if (scheduleChanged && hasActiveSkip) {
+      // Clear skip if any field changed (user already confirmed at this point)
+      if (anyFieldChanged && hasActiveSkip) {
         classData.skip_next_occurrence = false
         classData.skip_target_datetime = null
+      }
+
+      // Check if class is deactivated and user hasn't made a choice yet
+      const isDeactivated = existingClass.active === false
+      if (isDeactivated && !activateChoice) {
+        return {
+          success: false,
+          deactivatedWarning: true,
+        }
+      }
+
+      // Set active status based on user's choice (or default to true for active classes)
+      if (activateChoice === 'keep_deactivated') {
+        classData.active = false
+      } else {
+        // 'activate' or no choice (class was already active) → set to true
+        classData.active = true
       }
 
       // Update existing class
@@ -179,8 +202,18 @@ export async function saveRecurringClass(
 
       const isBookingWindowOpen = bookingTime.getTime() <= Date.now()
 
+      // Only handle booking logic for active classes
+      if (!classData.active) {
+        // Class is inactive - don't schedule or prompt to book
+        revalidatePath('/dashboard/schedule')
+        return {
+          success: true,
+          id: resultId,
+        }
+      }
+
       if (isBookingWindowOpen) {
-        // Booking window is already open
+        // Booking window is already open AND class is active
         // Don't schedule anything yet - let the user decide via dialog
         // If they click "Book Now", /api/trigger-booking will handle it
         // If they click "Skip", the daily scheduler will schedule next week's occurrence
@@ -190,6 +223,12 @@ export async function saveRecurringClass(
           id: resultId,
           bookingWindowAlreadyOpen: true,
           bookingTime,
+          classDetails: {
+            class_type: data.class_type,
+            day_of_week: data.day_of_week,
+            class_time: data.class_time,
+            branch: data.branch,
+          },
         }
       } else {
         // Booking window is in the future - schedule it normally
@@ -401,10 +440,12 @@ export async function deleteRecurringClass(id: string): Promise<RecurringClassRe
 
 /**
  * Toggle active status of a recurring class
+ * @param confirmSkipClear - If true, user has confirmed they want to clear the skip when deactivating
  */
 export async function toggleRecurringClassActive(
   id: string,
-  active: boolean
+  active: boolean,
+  confirmSkipClear?: boolean
 ): Promise<RecurringClassResult> {
   try {
     const supabase = await createClient()
@@ -418,43 +459,40 @@ export async function toggleRecurringClassActive(
       }
     }
 
-    // If DEACTIVATING (active = false), check for skip cleanup using three-zone logic
+    // If DEACTIVATING (active = false), check for skip and prompt user
     let updateData: any = { active }
 
     if (active === false) {
-      // Fetch current class with all fields needed for booking window calculation
+      // Fetch current class with all fields needed
       const { data: existingClass, error: fetchError } = await supabase
         .from('recurring_classes')
-        .select('skip_target_datetime, day_of_week, class_time, booking_window_hours, timezone')
+        .select('skip_next_occurrence, skip_target_datetime, day_of_week, class_time, booking_window_hours, timezone')
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
 
-      if (!fetchError && existingClass?.skip_target_datetime) {
-        const now = new Date()
-        const classTime = new Date(existingClass.skip_target_datetime)
-
-        // Calculate booking window open time
-        const bookingWindowOpen = calculateBookingWindowOpen(
-          existingClass.day_of_week,
-          existingClass.class_time,
-          existingClass.booking_window_hours,
-          existingClass.timezone
-        )
-
-        // Three-zone logic
-        if (classTime <= now) {
-          // Zone C: Class time has passed - full cleanup
-          updateData.skip_next_occurrence = false
-          updateData.skip_target_datetime = null
-          console.log('[toggleRecurringClassActive] Zone C: Clearing both fields (past occurrence)')
-        } else if (bookingWindowOpen <= now) {
-          // Zone B: Inside booking window - clear flag only
-          updateData.skip_next_occurrence = false
-          // Keep skip_target_datetime for UI
-          console.log('[toggleRecurringClassActive] Zone B: Clearing flag only (inside window)')
+      if (fetchError) {
+        return {
+          success: false,
+          error: 'Class not found',
         }
-        // Zone A: Before booking window - preserve both fields (no update needed)
+      }
+
+      // If class has an active skip and user hasn't confirmed, show warning
+      const hasActiveSkip = Boolean(existingClass?.skip_next_occurrence)
+      if (hasActiveSkip && !confirmSkipClear) {
+        return {
+          success: false,
+          skipClearWarning: true,
+          skipDate: existingClass?.skip_target_datetime || null,
+        }
+      }
+
+      // User confirmed OR no skip - always clear skip when deactivating
+      if (hasActiveSkip) {
+        updateData.skip_next_occurrence = false
+        updateData.skip_target_datetime = null
+        console.log('[toggleRecurringClassActive] Clearing skip on deactivate (user confirmed)')
       }
     }
 

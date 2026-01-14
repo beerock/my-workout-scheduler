@@ -27,6 +27,11 @@ type ClassToBook = {
   branch: string
 }
 
+type DeactivateWithSkip = {
+  id: string
+  skipDate: string | null
+}
+
 // Diagonal Badge Component matching Complete Badge System
 function DiagonalBadge({
   variant,
@@ -65,6 +70,8 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
   const [classToBook, setClassToBook] = useState<ClassToBook | null>(null)
   const [showBookNowDialog, setShowBookNowDialog] = useState(false)
   const [bookingClass, setBookingClass] = useState(false)
+  const [deactivateWithSkip, setDeactivateWithSkip] = useState<DeactivateWithSkip | null>(null)
+  const [showDeactivateSkipDialog, setShowDeactivateSkipDialog] = useState(false)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null)
   const [isMounted, setIsMounted] = useState(false)
@@ -157,11 +164,20 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
     }
   }
 
-  const handleToggleActive = async (id: string, currentActive: boolean) => {
+  const handleToggleActive = async (id: string, currentActive: boolean, confirmSkipClear?: boolean) => {
     setTogglingId(id)
     setOpenMenuId(null)
     try {
-      const result = await toggleRecurringClassActive(id, !currentActive)
+      const result = await toggleRecurringClassActive(id, !currentActive, confirmSkipClear)
+
+      // Check for skip clear warning (deactivating a class with active skip)
+      if (result.skipClearWarning) {
+        setDeactivateWithSkip({ id, skipDate: result.skipDate || null })
+        setShowDeactivateSkipDialog(true)
+        setTogglingId(null)
+        return
+      }
+
       if (result.success) {
         // Check if booking window is already open (activate scenario)
         if (result.bookingWindowAlreadyOpen && result.classDetails) {
@@ -185,6 +201,19 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
       setTogglingId(null)
     }
+  }
+
+  const handleConfirmDeactivateWithSkip = async () => {
+    if (!deactivateWithSkip) return
+    setShowDeactivateSkipDialog(false)
+    // Call toggle again with confirmation
+    await handleToggleActive(deactivateWithSkip.id, true, true) // currentActive=true because we're deactivating
+    setDeactivateWithSkip(null)
+  }
+
+  const handleCancelDeactivateSkip = () => {
+    setShowDeactivateSkipDialog(false)
+    setDeactivateWithSkip(null)
   }
 
   const handleBookNow = async () => {
@@ -275,7 +304,7 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
     if (!classItem.active) {
       return { variant: 'inactive', label: 'Inactive' }
     }
-    if (classItem.skip_next_occurrence && classItem.skip_target_datetime) {
+    if (classItem.skip_target_datetime && new Date() < new Date(classItem.skip_target_datetime)) {
       return { variant: 'skipped', label: `Skipping ${formatDateInGymTimezone(new Date(classItem.skip_target_datetime), classItem.timezone, 'short')}` }
     }
     // Could show "Active" or nothing for active classes
@@ -582,6 +611,38 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
         <p className="mt-4 text-sm text-gray-500">
           <strong>Book Now:</strong> Books this week&apos;s class immediately.<br />
           <strong>Skip This Week:</strong> Class won&apos;t be booked this week, automatic booking resumes next week.
+        </p>
+      </Modal>
+
+      {/* Deactivate with Skip Confirmation Dialog */}
+      <Modal
+        isOpen={showDeactivateSkipDialog && !!deactivateWithSkip}
+        onClose={handleCancelDeactivateSkip}
+        title="Deactivate Class"
+        size="md"
+        variant="default"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={handleCancelDeactivateSkip}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleConfirmDeactivateWithSkip}
+            >
+              Proceed
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-700">
+          Note: Deactivating this class will clear the skip currently set
+          {deactivateWithSkip?.skipDate && (
+            <> for <strong>{formatDateInGymTimezone(new Date(deactivateWithSkip.skipDate), 'America/New_York', 'short')}</strong></>
+          )}.
         </p>
       </Modal>
     </div>
