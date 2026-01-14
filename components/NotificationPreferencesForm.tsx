@@ -113,8 +113,8 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
             checked={emailOnRetry}
             onChange={(e) => setEmailOnRetry(e.target.checked)}
             disabled={togglesDisabled}
-            label="Class full (retry notification)"
-            description="When a full class opens up and we get you in"
+            label="Class full (retry notifications)"
+            description="Updates when retrying for full classes, including when we get you in or stop trying"
           />
         </div>
       </div>

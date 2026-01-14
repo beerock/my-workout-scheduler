@@ -45,6 +45,7 @@ This document defines the notification system for booking results, including whe
 | **Success (Waitlisted)** | ✅ Yes | Immediately | Optional | High |
 | **Already Reserved** | ✅ Yes | Immediately | No | Low |
 | **Class Full (Retrying)** | ✅ Yes | After first failure only | No | Medium |
+| **Retries Exhausted (Gave Up)** | ✅ Yes | When class starts & retries exhausted | No | Medium |
 | **Class Full (Final Failure)** | ✅ Yes | When retries exhausted | Optional | Medium |
 | **Booking Window Not Open** | ⚠️ Maybe | Only if fails after fast retry | No | Low |
 | **Cancelled Class** | ✅ Yes | Immediately | Optional | High |
@@ -784,7 +785,7 @@ notification_frequency TEXT DEFAULT 'immediate', -- 'immediate', 'daily_digest',
 email_on_success BOOLEAN DEFAULT TRUE,
 email_on_waitlist BOOLEAN DEFAULT TRUE,
 -- Note: No email_on_failure - critical/failure emails are ALWAYS sent (cannot be disabled)
-email_on_retry BOOLEAN DEFAULT TRUE, -- First failure only
+email_on_retry BOOLEAN DEFAULT TRUE, -- "Class full - retrying" and "Retries exhausted" emails
 
 -- SMS settings (optional)
 sms_phone_number TEXT,

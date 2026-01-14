@@ -11,7 +11,7 @@ import {
   type ClassNeedingBooking,
 } from '@/scripts/database-helpers';
 import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
-import { differenceInMinutes, format } from 'date-fns';
+import { differenceInMinutes, format, subHours } from 'date-fns';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { sendBookingNotification } from '@/lib/notifications/send-booking-notification';
 import { formatTime12Hour } from '@/lib/date-utils';
@@ -298,8 +298,62 @@ export const bookClassFunction = inngest.createFunction(
         };
       }
 
-      // No time left for retry
+      // No time left for retry - send "gave up" notification
       console.log(`[Inngest] Not retrying after timeout - class starts in ${timeoutMinutesUntilClass} minutes (too soon)`);
+
+      await step.run('send-timeout-exhausted-notification', async () => {
+        try {
+          const formattedDate = format(timeoutClassStartTime, 'MMMM d, yyyy');
+          const dayName = format(timeoutClassStartTime, 'EEEE');
+          const classDateISO = format(timeoutClassStartTime, 'yyyy-MM-dd');
+          const stoppedCheckingTime = format(timeoutClassStartTime, "EEEE, MMMM d 'at' h:mm a");
+
+          // Query for actual first attempt time from database
+          const supabase = createServiceRoleClient();
+          const bookingWindowStart = subHours(timeoutClassStartTime, classData.booking_window_hours);
+
+          const { data: firstAttempt } = await supabase
+            .from('booking_attempts')
+            .select('attempt_timestamp')
+            .eq('recurring_class_id', classId)
+            .gte('attempt_timestamp', bookingWindowStart.toISOString())
+            .lt('attempt_timestamp', timeoutClassStartTime.toISOString())
+            .order('attempt_timestamp', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+          const bookingStartedTime = firstAttempt?.attempt_timestamp
+            ? new Date(firstAttempt.attempt_timestamp)
+            : timeoutClassStartTime;
+
+          // Match format with stoppedCheckingTime for consistency
+          const bookingStartedTimeFormatted = format(bookingStartedTime, "EEEE, MMMM d 'at' h:mm a");
+
+          await sendBookingNotification({
+            userId: classData.user_id,
+            bookingAttemptId: attemptId,
+            recurringClassId: classId,
+            classDate: classDateISO,
+            status: 'failed',
+            errorMessage: 'Booking timed out and ran out of time to retry',
+            className: classData.class_type,
+            dayOfWeek: dayName,
+            date: formattedDate,
+            time: formatTime12Hour(classData.class_time),
+            branchName: classData.branch,
+            isRetryExhausted: true,
+            retryCount: attemptNumber,
+            bookingStartedTime: bookingStartedTimeFormatted,
+            stoppedCheckingTime: stoppedCheckingTime,
+          });
+
+          console.log(`[Inngest] Sent "gave up" notification - timeout retries exhausted`);
+        } catch (error) {
+          console.error(`[Inngest] Failed to send "gave up" notification:`, error);
+          // Don't throw - notification failure shouldn't break flow
+        }
+      });
+
       return {
         classId,
         className: classData.class_type,
@@ -424,6 +478,60 @@ export const bookClassFunction = inngest.createFunction(
         console.log(
           `[Inngest] Not retrying - class starts in ${minutesUntilClass} minutes (too soon)`
         );
+
+        // Send "gave up" notification - retries exhausted, class time arrived
+        await step.run('send-retry-exhausted-notification', async () => {
+          try {
+            const formattedDate = format(classStartTime, 'MMMM d, yyyy');
+            const dayName = format(classStartTime, 'EEEE');
+            const classDateISO = format(classStartTime, 'yyyy-MM-dd');
+            const stoppedCheckingTime = format(classStartTime, "EEEE, MMMM d 'at' h:mm a");
+
+            // Query for actual first attempt time from database
+            const supabase = createServiceRoleClient();
+            const bookingWindowStart = subHours(classStartTime, classData.booking_window_hours);
+
+            const { data: firstAttempt } = await supabase
+              .from('booking_attempts')
+              .select('attempt_timestamp')
+              .eq('recurring_class_id', classId)
+              .gte('attempt_timestamp', bookingWindowStart.toISOString())
+              .lt('attempt_timestamp', classStartTime.toISOString())
+              .order('attempt_timestamp', { ascending: true })
+              .limit(1)
+              .maybeSingle();
+
+            const bookingStartedTime = firstAttempt?.attempt_timestamp
+              ? new Date(firstAttempt.attempt_timestamp)
+              : classStartTime;
+
+            // Match format with stoppedCheckingTime for consistency
+            const bookingStartedTimeFormatted = format(bookingStartedTime, "EEEE, MMMM d 'at' h:mm a");
+
+            await sendBookingNotification({
+              userId: classData.user_id,
+              bookingAttemptId: attemptId,
+              recurringClassId: classId,
+              classDate: classDateISO,
+              status: 'failed',
+              errorMessage: 'Class stayed full until class time - retries exhausted',
+              className: classData.class_type,
+              dayOfWeek: dayName,
+              date: formattedDate,
+              time: formatTime12Hour(classData.class_time),
+              branchName: classData.branch,
+              isRetryExhausted: true,
+              retryCount: attemptNumber,
+              bookingStartedTime: bookingStartedTimeFormatted,
+              stoppedCheckingTime: stoppedCheckingTime,
+            });
+
+            console.log(`[Inngest] Sent "gave up" notification - retries exhausted`);
+          } catch (error) {
+            console.error(`[Inngest] Failed to send "gave up" notification:`, error);
+            // Don't throw - notification failure shouldn't break flow
+          }
+        });
       }
     }
 
