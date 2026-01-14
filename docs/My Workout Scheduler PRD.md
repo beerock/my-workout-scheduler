@@ -177,6 +177,11 @@
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.30:** Retry Exhausted Notifications (January 2026)
+  - Added "Retries Exhausted" email notification when booking retries fail and class time arrives
+  - Provides closure to users who received "Class Full - Retrying" email
+  - Respects emailOnRetry user preference (same toggle controls both emails)
+  - Updated settings checkbox copy to clarify both emails are controlled by same toggle
 - ✅ **COMPLETED: UX/UI Refresh & Design System v2 (v2.13 → v2.22)**
   - Complete design system with editorial diagonal-cut design language
   - **19 reusable UI components** in `components/ui/`:

@@ -11,7 +11,7 @@ import {
   type ClassNeedingBooking,
 } from '@/scripts/database-helpers';
 import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
-import { differenceInMinutes, format } from 'date-fns';
+import { differenceInMinutes, format, subHours } from 'date-fns';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { sendBookingNotification } from '@/lib/notifications/send-booking-notification';
 import { formatTime12Hour } from '@/lib/date-utils';
@@ -306,9 +306,28 @@ export const bookClassFunction = inngest.createFunction(
           const formattedDate = format(timeoutClassStartTime, 'MMMM d, yyyy');
           const dayName = format(timeoutClassStartTime, 'EEEE');
           const classDateISO = format(timeoutClassStartTime, 'yyyy-MM-dd');
-          const classStartTimeFormatted = format(timeoutClassStartTime, "EEEE, MMMM d 'at' h:mm a");
-          const now = new Date();
-          const firstAttemptTimeFormatted = format(now, 'MMM d, yyyy h:mm a');
+          const stoppedCheckingTime = format(timeoutClassStartTime, "EEEE, MMMM d 'at' h:mm a");
+
+          // Query for actual first attempt time from database
+          const supabase = createServiceRoleClient();
+          const bookingWindowStart = subHours(timeoutClassStartTime, classData.booking_window_hours);
+
+          const { data: firstAttempt } = await supabase
+            .from('booking_attempts')
+            .select('attempt_timestamp')
+            .eq('recurring_class_id', classId)
+            .gte('attempt_timestamp', bookingWindowStart.toISOString())
+            .lt('attempt_timestamp', timeoutClassStartTime.toISOString())
+            .order('attempt_timestamp', { ascending: true })
+            .limit(1)
+            .single();
+
+          const bookingStartedTime = firstAttempt?.attempt_timestamp
+            ? new Date(firstAttempt.attempt_timestamp)
+            : new Date();
+
+          // Match format with stoppedCheckingTime for consistency
+          const bookingStartedTimeFormatted = format(bookingStartedTime, "EEEE, MMMM d 'at' h:mm a");
 
           await sendBookingNotification({
             userId: classData.user_id,
@@ -324,8 +343,8 @@ export const bookClassFunction = inngest.createFunction(
             branchName: classData.branch,
             isRetryExhausted: true,
             retryCount: attemptNumber,
-            firstAttemptTime: firstAttemptTimeFormatted,
-            classStartTime: classStartTimeFormatted,
+            bookingStartedTime: bookingStartedTimeFormatted,
+            stoppedCheckingTime: stoppedCheckingTime,
           });
 
           console.log(`[Inngest] Sent "gave up" notification - timeout retries exhausted`);
@@ -466,9 +485,28 @@ export const bookClassFunction = inngest.createFunction(
             const formattedDate = format(classStartTime, 'MMMM d, yyyy');
             const dayName = format(classStartTime, 'EEEE');
             const classDateISO = format(classStartTime, 'yyyy-MM-dd');
-            const classStartTimeFormatted = format(classStartTime, "EEEE, MMMM d 'at' h:mm a");
-            const now = new Date();
-            const firstAttemptTimeFormatted = format(now, 'MMM d, yyyy h:mm a');
+            const stoppedCheckingTime = format(classStartTime, "EEEE, MMMM d 'at' h:mm a");
+
+            // Query for actual first attempt time from database
+            const supabase = createServiceRoleClient();
+            const bookingWindowStart = subHours(classStartTime, classData.booking_window_hours);
+
+            const { data: firstAttempt } = await supabase
+              .from('booking_attempts')
+              .select('attempt_timestamp')
+              .eq('recurring_class_id', classId)
+              .gte('attempt_timestamp', bookingWindowStart.toISOString())
+              .lt('attempt_timestamp', classStartTime.toISOString())
+              .order('attempt_timestamp', { ascending: true })
+              .limit(1)
+              .single();
+
+            const bookingStartedTime = firstAttempt?.attempt_timestamp
+              ? new Date(firstAttempt.attempt_timestamp)
+              : new Date();
+
+            // Match format with stoppedCheckingTime for consistency
+            const bookingStartedTimeFormatted = format(bookingStartedTime, "EEEE, MMMM d 'at' h:mm a");
 
             await sendBookingNotification({
               userId: classData.user_id,
@@ -484,8 +522,8 @@ export const bookClassFunction = inngest.createFunction(
               branchName: classData.branch,
               isRetryExhausted: true,
               retryCount: attemptNumber,
-              firstAttemptTime: firstAttemptTimeFormatted,
-              classStartTime: classStartTimeFormatted,
+              bookingStartedTime: bookingStartedTimeFormatted,
+              stoppedCheckingTime: stoppedCheckingTime,
             });
 
             console.log(`[Inngest] Sent "gave up" notification - retries exhausted`);

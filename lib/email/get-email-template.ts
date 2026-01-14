@@ -50,8 +50,10 @@ export type BookingEmailData = {
   isRetryExhausted?: boolean; // True if all retries failed and class time arrived
   retryCount?: number; // Number of retries (for success or exhausted scenarios)
   bookingTimestamp: string; // When booking was made
-  firstAttemptTime?: string; // When we first tried to book (for retrying emails)
-  classStartTime?: string; // When the class starts (for retrying emails)
+  firstAttemptTime?: string; // When we first tried to book (for retrying emails) - legacy
+  classStartTime?: string; // When the class starts (for retrying emails) - legacy
+  bookingStartedTime?: string; // When we started trying to book (for final/exhausted emails)
+  stoppedCheckingTime?: string; // When we stopped checking (for final/exhausted emails)
   dashboardUrl: string;
   scheduleUrl: string; // Link to schedule page (CTA destination for success/waitlist/retry/technical)
   credentialsUrl: string; // Link to credentials page (CTA destination for login-related errors)
@@ -205,8 +207,8 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
         date: data.date,
         time: data.time,
         branchName: data.branchName,
-        firstAttemptTime: data.firstAttemptTime || data.bookingTimestamp,
-        classStartTime: data.classStartTime || 'class start time',
+        bookingStartedTime: data.bookingStartedTime || data.firstAttemptTime || data.bookingTimestamp,
+        stoppedCheckingTime: data.stoppedCheckingTime || data.classStartTime || 'class start time',
         retryCount: data.retryCount || 1,
         dashboardUrl: data.dashboardUrl,
         scheduleUrl: data.scheduleUrl,

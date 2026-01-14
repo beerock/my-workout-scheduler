@@ -19,9 +19,9 @@ export type BookingFailureFinalEmailProps = {
   date: string;
   time: string;
   branchName: string;
-  firstAttemptTime: string; // When we first tried to book
-  classStartTime: string; // When the class started (retries ended)
-  retryCount: number; // How many times we tried
+  bookingStartedTime: string; // When we started trying to book
+  stoppedCheckingTime: string; // When we stopped checking (class started)
+  retryCount: number; // How many times we checked for openings
   dashboardUrl: string;
   scheduleUrl: string;
   settingsUrl: string;
@@ -31,8 +31,8 @@ export function bookingFailureFinalEmail(props: BookingFailureFinalEmailProps): 
   const subject = `⏱️ Could Not Get You In - ${props.className} on ${props.dayOfWeek}`;
 
   const retryText = props.retryCount > 1
-    ? `We tried ${props.retryCount} times (every 15 minutes)`
-    : 'We tried multiple times';
+    ? `The class was full. We checked for openings ${props.retryCount} times (every 15 minutes) but no spots became available.`
+    : 'The class was full. We checked for openings but no spots became available.';
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
@@ -62,13 +62,13 @@ export function bookingFailureFinalEmail(props: BookingFailureFinalEmailProps): 
       <tr>
         <td style="padding: ${emailDesign.spacing.md};">
           <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small};">
-            <strong>First attempt:</strong> ${props.firstAttemptTime}
+            <strong>Booking started:</strong> ${props.bookingStartedTime}
           </p>
           <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small};">
             <strong>What happened:</strong> ${retryText}
           </p>
           <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small};">
-            <strong>Retries ended:</strong> ${props.classStartTime} (class started)
+            <strong>Stopped checking:</strong> ${props.stoppedCheckingTime} (class started)
           </p>
         </td>
       </tr>
@@ -99,7 +99,7 @@ export function bookingFailureFinalEmail(props: BookingFailureFinalEmailProps): 
     severity: 'warning', // Yellow/amber tone - not critical, but informational
     ctaText: 'View My Schedule',
     ctaLink: props.scheduleUrl,
-    showUnsubscribe: false, // Failure emails are always sent (no opt-out)
+    showUnsubscribe: true, // Users can opt out via emailOnRetry preference
     dashboardUrl: props.dashboardUrl,
     settingsUrl: props.settingsUrl,
   });
