@@ -320,11 +320,11 @@ export const bookClassFunction = inngest.createFunction(
             .lt('attempt_timestamp', timeoutClassStartTime.toISOString())
             .order('attempt_timestamp', { ascending: true })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           const bookingStartedTime = firstAttempt?.attempt_timestamp
             ? new Date(firstAttempt.attempt_timestamp)
-            : new Date();
+            : timeoutClassStartTime;
 
           // Match format with stoppedCheckingTime for consistency
           const bookingStartedTimeFormatted = format(bookingStartedTime, "EEEE, MMMM d 'at' h:mm a");
@@ -499,11 +499,11 @@ export const bookClassFunction = inngest.createFunction(
               .lt('attempt_timestamp', classStartTime.toISOString())
               .order('attempt_timestamp', { ascending: true })
               .limit(1)
-              .single();
+              .maybeSingle();
 
             const bookingStartedTime = firstAttempt?.attempt_timestamp
               ? new Date(firstAttempt.attempt_timestamp)
-              : new Date();
+              : classStartTime;
 
             // Match format with stoppedCheckingTime for consistency
             const bookingStartedTimeFormatted = format(bookingStartedTime, "EEEE, MMMM d 'at' h:mm a");
