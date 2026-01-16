@@ -655,30 +655,52 @@ Requirements:
 DO NOT implement yet - just investigate and document the flow.
 ```
 
-#### Prompt 2B: Build YMCA Main Site Flow
+#### Prompt 2B: Build YMCA Main Site Flow (GroupExPro → Daxko)
 
 ```
-I've investigated the YMCA main site booking flow and documented it in `docs/YMCA_MAIN_SITE_BOOKING_FLOW.md`. Now I need to implement the Puppeteer automation to replace the current Daxko flow.
+I've investigated the YMCA main site booking flow and documented it in `docs/YMCA_MAIN_SITE_BOOKING_FLOW.md`. Now I need to implement the Puppeteer automation to replace the current Daxko-only flow.
+
+**Key Finding:** The YMCA main site uses a HYBRID system:
+- Schedule & Login: GroupExPro handles class listing and authentication (single-step login)
+- Booking: After GroupExPro login, redirects to Daxko (operations.daxko.com/online/4032/GXP/ChooseMembers.mvc) for actual booking
+- Credentials: Same credentials work for both systems (no migration needed)
+- We can REUSE existing Daxko booking logic after the GroupExPro login step
 
 Context:
 - Current Daxko code: `scripts/book-class.ts`
 - Flow documentation: `docs/YMCA_MAIN_SITE_BOOKING_FLOW.md`
-- Target site: https://www.ymcawnc.org/schedules/
-- Must maintain all existing functionality: login, class finding, booking, screenshots, error handling
+- Schedule page: https://www.ymcawnc.org/schedules?date=YYYY-MM-DD
+- GroupExPro login: https://www.groupexpro.com/gxp/auth/login/...
+- Daxko booking (after login): https://operations.daxko.com/online/4032/GXP/ChooseMembers.mvc?class_id=...
 - Inngest integration must continue to work
 
+Complete Booking Flow:
+1. Navigate to YMCA schedule (ymcawnc.org/schedules?date=YYYY-MM-DD) - use gym timezone for date!
+2. Find target class by name, time, and branch
+3. Extract class ID from Register link href (e.g., /gxp/reservations/start/index/14747720/...)
+4. Click Register → redirects to GroupExPro login
+5. Handle GroupExPro login (single-step: email + password together, then click Login)
+6. After login → redirects to Daxko ChooseMembers.mvc page
+7. REUSE existing Daxko booking logic:
+   - Check member checkbox
+   - Click Reserve/Waitlist button
+   - Detect confirmation
+
 Requirements:
-1. Create new booking function for YMCA main site in `scripts/book-class.ts`
+1. Update booking function in `scripts/book-class.ts` for the new hybrid flow
 2. Implement:
-   - Login to YMCA member portal
-   - Navigate to schedules page
-   - Filter/find the target class by name, time, and branch
-   - Click to book
+   - Navigate to YMCA schedule page with date parameter (gym timezone!)
+   - Find class by name/time/branch and extract class ID from Register link
+   - Handle GroupExPro single-step login (different from Daxko 2-step)
+   - After redirect, reuse existing Daxko ChooseMembers booking logic
    - Handle confirmation/waitlist scenarios
    - Capture screenshots on success and failure
 3. Keep the same function signature so Inngest doesn't need changes
-4. Add comments explaining YMCA-specific quirks
-5. Archive the old Daxko code (comment out or move to `scripts/deprecated/`)
+4. Key differences from current Daxko flow:
+   - Login is via GroupExPro (1-step) instead of Daxko (2-step)
+   - Must navigate through YMCA schedule to get class ID
+   - Date parameter in URL must use gym timezone
+5. Archive pure Daxko login code (move to `scripts/deprecated/`)
 
 Test command after: `npm run test:booking-dry-run`
 
