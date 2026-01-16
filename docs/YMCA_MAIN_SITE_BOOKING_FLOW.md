@@ -139,7 +139,8 @@ Each class card displays:
 - **Confirmed:** Same credentials work for both GroupExPro and Daxko
 - No credential migration needed for existing users
 - Most YMCA of WNC users are initially onboarded via GroupExPro
-- **Recommendation:** New users should verify their credentials work on groupexpro.com before saving in our system (UX consideration for onboarding)
+- **Recommendation:** New users should verify their credentials work on groupexpro.com before saving in our system
+- **Backlog Item:** See "Credential Testing on Credentials Page" in `BACKLOG.md` for planned UX to test credentials within the app
 
 ### Timezone Considerations
 When constructing schedule URLs with date parameters:

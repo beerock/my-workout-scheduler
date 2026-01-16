@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** January 13, 2026
+**Last Updated:** January 16, 2026
 
 ---
 
@@ -78,6 +78,23 @@ Confirm `help@beerock.com` is correct in error pages before MVP launch.
 ## Post-MVP: High Priority
 
 Important features for near-term after launch.
+
+### Credential Testing on Credentials Page
+**Status:** Backlogged | **Priority:** High
+
+Allow users to test their gym credentials before saving, ensuring they work with the booking system (GroupExPro login).
+
+**Requirements:**
+- "Test Credentials" button on credentials page
+- Attempts GroupExPro login to verify credentials work
+- Clear success/failure feedback
+- Consider UX for guiding new users to verify against groupexpro.com
+
+**Context:** YMCA of WNC users are typically onboarded via GroupExPro first. See `docs/YMCA_MAIN_SITE_BOOKING_FLOW.md` for booking flow details.
+
+**Last Updated:** January 16, 2026
+
+---
 
 ### OAuth Login (Google/Apple)
 **Status:** Backlogged | **Priority:** High
