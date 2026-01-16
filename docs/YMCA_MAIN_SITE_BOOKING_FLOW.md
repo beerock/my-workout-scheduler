@@ -1,8 +1,48 @@
-# YMCA Main Site Booking Flow (GroupExPro)
+# YMCA Main Site Booking Flow (GroupExPro → Daxko)
 
 ## Overview
 
-The YMCA main site (ymcawnc.org) uses **GroupExPro.com** for class registration, NOT the current Daxko system. This is a completely different booking platform that requires separate Puppeteer automation code.
+The YMCA main site (ymcawnc.org) uses a **hybrid booking system**:
+- **Schedule & Login**: GroupExPro.com handles the class schedule display and authentication
+- **Booking**: After login, users are redirected to **Daxko** (operations.daxko.com) for the actual reservation
+
+**Key Insight:** The same credentials work for both GroupExPro and Daxko. Existing users do not need credential migration. We can reuse our existing Daxko booking logic after the GroupExPro login step.
+
+---
+
+## Complete Booking Flow (Confirmed)
+
+### Step 1: Navigate to YMCA Schedule
+```
+https://www.ymcawnc.org/schedules?date=YYYY-MM-DD
+```
+
+### Step 2: Click Register on Class Card
+The Register link redirects to GroupExPro login:
+```
+https://www.groupexpro.com/gxp/reservations/start/index/{CLASS_ID}/{MM}/{DD}/{YYYY}?type=responsive
+```
+Which then redirects to:
+```
+https://www.groupexpro.com/gxp/auth/login/reservations-start-index-{CLASS_ID}-{MM}-{DD}-{YYYY}?c=1&e=0&type=responsive
+```
+
+### Step 3: Login (GroupExPro)
+Single-step login form with Email + Password fields.
+
+### Step 4: Daxko Booking Page (REDIRECT)
+After successful login, redirects to Daxko:
+```
+https://operations.daxko.com/online/4032/GXP/ChooseMembers.mvc?class_id={DAXKO_CLASS_ID}
+```
+
+**Example:** `https://operations.daxko.com/online/4032/GXP/ChooseMembers.mvc?class_id=14747720011626`
+
+### Step 5: Complete Reservation (Daxko)
+Same UI as current automation:
+- Checkbox next to member name (e.g., "Brock Busby")
+- **RESERVE** or **WAITLIST** button
+- Standard Daxko confirmation flow
 
 ---
 
@@ -16,22 +56,19 @@ https://www.ymcawnc.org/schedules?date=YYYY-MM-DD&locations=&categories=&cn=&ins
 **Query Parameters:**
 | Parameter | Description | Example |
 |-----------|-------------|---------|
-| `date` | Date in YYYY-MM-DD format | `2026-01-16` |
+| `date` | Date in YYYY-MM-DD format (use gym timezone!) | `2026-01-16` |
 | `locations` | Filter by location ID | (numeric ID) |
 | `categories` | Filter by category | |
 | `cn` | Class name filter | |
 | `inst` | Instructor filter | |
 | `room` | Room filter | |
 
-### Booking URL (GroupExPro)
-```
-https://www.groupexpro.com/gxp/reservations/start/index/{CLASS_ID}/{MM}/{DD}/{YYYY}?type=responsive
-```
+**Important:** When constructing the date parameter, use the gym's timezone (America/New_York for YMCA of WNC) to ensure the correct date is displayed.
 
-**Example:**
-```
-https://www.groupexpro.com/gxp/reservations/start/index/14747720/01/16/2026?type=responsive
-```
+### Date Navigation
+- Arrow buttons (`<` `>`) for previous/next date pagination
+- Displays current date (e.g., "Fri, Jan 16")
+- Pagination available at bottom of class list
 
 ---
 
@@ -50,7 +87,7 @@ Available YMCA branches (checkbox selection on schedule page):
 
 ## Class Listing Structure
 
-Each class card on the schedule page displays:
+Each class card displays:
 - **Time** (e.g., "5:45am")
 - **Duration** (e.g., "45min")
 - **Class name** (e.g., "Cycle")
@@ -58,33 +95,8 @@ Each class card on the schedule page displays:
 - **Location** (e.g., "Reuter Family YMCA Cycle Studio")
 - **Instructor name**
 - **Availability** (e.g., "5 spots left")
-- **Register button** → links to GroupExPro
-
-### Date Navigation
-- Arrow buttons for previous/next date
-- Displays current date (e.g., "Fri, Jan 16")
-
----
-
-## Booking Flow
-
-### Step 1: Navigate to Schedule
-Go to `https://www.ymcawnc.org/schedules` with appropriate date/location filters.
-
-### Step 2: Click Register
-The Register link on a class card redirects to GroupExPro:
-```
-https://www.groupexpro.com/gxp/reservations/start/index/{CLASS_ID}/{MM}/{DD}/{YYYY}?type=responsive
-```
-
-### Step 3: Login (GroupExPro)
-URL redirects to login page:
-```
-https://www.groupexpro.com/gxp/auth/login/reservations-start-index-{CLASS_ID}-{MM}-{DD}-{YYYY}?c=1&e=0&type=responsive
-```
-
-### Step 4: Complete Booking
-After login, user is redirected back to complete the reservation.
+- **Register button** → links to GroupExPro (contains class ID in URL)
+- **Add to calendar** option (ICalendar, Google Calendar, Outlook)
 
 ---
 
@@ -93,11 +105,11 @@ After login, user is redirected back to complete the reservation.
 **Single-step login** (unlike Daxko's 2-step flow):
 
 ### Form Elements
-| Element | Selector | Type |
-|---------|----------|------|
-| Email | `textbox "Email" [type="text"]` | text input |
-| Password | `textbox [type="password"]` | password input |
-| Submit | `button "Login" [type="submit"]` | button |
+| Element | Type | Notes |
+|---------|------|-------|
+| Email | text input | Same credentials as Daxko |
+| Password | password input | Same credentials as Daxko |
+| Login | submit button | Redirects to Daxko after success |
 
 ### Available Tabs
 - Login
@@ -106,59 +118,87 @@ After login, user is redirected back to complete the reservation.
 
 ---
 
-## Key Differences: Daxko vs GroupExPro
+## Key Differences: Current Daxko Flow vs YMCA Main Site Flow
 
-| Aspect | Daxko (Current) | GroupExPro (New) |
-|--------|-----------------|------------------|
-| Schedule URL | ops1.operations.daxko.com | ymcawnc.org/schedules |
-| Booking Platform | Daxko | groupexpro.com |
-| Login Steps | 2-step (email → password) | 1-step (email + password) |
-| Login URL | /Online/4032/Security/login.mvc | /gxp/auth/login/... |
+| Aspect | Current Daxko Flow | YMCA Main Site Flow |
+|--------|-------------------|---------------------|
+| Schedule URL | operations.daxko.com | ymcawnc.org/schedules |
+| Login Platform | Daxko (2-step) | GroupExPro (1-step) |
+| Booking Platform | Daxko | **Daxko** (same!) |
+| Login URL | /Online/4032/Security/login.mvc | groupexpro.com/gxp/auth/login/... |
 | Branch Selection | Dropdown on schedule page | Checkboxes on YMCA site |
-| Class ID Format | Internal Daxko ID | Numeric ID in URL path |
-| URL Pattern | Fixed URL | Dynamic URL with class ID & date |
-| **Credential System** | **Daxko account** | **Separate GroupExPro account** |
+| Class ID in URL | Not visible | Visible in Register link |
+| **Credentials** | **Same** | **Same** |
+| **Booking UI** | **ChooseMembers.mvc** | **ChooseMembers.mvc** (same!) |
 
 ---
 
 ## Implementation Notes
 
-### Credential Migration
-- Users currently have Daxko credentials stored
-- GroupExPro uses a **separate account system**
-- Users may need to create GroupExPro accounts or link existing YMCA accounts
-- **TODO:** Verify if existing YMCA credentials work with GroupExPro
+### Credentials
+- **Confirmed:** Same credentials work for both GroupExPro and Daxko
+- No credential migration needed for existing users
+- Most YMCA of WNC users are initially onboarded via GroupExPro
+- **Recommendation:** New users should verify their credentials work on groupexpro.com before saving in our system (UX consideration for onboarding)
 
-### Puppeteer Automation Requirements
-The new automation will need to:
-1. Navigate to `ymcawnc.org/schedules`
-2. Apply date and location filters via URL params
-3. Find target class by name/time
-4. Click Register → redirects to GroupExPro
-5. Handle login on GroupExPro (single-step form)
-6. Complete booking on GroupExPro
-7. Detect confirmation
+### Timezone Considerations
+When constructing schedule URLs with date parameters:
+- Always use the gym's timezone (America/New_York for YMCA of WNC)
+- Use `lib/date-utils.ts` for date calculations
+- Incorrect timezone could show wrong day's classes
 
-### Direct Booking URL Construction
-If we know the class ID, we can construct the booking URL directly:
+### Puppeteer Automation Strategy
+Since the booking happens on Daxko after GroupExPro login:
+1. Navigate to YMCA schedule page
+2. Find target class by name/time
+3. Extract class ID from Register link href
+4. Navigate to GroupExPro login URL with class ID
+5. **NEW:** Handle GroupExPro single-step login (email + password)
+6. **REUSE:** Existing Daxko booking logic (ChooseMembers.mvc)
+   - Check member checkbox
+   - Click Reserve/Waitlist
+   - Detect confirmation
+
+### Class ID Extraction
+The Register link contains the class ID:
+```html
+<a href="https://www.groupexpro.com/gxp/reservations/start/index/14747720/01/16/2026?type=responsive">REGISTER</a>
 ```
-https://www.groupexpro.com/gxp/reservations/start/index/{CLASS_ID}/{MM}/{DD}/{YYYY}?type=responsive
-```
+Class ID: `14747720`
 
-**Challenge:** We need to map class names/times to GroupExPro class IDs. This mapping may require:
-- Scraping the schedule page to extract class IDs from Register links
-- Building a lookup table of class IDs
-- Or always navigating through the schedule page
+After login, Daxko uses a different format: `14747720011626` (appears to append date info)
 
 ---
 
-## Open Questions
+## Daxko ChooseMembers Page (Post-Login)
 
-1. Do existing YMCA member credentials work with GroupExPro?
-2. How do we obtain GroupExPro class IDs programmatically?
-3. Is there a booking window (e.g., 26 hours before) on GroupExPro?
-4. What does the confirmation page look like after successful booking?
+After GroupExPro login, the Daxko page shows:
+
+**Class Info:**
+- Class name and location
+- Date, time, duration
+- Availability (e.g., "5 of 18 open")
+
+**Booking UI:**
+- "Select Group Members for Reservation"
+- Checkbox next to each "Active Members" name
+- **BACK** button
+- **RESERVE** button (or WAITLIST if full)
+
+This is the same UI as our current automation, so existing booking logic can be reused.
+
+---
+
+## Open Questions (Resolved)
+
+| Question | Answer |
+|----------|--------|
+| Do credentials work for both systems? | **Yes** - same credentials work |
+| Where does booking happen? | **Daxko** - after GroupExPro login |
+| Can we reuse existing code? | **Yes** - Daxko booking logic is reusable |
+| Is there a booking window? | **TBD** - likely same as Daxko (26 hours) |
 
 ---
 
 *Last Updated: January 16, 2026*
+*Verified via live browser testing with user credentials*
