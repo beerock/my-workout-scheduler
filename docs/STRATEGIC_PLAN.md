@@ -705,6 +705,8 @@ Requirements:
 Test command after: `npm run test:booking-dry-run`
 
 IMPORTANT: Do a dry-run first before any real booking attempts.
+
+**Tip:** Use Claude in Chrome to test selectors on the live YMCA site before writing Puppeteer code. Helpful for debugging selector issues, verifying class state detection (cancelled/full/waitlist), and checking if the site structure has changed since investigation.
 ```
 
 #### Prompt 2C: Update Integration & Test
