@@ -8,6 +8,14 @@ The YMCA main site (ymcawnc.org) uses a **hybrid booking system**:
 
 **Key Insight:** The same credentials work for both GroupExPro and Daxko. Existing users do not need credential migration. We can reuse our existing Daxko booking logic after the GroupExPro login step.
 
+> **Important: GroupExPro Migration to Daxko (January 2026)**
+>
+> GroupExPro and Daxko are the same company (Daxko is the parent). GroupExPro's website indicates they are "moving" - likely migrating fully to daxko.com. This means:
+> - The current hybrid flow (GroupExPro login → Daxko booking) may change
+> - YMCA may eventually use pure Daxko for both login and booking
+> - **DO NOT archive existing Daxko login/booking code** - we may need it again
+> - Keep both GroupExPro and Daxko login flows available in the codebase
+
 ---
 
 ## Complete Booking Flow (Confirmed)
