@@ -700,7 +700,7 @@ Requirements:
    - Login is via GroupExPro (1-step) instead of Daxko (2-step)
    - Must navigate through YMCA schedule to get class ID
    - Date parameter in URL must use gym timezone
-5. Archive pure Daxko login code (move to `scripts/deprecated/`)
+5. **DO NOT archive Daxko login code** - GroupExPro is migrating to Daxko (same company), so we may revert to pure Daxko flow in the future. Keep both login flows available.
 
 Test command after: `npm run test:booking-dry-run`
 
