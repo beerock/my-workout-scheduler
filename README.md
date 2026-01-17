@@ -1,21 +1,27 @@
 # My Workout Scheduler
 
-My Workout Scheduler automates class reservations for recurring fitness sessions (e.g., BODYPUMP) across gyms (e.g., YMCA branches), ensuring accurate timing, branch validation, and preventing duplicate or erroneous bookings. It removes manual intervention by using structured guardrails to control when and how reservations occur.
+**Version:** 2.30 | **Status:** Production
+
+My Workout Scheduler automates gym class reservations using Puppeteer to book classes the instant registration opens (e.g., 26 hours before class time). Set it and forget it—no more waking up early or racing to book popular classes.
 
 ## Tech Stack
 
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
-- **Database & Auth:** Supabase
-- **Hosting:** Vercel (ready to deploy)
+- **Database & Auth:** Supabase (PostgreSQL + Row Level Security)
+- **Scheduling:** Inngest (event-driven triggers)
+- **Automation:** Puppeteer via GitHub Actions
+- **Email:** Resend
+- **Hosting:** Vercel
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ installed
+- Node.js 18+
 - A Supabase account (free tier works)
+- An Inngest account (free tier works)
 
 ### Setup Steps
 
@@ -30,40 +36,32 @@ My Workout Scheduler automates class reservations for recurring fitness sessions
    - Copy your Project URL and anon/public key
 
 3. **Configure environment variables:**
-   - Create a `.env.local` file in the root directory
-   - Add your Supabase credentials and encryption key:
+   - Copy `.env.example` to `.env.local`
+   - Add your credentials:
      ```env
      NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
      NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+     SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
      ENCRYPTION_KEY=your_encryption_key_here
+     INNGEST_EVENT_KEY=your_inngest_event_key
+     INNGEST_SIGNING_KEY=your_inngest_signing_key
+     RESEND_API_KEY=your_resend_api_key
      ```
-   - Generate an encryption key (run in terminal):
+   - Generate an encryption key:
      ```bash
      openssl rand -base64 32
      ```
-   - Copy the output and paste it as `ENCRYPTION_KEY` in `.env.local`
-   - **Note:** Encryption happens in the application (Next.js), not in the database. The key never leaves your server.
 
-4. **Configure Supabase Auth:**
-   - In Supabase Dashboard → Authentication → Settings
-   - Enable Email provider
-   - For prototyping, you can disable "Confirm email" (optional)
+4. **Set up the database:**
+   - In Supabase Dashboard → SQL Editor
+   - Run migrations in order from `supabase/migrations/`
 
-5. **Set up the database:**
-   - See [Database Setup Guide](./docs/DATABASE_SETUP.md) for detailed instructions
-   - Quick version:
-     1. In Supabase Dashboard → SQL Editor
-     2. Run `supabase/migrations/001_initial_schema.sql`
-     3. Run `supabase/migrations/002_rls_policies.sql`
-     4. Run `supabase/migrations/003_schedule_management.sql` (for schedule features)
-   - **Test encryption:** Run `npx tsx test-encryption.ts` to verify encryption works
-
-6. **Run the development server:**
+5. **Run the development server:**
    ```bash
    npm run dev
    ```
 
-7. **Open your browser:**
+6. **Open your browser:**
    - Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## Project Structure
@@ -71,145 +69,127 @@ My Workout Scheduler automates class reservations for recurring fitness sessions
 ```
 my-workout-scheduler/
 ├── app/
-│   ├── (auth)/          # Auth pages (login, signup)
-│   ├── dashboard/       # Protected dashboard
-│   ├── layout.tsx       # Root layout
-│   ├── page.tsx         # Landing page
-│   └── globals.css      # Global styles
-├── components/          # Reusable components
+│   ├── (auth)/           # Auth pages (login, signup, verify-email)
+│   ├── actions/          # Server actions (all form submissions)
+│   ├── api/inngest/      # Inngest webhook endpoint
+│   ├── dashboard/        # Protected pages (schedule, account, history)
+│   └── globals.css       # Global styles
+├── components/
+│   └── ui/               # Design system components (19 components)
 ├── lib/
-│   ├── supabase/       # Supabase client configuration
-│   ├── database.types.ts  # TypeScript types for database
-│   └── supabase/database.ts  # Database helper functions
+│   ├── inngest/          # Event-driven booking functions
+│   ├── date-utils.ts     # Date/timezone calculations
+│   ├── validation.ts     # Shared validation utilities
+│   └── supabase/         # Supabase client configuration
+├── scripts/              # Puppeteer automation scripts
 ├── supabase/
-│   └── migrations/     # SQL migration files
-├── scripts/            # Automation scripts
-│   ├── booking-automation.ts      # Puppeteer booking script
-│   ├── database-helpers.ts        # Database query helpers
-│   ├── run-booking-automation.ts  # Main automation entry point
-│   └── test-*.ts                  # Test scripts
+│   └── migrations/       # SQL migration files
 ├── .github/
-│   └── workflows/      # GitHub Actions workflows
-├── middleware.ts       # Route protection middleware
-└── docs/               # Project documentation
+│   └── workflows/        # GitHub Actions for Puppeteer execution
+└── docs/                 # Project documentation
 ```
 
-## Features Implemented
+## Features
 
-✅ Next.js 14 with App Router  
-✅ TypeScript configuration  
-✅ Tailwind CSS setup  
-✅ Supabase authentication  
-✅ Login and Signup pages  
-✅ Protected routes middleware  
-✅ Dashboard page  
-✅ Landing page with auth redirect  
-✅ Database schema (gym_credentials, recurring_classes, booking_attempts, user_settings)  
-✅ Row Level Security (RLS) policies  
-✅ TypeScript database types  
-✅ **Gym credentials storage form** (with encryption)  
-✅ **Schedule management** (add/edit/delete recurring classes)  
-✅ **Global pause toggle** (pause all bookings)  
-✅ **Per-class active toggle** (enable/disable individual classes)  
-✅ **Skip next occurrence** (with smart unskip logic)  
-✅ **Schedule list view** (sorted by day and time)  
-✅ **Booking automation** (GitHub Actions + Puppeteer)  
-✅ **Automated class booking** (runs every 15 minutes via GitHub Actions)  
-✅ **Booking attempt tracking** (records all booking attempts in database)
-✅ **Modern Design System** (v2.13 - Peloton/ClassPass/Strava-inspired aesthetic)
-✅ **Component Library** (7 reusable UI components)
+### User Management
+- Email/password authentication with bot protection (Cloudflare Turnstile)
+- Password strength validation and confirmation
+- Email verification flow
+- Account management (update email, password, delete account)
+
+### Schedule Management
+- Add/edit/delete recurring classes
+- Global pause toggle (pause all bookings)
+- Per-class active toggle
+- Skip next occurrence with smart unskip logic
+- Copy class feature for quick duplication
+- Timezone handling per class
+
+### Automated Booking
+- **Event-driven scheduling:** Inngest triggers bookings at exact window times
+- **Precise timing:** Books within 60 seconds of registration opening
+- **Intelligent retry:** Clock drift (12×15s) and class full (15min intervals)
+- **Hybrid architecture:** Inngest schedules → GitHub Actions runs Puppeteer
+- **Duplicate prevention:** Detects already-booked classes
+
+### Notifications
+- Email notifications for booking results (success, waitlist, failure)
+- Welcome email on signup
+- Pause reminder after 7 days
+- User preferences for notification types
+
+### Dashboard
+- Quick stats (success rate, active classes, upcoming bookings)
+- Next class countdown
+- Recent activity timeline
+- Booking history with filtering and pagination
 
 ## Design System
 
-This project uses a comprehensive design system and component library for all UI development, featuring a modern fitness app aesthetic inspired by Peloton, ClassPass, and Strava.
+This project uses a comprehensive design system with **19 reusable UI components** in `components/ui/`:
 
-### Component Library
+| Category | Components |
+|----------|------------|
+| Core | Button, Badge, Card, Modal |
+| Form | Input, Select, TimeInput, Checkbox, FormField |
+| Navigation | DropdownMenu, Tabs (with TabPanel) |
+| Feedback | Alert, Toast, Skeleton |
+| Display | StatusIndicator, StatCard, Divider |
+| Layout | Header, Footer |
 
-**Location:** `components/ui/`
+**Typography:** Sora (headings) + DM Sans (body)
 
-All UI components are built using reusable, accessible components from the design system:
-
-- **Button** - All action buttons with variants (primary, secondary, success, danger, ghost, outline)
-- **Card** - Container component for grouped content
-- **Badge** - Status indicators for booking states
-- **FormField** - Consistent form input wrapper with labels, errors, helper text
-- **Modal** - Dialog/overlay component for confirmations and forms
-- **StatusIndicator** - Booking status display with colored dots
-- **StatCard** - Dashboard metric widgets
-
-### Design Tokens
-
-All styling uses semantic design tokens defined in [tailwind.config.ts](tailwind.config.ts):
-
-- **Colors:** Primary (blue), secondary (orange), success (green), warning (amber), danger (red), status colors
-- **Typography:** Inter font with consistent weight scale
-- **Spacing:** Standard Tailwind spacing (4px base unit)
-- **Shadows:** Custom shadows for cards, hover states, and floating elements
-- **Accessibility:** WCAG AA compliant with 4.5:1 color contrast
-
-### Development Rules
-
-**IMPORTANT:** All UI development must use the component library:
-
-1. ❌ NEVER create inline buttons with Tailwind classes
-2. ❌ NEVER create inline form fields
-3. ❌ NEVER use arbitrary colors
-4. ✅ ALWAYS use components from `components/ui/`
-5. ✅ ALWAYS use design tokens from [tailwind.config.ts](tailwind.config.ts)
-6. ✅ ALWAYS use the frontend-design skill (`/frontend-design`) for new UI/UX work
-
-### Documentation
-
-- **[Design System](docs/DESIGN_SYSTEM.md)** - Complete design system documentation (color palette, typography, spacing, accessibility)
-- **[Component Library](docs/COMPONENT_LIBRARY.md)** - Component API reference with examples
-- **[CLAUDE.md Section 13](CLAUDE.md#13-design-system--component-library-critical-for-ui-development)** - Design system rules for AI development
+**Documentation:**
+- [Design System](docs/DESIGN_SYSTEM.md) - Colors, typography, spacing
+- [Component Library](docs/COMPONENT_LIBRARY.md) - Component APIs and examples
 
 ## Booking Automation
 
-The app includes automated booking via GitHub Actions that runs every 15 minutes to book classes on the gym website.
+The booking system uses an event-driven architecture:
 
-### Quick Start
+1. **User creates class** → Next.js sends event to Inngest
+2. **Inngest waits** until exact booking window time
+3. **Inngest triggers** GitHub Actions via API
+4. **GitHub Actions** runs Puppeteer to book the class
+5. **Daily scheduler** (midnight UTC) ensures all classes are scheduled
 
-1. **Set up GitHub Actions secrets** (see [GitHub Actions Setup Guide](./docs/GITHUB_ACTIONS_SETUP.md)):
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `ENCRYPTION_KEY`
+### Testing Commands
 
-2. **Test locally**:
-   ```bash
-   # Test database query
-   npm run test:booking-query
-   
-   # Test database helpers
-   npm run test:database-helpers
-   
-   # Dry-run test (no actual bookings)
-   npm run test:booking-dry-run
-   
-   # Run full automation (makes real bookings!)
-   npm run automation:run
-   ```
-
-3. **Push to GitHub** - The workflow will run automatically every 15 minutes
+```bash
+npm run test:booking-dry-run    # Safe dry-run (always run first)
+npm run test:single-booking     # REAL booking - use with caution
+```
 
 ### Documentation
 
-- [Booking Automation Guide](./docs/BOOKING_AUTOMATION.md) - Full automation system documentation
-- [GitHub Actions Setup](./docs/GITHUB_ACTIONS_SETUP.md) - Step-by-step setup instructions
+- [Booking Automation Guide](docs/BOOKING_AUTOMATION.md) - Full system documentation
+- [GitHub Actions Setup](docs/GITHUB_ACTIONS_SETUP.md) - Setup instructions
 
-## Next Steps
+## Documentation
 
-See the [PRD](./docs/My%20Workout%20Scheduler%20PRD.md) for the full roadmap. Upcoming features:
+| Doc | Purpose |
+|-----|---------|
+| [PRD](docs/My%20Workout%20Scheduler%20PRD.md) | Full product spec and architecture |
+| [BACKLOG.md](docs/BACKLOG.md) | Current priorities and tasks |
+| [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | Design tokens and patterns |
+| [COMPONENT_LIBRARY.md](docs/COMPONENT_LIBRARY.md) | Component APIs |
+| [BOOKING_AUTOMATION.md](docs/BOOKING_AUTOMATION.md) | Automation details |
+| [ERROR_MESSAGES.md](docs/ERROR_MESSAGES.md) | Error catalog |
 
-- Booking history and status tracking UI
-- Email notifications
-- Vacation mode (date range pause)
+## Deployment
 
-## Deployment to Vercel
+### Vercel
 
-1. Push your code to GitHub
+1. Push code to GitHub
 2. Import project in Vercel
 3. Add environment variables in Vercel dashboard
-4. Deploy!
+4. Deploy
 
-The project is configured for zero-config Vercel deployment.
+### Post-Deploy
+
+- Sync Inngest functions in Inngest dashboard
+- Configure GitHub Actions secrets for Puppeteer execution
+
+## License
+
+Private project - not for redistribution.
