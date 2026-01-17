@@ -30,6 +30,7 @@
 
 | Doc | Purpose | When to Use |
 |-----|---------|-------------|
+| [README.md](README.md) | Project overview, setup, tech stack | Onboarding, external-facing info |
 | [PRD](docs/My%20Workout%20Scheduler%20PRD.md) | Full product spec, features, architecture | Understanding requirements, feature decisions |
 | [BACKLOG.md](docs/BACKLOG.md) | Current priorities, pre-MVP tasks | What to work on next |
 | [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | Colors, typography, spacing, patterns | Any UI/styling work |
@@ -132,13 +133,15 @@ Migration → types → server action → component (in that order)
 
 | Change Type | Update |
 |-------------|--------|
-| Version bump | CLAUDE.md version line + PRD version history |
+| Version bump | CLAUDE.md version line + PRD version history + README.md version |
 | New feature complete | PRD version history |
+| Tech stack change | README.md tech stack section |
 | Design token/pattern | `DESIGN_SYSTEM.md` + `/prototype/design-system-components` |
 | Component API | `COMPONENT_LIBRARY.md` + `/prototype/design-system-components` |
 | Bug fix pattern | `ERROR_MESSAGES.md` |
 | Config/infrastructure task | `PRE_LAUNCH_CHECKLIST.md` |
 | Development task | `BACKLOG.md` (appropriate section) |
+| Major architecture change | README.md (features, automation, structure sections) |
 
 ### BACKLOG.md Structure (STRICT)
 
