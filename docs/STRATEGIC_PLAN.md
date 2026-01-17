@@ -623,7 +623,7 @@ Requirements:
 
 **Deliverables:**
 1. YMCA main site booking flow (replaces Daxko)
-2. Updated book-class.ts to use new flow
+2. Updated booking-automation.ts to use new flow
 3. Deprecate/archive Daxko-specific code
 
 #### Prompt 2A: Investigate YMCA Main Site
@@ -632,7 +632,7 @@ Requirements:
 I'm building My Workout Scheduler, which currently uses Puppeteer to automate gym class bookings on Daxko. I need to switch to booking via the YMCA main site (ymcawnc.org) because it has the complete class schedule while Daxko only has a subset.
 
 Context:
-- Current Puppeteer code is in `scripts/book-class.ts` (targets Daxko)
+- Current Puppeteer code is in `scripts/booking-automation.ts` (targets Daxko)
 - Target site: https://www.ymcawnc.org/schedules/
 - User credentials are stored encrypted in gym_credentials table
 - Same credentials should work for YMCA main site login
@@ -667,7 +667,7 @@ I've investigated the YMCA main site booking flow and documented it in `docs/YMC
 - We can REUSE existing Daxko booking logic after the GroupExPro login step
 
 Context:
-- Current Daxko code: `scripts/book-class.ts`
+- Current Daxko code: `scripts/booking-automation.ts`
 - Flow documentation: `docs/YMCA_MAIN_SITE_BOOKING_FLOW.md`
 - Schedule page: https://www.ymcawnc.org/schedules?date=YYYY-MM-DD
 - GroupExPro login: https://www.groupexpro.com/gxp/auth/login/...
@@ -687,7 +687,7 @@ Complete Booking Flow:
    - Detect confirmation
 
 Requirements:
-1. Update booking function in `scripts/book-class.ts` for the new hybrid flow
+1. Update booking function in `scripts/booking-automation.ts` for the new hybrid flow
 2. Implement:
    - Navigate to YMCA schedule page with date parameter (gym timezone!)
    - Find class by name/time/branch and extract class ID from Register link
@@ -713,7 +713,7 @@ IMPORTANT: Do a dry-run first before any real booking attempts.
 I've built the YMCA main site booking flow to replace Daxko. Now I need to ensure everything is integrated correctly and test the full flow.
 
 Context:
-- New YMCA booking code in `scripts/book-class.ts`
+- New YMCA booking code in `scripts/booking-automation.ts`
 - Inngest functions in `lib/inngest/`
 - Old Daxko code archived
 

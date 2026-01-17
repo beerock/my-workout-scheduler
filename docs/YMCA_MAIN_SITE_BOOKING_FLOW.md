@@ -15,6 +15,8 @@ The YMCA main site (ymcawnc.org) uses a **hybrid booking system**:
 > - YMCA may eventually use pure Daxko for both login and booking
 > - **DO NOT archive existing Daxko login/booking code** - we may need it again
 > - Keep both GroupExPro and Daxko login flows available in the codebase
+>
+> **Backup file:** `scripts/booking-automation-daxko-backup.ts` contains the full original Daxko-only flow (two-step login, branch selection, booking). If YMCA reverts to pure Daxko, reference this backup.
 
 ---
 
@@ -108,18 +110,61 @@ Each class card displays:
 
 ### Class States (CTA Buttons)
 
-The class card CTA indicates booking availability. These map to our existing Daxko logic:
+The class card CTA indicates booking availability. These states map directly to our existing Daxko automation logic in `scripts/booking-automation.ts`:
 
-| CTA on YMCA Site | Meaning | Action |
-|------------------|---------|--------|
-| **Register** | Spots available | Click → proceed to booking |
-| **Waitlist Only** | Full, waitlist open | Click → join waitlist |
-| **Full** | Completely full, no waitlist | Cannot click, skip booking |
-| **No CTA present** | Class cancelled, registration closed, or other | Treat as unbookable (TBD - needs confirmation) |
+| # | YMCA Site Detection | Daxko State (existing code) | Action |
+|---|---------------------|----------------------------|--------|
+| 1 | **"Register"** CTA | `"Reserve"` button | Click → proceed to booking |
+| 2 | **"Waitlist Only"** CTA | `"Reserve"` + waitlist text | Click → join waitlist |
+| 3 | **"Full"** CTA | `"Class Full"` | Cannot book, skip |
+| 4 | **No CTA present** | `"Not Reservable"` | Cannot book, skip |
+| 5 | **"CANCELED: ..."** prefix in class name | `"Canceled"` | **Do NOT click CTA** - see warning below |
 
-**Note:** We need to monitor for additional states like "Class Cancelled", "Registration Closed", etc. For now, assume no CTA = unbookable.
+→ Refer to existing Daxko automation code (`scripts/booking-automation.ts`) for state-to-email trigger logic.
 
-**Reusable Logic:** The CTA detection mirrors our existing Daxko `ChooseMembers.mvc` page logic where we check for "Reserve" vs "Waitlist" vs disabled button states.
+---
+
+### ⚠️ Critical: Cancelled Class Behavior (State 5)
+
+**Important Discovery:** On YMCA site, cancelled classes are deceptive:
+
+1. Class name shows: `"CANCELED: BODYPUMP"` or `"CANCELED: Cycle"` (prefix + actual class name)
+2. **"Register" CTA is still present and clickable**
+3. Clicking Register → GroupExPro login works
+4. Login → Daxko Reserve page works
+5. Select member checkbox → works
+6. **Click Reserve → ERROR:** `"Cannot add exercisers to BODYPUMP as the class has been cancelled."`
+
+**Automation MUST check class name for `"CANCELED: "` prefix BEFORE clicking CTA** to avoid wasted Puppeteer flow (login, navigation, error).
+
+---
+
+### Detection Order for YMCA Site Automation
+
+Since we already parse class name to find/match the class, checking for `"CANCELED: "` is essentially free:
+
+```
+1. Find class on schedule by matching name/time/location (class name already parsed)
+2. IF class name starts with "CANCELED: " → STOP, return "cancelled" (do NOT click CTA)
+3. ELSE check CTA:
+   - "Register" → Bookable, proceed with flow
+   - "Waitlist Only" → Join waitlist
+   - "Full" → Unbookable (no waitlist)
+   - No CTA → Unbookable (not reservable)
+```
+
+**Alternative approach:** Check CTA first, then only check `"CANCELED: "` if CTA is "Register". Either works since we already have the class name - the current order prioritizes catching the cancelled edge case early.
+
+---
+
+### Pagination Note
+
+When paginating through classes on the same day (pagination at bottom of list):
+- Page does NOT auto-scroll to top after pagination
+- Automation must scroll to top of class list after each pagination click
+- Otherwise may miss classes at top of next page
+
+**Reusable Logic:** The state detection mirrors our existing Daxko `ChooseMembers.mvc` page logic where we check for "Reserve" vs "Waitlist" vs disabled button states.
 
 ---
 
@@ -224,5 +269,5 @@ This is the same UI as our current automation, so existing booking logic can be 
 
 ---
 
-*Last Updated: January 16, 2026*
+*Last Updated: January 17, 2026*
 *Verified via live browser testing with user credentials*
