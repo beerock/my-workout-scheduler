@@ -103,8 +103,23 @@ Each class card displays:
 - **Location** (e.g., "Reuter Family YMCA Cycle Studio")
 - **Instructor name**
 - **Availability** (e.g., "5 spots left")
-- **Register button** → links to GroupExPro (contains class ID in URL)
+- **CTA button** (see Class States below)
 - **Add to calendar** option (ICalendar, Google Calendar, Outlook)
+
+### Class States (CTA Buttons)
+
+The class card CTA indicates booking availability. These map to our existing Daxko logic:
+
+| CTA on YMCA Site | Meaning | Action |
+|------------------|---------|--------|
+| **Register** | Spots available | Click → proceed to booking |
+| **Waitlist Only** | Full, waitlist open | Click → join waitlist |
+| **Full** | Completely full, no waitlist | Cannot click, skip booking |
+| **No CTA present** | Class cancelled, registration closed, or other | Treat as unbookable (TBD - needs confirmation) |
+
+**Note:** We need to monitor for additional states like "Class Cancelled", "Registration Closed", etc. For now, assume no CTA = unbookable.
+
+**Reusable Logic:** The CTA detection mirrors our existing Daxko `ChooseMembers.mvc` page logic where we check for "Reserve" vs "Waitlist" vs disabled button states.
 
 ---
 
