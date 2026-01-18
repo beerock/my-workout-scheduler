@@ -226,6 +226,70 @@ Currently, notifications are not implemented. You can:
    - Look for unexpected behavior
    - Monitor booking success rates
 
+## Cache Management
+
+The workflow caches `node_modules` and Puppeteer browsers (`~/.cache/puppeteer`) to speed up runs. Here's what you need to know:
+
+### How It Works
+
+| Aspect | Behavior |
+|--------|----------|
+| **Cache key** | Based on `package-lock.json` hash — changes automatically when dependencies update |
+| **Expiration** | GitHub evicts caches not accessed in 7 days |
+| **Storage limit** | 10GB per repo (oldest caches evicted first) |
+| **Expected times** | ~90s (cache miss) → ~60s (cache hit) |
+
+### What Gets Cached
+
+```yaml
+path: |
+  node_modules
+  ~/.cache/puppeteer
+```
+
+The `npx puppeteer browsers install chrome` step runs on every workflow to ensure Chrome is available, but completes quickly (~1s) when already cached.
+
+### When to Clear Cache
+
+Clear the cache if you experience:
+- Mysterious workflow failures after it previously worked
+- After major Node.js version upgrade
+- After Puppeteer major version upgrade (new Chrome version needed)
+- Strange Puppeteer/Chrome errors
+
+### Cache Management Commands
+
+```bash
+# List all caches
+gh cache list
+
+# Delete a specific cache by key
+gh cache delete <cache-key>
+
+# Delete all caches (nuclear option)
+gh cache list --json key -q '.[].key' | xargs -I {} gh cache delete {}
+```
+
+### Via GitHub UI
+
+1. Go to repository → **Actions** → **Caches** (left sidebar)
+2. View cache sizes and last accessed times
+3. Delete individual caches as needed
+
+### Troubleshooting Cache Issues
+
+**Symptom**: "Could not find Chrome" error
+
+**Cause**: Puppeteer cache missing or corrupted
+
+**Fix**: Delete the cache and re-run workflow:
+```bash
+gh cache list  # Find cache key starting with "Linux-deps-"
+gh cache delete Linux-deps-xxxxx
+```
+
+---
+
 ## Next Steps
 
 After setup is complete:
