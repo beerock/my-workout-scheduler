@@ -427,7 +427,7 @@ Password confirmation on signup, resend verification on login, Cloudflare Turnst
 ### GitHub Actions Workflow Caching ✅
 **Completed:** January 18, 2026
 
-Added node_modules caching to booking automation workflow. Reduces cold start from ~70s to ~36s on cache hits by skipping npm ci when package-lock.json unchanged.
+Added caching for `node_modules` and Puppeteer browsers (`~/.cache/puppeteer`) to booking automation workflow. Reduces run time from ~90s to ~60s on cache hits. Cache auto-invalidates when `package-lock.json` changes. See `docs/GITHUB_ACTIONS_SETUP.md` for cache management commands.
 
 ---
 
