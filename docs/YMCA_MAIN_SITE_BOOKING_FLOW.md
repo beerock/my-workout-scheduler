@@ -137,6 +137,11 @@ The class card CTA indicates booking availability. These states map directly to 
 
 **Automation MUST check class name for `"CANCELED: "` prefix BEFORE clicking CTA** to avoid wasted Puppeteer flow (login, navigation, error).
 
+**Use Fuzzy Matching:** Staff may type variations like "CANCELED:", "Canceled:", "CANCELLED -", etc. Use regex pattern:
+```typescript
+const cancelledPattern = new RegExp(`cancel[led]*[:\\s\\-]*${classTypeLower}`, 'i');
+```
+
 ---
 
 ### Detection Order for YMCA Site Automation
@@ -157,9 +162,18 @@ Since we already parse class name to find/match the class, checking for `"CANCEL
 
 ---
 
-### Pagination Note
+### Pagination
 
-When paginating through classes on the same day (pagination at bottom of list):
+**CRITICAL:** YMCA schedule has TWO navigation elements with similar arrows:
+
+| Location | Element | Class | Purpose |
+|----------|---------|-------|---------|
+| **TOP** | `< Mon, Jan 19 >` | `.schedule-dashboard__arrow` | Changes DATE (day navigation) |
+| **BOTTOM** | `|< < Page 1 of 2 > >|` | `.schedule-dashboard__pager--next` | Changes PAGE (class list) |
+
+**Always use the BOTTOM pagination** (`.schedule-dashboard__pager--next`) to find classes on later pages. Using the top arrows will navigate to a different day!
+
+**Post-pagination behavior:**
 - Page does NOT auto-scroll to top after pagination
 - Automation must scroll to top of class list after each pagination click
 - Otherwise may miss classes at top of next page
@@ -168,21 +182,28 @@ When paginating through classes on the same day (pagination at bottom of list):
 
 ---
 
-## Login Flow (GroupExPro)
+## Login Flow (GroupExPro → Daxko)
 
-**Single-step login** (unlike Daxko's 2-step flow):
+**Key Discovery (Jan 18, 2026):** GroupExPro login page is a **redirect service** - don't enter credentials there!
 
-### Form Elements
-| Element | Type | Notes |
-|---------|------|-------|
-| Email | text input | Same credentials as Daxko |
-| Password | password input | Same credentials as Daxko |
-| Login | submit button | Redirects to Daxko after success |
+### Correct Flow
+1. Click "Register" on YMCA schedule → redirects to GroupExPro login page
+2. **Click "Login" button on GroupExPro (do NOT enter credentials)**
+3. Redirects to Daxko login page (`operations.daxko.com/.../find_account`)
+4. Complete Daxko 2-step login:
+   - Enter email → Click "Submit"
+   - Enter password → Click "Login"
+   - **Do NOT check "Keep me logged in"** (can cause issues)
+5. Redirects to `ChooseMembers.mvc` for booking
 
-### Available Tabs
-- Login
-- Create a Login
-- Forgot Password
+### Why This Works
+- GroupExPro and Daxko are the same company
+- Clicking Login on GroupExPro triggers SSO-style redirect to Daxko
+- Daxko handles actual authentication
+- Same credentials work because it's ultimately Daxko auth
+
+### Common Mistake
+Entering credentials directly on GroupExPro login form will fail or behave unexpectedly. Always click through to Daxko.
 
 ---
 
@@ -201,6 +222,43 @@ When paginating through classes on the same day (pagination at bottom of list):
 
 ---
 
+## Confirmed Working (Jan 18, 2026)
+
+### Comprehensive Test Results
+
+All 5 class states tested and verified:
+
+| # | Scenario | Test Class | Result | Notes |
+|---|----------|------------|--------|-------|
+| 1 | **Register** | Strength Fusion Mon 8am @ Woodfin | `CONFIRMED` ✅ | Full booking flow completed |
+| 2 | **Waitlist** | Racquetball Mon 9:30am @ Asheville | `WAITLISTED` ✅ | Added to waitlist successfully |
+| 3 | **Full** | BODYPUMP Mon 6am @ Asheville | `FAILED` ✅ | Detected as full, retry message shown |
+| 4 | **Cancelled** | BODYBALANCE Mon 7:15am @ Asheville | `FAILED` ✅ | Detected "CANCELED:" prefix, stopped before login |
+| 5 | **Not Reservable** | Power Moves Mon 1pm @ Asheville | `FAILED` ✅ | Detected no CTA (PAID PROGRAM class) |
+| 6 | **Pagination** | Racquetball Mon 2pm @ Asheville | `WAITLISTED` ✅ | Found on page 2 using correct pagination |
+
+### Original Test
+- ✅ **Cycle 9:00am Monday @ Asheville YMCA** - Booked successfully via YMCA hybrid flow
+
+---
+
+## Working Selectors
+
+These selectors are confirmed working as of Jan 18, 2026:
+
+| Element | Selector | Notes |
+|---------|----------|-------|
+| Class card container | `.schedules-data__row` | Each class is a row |
+| Register/Waitlist CTA | `a.btn-primary[href*="groupexpro"]` | Links to GroupExPro |
+| Daxko email field | `input[type="text"], input[type="email"]` | First step of 2-step login |
+| Daxko password field | `input[type="password"]` | Second step of 2-step login |
+| Daxko Submit button | `button[type="submit"], input[type="submit"]` | After email entry |
+| Daxko Login button | `button:has-text("Login"), input[value="Login"]` | After password entry |
+
+**Selector Gotcha:** Don't use `[class*="class"]` for finding class cards - it matches the page container element, not individual class rows.
+
+---
+
 ## Implementation Notes
 
 ### Credentials
@@ -215,6 +273,20 @@ When constructing schedule URLs with date parameters:
 - Always use the gym's timezone (America/New_York for YMCA of WNC)
 - Use `lib/date-utils.ts` for date calculations
 - Incorrect timezone could show wrong day's classes
+
+### Time Matching Gotcha
+
+**CRITICAL:** Use word boundary regex when matching times!
+
+```typescript
+// ❌ BAD - "12:00pm" will match "2:00pm" as substring
+text.includes('2:00pm')
+
+// ✅ GOOD - Word boundary prevents false matches
+new RegExp('\\b2:00pm\\b').test(text)
+```
+
+Without word boundaries, searching for "2:00pm" will incorrectly match "12:00pm" because "2:00pm" is a substring of "12:00pm".
 
 ### Puppeteer Automation Strategy
 Since the booking happens on Daxko after GroupExPro login:
@@ -269,5 +341,5 @@ This is the same UI as our current automation, so existing booking logic can be 
 
 ---
 
-*Last Updated: January 17, 2026*
-*Verified via live browser testing with user credentials*
+*Last Updated: January 18, 2026*
+*Verified via comprehensive testing - All 5 class states + pagination tested*
