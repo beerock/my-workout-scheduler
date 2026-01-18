@@ -162,9 +162,18 @@ Since we already parse class name to find/match the class, checking for `"CANCEL
 
 ---
 
-### Pagination Note
+### Pagination
 
-When paginating through classes on the same day (pagination at bottom of list):
+**CRITICAL:** YMCA schedule has TWO navigation elements with similar arrows:
+
+| Location | Element | Class | Purpose |
+|----------|---------|-------|---------|
+| **TOP** | `< Mon, Jan 19 >` | `.schedule-dashboard__arrow` | Changes DATE (day navigation) |
+| **BOTTOM** | `|< < Page 1 of 2 > >|` | `.schedule-dashboard__pager--next` | Changes PAGE (class list) |
+
+**Always use the BOTTOM pagination** (`.schedule-dashboard__pager--next`) to find classes on later pages. Using the top arrows will navigate to a different day!
+
+**Post-pagination behavior:**
 - Page does NOT auto-scroll to top after pagination
 - Automation must scroll to top of class list after each pagination click
 - Otherwise may miss classes at top of next page
@@ -215,6 +224,20 @@ Entering credentials directly on GroupExPro login form will fail or behave unexp
 
 ## Confirmed Working (Jan 18, 2026)
 
+### Comprehensive Test Results
+
+All 5 class states tested and verified:
+
+| # | Scenario | Test Class | Result | Notes |
+|---|----------|------------|--------|-------|
+| 1 | **Register** | Strength Fusion Mon 8am @ Woodfin | `CONFIRMED` ✅ | Full booking flow completed |
+| 2 | **Waitlist** | Racquetball Mon 9:30am @ Asheville | `WAITLISTED` ✅ | Added to waitlist successfully |
+| 3 | **Full** | BODYPUMP Mon 6am @ Asheville | `FAILED` ✅ | Detected as full, retry message shown |
+| 4 | **Cancelled** | BODYBALANCE Mon 7:15am @ Asheville | `FAILED` ✅ | Detected "CANCELED:" prefix, stopped before login |
+| 5 | **Not Reservable** | Power Moves Mon 1pm @ Asheville | `FAILED` ✅ | Detected no CTA (PAID PROGRAM class) |
+| 6 | **Pagination** | Racquetball Mon 2pm @ Asheville | `WAITLISTED` ✅ | Found on page 2 using correct pagination |
+
+### Original Test
 - ✅ **Cycle 9:00am Monday @ Asheville YMCA** - Booked successfully via YMCA hybrid flow
 
 ---
@@ -250,6 +273,20 @@ When constructing schedule URLs with date parameters:
 - Always use the gym's timezone (America/New_York for YMCA of WNC)
 - Use `lib/date-utils.ts` for date calculations
 - Incorrect timezone could show wrong day's classes
+
+### Time Matching Gotcha
+
+**CRITICAL:** Use word boundary regex when matching times!
+
+```typescript
+// ❌ BAD - "12:00pm" will match "2:00pm" as substring
+text.includes('2:00pm')
+
+// ✅ GOOD - Word boundary prevents false matches
+new RegExp('\\b2:00pm\\b').test(text)
+```
+
+Without word boundaries, searching for "2:00pm" will incorrectly match "12:00pm" because "2:00pm" is a substring of "12:00pm".
 
 ### Puppeteer Automation Strategy
 Since the booking happens on Daxko after GroupExPro login:
@@ -305,4 +342,4 @@ This is the same UI as our current automation, so existing booking logic can be 
 ---
 
 *Last Updated: January 18, 2026*
-*Verified via live booking test - Cycle 9:00am Monday @ Asheville YMCA*
+*Verified via comprehensive testing - All 5 class states + pagination tested*
