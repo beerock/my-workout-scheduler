@@ -341,5 +341,91 @@ This is the same UI as our current automation, so existing booking logic can be 
 
 ---
 
+## Performance Optimization (January 18, 2026)
+
+### Problem Discovery
+
+During real-world testing, we discovered a critical performance issue:
+
+| Metric | Target | Actual |
+|--------|--------|--------|
+| Total booking time | <60s | **90-120s** |
+| Popular class fill time | ~90s | N/A |
+
+**Real-World Impact:** A class opened with 30 spots. By the time automation completed (~90s), only 1 spot remained. User had to manually book.
+
+### Root Cause Analysis
+
+Time breakdown revealed the bottleneck was NOT our automation code:
+
+| Phase | Time | Location |
+|-------|------|----------|
+| GitHub Actions queue | 10-20s | GitHub |
+| Checkout + Node setup | 10-20s | GitHub |
+| **npm ci** | **15-25s** | **GitHub** |
+| **Puppeteer download** | **15-25s** | **GitHub** |
+| Puppeteer automation | 32-40s | Our code |
+| **TOTAL** | **90-120s** | |
+
+**Key Insight:** The automation code was fast (32-40s). The overhead was GitHub Actions cold start—downloading dependencies on every run.
+
+### Solution: Dependency Caching
+
+Implemented caching for both `node_modules` and Puppeteer browsers:
+
+```yaml
+- name: Cache node_modules and Puppeteer
+  uses: actions/cache@v4
+  with:
+    path: |
+      node_modules
+      ~/.cache/puppeteer
+    key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}
+
+- name: Install dependencies
+  if: steps.cache-deps.outputs.cache-hit != 'true'
+  run: npm ci
+
+- name: Ensure Puppeteer browsers installed
+  run: npx puppeteer browsers install chrome
+```
+
+**Important:** Must cache `~/.cache/puppeteer` separately—Puppeteer stores Chrome outside `node_modules`.
+
+### Results
+
+| Metric | Before | After (Cache Hit) |
+|--------|--------|-------------------|
+| Total booking time | 90-120s | **~60s** |
+| Cold start overhead | 50-80s | **~20s** |
+| Cache restore | N/A | ~10s |
+
+✅ Now meets <60s KPI target on cache hits.
+
+### Gotcha: Initial Fix Attempt Failed
+
+First attempt only cached `node_modules`, which caused:
+```
+Could not find Chrome (ver. 143.0.7499.169)
+```
+
+Puppeteer installs Chrome to `~/.cache/puppeteer`, not `node_modules`. When `npm ci` was skipped on cache hit, the postinstall script that downloads Chrome never ran.
+
+**Fix:** Cache both directories AND always run `npx puppeteer browsers install chrome` (fast when already cached).
+
+### Future Optimization Options
+
+If <60s still insufficient for highly competitive classes:
+
+| Option | Expected Time | Cost |
+|--------|---------------|------|
+| Pre-built Docker image | ~30s | Free |
+| Always-on worker (Railway/Render) | ~10s | $5-15/mo |
+
+See `docs/STRATEGIC_PLAN.md` Part 9 for full analysis.
+
+---
+
 *Last Updated: January 18, 2026*
 *Verified via comprehensive testing - All 5 class states + pagination tested*
+*Performance optimization implemented - 60s booking time achieved*
