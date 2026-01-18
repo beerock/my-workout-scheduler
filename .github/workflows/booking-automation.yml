@@ -22,13 +22,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
 
       - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
-
-      - name: Install Puppeteer browsers
-        run: npx puppeteer browsers install chrome
 
       - name: Run booking automation (single class)
         if: ${{ inputs.class_id != '' }}
