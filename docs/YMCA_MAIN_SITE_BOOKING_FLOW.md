@@ -137,6 +137,11 @@ The class card CTA indicates booking availability. These states map directly to 
 
 **Automation MUST check class name for `"CANCELED: "` prefix BEFORE clicking CTA** to avoid wasted Puppeteer flow (login, navigation, error).
 
+**Use Fuzzy Matching:** Staff may type variations like "CANCELED:", "Canceled:", "CANCELLED -", etc. Use regex pattern:
+```typescript
+const cancelledPattern = new RegExp(`cancel[led]*[:\\s\\-]*${classTypeLower}`, 'i');
+```
+
 ---
 
 ### Detection Order for YMCA Site Automation
@@ -168,21 +173,28 @@ When paginating through classes on the same day (pagination at bottom of list):
 
 ---
 
-## Login Flow (GroupExPro)
+## Login Flow (GroupExPro → Daxko)
 
-**Single-step login** (unlike Daxko's 2-step flow):
+**Key Discovery (Jan 18, 2026):** GroupExPro login page is a **redirect service** - don't enter credentials there!
 
-### Form Elements
-| Element | Type | Notes |
-|---------|------|-------|
-| Email | text input | Same credentials as Daxko |
-| Password | password input | Same credentials as Daxko |
-| Login | submit button | Redirects to Daxko after success |
+### Correct Flow
+1. Click "Register" on YMCA schedule → redirects to GroupExPro login page
+2. **Click "Login" button on GroupExPro (do NOT enter credentials)**
+3. Redirects to Daxko login page (`operations.daxko.com/.../find_account`)
+4. Complete Daxko 2-step login:
+   - Enter email → Click "Submit"
+   - Enter password → Click "Login"
+   - **Do NOT check "Keep me logged in"** (can cause issues)
+5. Redirects to `ChooseMembers.mvc` for booking
 
-### Available Tabs
-- Login
-- Create a Login
-- Forgot Password
+### Why This Works
+- GroupExPro and Daxko are the same company
+- Clicking Login on GroupExPro triggers SSO-style redirect to Daxko
+- Daxko handles actual authentication
+- Same credentials work because it's ultimately Daxko auth
+
+### Common Mistake
+Entering credentials directly on GroupExPro login form will fail or behave unexpectedly. Always click through to Daxko.
 
 ---
 
@@ -198,6 +210,29 @@ When paginating through classes on the same day (pagination at bottom of list):
 | Class ID in URL | Not visible | Visible in Register link |
 | **Credentials** | **Same** | **Same** |
 | **Booking UI** | **ChooseMembers.mvc** | **ChooseMembers.mvc** (same!) |
+
+---
+
+## Confirmed Working (Jan 18, 2026)
+
+- ✅ **Cycle 9:00am Monday @ Asheville YMCA** - Booked successfully via YMCA hybrid flow
+
+---
+
+## Working Selectors
+
+These selectors are confirmed working as of Jan 18, 2026:
+
+| Element | Selector | Notes |
+|---------|----------|-------|
+| Class card container | `.schedules-data__row` | Each class is a row |
+| Register/Waitlist CTA | `a.btn-primary[href*="groupexpro"]` | Links to GroupExPro |
+| Daxko email field | `input[type="text"], input[type="email"]` | First step of 2-step login |
+| Daxko password field | `input[type="password"]` | Second step of 2-step login |
+| Daxko Submit button | `button[type="submit"], input[type="submit"]` | After email entry |
+| Daxko Login button | `button:has-text("Login"), input[value="Login"]` | After password entry |
+
+**Selector Gotcha:** Don't use `[class*="class"]` for finding class cards - it matches the page container element, not individual class rows.
 
 ---
 
@@ -269,5 +304,5 @@ This is the same UI as our current automation, so existing booking logic can be 
 
 ---
 
-*Last Updated: January 17, 2026*
-*Verified via live browser testing with user credentials*
+*Last Updated: January 18, 2026*
+*Verified via live booking test - Cycle 9:00am Monday @ Asheville YMCA*
