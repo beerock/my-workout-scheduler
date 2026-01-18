@@ -265,12 +265,15 @@ async function findClassOnYMCA(
             // Handle variations
             text.includes(classTypeLower.replace(/\s+/g, ''))
 
-          // Check for time match
+          // Check for time match using word boundaries to prevent "12:00pm" matching "2:00pm"
+          // Use regex with \b word boundary - time strings only contain safe chars (digits, colon, letters)
+          const time1 = targetTime12.toLowerCase()
+          const time2 = targetTime12WithSpace.toLowerCase()
+          const time3 = targetTime12.replace(':', '').toLowerCase()
           const matchesTime =
-            text.includes(targetTime12.toLowerCase()) ||
-            text.includes(targetTime12WithSpace.toLowerCase()) ||
-            // Handle variations without colon
-            text.includes(targetTime12.replace(':', '').toLowerCase())
+            new RegExp('\\b' + time1 + '\\b').test(text) ||
+            new RegExp('\\b' + time2 + '\\b').test(text) ||
+            new RegExp('\\b' + time3 + '\\b').test(text)
 
           if (matchesClass && matchesTime) {
             // Found the class! Now check status
@@ -412,15 +415,29 @@ async function findClassOnYMCA(
 
         // Click next page button
         console.log(`Clicking next page (going to page ${paginationInfo.currentPage + 1})...`)
-        const nextButton = await page.$('a[aria-label*="next" i], button[aria-label*="next" i], a:has-text("chevron_right"), a:has-text(">"):not([href])')
+        // Note: Use evaluate() for complex selectors since Puppeteer uses standard CSS (not Playwright selectors)
+        const nextButton = null // Skip page.$() - use evaluate fallback below
 
         if (!nextButton) {
-          // Fallback: try clicking by evaluating in page context
+          // Click the BOTTOM pagination (class list), NOT the TOP date navigation
+          // YMCA uses different classes:
+          //   - TOP (date nav): .schedule-dashboard__arrow with aria-label="next date"
+          //   - BOTTOM (pagination): .schedule-dashboard__pager--next
           const clicked = await page.evaluate(() => {
+            // First try: specific YMCA pagination class (most reliable)
+            const pagerNext = document.querySelector('.schedule-dashboard__pager--next') as HTMLElement
+            if (pagerNext) {
+              pagerNext.click()
+              return true
+            }
+            // Fallback: find chevron_right that's NOT the date navigation
             const buttons = Array.from(document.querySelectorAll('a, button'))
             const next = buttons.find(el => {
               const text = el.textContent?.trim() || ''
-              return text === '>' || text === 'chevron_right'
+              const ariaLabel = el.getAttribute('aria-label') || ''
+              // Skip date navigation arrows
+              if (ariaLabel.includes('date')) return false
+              return text === 'chevron_right' && !el.classList.contains('schedule-dashboard__arrow')
             })
             if (next) {
               (next as HTMLElement).click()
