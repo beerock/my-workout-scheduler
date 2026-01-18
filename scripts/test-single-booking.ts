@@ -192,11 +192,8 @@ async function testSingleBooking() {
       delete process.env.PUPPETEER_HEADLESS
     }
 
-    // Keep browser open for inspection (only in local development, not in CI)
-    if (!IS_PRODUCTION && !headless) {
-      process.env.KEEP_BROWSER_OPEN = 'true'
-      log.info('🔍 Browser will remain open for inspection after booking\n')
-    }
+    // Note: Set KEEP_BROWSER_OPEN=true manually if you want to inspect the browser after booking
+    // Example: KEEP_BROWSER_OPEN=true npx tsx scripts/test-single-booking.ts <id> --headless=false
 
     const bookingResult = await bookClass(bookingParams)
 
