@@ -712,29 +712,129 @@ IMPORTANT: Do a dry-run first before any real booking attempts.
 #### Prompt 2C: Update Integration & Test
 
 ```
-I've built the YMCA main site booking flow to replace Daxko. Now I need to ensure everything is integrated correctly and test the full flow.
+I've built the YMCA main site booking flow. Now I need to test all class state scenarios and verify integration.
 
 Context:
-- New YMCA booking code in `scripts/booking-automation.ts`
+- YMCA booking code in `scripts/booking-automation.ts`
+- Flow documentation: `docs/YMCA_MAIN_SITE_BOOKING_FLOW.md`
 - Inngest functions in `lib/inngest/`
-- Old Daxko code archived
+
+Test Scenarios:
+| # | Scenario | Class State | Expected Result | Status |
+|---|----------|-------------|-----------------|--------|
+| 1 | Bookable class | Register CTA | `status: confirmed` | ✅ Tested (Jan 18, 2026) |
+| 2 | Waitlist class | Waitlist Only CTA | `status: waitlisted` | TODO |
+| 3 | Full class | Full CTA | `status: failed` (with "full" msg) | TODO |
+| 4 | Not reservable | No CTA | `status: failed` (not reservable) | TODO |
+| 5 | Cancelled class | CANCELED: prefix | `status: failed` (cancelled) | TODO |
+
+Test Commands:
+# Visible browser for debugging
+npx tsx scripts/test-single-booking.ts <class-id> --headless=false
+
+# Keep browser open after completion
+KEEP_BROWSER_OPEN=true npx tsx scripts/test-single-booking.ts <class-id> --headless=false
+
+# Dry-run (no actual booking)
+npx tsx scripts/test-single-booking.ts <class-id> --dry-run
 
 Requirements:
-1. Verify Inngest integration still works with the new booking flow
-2. Run dry-run test: `npm run test:booking-dry-run`
-3. Check that:
-   - Booking attempts are logged correctly
+1. Find classes in each state on ymcawnc.org/schedules
+2. Run test command for each scenario
+3. Verify automation returns correct status
+4. Check that:
    - Screenshots are captured
    - Success/failure emails are sent
    - Retry logic still works
-4. Update any hardcoded Daxko URLs or references in:
-   - Documentation (PRD, BOOKING_AUTOMATION.md)
-   - Error messages
-   - Email templates
-5. Do ONE real booking test on a non-critical class
+5. Update ERROR_MESSAGES.md with any new error patterns
 
-If dry-run passes, test with a real low-stakes class booking.
+**Tip:** Use Claude in Chrome to find classes in each state (waitlist, full, cancelled) on the live YMCA schedule page.
 ```
+
+#### Confirmed Working (Jan 18, 2026)
+
+- ✅ **Cycle 9:00am Monday @ Asheville YMCA** - Booked successfully via YMCA hybrid flow
+
+#### Optimization Analysis: Skip GroupExPro?
+
+**Current Flow:**
+```
+YMCA Schedule → Click Register → GroupExPro → Click Login → Daxko Login → ChooseMembers
+```
+
+**Potential Optimized Flow:**
+```
+YMCA Schedule → Extract class_id → Construct Daxko URL → Daxko Login → ChooseMembers
+```
+
+**URL Pattern Analysis:**
+- GroupExPro URL: `groupexpro.com/gxp/reservations/start/index/{CLASS_ID}/{MM}/{DD}/{YYYY}`
+- Daxko class_id: `{CLASS_ID}{MM}{DD}{YY}` (e.g., `12986989` + `011926` = `12986989011926`)
+- Could construct Daxko URL directly, skipping GroupExPro page load
+
+**Tradeoffs:**
+
+| Factor | Skip GroupExPro | Keep GroupExPro |
+|--------|-----------------|-----------------|
+| **Speed** | ~2-3s faster (1 less page load) | Current speed is acceptable |
+| **Reliability** | Risk: URL pattern could change | GroupExPro handles routing |
+| **Maintenance** | Must track 2 URL patterns | Single click, let them handle routing |
+| **Debugging** | Harder to diagnose failures | Clear step-by-step screenshots |
+
+**Decision: Keep Current Flow**
+
+1. Current flow is **working and tested**
+2. Speed gain is minimal (~2-3 seconds)
+3. URL construction is fragile (Daxko could change class_id format)
+4. GroupExPro click is essentially a "redirect service" - let them maintain it
+5. Risk of breaking production bookings not worth small speed gain
+
+**Revisit if:** GroupExPro page becomes slow/unreliable, or we need sub-second booking times.
+
+#### YMCA Debugging Case Study
+
+**The Problem:** Legacy Daxko booking flow stopped working. YMCA Western NC uses hybrid system: public schedule + GroupExPro + Daxko backend. Automation was silently failing.
+
+**The 5 Bugs Found (Jan 18, 2026):**
+
+| # | Bug | Root Cause | Fix |
+|---|-----|------------|-----|
+| 1 | False cancelled detection | `text.includes('canceled:')` matched any text | Fuzzy regex: `cancel[led]*[:\s\-]*${classTypeLower}` |
+| 2 | Wrong container selector | `[class*="class"]` matched page container | Changed to `.schedules-data__row` |
+| 3 | Login field not found | Selector missing `input#login` | Added `input#login`, `input[name="login"]` |
+| 4 | False redirect detection | URL had `ChooseMembers.mvc` in query param | Check URL path only: `urlPath.split('?')[0]` |
+| 5 | Wrong login flow | Entering credentials on GroupExPro | Click Login only, complete Daxko 2-step |
+
+**Key Discovery:** GroupExPro login page is a redirect service - don't enter credentials there. Click Login → Daxko login page → Complete 2-step login (email → Submit → password → Login).
+
+**Key Narrative Beats:**
+
+| Beat | What Happened | The Lesson |
+|------|--------------|------------|
+| Container confusion | 1 parent vs 25 children | Always verify selector returns expected count |
+| CANCELED detection | Staff types variations | Use fuzzy matching for user-entered text |
+| Query param trap | URL path vs full URL | Parse URLs carefully, query params are tricky |
+| Login flow reversal | Creds on wrong page | Watch browser carefully, don't assume flows |
+| Speed vs reliability | Skip GroupExPro? | Working > fast, let intermediaries handle routing |
+
+**Debugging Timeline:**
+```
+Start: Login failed
+  ↓
+Bug 1: False cancelled → Fuzzy regex
+  ↓
+Bug 2: Wrong container → .schedules-data__row
+  ↓
+Bug 3: Field not found → input#login
+  ↓
+Bug 4: False redirect → URL path check
+  ↓
+Bug 5: Wrong login flow → GroupExPro click-through
+  ↓
+SUCCESS: Booking confirmed ✅
+```
+
+**Result:** 5 bugs fixed in ~2 hours of pair debugging. YMCA hybrid flow working end-to-end.
 
 #### Portfolio Note: Adapter Architecture
 
