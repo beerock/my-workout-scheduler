@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** January 16, 2026
+**Last Updated:** January 18, 2026
 
 ---
 
@@ -421,6 +421,13 @@ When editing class day/time, skip is cleared with user confirmation modal. Other
 **Completed:** November 23, 2025 (v2.9)
 
 Password confirmation on signup, resend verification on login, Cloudflare Turnstile bot protection, persistent auth notifications.
+
+---
+
+### GitHub Actions Workflow Caching ✅
+**Completed:** January 18, 2026
+
+Added node_modules caching to booking automation workflow. Reduces cold start from ~70s to ~36s on cache hits by skipping npm ci when package-lock.json unchanged.
 
 ---
 
