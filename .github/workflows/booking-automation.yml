@@ -23,16 +23,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Cache node_modules
-        id: cache-node-modules
+      - name: Cache node_modules and Puppeteer
+        id: cache-deps
         uses: actions/cache@v4
         with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          path: |
+            node_modules
+            ~/.cache/puppeteer
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}
 
       - name: Install dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: npm ci
+
+      - name: Ensure Puppeteer browsers installed
+        run: npx puppeteer browsers install chrome
 
       - name: Run booking automation (single class)
         if: ${{ inputs.class_id != '' }}
