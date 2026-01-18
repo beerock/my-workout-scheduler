@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** January 16, 2026
+**Last Updated:** January 18, 2026
 
 ---
 
@@ -421,6 +421,13 @@ When editing class day/time, skip is cleared with user confirmation modal. Other
 **Completed:** November 23, 2025 (v2.9)
 
 Password confirmation on signup, resend verification on login, Cloudflare Turnstile bot protection, persistent auth notifications.
+
+---
+
+### GitHub Actions Workflow Caching ✅
+**Completed:** January 18, 2026
+
+Added caching for `node_modules` and Puppeteer browsers (`~/.cache/puppeteer`) to booking automation workflow. Reduces run time from ~90s to ~60s on cache hits. Cache auto-invalidates when `package-lock.json` changes. See `docs/GITHUB_ACTIONS_SETUP.md` for cache management commands.
 
 ---
 

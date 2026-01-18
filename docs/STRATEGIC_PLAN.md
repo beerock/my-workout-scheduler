@@ -1,10 +1,12 @@
 # Strategic Analysis: My Workout Scheduler
-*Last Updated: January 15, 2026*
-*Version: 1.2*
+*Last Updated: January 18, 2026*
+*Version: 1.3*
 
 ## Executive Summary
 
-My Workout Scheduler is a working MVP that automates gym class reservations for 5 users on YMCA's Daxko platform. The core automation is proven (v2.30, ~80% success rate, <60s booking latency).
+My Workout Scheduler is a working MVP that automates gym class reservations for 5 users on YMCA's Daxko platform. The core automation is proven (v2.30, ~80% success rate).
+
+**⚠️ CRITICAL PERFORMANCE ISSUE (Jan 18, 2026):** Total booking time is 90-120 seconds, exceeding our 60s KPI target. The Puppeteer automation itself is fast (~32-40s), but GitHub Actions cold start overhead (downloading Puppeteer, installing dependencies) adds 50-80 seconds to every run. See Part 9 for analysis and solutions.
 
 **Primary Goal:** Use this project as a portfolio piece and case study to support career goals in CPO/Head of Product roles or fractional product leadership.
 
@@ -243,7 +245,7 @@ My Workout Scheduler automatically books your gym classes the instant registrati
 ### TRACTION
 - **5 active users** in private beta
 - **80%+ booking success rate**
-- **<60 second booking latency**
+- **32-40 second automation time** (90-120s total with GitHub cold start - optimization in progress)
 - **v2.30** - Production-ready, 30+ feature iterations
 - **$0 customer acquisition cost** (organic/referral)
 - **$0 infrastructure cost** (free tier services)
@@ -340,7 +342,7 @@ My Workout Scheduler automatically books your gym classes the instant registrati
 | Activation Rate | % of signups who add credentials + 1 class within 7 days | >60% | <40% |
 | Retry Success Rate | % of "class full" retries that eventually succeed | >30% | <15% |
 | Error Rate | % of booking attempts with technical errors | <2% | >5% |
-| P95 Booking Latency | 95th percentile time from window open to booking confirmed | <45 seconds | >90 seconds |
+| P95 Booking Latency | 95th percentile time from window open to booking confirmed | <45 seconds | >90 seconds (CURRENTLY EXCEEDED - see Part 9) |
 
 ### Tier 3: Growth Metrics (Monthly Review)
 
@@ -997,6 +999,11 @@ Please:
 
 ## Recommended Next Steps (Revised for Portfolio Focus)
 
+### ~~URGENT: Performance Fix~~ ✅ COMPLETE (January 18, 2026)
+1. ~~**Implement GitHub Actions caching** - Add npm and Puppeteer cache to workflow~~
+2. ~~Test booking with caching enabled - verify <60s target met~~
+3. *Result: ~60s on cache hits, meeting KPI. Phase 2 deferred unless needed.*
+
 ### Immediate (This Week) - 3-4 hours
 1. Record 60-90 second Loom demo of the booking flow
 2. Create clean architecture diagram (use Excalidraw or Miro)
@@ -1016,5 +1023,113 @@ Please:
 - Google/Apple OAuth (demonstrates modern auth knowledge)
 - Onboarding wizard (demonstrates UX thinking)
 - Contact form (professionalism)
+
+---
+
+## Part 9: Critical Performance Issue - Booking Latency
+
+*Added: January 18, 2026*
+
+### The Problem
+
+**KPI Target:** Book classes in <60 seconds from booking window opening
+**Actual Performance:** 90-120 seconds total time
+**Impact:** Popular classes fill up before our automation completes
+
+**Real-World Incident (Jan 18, 2026):**
+A popular class opened with 30 spots. By the time our automation completed (~90 seconds), only 1 spot remained. The class filled in ~90 seconds. User had to manually book to secure the spot.
+
+### Time Breakdown
+
+| Phase | Time | Location |
+|-------|------|----------|
+| GitHub Actions queue wait | 10-20s | GitHub |
+| Checkout code | 5-10s | GitHub |
+| Setup Node.js | 5-10s | GitHub |
+| Install dependencies (npm ci) | 15-25s | GitHub |
+| **Download Puppeteer/Chromium** | **15-25s** | **GitHub** |
+| **Puppeteer automation** | **32-40s** | **Our code** |
+| **TOTAL** | **90-120s** | |
+
+**Key Insight:** Our automation code is actually fast (32-40s). The overhead is GitHub Actions cold start - downloading Puppeteer and dependencies on every single run.
+
+### Solution Options
+
+| Option | Speed Gain | Cost | Complexity | Reliability |
+|--------|------------|------|------------|-------------|
+| **1. GitHub Actions Caching** | -20-30s | Free | Low | High |
+| **2. Pre-built Docker Image** | -30-40s | Free | Medium | High |
+| **3. Self-hosted Runner** | -40-50s | $5-20/mo | Medium | Medium |
+| **4. Always-on Worker (Railway/Render)** | -50-70s (near instant) | $5-15/mo | Medium | High |
+| **5. Dedicated VPS** | -50-70s | $10-20/mo | High | Medium |
+
+### Recommended Approach
+
+**Phase 1: Quick Wins (Target: <60s) ✅ IMPLEMENTED**
+1. ~~**GitHub Actions dependency caching** - Cache `node_modules` and Puppeteer binary~~
+2. ~~**Cache Puppeteer separately** - Use `actions/cache` for `~/.cache/puppeteer`~~
+3. ~~Estimated improvement: 20-30 seconds saved~~
+
+*Completed January 18, 2026. Results: ~90s (cache miss) → ~60s (cache hit). See `docs/GITHUB_ACTIONS_SETUP.md` for cache management.*
+
+**Phase 2: If Further Optimization Needed (Target: <30s)**
+1. **Pre-built Docker image** with Puppeteer already installed
+2. Push to GitHub Container Registry
+3. Use `container:` in workflow instead of `runs-on: ubuntu-latest`
+4. Estimated improvement: 30-40 seconds saved
+
+**Phase 3: If Speed Critical (Target: <10s)**
+1. **Always-running worker** on Railway, Render, or Fly.io
+2. Worker polls for booking events or receives webhooks
+3. Eliminates cold start entirely
+4. Trade-off: Monthly cost (~$5-15)
+
+### Implementation Priority
+
+**✅ Phase 1 Complete (January 18, 2026)**
+
+Phase 1 caching implemented. Booking time reduced from 90-120s to ~60s on cache hits. Current performance meets the <60s KPI target.
+
+**Next Steps (if further optimization needed):**
+- Monitor popular class booking success rates
+- If still missing classes due to speed, evaluate Phase 2 (Docker image)
+- Phase 3 (always-on worker) only if <30s consistently required
+
+### GitHub Actions Caching Implementation
+
+```yaml
+# Add to .github/workflows/booking-automation.yml
+- name: Cache node modules
+  uses: actions/cache@v4
+  with:
+    path: |
+      node_modules
+      ~/.cache/puppeteer
+    key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+    restore-keys: |
+      ${{ runner.os }}-node-
+
+- name: Install dependencies
+  run: npm ci
+  # Will be fast if cache hit
+```
+
+### Success Metrics
+
+| Metric | Before | After Phase 1 ✅ | Target (Phase 2) |
+|--------|--------|------------------|------------------|
+| Total booking time | 90-120s | **~60s** | <30s |
+| Puppeteer automation | 32-40s | 32-40s | 32-40s |
+| Cold start overhead | 50-80s | **~20s** | <5s |
+| Popular class success | ~50% | **TBD** | >95% |
+
+### Risk Assessment
+
+| Risk | Likelihood | Mitigation |
+|------|------------|------------|
+| Cache invalidation issues | Low | Use hash of package-lock.json |
+| Docker image maintenance burden | Medium | Automate image builds on package.json changes |
+| Always-on worker cost creep | Low | Set billing alerts, monitor usage |
+| Worker downtime during booking window | Medium | Health checks, redundancy for Phase 3 |
 
 ---
