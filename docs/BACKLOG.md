@@ -211,6 +211,21 @@ Update booking status in UI without page refresh using Supabase Realtime.
 
 ---
 
+### Transient Error Retry During Full-Class Retries
+**Status:** Backlogged | **Priority:** Medium
+
+If a retry attempt fails for a non-"full" reason (timeout, network error, element not found, etc.), continue the retry cycle rather than giving up permanently. Currently, only errors containing "full" trigger retries; other failures during the retry cycle terminate the process.
+
+**Requirements:**
+- Detect transient errors vs permanent failures during retry cycle
+- Continue 15-minute retry cycle for transient errors
+- Consider shorter backoff (e.g., 2-3 minutes) for transient errors before resuming normal cycle
+- Log distinction between "still full" and "transient error" retries
+
+**Last Updated:** January 18, 2026
+
+---
+
 ## Post-MVP: Low Priority
 
 Nice-to-have features that aren't critical.
