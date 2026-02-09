@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** January 18, 2026
+**Last Updated:** January 20, 2026
 
 ---
 
@@ -208,6 +208,24 @@ Admin UI for user management and analytics without direct database access.
 Update booking status in UI without page refresh using Supabase Realtime.
 
 **Last Updated:** January 10, 2025
+
+---
+
+### GitHub Timeout Handling
+**Status:** Planned | **Priority:** High
+
+Improve handling of GitHub Actions delays/outages. Currently, 10m timeout causes false failure states and no user notification even when bookings succeed. New approach: 5m timeout with immediate retry, delay warning email, and 20m hard stop with systems issue notification.
+
+**Requirements:**
+- Reduce wait-for-result timeout from 10m to 5m
+- Send "delay warning" email on first timeout (suggest manual booking backup)
+- Immediate retry (no 15m sleep) for GitHub timeouts
+- After 20m total elapsed, send "systems issue" email and stop
+- Two new email templates: delay-warning, systems-issue
+
+**Plan Document:** `docs/plans/GITHUB_TIMEOUT_HANDLING.md`
+
+**Last Updated:** January 20, 2026
 
 ---
 
