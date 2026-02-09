@@ -53,6 +53,10 @@ lib/inngest/      → Event-driven booking functions
 components/ui/    → Design system components (19 components)
 scripts/          → Puppeteer automation
 supabase/         → Migrations and RLS policies
+.claude/hooks/    → PreToolUse hooks (e.g., block .env edits)
+.claude/agents/   → Custom subagents (security-reviewer)
+.claude/skills/   → Custom skills (/create-migration)
+.mcp.json         → MCP server configs (Supabase)
 ```
 
 ---
@@ -109,6 +113,8 @@ supabase/         → Migrations and RLS policies
 - Parse YYYY-MM-DD as UTC (causes off-by-one-day bugs)
 - Use arbitrary colors - use design tokens only
 - Commit `.env.local` or credentials
+- Edit `.env` files directly (blocked by PreToolUse hook - user must edit these manually)
+- Edit lock files directly (blocked by PreToolUse hook - run `npm install` instead)
 - Skip dry-run before real booking tests
 - Update `/prototype` or `/prototype/scheduler-v2` case studies (frozen at v2.22)
 - Skip auth validation in server actions
@@ -122,7 +128,7 @@ supabase/         → Migrations and RLS policies
 4. Components → `app/dashboard/` or `components/`
 
 **Database Changes:**
-Migration → types → server action → component (in that order)
+Migration → types → server action → component (in that order). Use `/create-migration <name>` to scaffold.
 
 **After UI Changes:**
 - Check mobile (320px)
@@ -178,10 +184,25 @@ One paragraph description (2-3 sentences max).
 
 ## Quick Reference
 
+### Dev Commands
+```bash
+npm run dev                     # Start dev server (localhost:3000)
+npm run build                   # Production build
+npm run lint                    # ESLint check
+npx tsc --noEmit                # TypeScript type check
+```
+
 ### Testing Commands
 ```bash
 npm run test:booking-dry-run    # Safe dry-run (always run first)
 npm run test:single-booking     # REAL booking!
+```
+
+### Database Commands
+```bash
+npm run backup                  # Backup database (data only)
+npm run backup:full             # Backup database (schema + data)
+npm run restore                 # Restore from backup
 ```
 
 ### Required Env Vars
@@ -194,4 +215,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: January 14, 2026 (v2.30)*
+*Last Updated: February 9, 2026 (v2.30)*

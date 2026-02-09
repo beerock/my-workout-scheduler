@@ -1,11 +1,39 @@
 {
-  "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true,
-    "feature-dev@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true,
-    "commit-commands@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true
+  "enabledPlugins": {},
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/block-env-edits.js",
+            "statusMessage": "Checking for .env file edits"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/block-lock-files.js",
+            "statusMessage": "Checking for lock file edits"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/auto-lint.js",
+            "statusMessage": "Running lint check"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/auto-typecheck.js",
+            "statusMessage": "Running type check"
+          }
+        ]
+      }
+    ]
   }
 }
