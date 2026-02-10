@@ -41,10 +41,10 @@ function DiagonalBadge({
   children: React.ReactNode
 }) {
   const gradients = {
-    success: 'from-[#00c853] to-[#00a844]',
+    success: 'from-success-500 to-success-600',
     pending: 'from-[#ff9500] to-[#ff6b00]',
     waitlisted: 'from-primary-500 to-primary-600',
-    failed: 'from-[#f43f5e] to-[#e11d48]',
+    failed: 'from-danger-500 to-danger-600',
     skipped: 'from-amber-500 to-amber-600',
     inactive: 'from-gray-400 to-gray-500',
     paused: 'from-amber-400 to-amber-500',
