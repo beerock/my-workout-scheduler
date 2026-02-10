@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** January 20, 2026
+**Last Updated:** February 10, 2026
 
 ---
 
@@ -113,17 +113,18 @@ Add Google and Apple OAuth as preferred login method with account linking suppor
 
 ---
 
-### Rate Limiting on Auth Endpoints
+### Rate Limiting on Auth & Booking Endpoints
 **Status:** Backlogged | **Priority:** Medium
 
-Add rate limiting to prevent brute force attacks using Upstash Redis.
+Add rate limiting to prevent brute force attacks and booking spam using Upstash Redis.
 
 **Limits:**
 - Login: 5 attempts per 15 minutes per IP
 - Signup: 3 attempts per hour per IP
 - Password reset: 3 attempts per hour per email
+- Trigger booking (`/api/trigger-booking`): 5 attempts per hour per user
 
-**Last Updated:** November 23, 2025
+**Last Updated:** February 10, 2026
 
 ---
 
@@ -390,6 +391,33 @@ Cancel Inngest events when user pauses, deactivates, or skips (currently relies 
 **When to implement:** If log noise becomes a problem at 50+ users
 
 **Last Updated:** December 29, 2025
+
+---
+
+### Auth Callback Error Param Sanitization
+**Status:** Backlogged | **Priority:** Low
+
+Auth callback route passes error messages as URL query params (`/login?error=...`), which could appear in browser history or analytics. Currently safe (messages are generic), but should be sanitized if Supabase errors ever become more detailed.
+
+**Requirements:**
+- Use error codes instead of raw messages in URL params
+- Map codes to user-friendly messages on the login page
+
+**Last Updated:** February 10, 2026
+
+---
+
+### DiagonalBadge Pending Color Design Token
+**Status:** Backlogged | **Priority:** Low
+
+The DiagonalBadge `pending` variant uses arbitrary hex colors (`#ff9500`/`#ff6b00`) with no matching design token. Other badge variants now use proper tokens. Add an `orange` token to the design system or map to an existing token.
+
+**Requirements:**
+- Add orange color scale to `tailwind.config.ts` or pick closest existing token
+- Replace hex values in DiagonalBadge gradient
+- Update `DESIGN_SYSTEM.md` if new token added
+
+**Last Updated:** February 10, 2026
 
 ---
 
