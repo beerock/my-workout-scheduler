@@ -168,7 +168,7 @@ export default function SkipButton({ recurringClass, gymUrl, onUpdate, scheduleP
           onClick={handleSkip}
           disabled={loading || isDisabled}
           title={isDisabled ? getDisabledReason() : ''}
-          className="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#1a6fff] to-[#0052e6] text-white font-dm-sans text-sm font-medium rounded-lg hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-dm-sans text-sm font-medium rounded-lg hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ boxShadow: '0 4px 12px rgba(26, 111, 255, 0.25)' }}
         >
           {loading ? 'Skipping...' : 'Skip Next'}
@@ -185,7 +185,7 @@ export default function SkipButton({ recurringClass, gymUrl, onUpdate, scheduleP
           className={`w-full px-4 py-3 text-left font-dm-sans transition-colors flex items-center gap-3 ${
             isDisabled
               ? 'text-gray-400 cursor-not-allowed'
-              : 'text-gray-700 hover:bg-gray-50 hover:text-[#1a6fff]'
+              : 'text-gray-700 hover:bg-gray-50 hover:text-primary-500'
           }`}
         >
           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

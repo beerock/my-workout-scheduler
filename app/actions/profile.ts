@@ -241,17 +241,8 @@ export async function deleteAccount(confirmPassword: string): Promise<ProfileRes
     }
 
     // Create admin client with service role key for user deletion
-    const { createClient: createServiceClient } = await import('@supabase/supabase-js')
-    const supabaseAdmin = createServiceClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
+    const { createServiceRoleClient } = await import('@/lib/supabase/service-role')
+    const supabaseAdmin = createServiceRoleClient()
 
     // Delete user account using admin client
     // Note: Supabase will automatically cascade delete related data if RLS policies are set up correctly

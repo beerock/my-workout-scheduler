@@ -219,57 +219,6 @@ export function isDateToday(dateStr: string | null): boolean {
 }
 
 /**
- * @deprecated INTERNAL USE ONLY - DO NOT IMPORT DIRECTLY
- *
- * This version expects a pre-calculated classDate string (YYYY-MM-DD format).
- * For calculating booking windows from recurring schedule data (day_of_week),
- * use the version from @/lib/inngest/scheduler instead.
- *
- * This version is only used internally by hasBookingWindowOpened() in this file.
- *
- * Calculate when the booking window opens for a class
- * Returns the datetime when registration opens (class datetime minus booking_window_hours)
- *
- * Note: classDate should be the actual class date (not booking window date)
- */
-export function calculateBookingWindowOpen(
-  classDate: string, // YYYY-MM-DD (class date)
-  classTime: string, // HH:MM:SS or HH:MM
-  bookingWindowHours: number,
-  timezone: string = 'America/New_York'
-): Date {
-  const [hours, minutes, seconds] = classTime.split(':').map(Number)
-  
-  // Parse the class date string (YYYY-MM-DD) as local date
-  // This prevents timezone issues when creating the Date object
-  const [year, month, day] = classDate.split('-').map(Number)
-  
-  // Create date object for the class in local time
-  const classDateTime = new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0)
-  
-  // Subtract booking window hours
-  const bookingWindowOpen = new Date(classDateTime)
-  bookingWindowOpen.setHours(bookingWindowOpen.getHours() - bookingWindowHours)
-  
-  return bookingWindowOpen
-}
-
-/**
- * Check if booking window has opened for a class
- */
-export function hasBookingWindowOpened(
-  classDate: string,
-  classTime: string,
-  bookingWindowHours: number,
-  timezone: string = 'America/New_York'
-): boolean {
-  const bookingWindowOpen = calculateBookingWindowOpen(classDate, classTime, bookingWindowHours, timezone)
-  const now = new Date()
-  
-  return now >= bookingWindowOpen
-}
-
-/**
  * Check if class has already passed
  */
 export function hasClassPassed(
