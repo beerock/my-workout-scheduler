@@ -16,7 +16,7 @@
 
 **STOP. Before ANY action, verify:**
 
-1. **Branch** - Not on main? (See Git Branch Safety)
+1. **Worktree** - Right branch/worktree? (See Git Worktree Safety)
 2. **Prior decisions** - Checked PRD/BACKLOG first?
 3. **UI work** - Using component library + design tokens?
 
@@ -73,26 +73,65 @@ supabase/         → Migrations and RLS policies
 
 ## Workflows & Rules
 
-### Git Branch Safety (CRITICAL)
+### Git Worktree Safety (CRITICAL)
 
-**At the start of EVERY new session**, before making any file changes (code, docs, configs, migrations, etc.) in any environment (VS Code, Cursor, CLI/terminal, etc.):
+**At the start of EVERY new session**, before making any file changes (code, docs, configs, migrations, etc.):
 
-1. **Check current branch** using `git branch --show-current`
+1. **Detect environment** using `git worktree list` and `git branch --show-current`
 
-2. **If on `main` or `master`:**
-   - STOP and alert the user: "You are currently on the main branch."
-   - Show available branches: `git branch -a`
-   - Ask the user to choose:
-     - **Use existing branch:** Select from the list
-     - **Create new branch:** Suggest a descriptive name based on the current task (e.g., `feature/add-email-notifications`, `fix/timezone-bug`, `docs/update-readme`). User can accept the suggestion or provide their own name.
+2. **If on `main` in the main repo:**
+   - STOP and alert the user: "You are in the main repo on the main branch."
+   - Show existing worktrees: `git worktree list`
+   - Ask: "Do you need a worktree for this task, or is a branch sufficient?"
+     - **Create new worktree:** Suggest a branch name based on the task. Run Worktree Auto-Setup (below).
+     - **Create branch only:** `git checkout -b <branch>` for lightweight tasks (doc edits, config tweaks).
+     - **Use existing worktree/branch:** List options for the user to choose from.
      - **Continue on main (emergency only):** Requires explicit confirmation ("I confirm this is a hotfix/emergency")
 
-3. **If on a feature branch:**
-   - Show current branch: "You are on branch `feature/xyz`"
-   - Ask: "Continue on this branch, or switch?"
-   - Options: Continue on current branch, switch to existing branch, or create new branch
+3. **If in a worktree (on a feature branch):**
+   - Show current worktree and branch: "You are in worktree `<path>` on branch `<branch>`"
+   - Ask: "Continue working here, or do you need a different worktree?"
 
 4. **Once confirmed:** Proceed with changes for the rest of the session without re-prompting
+
+#### Mid-Session Migration
+
+If the user says "let's move this to a worktree" at any point during the session:
+1. Create worktree + run auto-setup
+2. Switch to using absolute paths targeting the worktree directory for all file operations
+3. Continue the session — no restart needed, all context is preserved
+
+#### Worktree Auto-Setup
+
+When creating a new worktree, run from the main repo directory:
+```bash
+MAIN_REPO=$(pwd)
+git worktree add ../my-workout-scheduler-worktrees/<branch> -b <branch>
+cd ../my-workout-scheduler-worktrees/<branch>
+npm install
+cp "$MAIN_REPO/.env.local" .env.local
+```
+
+For an existing branch, omit the `-b` flag:
+```bash
+git worktree add ../my-workout-scheduler-worktrees/<branch> <branch>
+```
+
+After setup, continue working in the same session using absolute paths to the worktree.
+
+#### Worktree Reference
+
+- **What travels automatically:** `.claude/`, `.mcp.json`, all tracked source files
+- **What needs per-worktree setup:** `node_modules/`, `.env.local`, `.next/`
+- **Port conflicts:** Use `PORT=3001 npm run dev` for concurrent dev servers
+
+#### Worktree Cleanup
+
+After a branch is merged (from the main repo directory):
+```bash
+git worktree remove ../my-workout-scheduler-worktrees/<branch>
+git branch -d <branch>
+```
 
 **Branch naming conventions:** `feature/`, `fix/`, `docs/`, `refactor/`, `security/`
 
@@ -215,4 +254,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: February 9, 2026 (v2.30)*
+*Last Updated: February 10, 2026 (v2.30)*
