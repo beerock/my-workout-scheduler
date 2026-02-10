@@ -98,7 +98,8 @@ export function decryptPassword(encryptedPassword: string): string {
 
     return decrypted.toString('utf8')
   } catch (error) {
-    throw new Error(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    console.error('[Encryption] Decryption failed:', error)
+    throw new Error('Decryption failed')
   }
 }
 
