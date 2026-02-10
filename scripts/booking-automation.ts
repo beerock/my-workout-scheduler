@@ -574,7 +574,7 @@ async function performGroupExProLogin(
     }
 
     await passwordField.type(password, { delay: 50 })
-    console.log(`   Entered password (${password.length} chars)`)
+    console.log('   Entered password successfully')
 
     // Make sure "Keep me logged in" is NOT checked
     const keepLoggedInCheckbox = await page.$('input[type="checkbox"]')
