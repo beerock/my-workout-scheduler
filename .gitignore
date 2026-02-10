@@ -63,3 +63,6 @@ Thumbs.db
 
 # Claude Code temp files
 tmpclaude*
+
+# Windows artifacts
+nul
