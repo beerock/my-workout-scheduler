@@ -68,6 +68,8 @@ supabase/         → Migrations and RLS policies
 - **Inngest sync:** Manual sync required in Inngest dashboard after deploying function changes
 - **Inngest events:** Delete cancels events; inactive/pause uses runtime checks (events still fire but don't book)
 - **User deletion:** Inngest events NOT canceled on user delete (fail gracefully, acceptable for MVP)
+- **Linting:** `npm run lint` is broken (Next.js config issue). Use `npx tsc --noEmit` for type checking.
+- **Inngest auth:** SDK auto-validates `INNGEST_SIGNING_KEY` — no explicit check needed in route handler
 
 ---
 
