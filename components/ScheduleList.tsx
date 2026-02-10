@@ -43,7 +43,7 @@ function DiagonalBadge({
   const gradients = {
     success: 'from-[#00c853] to-[#00a844]',
     pending: 'from-[#ff9500] to-[#ff6b00]',
-    waitlisted: 'from-[#1a6fff] to-[#0052e6]',
+    waitlisted: 'from-primary-500 to-primary-600',
     failed: 'from-[#f43f5e] to-[#e11d48]',
     skipped: 'from-amber-500 to-amber-600',
     inactive: 'from-gray-400 to-gray-500',
@@ -293,7 +293,7 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
     if (schedulePaused) return 'bg-amber-500'
     if (!classItem.active) return 'bg-gray-400'
     if (classItem.skip_next_occurrence) return 'bg-amber-500'
-    return 'bg-[#1a6fff]'
+    return 'bg-primary-500'
   }
 
   // Get status badge variant
@@ -347,7 +347,7 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
           </p>
           <button
             onClick={() => router.push('/dashboard/schedule/add')}
-            className="px-6 py-3 bg-gradient-to-r from-[#1a6fff] to-[#0052e6] text-white font-dm-sans font-medium rounded-lg hover:-translate-y-0.5 transition-all inline-flex items-center gap-2"
+            className="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-dm-sans font-medium rounded-lg hover:-translate-y-0.5 transition-all inline-flex items-center gap-2"
             style={{
               boxShadow: '0 4px 12px rgba(26, 111, 255, 0.25)'
             }}
@@ -509,7 +509,7 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
                   setMenuPosition(null)
                   router.push(`/dashboard/schedule/add?copyFrom=${classItem.id}`)
                 }}
-                className="w-full px-4 py-3 text-left font-dm-sans text-gray-700 hover:bg-gray-50 hover:text-[#1a6fff] transition-colors flex items-center gap-3"
+                className="w-full px-4 py-3 text-left font-dm-sans text-gray-700 hover:bg-gray-50 hover:text-primary-500 transition-colors flex items-center gap-3"
               >
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -524,7 +524,7 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
                 className={`w-full px-4 py-3 text-left font-dm-sans transition-colors flex items-center gap-3 ${
                   schedulePaused
                     ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-[#1a6fff]'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-primary-500'
                 }`}
               >
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -63,7 +63,7 @@ supabase/         → Migrations and RLS policies
 
 ## Critical Gotchas
 
-- **Date/time:** Always use `lib/date-utils.ts`. Two `calculateBookingWindowOpen` implementations exist - use `lib/inngest/scheduler.ts` for recurring classes
+- **Date/time:** Always use `lib/date-utils.ts`. Use `calculateBookingWindowOpen` from `lib/inngest/scheduler.ts` for booking window calculations
 - **Encryption:** AES-256-GCM for gym passwords, key in `ENCRYPTION_KEY` env var (never sent to database)
 - **Inngest sync:** Manual sync required in Inngest dashboard after deploying function changes
 - **Inngest events:** Delete cancels events; inactive/pause uses runtime checks (events still fire but don't book)
