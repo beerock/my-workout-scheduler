@@ -77,63 +77,70 @@ supabase/         → Migrations and RLS policies
 
 ### Git Worktree Safety (CRITICAL)
 
-**At the start of EVERY new session**, before making any file changes (code, docs, configs, migrations, etc.):
+**At the start of EVERY new session**, before making any file changes:
 
 1. **Detect environment** using `git worktree list` and `git branch --show-current`
 
-2. **If on `main` in the main repo:**
-   - STOP and alert the user: "You are in the main repo on the main branch."
-   - Show existing worktrees: `git worktree list`
-   - Ask: "Do you need a worktree for this task, or is a branch sufficient?"
-     - **Create new worktree:** Suggest a branch name based on the task. Run Worktree Auto-Setup (below).
-     - **Create branch only:** `git checkout -b <branch>` for lightweight tasks (doc edits, config tweaks).
-     - **Use existing worktree/branch:** List options for the user to choose from.
-     - **Continue on main (emergency only):** Requires explicit confirmation ("I confirm this is a hotfix/emergency")
+2. **Report status concisely:** One line, e.g. "You're on `main` in the main repo" or "You're in worktree `feature/foo`"
 
-3. **If in a worktree (on a feature branch):**
-   - Show current worktree and branch: "You are in worktree `<path>` on branch `<branch>`"
-   - Ask: "Continue working here, or do you need a different worktree?"
+3. **If existing worktrees are detected:** Offer to resume — "Existing worktree `feature/foo` found. Resume there?"
 
-4. **Once confirmed:** Proceed with changes for the rest of the session without re-prompting
+4. **If on `main` with no worktrees:** Ask "Worktree, branch, or continue on main?" (main requires explicit confirmation)
+
+5. **If already in a worktree:** Confirm and proceed — no further prompting needed
+
+6. **Once confirmed:** Proceed for the rest of the session without re-prompting
 
 #### Mid-Session Migration
 
-If the user says "let's move this to a worktree" at any point during the session:
+If the user says "let's move this to a worktree" at any point:
 1. Create worktree + run auto-setup
 2. Switch to using absolute paths targeting the worktree directory for all file operations
 3. Continue the session — no restart needed, all context is preserved
 
 #### Worktree Auto-Setup
 
-When creating a new worktree, run from the main repo directory:
+Run from the main repo directory. Use absolute paths (no `cd`):
 ```bash
 MAIN_REPO=$(pwd)
-git worktree add ../my-workout-scheduler-worktrees/<branch> -b <branch>
-cd ../my-workout-scheduler-worktrees/<branch>
-npm install
-cp "$MAIN_REPO/.env.local" .env.local
+WT_PATH="$MAIN_REPO/../my-workout-scheduler-worktrees/<branch>"
+git worktree add "$WT_PATH" -b <branch>
+npm install --prefix "$WT_PATH"
+cp "$MAIN_REPO/.env.local" "$WT_PATH/.env.local"
 ```
 
 For an existing branch, omit the `-b` flag:
 ```bash
-git worktree add ../my-workout-scheduler-worktrees/<branch> <branch>
+git worktree add "$WT_PATH" <branch>
 ```
 
-After setup, continue working in the same session using absolute paths to the worktree.
+**If `git worktree add` fails** because a worktree already exists for that branch, check `git worktree list` and offer to reuse or remove the existing one.
+
+After setup, warn about port conflicts if a dev server is already running: use `PORT=3001 npm run dev` to avoid collisions.
 
 #### Worktree Reference
 
 - **What travels automatically:** `.claude/`, `.mcp.json`, all tracked source files
 - **What needs per-worktree setup:** `node_modules/`, `.env.local`, `.next/`
-- **Port conflicts:** Use `PORT=3001 npm run dev` for concurrent dev servers
 
-#### Worktree Cleanup
+#### Worktree Cleanup (MANDATORY)
 
-After a branch is merged (from the main repo directory):
+**After a worktree branch is merged**, Claude MUST clean up before the session ends. Run from the main repo directory:
 ```bash
 git worktree remove ../my-workout-scheduler-worktrees/<branch>
 git branch -d <branch>
 ```
+
+If the worktree directory still exists after removal (orphaned folder), delete it:
+```bash
+rm -rf ../my-workout-scheduler-worktrees/<branch>
+```
+
+If the entire `*-worktrees/` directory is now empty, delete it too.
+
+If a worktree folder was deleted manually (not via `git worktree remove`), run `git worktree prune` to clean up stale git references.
+
+**Never leave stale worktrees behind.** If cleanup can't happen (e.g. unmerged changes), alert the user.
 
 **Branch naming conventions:** `feature/`, `fix/`, `docs/`, `refactor/`, `security/`
 
