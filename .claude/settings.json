@@ -31,6 +31,10 @@
             "type": "command",
             "command": "node .claude/hooks/auto-typecheck.js",
             "statusMessage": "Running type check"
+          },
+          {
+            "type": "command",
+            "command": "powershell -Command \"$branch = git branch --show-current; if ($branch -eq 'main') { Write-Output 'WARNING: You are editing files on main branch!' }\""
           }
         ]
       }
