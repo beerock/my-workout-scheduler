@@ -12,20 +12,6 @@
 
 ---
 
-## Mandatory Pre-Flight Checklist
-
-**STOP. Before ANY action, verify:**
-
-1. **Worktree** - Right branch/worktree? (See Git Worktree Safety)
-2. **Prior decisions** - Checked PRD/BACKLOG first?
-3. **UI work** - Using component library + design tokens?
-
-**If adding to BACKLOG.md** - Follow strict format below
-
-**If unsure about ANY rule** - Ask user before proceeding
-
----
-
 ## Key Documentation
 
 | Doc | Purpose | When to Use |
@@ -53,11 +39,16 @@ lib/inngest/      → Event-driven booking functions
 components/ui/    → Design system components (19 components)
 scripts/          → Puppeteer automation
 supabase/         → Migrations and RLS policies
-.claude/hooks/    → PreToolUse hooks (e.g., block .env edits)
-.claude/agents/   → Custom subagents (security-reviewer)
-.claude/skills/   → Custom skills (/create-migration)
+.claude/          → Hooks, agents, and skills
 .mcp.json         → MCP server configs (Supabase)
 ```
+
+### Claude Code Customizations
+- **`/audit`**, **`/doc-sync`**, **`/ship`** — global skills in `~/.claude/skills/`
+- **`/create-migration`** — project-specific skill for Supabase migrations
+- Skills are prompt templates (SKILL.md files), not callable functions
+- **PreToolUse hooks**: Block `.env` and lock file edits
+- **PostToolUse hooks**: Auto-lint, auto-typecheck, main-branch warning on Edit/Write
 
 ---
 
@@ -80,72 +71,16 @@ supabase/         → Migrations and RLS policies
 **At the start of EVERY new session**, before making any file changes:
 
 1. **Detect environment** using `git worktree list` and `git branch --show-current`
+2. **If on `main`:** STOP, alert user, suggest worktree or branch
+3. **If in a worktree:** Confirm and proceed
+4. **Once confirmed:** No further prompting needed
 
-2. **Report status concisely:** One line, e.g. "You're on `main` in the main repo" or "You're in worktree `feature/foo`"
+**Worktree paths:** `../my-workout-scheduler-worktrees/<branch-name>`
 
-3. **If existing worktrees are detected:** Offer to resume — "Existing worktree `feature/foo` found. Resume there?"
+See `~/.claude/CLAUDE.md` for full worktree conventions (auto-setup, cleanup, mid-session migration).
 
-4. **If on `main` with no worktrees:** Ask "Worktree, branch, or continue on main?" (main requires explicit confirmation)
-
-5. **If already in a worktree:** Confirm and proceed — no further prompting needed
-
-6. **Once confirmed:** Proceed for the rest of the session without re-prompting
-
-#### Mid-Session Migration
-
-If the user says "let's move this to a worktree" at any point:
-1. Create worktree + run auto-setup
-2. Switch to using absolute paths targeting the worktree directory for all file operations
-3. Continue the session — no restart needed, all context is preserved
-
-#### Worktree Auto-Setup
-
-Run from the main repo directory. Use absolute paths (no `cd`):
-```bash
-MAIN_REPO=$(pwd)
-WT_PATH="$MAIN_REPO/../my-workout-scheduler-worktrees/<branch>"
-git worktree add "$WT_PATH" -b <branch>
-npm install --prefix "$WT_PATH"
-cp "$MAIN_REPO/.env.local" "$WT_PATH/.env.local"
-```
-
-For an existing branch, omit the `-b` flag:
-```bash
-git worktree add "$WT_PATH" <branch>
-```
-
-**If `git worktree add` fails** because a worktree already exists for that branch, check `git worktree list` and offer to reuse or remove the existing one.
-
-After setup, warn about port conflicts if a dev server is already running: use `PORT=3001 npm run dev` to avoid collisions.
-
-#### Worktree Reference
-
-- **What travels automatically:** `.claude/`, `.mcp.json`, all tracked source files
-- **What needs per-worktree setup:** `node_modules/`, `.env.local`, `.next/`
-
-#### Worktree Cleanup (MANDATORY)
-
-**After a worktree branch is merged**, Claude MUST clean up before the session ends. Run from the main repo directory:
-```bash
-git worktree remove ../my-workout-scheduler-worktrees/<branch>
-git branch -d <branch>
-```
-
-If the worktree directory still exists after removal (orphaned folder), delete it:
-```bash
-rm -rf ../my-workout-scheduler-worktrees/<branch>
-```
-
-If the entire `*-worktrees/` directory is now empty, delete it too.
-
-If a worktree folder was deleted manually (not via `git worktree remove`), run `git worktree prune` to clean up stale git references.
-
-**Never leave stale worktrees behind.** If cleanup can't happen (e.g. unmerged changes), alert the user.
-
-**Branch naming conventions:** `feature/`, `fix/`, `docs/`, `refactor/`, `security/`
-
-### Always Do (MANDATORY)
-- Check PRD and BACKLOG before asking user questions - many decisions are already documented
+### Always Do
+- Check PRD and BACKLOG before asking user questions — many decisions are already documented
 - Import components from `@/components/ui`
 - Use design tokens for colors (never arbitrary values)
 - Use `<Footer>` on every page
@@ -155,14 +90,14 @@ If a worktree folder was deleted manually (not via `git worktree remove`), run `
 - Update `/prototype/design-system-components` when adding/modifying components
 - Update `/prototype/email-preview` when adding/updating email templates
 
-### Never Do (VIOLATIONS REQUIRE USER PERMISSION)
-- Create inline buttons/forms - use component library
+### Never Do
+- Create inline buttons/forms — use component library
 - Use `new Date()` without timezone context
 - Parse YYYY-MM-DD as UTC (causes off-by-one-day bugs)
-- Use arbitrary colors - use design tokens only
+- Use arbitrary colors — use design tokens only
 - Commit `.env.local` or credentials
-- Edit `.env` files directly (blocked by PreToolUse hook - user must edit these manually)
-- Edit lock files directly (blocked by PreToolUse hook - run `npm install` instead)
+- Edit `.env` files directly (blocked by PreToolUse hook)
+- Edit lock files directly (blocked by PreToolUse hook — run `npm install` instead)
 - Skip dry-run before real booking tests
 - Update `/prototype` or `/prototype/scheduler-v2` case studies (frozen at v2.22)
 - Skip auth validation in server actions
@@ -236,7 +171,7 @@ One paragraph description (2-3 sentences max).
 ```bash
 npm run dev                     # Start dev server (localhost:3000)
 npm run build                   # Production build
-npm run lint                    # ESLint check
+npm run lint                    # BROKEN — use npx tsc --noEmit instead
 npx tsc --noEmit                # TypeScript type check
 ```
 
@@ -263,4 +198,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: February 10, 2026 (v2.30)*
+*Last Updated: February 13, 2026 (v2.30)*
