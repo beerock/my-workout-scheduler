@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** February 10, 2026
+**Last Updated:** February 13, 2026
 
 ---
 
@@ -429,6 +429,38 @@ Portfolio case study for `/prototype/email-notifications` page.
 **Planning document:** `docs/CASE_STUDY_PLANNING.md`
 
 **Last Updated:** November 2025
+
+---
+
+### Test-Driven Iteration Loop for Booking Automation
+**Status:** Backlogged | **Priority:** Low
+
+Define assertion-based test specs for the Puppeteer booking flow so Claude can iterate autonomously against them during future automation changes. Two layers: (1) unit tests for date math, pagination targeting, and booking window logic, (2) integration smoke tests against dry-run with DOM assertions.
+
+**Requirements:**
+- Unit test specs for `lib/date-utils.ts` and pagination logic
+- Integration test spec targeting `test:booking-dry-run` with structured assertions
+- Retry-aware assertions that distinguish code bugs from site flakiness
+
+**When to implement:** Next time booking automation needs significant iteration (e.g., site layout change, new gym support).
+
+**Last Updated:** February 13, 2026
+
+---
+
+### CI Failure Diagnostic Prompt
+**Status:** Backlogged | **Priority:** Low
+
+A ready-made Claude Code prompt that fetches the latest failed GitHub Actions run, categorizes the failure (infra/deps/build/test/config), and suggests fixes. Manual invocation only — no autonomous CI watcher.
+
+**Requirements:**
+- Prompt file at `scripts/ci-doctor.md` using `gh run` CLI commands
+- Failure categorization with suggested fix per category
+- For config/secrets issues, create a GitHub issue instead of auto-fixing
+
+**When to implement:** When CI failures become frequent enough to justify the setup time.
+
+**Last Updated:** February 13, 2026
 
 ---
 
