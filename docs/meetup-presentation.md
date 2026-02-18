@@ -139,6 +139,7 @@ User schedules a class
 - `/claude-md-improver` -> end-of-session CLAUDE.md audit and cleanup
 - `/frontend-design` -> production-grade UI components
 - `/create-migration` -> scaffolds numbered Supabase migrations
+- `/insights` -> interactive HTML report of your Claude Code usage patterns -- copy prompts, hooks, commands, see how you actually work
 
 **Hooks -- guardrails that run automatically**
 - Block `.env` edits (PreToolUse) -- can't accidentally commit credentials
