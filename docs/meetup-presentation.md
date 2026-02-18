@@ -41,20 +41,7 @@ Brock Busby - Lenny's Newsletter Meetup - 2026
 
 ---
 
-## Slide 4 -- [DEMO]
-
-**Live walkthrough**
-
-- Dashboard -- next class countdown, booking status at a glance
-- Schedule management -- adding a recurring class, skip next occurrence, global pause
-- Booking history -- Confirmed / Waitlisted / Retrying / Failed with filter pills
-- **Show a real notification email** -- the full loop: booked while you're not watching
-
-> "I'm at a brewery Sunday afternoon. This email lands. I don't have to think about it."
-
----
-
-## Slide 5 -- The Plot Twist
+## Slide 4 -- The Plot Twist
 
 **We hit our KPI. The class still fills up.**
 
@@ -69,7 +56,7 @@ Brock Busby - Lenny's Newsletter Meetup - 2026
 
 ---
 
-## Slide 6 -- Stack & Architecture
+## Slide 5 -- Stack & Architecture
 
 **All free tier. Event-driven. Zero servers to manage.**
 
@@ -95,7 +82,7 @@ User schedules a class
 
 ---
 
-## Slide 7 -- Automation: Harder Than It Looks
+## Slide 6 -- Automation: Harder Than It Looks
 
 **"Just click the button" -- famous last words.**
 
@@ -117,7 +104,7 @@ User schedules a class
 
 ---
 
-## Slide 8 -- The Design Story
+## Slide 7 -- The Design Story
 
 **Production-quality UI. Solo builder. No design background.**
 
@@ -130,7 +117,7 @@ User schedules a class
 
 ---
 
-## Slide 9 -- Claude Code Power User Tips
+## Slide 8 -- Claude Code Power User Tips
 
 **The setup that made this possible as a solo builder**
 
@@ -159,7 +146,7 @@ User schedules a class
 
 ---
 
-## Slide 10 -- Q&A
+## Slide 9 -- Q&A
 
 **Links & Resources**
 
