@@ -154,4 +154,4 @@ User schedules a class
 - Claude Code: `docs.anthropic.com/claude-code`
 - Inngest: `inngest.com`
 
-*[your contact / LinkedIn / Twitter here]*
+*[brockbusby@gmail.com / https://www.linkedin.com/in/brockbusby/]*
