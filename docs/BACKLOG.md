@@ -50,17 +50,6 @@ The three-zone skip cleanup logic (v2.12) needs comprehensive production testing
 
 ---
 
-### Disable Supabase Signups at Dashboard Level
-**Status:** Action needed | **Priority:** High
-
-The signup page UI is disabled and the server action returns early, but the Supabase Auth REST API still accepts signups via the public anon key. Disable signups at the infrastructure level.
-
-**Action:** Supabase Dashboard > Authentication > Providers > Email > Toggle "Enable Sign Ups" to OFF
-
-**Last Updated:** February 18, 2026
-
----
-
 ### Review Support Email
 **Status:** Quick review needed | **Priority:** Low
 
@@ -549,6 +538,13 @@ Password confirmation on signup, resend verification on login, Cloudflare Turnst
 **Completed:** January 18, 2026
 
 Added caching for `node_modules` and Puppeteer browsers (`~/.cache/puppeteer`) to booking automation workflow. Reduces run time from ~90s to ~60s on cache hits. Cache auto-invalidates when `package-lock.json` changes. See `docs/GITHUB_ACTIONS_SETUP.md` for cache management commands.
+
+---
+
+### Disable Supabase Signups at Dashboard Level ✅
+**Completed:** February 18, 2026
+
+Disabled "Allow new users to sign up" in Supabase Dashboard (Authentication > Sign In / Providers > Email). Complements the UI and server action blocks to fully close signups at the infrastructure level.
 
 ---
 
