@@ -2499,12 +2499,12 @@ interface FooterProps {
 **With tagline (default):**
 ```
 Made for gym enthusiasts who value their time
-© 2026 Beerock Studios
+© 2026 Beerock (links to beerock.com)
 ```
 
 **Without tagline:**
 ```
-© 2026 Beerock Studios
+© 2026 Beerock (links to beerock.com)
 ```
 
 ### Code Examples

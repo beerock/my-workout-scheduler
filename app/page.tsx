@@ -112,14 +112,14 @@ export default async function Home() {
               className="flex flex-col sm:flex-row gap-4 justify-center mb-12 sm:mb-16 opacity-0 animate-fade-in-up"
               style={{ animationDelay: '0.3s' }}
             >
-              <Link href="/signup">
+              <Link href="/login">
                 <Button variant="primary" size="lg" className="w-full sm:w-auto px-8">
-                  Get Started Free
+                  Sign In
                 </Button>
               </Link>
-              <Link href="/login">
+              <Link href="/signup">
                 <Button variant="outline" size="lg" className="w-full sm:w-auto px-8">
-                  Sign In
+                  Request an Invite
                 </Button>
               </Link>
             </div>
