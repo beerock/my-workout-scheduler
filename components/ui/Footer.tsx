@@ -18,7 +18,7 @@ export function Footer({ showTagline = true, className = '', style }: FooterProp
             </p>
           )}
           <p className="font-dm-sans text-xs text-gray-400">
-            &copy; 2026 Beerock Studios
+            &copy; 2026 <a href="https://beerock.com" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 transition-colors">Beerock</a>
           </p>
         </div>
       </div>

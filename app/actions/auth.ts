@@ -57,6 +57,9 @@ export async function signupWithTurnstile(
   password: string,
   turnstileToken: string
 ): Promise<SignupResult> {
+  // Signups are currently disabled (invite-only)
+  return { success: false, error: 'Sign-ups are currently closed. Please contact the team for an invite.' }
+
   // 1. Verify Turnstile token FIRST (before any other processing)
   if (!turnstileToken) {
     return { success: false, error: 'Bot verification required' }

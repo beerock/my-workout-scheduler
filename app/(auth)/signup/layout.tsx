@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Create Account',
-  description: 'Start booking gym classes automatically. Set up your weekly schedule once and never worry about missing registration windows again.',
+  title: 'Invite Only',
+  description: 'My Workout Scheduler is currently in private beta. Contact the team for an invite.',
   alternates: {
     canonical: '/signup',
   },
