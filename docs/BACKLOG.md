@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** February 13, 2026
+**Last Updated:** February 18, 2026
 
 ---
 
@@ -50,6 +50,17 @@ The three-zone skip cleanup logic (v2.12) needs comprehensive production testing
 
 ---
 
+### Disable Supabase Signups at Dashboard Level
+**Status:** Action needed | **Priority:** High
+
+The signup page UI is disabled and the server action returns early, but the Supabase Auth REST API still accepts signups via the public anon key. Disable signups at the infrastructure level.
+
+**Action:** Supabase Dashboard > Authentication > Providers > Email > Toggle "Enable Sign Ups" to OFF
+
+**Last Updated:** February 18, 2026
+
+---
+
 ### Review Support Email
 **Status:** Quick review needed | **Priority:** Low
 
@@ -93,6 +104,23 @@ Allow users to test their gym credentials before saving, ensuring they work with
 **Context:** YMCA of WNC users are typically onboarded via GroupExPro first. See `docs/YMCA_MAIN_SITE_BOOKING_FLOW.md` for booking flow details.
 
 **Last Updated:** January 16, 2026
+
+---
+
+### Invite Code Signup Gate
+**Status:** Backlogged | **Priority:** High
+
+Allow new users to sign up only with a valid invite code. Replaces the current hard-disabled signup page with a gated flow.
+
+**Requirements:**
+- Invite code input field on signup page (shown before the registration form)
+- Valid code unlocks the full signup form
+- Admin can generate and manage invite codes (Supabase table)
+- Codes can be single-use or multi-use with an optional expiration
+
+**Dependencies:** Admin dashboard (for code management), or manual DB inserts for MVP
+
+**Last Updated:** February 18, 2026
 
 ---
 
