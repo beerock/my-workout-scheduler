@@ -1,6 +1,6 @@
 # My Workout Scheduler
 
-**Version:** 2.30 | **Status:** Production
+**Version:** 2.31 | **Status:** Production (Invite-Only)
 
 My Workout Scheduler automates gym class reservations using Puppeteer to book classes the instant registration opens (e.g., 26 hours before class time). Set it and forget it—no more waking up early or racing to book popular classes.
 
