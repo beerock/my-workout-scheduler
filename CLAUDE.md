@@ -8,7 +8,7 @@
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version:** v2.30 - Retry Exhausted Notifications (see PRD for full version history)
+**Current Version:** v2.31 - Invite-Only Private Beta (see PRD for full version history)
 
 ---
 
@@ -54,12 +54,14 @@ supabase/         → Migrations and RLS policies
 
 ## Critical Gotchas
 
+- **Signups disabled:** Invite-only private beta. Disabled at 3 layers: signup page UI, `signupWithTurnstile` server action, and Supabase dashboard (Authentication > Sign In / Providers > Email). Re-enable all three when adding invite codes.
 - **Date/time:** Always use `lib/date-utils.ts`. Use `calculateBookingWindowOpen` from `lib/inngest/scheduler.ts` for booking window calculations
 - **Encryption:** AES-256-GCM for gym passwords, key in `ENCRYPTION_KEY` env var (never sent to database)
 - **Inngest sync:** Manual sync required in Inngest dashboard after deploying function changes
 - **Inngest events:** Delete cancels events; inactive/pause uses runtime checks (events still fire but don't book)
 - **User deletion:** Inngest events NOT canceled on user delete (fail gracefully, acceptable for MVP)
 - **Linting:** `npm run lint` is broken (Next.js config issue). Use `npx tsc --noEmit` for type checking.
+- **Dead code:** TypeScript type-checks unreachable code (after early returns). Remove dead code entirely rather than leaving it below a return — Vercel builds will fail on type errors even in unreachable paths.
 - **Inngest auth:** SDK auto-validates `INNGEST_SIGNING_KEY` — no explicit check needed in route handler
 
 ---
@@ -198,4 +200,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: February 13, 2026 (v2.30)*
+*Last Updated: February 18, 2026 (v2.31)*
