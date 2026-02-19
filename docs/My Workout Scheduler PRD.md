@@ -177,6 +177,12 @@
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.31:** Invite-Only Private Beta (February 2026)
+  - Signup form replaced with invite-only message (static server component)
+  - Server action and Supabase dashboard signups disabled at all layers
+  - Landing page and login CTAs updated to reflect closed signups
+  - Footer rebranded from "Beerock Studios" to "Beerock" with link to beerock.com
+  - Backlogged: Invite Code Signup Gate for future gated access
 - **v2.30:** Retry Exhausted Notifications (January 2026)
   - Added "Retries Exhausted" email notification when booking retries fail and class time arrives
   - Provides closure to users who received "Class Full - Retrying" email
