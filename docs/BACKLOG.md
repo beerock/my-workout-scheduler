@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** February 18, 2026
+**Last Updated:** February 19, 2026
 
 ---
 
