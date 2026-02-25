@@ -34,7 +34,8 @@
           },
           {
             "type": "command",
-            "command": "powershell -Command \"$branch = git branch --show-current; if ($branch -eq 'main') { Write-Output 'WARNING: You are editing files on main branch!' }\""
+            "command": "node .claude/hooks/main-branch-warning.js",
+            "statusMessage": "Checking branch"
           }
         ]
       }
