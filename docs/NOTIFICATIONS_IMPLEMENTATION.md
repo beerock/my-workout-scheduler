@@ -631,7 +631,7 @@ export async function sendBookingNotification(params: {
   if (isRetrying && !settings.email_on_retry) return
 
   // Step 4: Get email template
-  const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://my-workout-scheduler.vercel.app'
+  const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://myworkout.beerock.com'
   const bookingTimestamp = new Date().toLocaleString('en-US', {
     timeZone: settings.timezone || 'America/New_York',
     dateStyle: 'medium',
@@ -830,7 +830,7 @@ async function sendDigestForUser(userId: string): Promise<{ success: boolean; er
       dayTime: `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][n.booking_attempts.recurring_classes.day_of_week]} ${n.booking_attempts.recurring_classes.class_time}`,
       errorSummary: getShortErrorSummary(n.booking_attempts.error_message),
     })),
-    dashboardUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://my-workout-scheduler.vercel.app',
+    dashboardUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://myworkout.beerock.com',
   })
 
   // Send email
