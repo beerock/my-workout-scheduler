@@ -6,7 +6,7 @@ process.stdin.on('end', () => {
   try {
     const input = JSON.parse(data);
     const filePath = (input.tool_input || {}).file_path || '';
-    if (/\.env/.test(filePath)) {
+    if (/\.env/.test(filePath) && !/\.env\.example$/.test(filePath)) {
       process.stderr.write('BLOCKED: .env files must not be edited by Claude\n');
       process.exit(2);
     }
