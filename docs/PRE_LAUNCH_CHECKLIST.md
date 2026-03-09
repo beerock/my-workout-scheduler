@@ -160,7 +160,7 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 Replace test key with production Turnstile site key:
 
 1. Go to: **Cloudflare Dashboard** → **Turnstile** → **Add Site**
-2. Create site key for production domain (e.g., `my-workout-scheduler.vercel.app` or custom domain)
+2. Create site key for production domain (e.g., `myworkout.beerock.com` or custom domain)
 3. Update Vercel Production environment variable:
    - Variable: `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
    - Value: [Your production site key]

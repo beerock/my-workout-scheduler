@@ -50,7 +50,7 @@ Resend's SMTP settings:
 1. In Supabase Dashboard → **Authentication** → **URL Configuration**
 2. Set **Site URL** to your production URL:
    ```
-   https://my-workout-scheduler.vercel.app
+   https://myworkout.beerock.com
    ```
 
 ### 2.2 Add Redirect URLs
@@ -59,7 +59,7 @@ Resend's SMTP settings:
 2. Add the following URLs (click **Add URL** for each):
    ```
    http://localhost:3000/auth/callback
-   https://my-workout-scheduler.vercel.app/auth/callback
+   https://myworkout.beerock.com/auth/callback
    ```
 3. If you have Vercel preview deployments, you can add wildcard:
    ```
@@ -254,7 +254,7 @@ Reset your My Workout Scheduler password
 ### 4.3 Test Production
 
 Once deployed to Vercel:
-1. Set `NEXT_PUBLIC_SITE_URL=https://my-workout-scheduler.vercel.app` in Vercel env vars
+1. Set `NEXT_PUBLIC_SITE_URL=https://myworkout.beerock.com` in Vercel env vars
 2. Redeploy
 3. Test signup and password reset on production
 4. Verify links point to production domain
@@ -348,7 +348,7 @@ RESEND_FROM_EMAIL=noreply@beerock.com
 
 **Vercel Production:**
 ```env
-NEXT_PUBLIC_SITE_URL=https://my-workout-scheduler.vercel.app
+NEXT_PUBLIC_SITE_URL=https://myworkout.beerock.com
 RESEND_API_KEY=re_xxxxxxxxxxxxx
 RESEND_FROM_EMAIL=noreply@beerock.com
 ```

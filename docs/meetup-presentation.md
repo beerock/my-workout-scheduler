@@ -151,7 +151,7 @@ User schedules a class
 
 **Links & Resources**
 
-- App: `my-workout-scheduler.vercel.app`
+- App: `myworkout.beerock.com`
 - Claude Code: `docs.anthropic.com/claude-code`
 - Inngest: `inngest.com`
 
