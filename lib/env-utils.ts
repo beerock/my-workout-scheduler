@@ -30,7 +30,7 @@
  *
  * @example
  * // Vercel preview (auto-detected)
- * getSiteUrl() // => 'https://my-workout-scheduler-git-feature-team.vercel.app'
+ * getSiteUrl() // => 'https://myworkout-beerock-com-git-feature-xyz.vercel.app'
  *
  * @example
  * // Production (explicit override)

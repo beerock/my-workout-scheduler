@@ -289,7 +289,7 @@ NEXT_PUBLIC_SITE_URL=https://myworkout.beerock.com
 ```
 
 **Auto-injected by Vercel:**
-- `VERCEL_URL` (e.g., `myworkout.beerock.com`)
+- `VERCEL_URL` (e.g., `my-workout-scheduler.vercel.app`) — always a Vercel-generated hostname, never a custom domain
 - `VERCEL_ENV=production`
 
 **Supabase configuration:**
