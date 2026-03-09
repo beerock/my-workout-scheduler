@@ -30,7 +30,7 @@
   - Error handling and screenshot capture
   - FREE infrastructure (Inngest + GitHub Actions free tiers)
 - ✅ **COMPLETED: Production Deployment**
-  - Deployed to Vercel (https://my-workout-scheduler.vercel.app)
+  - Deployed to Vercel (https://myworkout.beerock.com)
   - Inngest production sync complete
   - Environment variables configured (Supabase, Inngest, GitHub)
   - End-to-end production testing in progress
@@ -753,7 +753,7 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 - [x] Set up Supabase project
 - [x] Connect Supabase Auth
 - [x] Build login/signup pages
-- [x] Deploy to Vercel (https://my-workout-scheduler.vercel.app)
+- [x] Deploy to Vercel (https://myworkout.beerock.com)
 
 **Days 3-4: Schedule Management** ✅ COMPLETE
 

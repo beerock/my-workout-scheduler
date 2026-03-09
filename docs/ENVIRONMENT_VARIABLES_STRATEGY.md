@@ -45,7 +45,7 @@ Resend → Booking notifications (via our API)
 3. `localhost:3000` (local development fallback)
 
 **When to set NEXT_PUBLIC_SITE_URL:**
-- **Production only**: Set to `https://my-workout-scheduler.vercel.app`
+- **Production only**: Set to `https://myworkout.beerock.com`
 - **Local/Preview**: Leave unset (auto-detection works)
 
 **Implementation:**
@@ -285,15 +285,15 @@ RESEND_FROM_EMAIL=noreply@your-domain.com
 RESEND_FROM_NAME=My Workout Scheduler
 
 # Site URL (explicit for production)
-NEXT_PUBLIC_SITE_URL=https://my-workout-scheduler.vercel.app
+NEXT_PUBLIC_SITE_URL=https://myworkout.beerock.com
 ```
 
 **Auto-injected by Vercel:**
-- `VERCEL_URL` (e.g., `my-workout-scheduler.vercel.app`)
+- `VERCEL_URL` (e.g., `my-workout-scheduler.vercel.app`) — always a Vercel-generated hostname, never a custom domain
 - `VERCEL_ENV=production`
 
 **Supabase configuration:**
-- Add `https://my-workout-scheduler.vercel.app/**` to Auth → Redirect URLs
+- Add `https://myworkout.beerock.com/**` to Auth → Redirect URLs
 
 ---
 

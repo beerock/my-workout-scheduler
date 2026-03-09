@@ -583,7 +583,7 @@ Per-message SMS costs not justified for MVP. Email notifications sufficient.
 ## Operational Notes
 
 ### Production Deployment
-- **URL:** https://my-workout-scheduler.vercel.app
+- **URL:** https://myworkout.beerock.com
 - **Architecture:** Inngest → GitHub Actions (Puppeteer) → Supabase
 - **Monitoring:** Inngest Dashboard
 
