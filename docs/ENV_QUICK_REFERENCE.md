@@ -91,7 +91,7 @@ const webhookUrl = `${getSiteUrl()}/api/webhooks/inngest`
 **Returns:**
 - Local: `http://localhost:3000`
 - Preview: `https://my-workout-scheduler-git-feature-team.vercel.app`
-- Production: `https://my-workout-scheduler.vercel.app`
+- Production: `https://myworkout.beerock.com`
 
 ### Send Email with Resend
 
@@ -157,7 +157,7 @@ console.log(`Site URL: ${validation.siteUrl}`)
 
 - [ ] Go to Vercel Dashboard → Settings → Environment Variables
 - [ ] Add all required variables (sections 1-4 in `.env.example`)
-- [ ] **Production only**: Set `NEXT_PUBLIC_SITE_URL=https://my-workout-scheduler.vercel.app`
+- [ ] **Production only**: Set `NEXT_PUBLIC_SITE_URL=https://myworkout.beerock.com`
 - [ ] Use **DIFFERENT** secrets for production (especially `ENCRYPTION_KEY`)
 - [ ] Enable "Sensitive" checkbox for all ⚠️ SENSITIVE variables
 - [ ] Redeploy to apply changes
@@ -165,9 +165,9 @@ console.log(`Site URL: ${validation.siteUrl}`)
 ### Supabase Configuration
 
 - [ ] Go to Supabase Dashboard → Authentication → URL Configuration
-- [ ] Add site URL: `https://my-workout-scheduler.vercel.app`
+- [ ] Add site URL: `https://myworkout.beerock.com`
 - [ ] Add redirect URLs:
-  - `https://my-workout-scheduler.vercel.app/**`
+  - `https://myworkout.beerock.com/**`
   - `https://*.vercel.app/**` (for preview deployments)
   - `http://localhost:3000/**` (for local dev)
 
@@ -197,7 +197,7 @@ RESEND_API_KEY
 ### Production ONLY
 
 ```env
-NEXT_PUBLIC_SITE_URL=https://my-workout-scheduler.vercel.app
+NEXT_PUBLIC_SITE_URL=https://myworkout.beerock.com
 ```
 
 ### Optional (All Environments)
@@ -262,7 +262,7 @@ VERCEL_GIT_COMMIT_REF         # Branch name
 
 **Solution:**
 1. Add `https://*.vercel.app/**` to Supabase → Authentication → URL Configuration
-2. Verify production URL is added: `https://my-workout-scheduler.vercel.app/**`
+2. Verify production URL is added: `https://myworkout.beerock.com/**`
 
 ### Email links point to wrong URL
 

@@ -20,7 +20,7 @@
  * Environment-specific behavior:
  * - Local development: Returns http://localhost:3000
  * - Vercel preview: Returns https://{auto-generated-preview-url}.vercel.app
- * - Production: Returns https://my-workout-scheduler.vercel.app (if NEXT_PUBLIC_SITE_URL is set)
+ * - Production: Returns https://myworkout.beerock.com (if NEXT_PUBLIC_SITE_URL is set)
  *
  * @returns The base URL for the current environment (without trailing slash)
  *
@@ -30,11 +30,11 @@
  *
  * @example
  * // Vercel preview (auto-detected)
- * getSiteUrl() // => 'https://my-workout-scheduler-git-feature-team.vercel.app'
+ * getSiteUrl() // => 'https://myworkout-beerock-com-git-feature-xyz.vercel.app'
  *
  * @example
  * // Production (explicit override)
- * getSiteUrl() // => 'https://my-workout-scheduler.vercel.app'
+ * getSiteUrl() // => 'https://myworkout.beerock.com'
  */
 export function getSiteUrl(): string {
   // 1. Explicit override (set in production via NEXT_PUBLIC_SITE_URL)

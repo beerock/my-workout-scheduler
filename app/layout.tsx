@@ -4,7 +4,7 @@ import { ToastProvider } from '@/contexts/ToastContext'
 import './globals.css'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://myworkoutscheduler.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://myworkout.beerock.com'),
   title: {
     default: 'My Workout Scheduler - Auto-Book Gym Classes',
     template: '%s | My Workout Scheduler',
