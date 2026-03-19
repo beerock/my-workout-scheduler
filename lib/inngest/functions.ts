@@ -8,7 +8,6 @@ import {
   updateBookingAttempt,
   getClassById,
   getAllActiveClasses,
-  type ClassNeedingBooking,
 } from '@/scripts/database-helpers';
 import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
 import { differenceInMinutes, format, subHours } from 'date-fns';
@@ -723,8 +722,7 @@ export const supabaseKeepAliveFunction = inngest.createFunction(
       const supabase = createServiceRoleClient();
       const { error } = await supabase
         .from('user_settings')
-        .select('user_id')
-        .limit(1);
+        .select('*', { count: 'exact', head: true });
 
       if (error) {
         console.error('[KeepAlive] Supabase ping failed:', error);
