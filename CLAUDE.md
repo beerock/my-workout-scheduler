@@ -59,6 +59,8 @@ supabase/         → Migrations and RLS policies
 - **Encryption:** AES-256-GCM for gym passwords, key in `ENCRYPTION_KEY` env var (never sent to database)
 - **Inngest sync:** Auto-syncs on Vercel deploy (configured via Inngest dashboard). No manual sync needed.
 - **Inngest endpoint update:** To change the app's endpoint URL (e.g. after domain migration), use **Add App → Sync with Vercel** — there is no edit button on existing apps
+- **Supabase keep-alive:** Daily scheduler (`0 0 * * *`) queries DB every day — primary protection against free-tier pause. `supabaseKeepAliveFunction` (every 3 days) is the independent safety net.
+- **Supabase head query:** Use `.select('*', { count: 'exact', head: true })` for a count-only query with no data transfer (HTTP HEAD request — useful for health checks/pings).
 - **Inngest events:** Delete cancels events; inactive/pause uses runtime checks (events still fire but don't book)
 - **Supabase URL Configuration path:** Authentication → URL Configuration (NOT Settings → Add Ons → Custom Domain, which is a paid feature)
 - **VERCEL_URL vs custom domain:** `VERCEL_URL` is always a Vercel-generated hostname (e.g. `*.vercel.app`), never a custom domain — custom domain only comes through `NEXT_PUBLIC_SITE_URL`
@@ -165,7 +167,7 @@ One paragraph description (2-3 sentences max).
 - New features → Add to appropriate priority section using format above
 - Completed → Move to "Completed (Summary)", collapse to 3-4 lines with completion date
 - Abandoned → Move to "Archived" with one-line reason
-- **NEVER add:** code examples, testing checklists, implementation details, alternative approaches
+- **NEVER add:** code examples, testing checklists, implementation details, alternative approaches (bug notes with file paths/line numbers/fix suggestions belong in a separate entry, not appended inline)
 - **If detail seems necessary:** Ask user: "This feature may need more detail than standard format. Should I add [specific thing]?"
 
 ---
@@ -203,4 +205,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: February 18, 2026 (v2.31)*
+*Last Updated: March 19, 2026 (v2.31)*
