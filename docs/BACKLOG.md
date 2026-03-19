@@ -596,8 +596,8 @@ Per-message SMS costs not justified for MVP. Email notifications sufficient.
 - **Architecture:** Inngest → GitHub Actions (Puppeteer) → Supabase
 - **Monitoring:** Inngest Dashboard
 
-### Required Inngest Sync
-Manual sync required in Inngest dashboard after deploying function changes.
+### Inngest Sync
+Auto-syncs on Vercel deploy (configured). No manual sync needed.
 
 ### User Deletion
 Inngest events NOT canceled on user delete (fail gracefully, acceptable for MVP).
