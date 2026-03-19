@@ -8,7 +8,6 @@ import {
   updateBookingAttempt,
   getClassById,
   getAllActiveClasses,
-  type ClassNeedingBooking,
 } from '@/scripts/database-helpers';
 import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
 import { differenceInMinutes, format, subHours } from 'date-fns';
@@ -708,6 +707,31 @@ export const pauseReminderFunction = inngest.createFunction(
       status: 'sent',
       message: 'Pause reminder email sent after 7 days',
     };
+  }
+);
+
+/**
+ * Supabase keep-alive - prevents free-tier database pause (7-day inactivity limit)
+ * Runs every 3 days as a safety net, independent of the daily scheduler
+ */
+export const supabaseKeepAliveFunction = inngest.createFunction(
+  { id: 'supabase-keep-alive' },
+  { cron: '0 0 */3 * *' }, // Every 3 days at midnight UTC
+  async ({ step }) => {
+    return await step.run('ping-supabase', async () => {
+      const supabase = createServiceRoleClient();
+      const { error } = await supabase
+        .from('user_settings')
+        .select('*', { count: 'exact', head: true });
+
+      if (error) {
+        console.error('[KeepAlive] Supabase ping failed:', error);
+        throw new Error(`Keep-alive query failed: ${error.message}`);
+      }
+
+      console.log('[KeepAlive] Supabase ping successful');
+      return { success: true, timestamp: new Date().toISOString() };
+    });
   }
 );
 

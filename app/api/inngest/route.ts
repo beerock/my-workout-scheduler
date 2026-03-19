@@ -8,13 +8,15 @@ import {
   bookClassFunction,
   dailySchedulerFunction,
   pauseReminderFunction,
+  supabaseKeepAliveFunction,
 } from '@/lib/inngest/functions';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
   functions: [
-    bookClassFunction,       // Handles booking attempts with retries
-    dailySchedulerFunction,  // Runs daily to schedule upcoming bookings
-    pauseReminderFunction,   // Sends reminder 7 days after pausing schedule
+    bookClassFunction,          // Handles booking attempts with retries
+    dailySchedulerFunction,     // Runs daily to schedule upcoming bookings
+    pauseReminderFunction,      // Sends reminder 7 days after pausing schedule
+    supabaseKeepAliveFunction,  // Prevents Supabase free-tier pause
   ],
 });
