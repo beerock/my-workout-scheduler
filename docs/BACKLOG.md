@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** February 19, 2026
+**Last Updated:** March 19, 2026
 
 ---
 
@@ -37,7 +37,9 @@ The three-zone skip cleanup logic (v2.12) needs comprehensive production testing
 - Zone B (inside booking window): Clear flag only, keep datetime
 - Zone C (after class time): Clear both fields
 
-**Last Updated:** December 1, 2025
+**Known bug (from audit Mar 2026):** `app/actions/user-settings.ts:132` compares `new Date(skip_target_datetime)` (UTC) against `new Date()` (local time) — may cause zone misclassification. Fix: use `.toISOString()` for UTC-to-UTC comparison.
+
+**Last Updated:** March 19, 2026
 
 ---
 
@@ -545,6 +547,13 @@ Added caching for `node_modules` and Puppeteer browsers (`~/.cache/puppeteer`) t
 **Completed:** February 18, 2026
 
 Disabled "Allow new users to sign up" in Supabase Dashboard (Authentication > Sign In / Providers > Email). Complements the UI and server action blocks to fully close signups at the infrastructure level.
+
+---
+
+### Supabase Free-Tier Keep-Alive ✅
+**Completed:** March 19, 2026 (v2.31)
+
+Added dedicated `supabaseKeepAliveFunction` Inngest cron (every 3 days at midnight UTC) to prevent Supabase free-tier database pause. Uses lightweight `head: true` count query on `user_settings`. Safety net independent of the daily scheduler.
 
 ---
 
