@@ -1039,7 +1039,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
 
 // Daxko flow removed - see git history (commit b47d8ff) if needed for revert
 
-
+/**
  * Take a screenshot for debugging
  */
 async function takeScreenshot(page: Page, name: string): Promise<string> {
