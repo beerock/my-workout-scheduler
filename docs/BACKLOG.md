@@ -264,6 +264,20 @@ If a retry attempt fails for a non-"full" reason (timeout, network error, elemen
 
 ---
 
+### Skip Notification for Already-Booked Classes
+**Status:** Backlogged | **Priority:** Medium
+
+When automation re-runs for a class the user is already reserved or waitlisted for, it correctly detects the existing booking but still sends a success notification email. This is confusing since no new action was taken.
+
+**Requirements:**
+- Return a distinct status (e.g., `already_confirmed` / `already_waitlisted`) from the Puppeteer script
+- Skip sending notification email for these statuses in `bookClassFunction`
+- Log the detection but don't create a new booking_attempts record
+
+**Last Updated:** March 30, 2026
+
+---
+
 ## Post-MVP: Low Priority
 
 Nice-to-have features that aren't critical.
