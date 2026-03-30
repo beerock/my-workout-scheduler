@@ -62,6 +62,7 @@ supabase/         → Migrations and RLS policies
 - **Supabase keep-alive:** Daily scheduler (`0 0 * * *`) queries DB every day — primary protection against free-tier pause. `supabaseKeepAliveFunction` (every 3 days) is the independent safety net.
 - **Supabase head query:** Use `.select('*', { count: 'exact', head: true })` for a count-only query with no data transfer (HTTP HEAD request — useful for health checks/pings).
 - **Inngest events:** Delete cancels events; inactive/pause uses runtime checks (events still fire but don't book)
+- **Booking flow:** YMCA schedule -> GroupExPro login (direct auth, no Daxko) -> GroupExPro class details -> Reserve a Spot / Join the Waitlist. Daxko is no longer in the flow.
 - **Supabase URL Configuration path:** Authentication → URL Configuration (NOT Settings → Add Ons → Custom Domain, which is a paid feature)
 - **VERCEL_URL vs custom domain:** `VERCEL_URL` is always a Vercel-generated hostname (e.g. `*.vercel.app`), never a custom domain — custom domain only comes through `NEXT_PUBLIC_SITE_URL`
 - **User deletion:** Inngest events NOT canceled on user delete (fail gracefully, acceptable for MVP)
