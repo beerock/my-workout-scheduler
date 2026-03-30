@@ -744,7 +744,9 @@ async function completeGroupExProBooking(
     // Check for concurrent booking conflict
     const hasConcurrentConflict =
       finalContent.includes('already have an existing reservation') ||
-      finalContent.includes('already have a reservation during this time')
+      finalContent.includes('already have a reservation during this time') ||
+      finalContent.includes('already booked for these timings') ||
+      finalContent.includes('already booked for this time')
 
     if (hasConcurrentConflict) {
       console.log('⚠️  Concurrent booking conflict')
