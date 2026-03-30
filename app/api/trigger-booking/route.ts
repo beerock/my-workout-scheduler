@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       classData.timezone
     );
 
-    // Trigger Inngest booking event
+    // Trigger Inngest booking event (immediate - booking window already open)
     await inngest.send({
       name: 'booking/attempt',
       data: {
@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
         className: classData.class_type,
         classDate, // Required for cancelOn matching
         attemptNumber: 1,
+        expectedBookingTime: Date.now(), // Immediate booking
       },
     });
 

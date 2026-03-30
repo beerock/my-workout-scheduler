@@ -196,6 +196,7 @@ export async function scheduleBooking(classData: {
       className: classData.class_type,
       classDate, // Required for cancelOn matching
       attemptNumber: 1,
+      expectedBookingTime: bookingTime.getTime(), // UTC ms - used by timing guard
     },
     ts: bookingTime.getTime(),
   });
