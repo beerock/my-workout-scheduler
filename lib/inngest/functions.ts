@@ -9,9 +9,9 @@ import {
   getClassById,
   getAllActiveClasses,
 } from '@/scripts/database-helpers';
-import { calculateClassStartTime, calculateNextClassDate, scheduleBooking } from './scheduler';
+import { scheduleBooking } from './scheduler';
 import { differenceInMinutes, format, subHours } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { sendBookingNotification } from '@/lib/notifications/send-booking-notification';
 import { formatTime12Hour } from '@/lib/date-utils';
@@ -37,11 +37,41 @@ export const bookClassFunction = inngest.createFunction(
   },
   { event: 'booking/attempt' },
   async ({ event, step }) => {
-    const { classId, className, attemptNumber = 1 } = event.data;
+    const { classId, className, attemptNumber = 1, expectedBookingTime } = event.data;
 
     console.log(
       `[Inngest] Booking attempt #${attemptNumber} for class "${className}" (${classId})`
     );
+
+    // Timing guard: defense-in-depth against premature event delivery
+    if (expectedBookingTime && attemptNumber === 1) {
+      const now = Date.now();
+      const earlyByMs = expectedBookingTime - now;
+      const earlyByMinutes = earlyByMs / (1000 * 60);
+
+      if (earlyByMinutes > 60 * 24) {
+        // More than 24 hours early - clearly a bug, abort
+        console.error(
+          `[Inngest] ABORTING: Event fired ${Math.round(earlyByMinutes / 60)} hours early for "${className}". ` +
+          `Expected: ${new Date(expectedBookingTime).toISOString()}, Now: ${new Date(now).toISOString()}`
+        );
+        return {
+          classId,
+          className,
+          status: 'aborted',
+          error: `Event fired ${Math.round(earlyByMinutes / 60)} hours before expected booking time`,
+        };
+      }
+
+      if (earlyByMinutes > 30) {
+        // 30 min to 24h early - wait until the right time
+        console.log(
+          `[Inngest] Event fired ${Math.round(earlyByMinutes)} minutes early. ` +
+          `Sleeping until ${new Date(expectedBookingTime).toISOString()}`
+        );
+        await step.sleepUntil('wait-for-booking-window', new Date(expectedBookingTime));
+      }
+    }
 
     // Step 1: Fetch class data from database
     const classData = await step.run('fetch-class-data', async () => {
@@ -253,9 +283,9 @@ export const bookClassFunction = inngest.createFunction(
         });
       });
 
-      // Check if we should retry (same logic as "class full")
-      const timeoutClassStartTime = calculateClassStartTime(
-        classData.day_of_week,
+      // Check if we should retry (use fixed class date, not recalculated)
+      const timeoutClassStartTime = getFixedClassStartTime(
+        event.data.classDate,
         classData.class_time,
         classData.timezone
       );
@@ -270,19 +300,13 @@ export const bookClassFunction = inngest.createFunction(
         await step.sleep('wait-before-timeout-retry', '15m');
 
         await step.run('send-timeout-retry-event', async () => {
-          const classDate = calculateNextClassDate(
-            classData.day_of_week,
-            classData.class_time,
-            classData.timezone
-          );
-
           await inngest.send({
             name: 'booking/attempt',
-            id: `book-retry-${classId}-${classDate}-${attemptNumber + 1}-${crypto.randomUUID().slice(0, 8)}`,
+            id: `book-retry-${classId}-${event.data.classDate}-${attemptNumber + 1}-${crypto.randomUUID().slice(0, 8)}`,
             data: {
               classId,
               className: classData.class_type,
-              classDate, // Required for cancelOn matching
+              classDate: event.data.classDate, // Propagate original date
               attemptNumber: attemptNumber + 1,
             },
           });
@@ -372,9 +396,9 @@ export const bookClassFunction = inngest.createFunction(
     // Step 4.5: Send notification email (if user preferences allow)
     await step.run('send-notification', async () => {
       try {
-        // Calculate formatted date for email
-        const classStartTime = calculateClassStartTime(
-          classData.day_of_week,
+        // Calculate formatted date for email (use fixed date from event)
+        const classStartTime = getFixedClassStartTime(
+          event.data.classDate,
           classData.class_time,
           classData.timezone
         );
@@ -422,9 +446,9 @@ export const bookClassFunction = inngest.createFunction(
     if (status === 'failed' && errorMessage?.toLowerCase().includes('full')) {
       console.log(`[Inngest] Class is full - checking if we should retry...`);
 
-      // Calculate time until class starts
-      const classStartTime = calculateClassStartTime(
-        classData.day_of_week,
+      // Calculate time until class starts (use fixed date from event)
+      const classStartTime = getFixedClassStartTime(
+        event.data.classDate,
         classData.class_time,
         classData.timezone
       );
@@ -446,21 +470,14 @@ export const bookClassFunction = inngest.createFunction(
         await step.sleep('wait-before-retry', '15m');
 
         await step.run('send-retry-event', async () => {
-          // Calculate class date for idempotency key (prevents duplicate retries)
-          const classDate = calculateNextClassDate(
-            classData.day_of_week,
-            classData.class_time,
-            classData.timezone
-          );
-
           await inngest.send({
             name: 'booking/attempt',
             // SECURITY: Random suffix prevents event ID prediction/enumeration
-            id: `book-retry-${classId}-${classDate}-${attemptNumber + 1}-${crypto.randomUUID().slice(0, 8)}`,
+            id: `book-retry-${classId}-${event.data.classDate}-${attemptNumber + 1}-${crypto.randomUUID().slice(0, 8)}`,
             data: {
               classId,
               className: classData.class_type,
-              classDate, // Required for cancelOn matching
+              classDate: event.data.classDate, // Propagate original date
               attemptNumber: attemptNumber + 1,
             },
           });
@@ -734,6 +751,22 @@ export const supabaseKeepAliveFunction = inngest.createFunction(
     });
   }
 );
+
+/**
+ * Calculate class start time from a fixed date string (not relative to now).
+ * Unlike calculateClassStartTime(), this won't roll forward to next week
+ * during retries when the original class date has passed.
+ */
+function getFixedClassStartTime(
+  classDate: string,      // "YYYY-MM-DD"
+  classTime: string,      // "HH:MM" or "HH:MM:SS"
+  timezone: string
+): Date {
+  const [hours, minutes] = classTime.split(':').map(Number);
+  const [year, month, day] = classDate.split('-').map(Number);
+  const dateInTz = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  return fromZonedTime(dateInTz, timezone);
+}
 
 /**
  * Helper function to get day name from day of week number
