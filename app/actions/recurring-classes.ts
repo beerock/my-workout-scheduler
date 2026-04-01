@@ -12,6 +12,7 @@ export type RecurringClassFormData = {
   branch: string
   booking_window_hours: number
   timezone: string
+  isCustomClassName?: boolean
 }
 
 export type RecurringClassResult = {
