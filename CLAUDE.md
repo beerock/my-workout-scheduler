@@ -206,4 +206,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: March 19, 2026 (v2.31)*
+*Last Updated: April 1, 2026 (v2.31)*
