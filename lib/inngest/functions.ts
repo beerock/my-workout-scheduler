@@ -1,6 +1,6 @@
 /**
  * Inngest functions for automated class booking
- * Handles booking attempts, retries for clock drift, and retries for full classes
+ * Handles booking attempts with early-start optimization and retries for full classes
  */
 import { inngest } from './client';
 import {
@@ -19,7 +19,7 @@ import { formatTime12Hour } from '@/lib/date-utils';
 /**
  * Main booking function - triggered at exact booking window time
  * Handles:
- * 1. Clock drift/window detection (9 attempts × 5 seconds = 45s, inside Puppeteer)
+ * 1. Early-start optimization (fires 60s early, waits on class details page, refreshes at booking window open)
  * 2. Class full retries (every 15 minutes until class starts)
  */
 export const bookClassFunction = inngest.createFunction(
@@ -240,6 +240,7 @@ export const bookClassFunction = inngest.createFunction(
               ref: 'main',
               inputs: {
                 class_id: classId,
+                expected_booking_time: expectedBookingTime ? String(expectedBookingTime) : '',
               },
             }),
           }
@@ -268,7 +269,7 @@ export const bookClassFunction = inngest.createFunction(
     console.log(`[Inngest] Waiting for booking result...`);
     const bookingResult = await step.waitForEvent('wait-for-result', {
       event: 'booking/result',
-      timeout: '10m', // GitHub Actions can take 5-6 min (includes 45s fast retry + page loads)
+      timeout: '10m', // GitHub Actions can take 5-6 min (includes early-start wait + page loads)
       match: 'data.classId',  // Match on classId (present in both original and result events)
     });
 

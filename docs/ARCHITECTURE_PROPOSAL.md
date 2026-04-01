@@ -1,9 +1,10 @@
 # Architecture Decision: Booking Automation Platform
 
 **Date:** 2025-01-XX  
-**Status:** ✅ **IMPLEMENTED** - GitHub Actions with 15-minute schedule  
+**Status:** ✅ **SUPERSEDED** - Now using Inngest event-driven scheduling + early-start optimization  
 **Related:** [PRD](./My%20Workout%20Scheduler%20PRD.md) Section 5.3  
-**Decision:** GitHub Actions (paid tier) with 15-minute cron schedule + clock drift retry logic
+**Original Decision:** GitHub Actions with 15-minute cron schedule + clock drift retry logic  
+**Current Architecture:** Inngest fires events 60s before booking window; GitHub Actions runs Puppeteer; early-start wait-and-refresh replaces clock drift retries
 
 ---
 
@@ -169,7 +170,7 @@ export async function saveRecurringClass(data, id) {
 |--------|---------------------------|-----------------------------|--------------------------|
 | **Scheduling Frequency** | Hourly | Every 15 minutes | Every 5-15 minutes |
 | **Immediate Triggers** | ❌ No | ❌ No | ✅ Yes (on class save) |
-| **Clock Drift Handling** | ❌ No | ✅ Yes (retry logic) | ❌ No |
+| **Timing Optimization** | ❌ No | ✅ Yes (early-start wait-and-refresh) | ❌ No |
 | **Codebase Location** | Separate workflow | Separate workflow | Same Next.js app |
 | **Environment Variables** | GitHub Secrets | GitHub Secrets | Vercel Dashboard |
 | **Deployment** | Separate from web app | Separate from web app | Same deployment |
@@ -251,58 +252,49 @@ This still improves on pure GitHub Actions by adding immediate triggers.
 
 ### Option 2: Enhanced GitHub Actions (✅ **IMPLEMENTED**)
 
-**Decision:** Enhanced GitHub Actions with 15-minute schedule and clock drift handling
+**Decision:** Enhanced GitHub Actions, now superseded by Inngest event-driven + early-start optimization
 
-#### Implementation Details
+#### Implementation Details (Historical -> Current)
 
-**1. Updated Cron Schedule**
-- Changed from hourly (`0 * * * *`) to every 15 minutes (`*/15 * * * *`)
-- Reduces maximum delay from 59 minutes to 15 minutes
-- Requires GitHub Actions paid tier (~$4-8/month)
+**1. Scheduling (SUPERSEDED)**
+- ~~15-minute cron schedule~~ -> Inngest event-driven scheduling
+- Inngest fires booking events at precise times (60s before booking window opens)
+- GitHub Actions triggered via workflow_dispatch from Inngest
 
-**2. Clock Drift Retry Logic**
-- Handles timing discrepancies between system clock and gym website clock
-- Retry mechanism: 6 attempts with 30-second intervals (2-3 minute window)
-- Only retries if booking button not found (clock drift scenario)
-- Refreshes page and re-navigates on each retry
-- Falls back to next cron run if retries fail
+**2. Early-Start Optimization (replaced clock drift retries)**
+- Inngest fires event 60s before booking window opens
+- Puppeteer completes all prep (login, navigation, landing on class details page) before window opens
+- Wait-and-refresh loop: sleeps until 2s before window, then refreshes every 2s (up to 15 attempts)
+- Result: booking click within 2-4 seconds of window opening (was ~57s)
 
-**3. Architecture**
+**3. Architecture (Current)**
 ```
-┌─────────────────────────────────────────────────────────┐
-│              GitHub Actions Workflow                    │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│  Scheduled Cron Job                                      │
-│  ├─ Runs every 15 minutes (`*/15 * * * *`)            │
-│  ├─ Queries Supabase for classes with open windows     │
-│  └─ For each due booking:                               │
-│      ├─ Launch Puppeteer (headless browser)           │
-│      ├─ Login with encrypted credentials               │
-│      ├─ Navigate to class schedule                     │
-│      ├─ Select branch                                   │
-│      ├─ Find target class                               │
-│      ├─ Retry logic (6 attempts, 30s intervals)        │
-│      │   └─ Handles clock drift                        │
-│      ├─ Book class (reserve/waitlist)                  │
-│      ├─ Update booking_attempts table                   │
-│      └─ Send email notification                         │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
+Inngest Event (60s early)
+  -> GitHub Actions workflow_dispatch
+    -> Puppeteer:
+      1. Navigate YMCA schedule
+      2. Find class, click Register
+      3. Login to GroupExPro
+      4. Land on class details page
+      5. waitForBookingWindow() - sleep + refresh loop
+      6. Click "Reserve a Spot" / "Join the Waitlist"
+      7. Send result event back to Inngest
 ```
 
 **Files Modified:**
-- `.github/workflows/booking-automation.yml` - Updated cron schedule
-- `scripts/booking-automation.ts` - Added clock drift retry logic
+- `.github/workflows/booking-automation.yml` - Workflow dispatch (triggered by Inngest)
+- `scripts/booking-automation.ts` - Puppeteer automation with early-start wait-and-refresh
+- `lib/inngest/scheduler.ts` - Event scheduling (fires 60s early)
+- `lib/inngest/functions.ts` - Orchestration (triggers GH Actions, handles retries)
 
 #### Benefits
 
-1. ✅ **Solves Timing Gap** - 15-minute checks vs hourly
-2. ✅ **Handles Clock Drift** - Retry logic compensates for timing discrepancies
+1. ✅ **Precise Timing** - Inngest fires events at exact booking window time (minus 60s for prep)
+2. ✅ **Early-Start Optimization** - Booking click within 2-4s of window opening
 3. ✅ **Proven Platform** - GitHub Actions reliable for Puppeteer
 4. ✅ **No Size Limits** - Puppeteer works without constraints
-5. ✅ **Cost Effective** - ~$4-8/month for paid tier
-6. ✅ **Simple Architecture** - Single workflow, well-understood platform
+5. ✅ **Event-Driven** - No polling; each class gets its own precisely-timed event
+6. ✅ **Simple Architecture** - Inngest handles scheduling, GH Actions handles execution
 
 #### Trade-offs
 
@@ -318,16 +310,16 @@ This still improves on pure GitHub Actions by adding immediate triggers.
 **Why GitHub Actions was chosen over Vercel Cron:**
 
 1. ✅ **Puppeteer Compatibility** - Vercel free tier has 10s timeout and 50MB size limit, insufficient for full Puppeteer booking process
-2. ✅ **Proven Solution** - GitHub Actions already working, just needed frequency improvement
+2. ✅ **Proven Solution** - GitHub Actions already working; now triggered precisely by Inngest
 3. ✅ **Cost Acceptable** - ~$4-8/month is reasonable for MVP
-4. ✅ **Clock Drift Handled** - Retry logic compensates for timing issues
+4. ✅ **Early-Start Optimization** - Arrives before booking window, refreshes at exact moment
 5. ✅ **Reliability** - GitHub Actions proven stable for long-running Puppeteer scripts
 
 **Risk Mitigation:**
-- ✅ 15-minute schedule reduces delay significantly
-- ✅ Clock drift retry logic handles timing discrepancies
-- ✅ Monitoring via GitHub Actions logs
-- ✅ Can adjust frequency if needed (5 minutes in backlog)
+- ✅ Inngest event-driven scheduling eliminates polling delays
+- ✅ Early-start wait-and-refresh handles timing edge cases (up to 30s coverage)
+- ✅ Monitoring via GitHub Actions logs + Inngest dashboard
+- ✅ Class full retries every 15 minutes via Inngest
 
 ---
 
@@ -335,22 +327,21 @@ This still improves on pure GitHub Actions by adding immediate triggers.
 
 ✅ **COMPLETED:**
 
-1. ✅ Updated GitHub Actions cron schedule to 15 minutes (`*/15 * * * *`)
-2. ✅ Implemented clock drift retry logic (6 attempts, 30-second intervals)
-3. ✅ Updated PRD to reflect new architecture
-4. ✅ Added Daxko API research to backlog (potential future enhancement)
+1. ✅ Migrated from 15-minute cron to Inngest event-driven scheduling
+2. ✅ Replaced clock drift retry logic with early-start optimization (v2.32)
+3. ✅ Updated PRD to reflect current architecture
+4. ✅ Migrated from Daxko to GroupExPro booking flow
 
 **Current Implementation:**
-- GitHub Actions workflow: `.github/workflows/booking-automation.yml`
-- Booking script with retry logic: `scripts/booking-automation.ts`
-- Schedule: Every 15 minutes (`*/15 * * * *`)
-- Cost: ~$4-8/month (GitHub Actions paid tier)
+- Inngest scheduling: `lib/inngest/scheduler.ts` (fires events 60s before booking window)
+- Inngest orchestration: `lib/inngest/functions.ts` (triggers GH Actions, handles retries)
+- GitHub Actions workflow: `.github/workflows/booking-automation.yml` (workflow_dispatch)
+- Puppeteer automation: `scripts/booking-automation.ts` (with `waitForBookingWindow()`)
 
 ## Future Considerations
 
 **Backlog Items:**
-- 5-minute check frequency (currently 15 minutes)
-- Daxko API integration (could replace Puppeteer if API access available)
+- Playwright migration (replace Puppeteer for better stability)
 - Immediate triggers on class save (would require Vercel or separate service)
 
 ---

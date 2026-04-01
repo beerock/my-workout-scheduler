@@ -15,10 +15,10 @@ Core Puppeteer automation logic for booking gym classes.
 - Login to gym website
 - Navigate to class schedule
 - Find target class using fuzzy matching
-- Two-step booking flow (class list → description page)
+- YMCA schedule -> GroupExPro login -> class details -> booking flow
 - Duplicate prevention (checks if already booked/waitlisted)
 - Booking window detection
-- Smart retry logic for clock drift
+- Early-start optimization (fires 60s before booking window, waits on class details page)
 - Error handling and screenshot capture
 
 **Usage:** Called by Inngest functions, not run directly.

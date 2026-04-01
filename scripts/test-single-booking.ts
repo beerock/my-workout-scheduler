@@ -141,6 +141,10 @@ async function testSingleBooking() {
     }
 
     // Prepare booking parameters
+    const expectedBookingTime = process.env.EXPECTED_BOOKING_TIME
+      ? Number(process.env.EXPECTED_BOOKING_TIME)
+      : undefined
+
     const bookingParams: BookingParams = {
       gymUrl: credentials.gym_url,
       username: credentials.username,
@@ -150,6 +154,7 @@ async function testSingleBooking() {
       classTime: classData.class_time,
       classType: classData.class_type,
       timezone: classData.timezone,
+      ...(expectedBookingTime && { expectedBookingTime }),
     }
 
     if (isDryRun) {
