@@ -629,10 +629,13 @@ async function completeGroupExProBooking(
     // Wait for action button to render (may be dynamically loaded after login redirect)
     try {
       await page.waitForFunction(
-        () => document.body.innerText.includes('Reserve a Spot') ||
-              document.body.innerText.includes('Join the Waitlist') ||
-              document.body.innerText.includes('Cancel Reservation') ||
-              document.body.innerText.includes('Cancel Waitlist'),
+        () => {
+          const text = document.body.innerHTML
+          return text.includes('Reserve a Spot') ||
+                 text.includes('Join the Waitlist') ||
+                 text.includes('Cancel Reservation') ||
+                 text.includes('Cancel Waitlist')
+        },
         { timeout: 10000 }
       )
     } catch {
