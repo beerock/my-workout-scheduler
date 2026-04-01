@@ -626,6 +626,19 @@ async function completeGroupExProBooking(
     const pageContent = await page.content()
     const pageContentLower = pageContent.toLowerCase()
 
+    // Wait for action button to render (may be dynamically loaded after login redirect)
+    try {
+      await page.waitForFunction(
+        () => document.body.innerText.includes('Reserve a Spot') ||
+              document.body.innerText.includes('Join the Waitlist') ||
+              document.body.innerText.includes('Cancel Reservation') ||
+              document.body.innerText.includes('Cancel Waitlist'),
+        { timeout: 10000 }
+      )
+    } catch {
+      console.log('⚠️  Timed out waiting for action button to render, proceeding anyway...')
+    }
+
     // STEP 1: Detect available vs waitlist by looking for action buttons
     const allButtons = await page.$$('button, a, input[type="submit"], input[type="button"]')
     let actionButton = null
@@ -978,6 +991,7 @@ export type BookingParams = {
   classTime: string // Format: "HH:MM" or "HH:MM:SS"
   classType: string // Class name/type to match
   timezone: string // Gym's timezone (e.g., "America/New_York")
+  expectedBookingTime?: number // epoch ms - when booking window actually opens (for early-start optimization)
   // Note: Skip logic handled by Inngest (not Puppeteer)
 }
 
