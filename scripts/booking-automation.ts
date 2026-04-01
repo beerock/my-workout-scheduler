@@ -17,7 +17,7 @@ const IS_PRODUCTION = process.env.CI === 'true' || process.env.GITHUB_ACTIONS ==
 /**
  * YMCA schedule base URL - all bookings go through this entry point
  * The hybrid flow navigates here, finds the class, then redirects through
- * GroupExPro login to Daxko for final booking
+ * GroupExPro login for final booking
  */
 const YMCA_SCHEDULE_BASE_URL = 'https://www.ymcawnc.org/schedules'
 
@@ -869,7 +869,7 @@ async function waitForBookingWindow(
 
   for (let i = 1; i <= MAX_REFRESHES; i++) {
     console.log(`   Refresh ${i}/${MAX_REFRESHES}...`)
-    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.reload({ waitUntil: 'networkidle2' })
 
     // Check if "not yet available" text is gone
     const stillBlocked = await page.evaluate(() => {

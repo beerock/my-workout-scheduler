@@ -282,6 +282,15 @@ When automation re-runs for a class the user is already reserved or waitlisted f
 
 Nice-to-have features that aren't critical.
 
+### Code Cleanup from Early-Start Audit
+**Status:** Backlogged | **Priority:** Low
+
+Minor items from v2.32 audit: remove dead export `calculateClassStartTime` from `lib/inngest/scheduler.ts`, gate production class card preview log behind `IS_PRODUCTION` flag, move `EARLY_START_MS` constant to module scope.
+
+**Last Updated:** April 1, 2026
+
+---
+
 ### My Schedule Filtering & Sorting
 **Status:** Backlogged | **Priority:** Low
 
