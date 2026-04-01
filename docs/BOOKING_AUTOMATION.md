@@ -364,6 +364,16 @@ The automation script logs:
 3. Review screenshot `04-branch-selection-failed`
 4. Update branch name in `recurring_classes` if needed
 
+### Wrong Date Calculated (Classes Skipped to Next Week)
+- `Intl.DateTimeFormat` with `hour12: false` can return hour `24` at midnight on some Node.js/ICU versions, making the code think the class time already passed
+- **Fix:** Always use `hourCycle: 'h23'` (guarantees 0-23 range) instead of `hour12: false`
+- Affects: `booking-automation.ts`, `database-helpers.ts`, `create-test-class.ts`
+
+### Action Buttons Not Found on Class Details Page
+- `page.waitForFunction` using `document.body.innerText` doesn't include text inside button/link elements in headless Chrome
+- **Fix:** Use `document.body.innerHTML` instead, which matches all element content reliably
+- The wait resolves instantly when the page is loaded; 10s timeout is only a safety net
+
 ## Future Enhancements
 
 Potential improvements:
