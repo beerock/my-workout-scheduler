@@ -76,7 +76,7 @@ function calculateTargetDateYYYYMMDD(
     day: 'numeric',
     hour: 'numeric',
     minute: 'numeric',
-    hour12: false,
+    hourCycle: 'h23',
     weekday: 'short',
   })
 
@@ -85,7 +85,7 @@ function calculateTargetDateYYYYMMDD(
     year: parseInt(parts.find(p => p.type === 'year')!.value),
     month: parseInt(parts.find(p => p.type === 'month')!.value),
     day: parseInt(parts.find(p => p.type === 'day')!.value),
-    hour: parseInt(parts.find(p => p.type === 'hour')!.value),
+    hour: parseInt(parts.find(p => p.type === 'hour')!.value) % 24, // Safety: hour 24 → 0
     minute: parseInt(parts.find(p => p.type === 'minute')!.value),
   }
 

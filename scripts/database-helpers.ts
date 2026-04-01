@@ -243,7 +243,7 @@ function isBookingWindowOpen(
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false,
+      hourCycle: 'h23',
     })
     
     const windowOpenStr = tzFormatter.format(bookingWindowOpens)
@@ -286,7 +286,7 @@ function getNextClassDate(
     day: 'numeric',
     hour: 'numeric',
     minute: 'numeric',
-    hour12: false,
+    hourCycle: 'h23',
   })
   
   const parts = formatter.formatToParts(now)
@@ -352,7 +352,7 @@ function getNextClassDate(
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
+    hourCycle: 'h23',
   })
   
   // Get what time this UTC date represents in the gym's timezone
@@ -402,7 +402,7 @@ function calculateClassOccurrenceFromAttempt(
     day: 'numeric',
     hour: 'numeric',
     minute: 'numeric',
-    hour12: false,
+    hourCycle: 'h23',
   })
   
   const attemptParts = formatter.formatToParts(attemptTime)
@@ -445,7 +445,7 @@ function calculateClassOccurrenceFromAttempt(
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        hour12: false,
+        hourCycle: 'h23',
       })
       
       const tzParts = tzFormatter.formatToParts(candidateDateUtc)

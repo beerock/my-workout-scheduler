@@ -45,7 +45,7 @@ async function main() {
     timeZone: 'America/New_York',
     hour: 'numeric',
     minute: 'numeric',
-    hour12: false,
+    hourCycle: 'h23',
     weekday: 'long',
   }).format(now)
   console.log(`Current time in Eastern: ${eastern}`)
@@ -88,7 +88,7 @@ async function main() {
     timeZone: 'America/New_York',
     hour: 'numeric',
     minute: 'numeric',
-    hour12: false,
+    hourCycle: 'h23',
   })
   const timeParts = timeFormatter.formatToParts(now)
   const hour = parseInt(timeParts.find(p => p.type === 'hour')?.value || '0')
