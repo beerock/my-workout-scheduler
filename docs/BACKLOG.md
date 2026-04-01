@@ -481,6 +481,23 @@ Define assertion-based test specs for the Puppeteer booking flow so Claude can i
 
 ---
 
+### Migrate Puppeteer to Playwright
+**Status:** Backlogged | **Priority:** Low
+
+Replace Puppeteer with Playwright for booking automation. Playwright offers built-in auto-wait (eliminating manual waitForSelector/waitForFunction boilerplate), better selectors (getByRole, getByText), faster browser contexts, and superior debugging tools (trace viewer, codegen).
+
+**Requirements:**
+- Swap `puppeteer` dependency for `playwright`
+- Rewrite browser launch, selectors, and wait logic in `scripts/booking-automation.ts` and test scripts
+- Update GitHub Actions workflow (Playwright install command, cache paths)
+- Verify dry-run and real booking flows work end-to-end
+
+**When to implement:** Next time booking scripts need significant changes, or if Puppeteer flakiness becomes a pain point.
+
+**Last Updated:** April 1, 2026
+
+---
+
 ### CI Failure Diagnostic Prompt
 **Status:** Backlogged | **Priority:** Low
 
