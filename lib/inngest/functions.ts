@@ -309,6 +309,7 @@ export const bookClassFunction = inngest.createFunction(
               className: classData.class_type,
               classDate: event.data.classDate, // Propagate original date
               attemptNumber: attemptNumber + 1,
+              // expectedBookingTime intentionally omitted: window already open, no early-start wait needed
             },
           });
         });
@@ -480,6 +481,7 @@ export const bookClassFunction = inngest.createFunction(
               className: classData.class_type,
               classDate: event.data.classDate, // Propagate original date
               attemptNumber: attemptNumber + 1,
+              // expectedBookingTime intentionally omitted: window already open, no early-start wait needed
             },
           });
         });

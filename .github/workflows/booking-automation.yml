@@ -41,6 +41,7 @@ jobs:
         run: npm ci
 
       - name: Ensure Puppeteer browsers installed
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: npx puppeteer browsers install chrome
 
       - name: Run booking automation (single class)
@@ -51,7 +52,8 @@ jobs:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
           INNGEST_EVENT_KEY: ${{ secrets.INNGEST_EVENT_KEY }}
           EXPECTED_BOOKING_TIME: ${{ inputs.expected_booking_time }}
-        run: npx tsx scripts/test-single-booking.ts "${{ inputs.class_id }}"
+          CLASS_ID: ${{ inputs.class_id }}
+        run: npx tsx scripts/test-single-booking.ts "$CLASS_ID"
 
       - name: Run booking automation (all classes)
         if: ${{ inputs.class_id == '' }}
@@ -73,11 +75,13 @@ jobs:
 
       - name: Summary
         if: always()
+        env:
+          CLASS_ID: ${{ inputs.class_id }}
         run: |
           echo "## Booking Automation Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ inputs.class_id }}" ]; then
-            echo "✅ Single class booking completed (ID: ${{ inputs.class_id }})" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$CLASS_ID" ]; then
+            echo "✅ Single class booking completed (ID: $CLASS_ID)" >> $GITHUB_STEP_SUMMARY
           else
             echo "✅ Automation completed for all classes" >> $GITHUB_STEP_SUMMARY
           fi
