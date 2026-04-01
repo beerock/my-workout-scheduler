@@ -1,6 +1,6 @@
 # Error Messages Guide
 
-**Last Updated:** November 28, 2025 (v2.10)
+**Last Updated:** April 1, 2026 (v2.32)
 
 This document provides user-friendly error messages for all booking failure scenarios, categorized by the action users need to take.
 
@@ -46,7 +46,8 @@ This document provides user-friendly error messages for all booking failure scen
 
 **Current (Technical):**
 ```
-"Booking window not open after 9 retries (45s) - Reservation starts at MM/DD/YYYY at HH:MM AM/PM"
+No "Reserve a Spot" or "Join the Waitlist" button found on class details page.
+(After early-start wait-and-refresh exhausted 15 attempts)
 ```
 
 **Improved (User-Friendly):**
@@ -54,12 +55,12 @@ This document provides user-friendly error messages for all booking failure scen
 We tried to book your class, but the booking window hasn't opened yet.
 
 Why this happens:
-• Our system tries to book exactly when the window opens
-• Sometimes we're a few seconds early to ensure we don't miss it
-• The gym's booking window opens at: [EXACT TIME FROM TOOLTIP]
+• Our system arrives early and waits for the exact moment the booking window opens
+• We refresh the page every 2 seconds for up to 30 seconds to catch the window
+• The gym's booking window may not have opened within our refresh window
 
 What happens next:
-✓ We automatically tried 9 times over 45 seconds to catch the window
+✓ We automatically refreshed up to 15 times over 30 seconds to catch the window
 ✓ If this keeps happening, it may mean the booking window time is set incorrectly
 
 What you can do:

@@ -518,6 +518,13 @@ A ready-made Claude Code prompt that fetches the latest failed GitHub Actions ru
 
 Brief summaries of completed work. See PRD version history for full details.
 
+### Early-Start Booking Optimization ✅
+**Completed:** April 1, 2026 (v2.32)
+
+Inngest fires events 60s before booking window. Puppeteer completes all prep before window opens, then refreshes at exact moment. Booking click within 2-4s of window opening (was ~57s). Replaced clock drift retry logic.
+
+---
+
 ### Event-Driven Trigger Architecture ✅
 **Completed:** November 16, 2025 (v2.0)
 
@@ -528,7 +535,7 @@ Migrated from 15-minute cron polling to Inngest event-driven architecture. Booki
 ### Retry Logic for Full Classes ✅
 **Completed:** November 16, 2025 (v2.0)
 
-Two-tier retry strategy: (1) Clock drift retries within Puppeteer (12×15s), (2) Class full retries via Inngest (every 15 min until class starts).
+Class full retries via Inngest (every 15 min until class starts). Clock drift retries replaced by early-start optimization in v2.32.
 
 ---
 
@@ -593,9 +600,9 @@ Added dedicated `supabaseKeepAliveFunction` Inngest cron (every 3 days at midnig
 Items deprioritized or unlikely to be implemented.
 
 ### Daxko API Integration
-**Status:** Archived - Requires partner access
+**Status:** Archived - No longer relevant
 
-Direct API integration would replace Puppeteer automation, but Daxko API requires partner status. Research stalled.
+Daxko is no longer in the booking flow (migrated to GroupExPro). Puppeteer automation with early-start optimization achieves 2-4s booking latency.
 
 ---
 

@@ -188,6 +188,10 @@ export async function scheduleBooking(classData: {
     },
   });
 
+  // Early-start: fire event 60s before booking window opens so GH Actions + Puppeteer
+  // can complete all prep (login, navigation) and be ready to refresh at the exact moment
+  const EARLY_START_MS = 60 * 1000;
+
   // Schedule new booking attempt
   await inngest.send({
     name: 'booking/attempt',
@@ -196,9 +200,9 @@ export async function scheduleBooking(classData: {
       className: classData.class_type,
       classDate, // Required for cancelOn matching
       attemptNumber: 1,
-      expectedBookingTime: bookingTime.getTime(), // UTC ms - used by timing guard
+      expectedBookingTime: bookingTime.getTime(), // UTC ms - actual booking window time
     },
-    ts: bookingTime.getTime(),
+    ts: bookingTime.getTime() - EARLY_START_MS, // fire 60s early
   });
 
   return bookingTime;

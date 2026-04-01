@@ -1,6 +1,6 @@
 # Booking Failure Scenarios Audit
 
-**Last Updated:** November 28, 2025 (v2.10)
+**Last Updated:** April 1, 2026 (v2.32)
 
 This document audits all possible failure scenarios in the booking automation, their retry behavior, and user-facing error messages.
 
@@ -10,7 +10,7 @@ This document audits all possible failure scenarios in the booking automation, t
 
 | Scenario | Status | Retry Type | User Impact |
 |----------|--------|------------|-------------|
-| Booking window not open | `failed` | Fast retry (9×5s) | Temporary - system handles automatically |
+| Booking window not open | `failed` | Early-start wait-and-refresh (15×2s) | Temporary - system handles automatically |
 | Class is full | `failed` | Inngest (15min) | Temporary - keeps trying until class starts |
 | Class cancelled | `failed` | None | Permanent - user needs to remove class |
 | Class not reservable | `failed` | None | Permanent - user needs to remove class |
@@ -27,37 +27,36 @@ This document audits all possible failure scenarios in the booking automation, t
 
 ### 1. Booking Window Not Open Yet
 
-**Code Location:** `scripts/booking-automation.ts:1430-1495`
+**Code Location:** `scripts/booking-automation.ts` (`waitForBookingWindow()`)
 
-**Trigger:** Disabled RESERVE button detected, tooltip indicates future booking time
+**Trigger:** GroupExPro class details page shows "not yet available for sign-up" error after early-start arrival
 
-**Error Message:**
-```
-"Booking window not open after 9 retries (45s) - Reservation starts at MM/DD/YYYY at HH:MM AM/PM"
-```
+**How Early-Start Handles This:**
+The system fires the Inngest event 60s before the booking window opens. Puppeteer completes all prep (YMCA navigation, login, landing on class details page), then enters a wait-and-refresh loop:
+- Sleeps until 2s before the expected booking window time
+- Refreshes every 2s, up to 15 attempts (30s window)
+- Once "not yet available" text disappears, proceeds to click "Reserve a Spot"
 
-**Status:** `failed`
+**Error Message (if all refreshes exhausted):**
+Proceeds to `completeGroupExProBooking()` which handles gracefully - if no booking button found, returns appropriate error.
+
+**Status:** `failed` (only if window never opens within 30s refresh window)
 
 **Retry Behavior:**
-- ✅ **Fast retry:** 9 attempts × 5 seconds = 45 seconds
+- ✅ **Early-start wait:** 15 refreshes x 2 seconds = 30 seconds coverage
 - ❌ **Inngest retry:** No (doesn't match "full" pattern)
 
-**User Notification:**
-- Email/notification shows failure with booking window time
-- User can verify if booking window time is correct in database
-- If window time is wrong, user updates recurring class settings
-
-**Temporary or Permanent:** Temporary (if triggered too early) / Permanent (if booking window time is wrong)
+**Temporary or Permanent:** Temporary (covers up to 30s of drift past expected time)
 
 **Root Causes:**
-- Triggered >45 seconds early (clock drift)
-- Wrong booking window time in database
+- Booking window time in database doesn't match gym's actual window
 - Gym changed their booking rules
+- Server clock drift >30s (extremely rare)
 
 **Recommended Action for User:**
-- Check `booking_attempts` table for actual window time from tooltip
-- Verify recurring class booking window settings
-- Update class if needed
+- Check recurring class booking window settings
+- Verify when the booking window opens on the gym website
+- Update class settings if needed
 
 ---
 
@@ -248,7 +247,7 @@ if (status === 'failed' && errorMessage?.toLowerCase().includes('full')) {
 
 **Code Location:** `scripts/booking-automation.ts:1439-1448`
 
-**Trigger:** Class found initially, but not found after page reload in fast retry loop
+**Trigger:** Class found initially, but not found after page reload
 
 **Error Message:**
 ```
@@ -602,11 +601,11 @@ if (status === 'failed' && errorMessage?.toLowerCase().includes('full')) {
 
 ## Retry Strategy Summary
 
-### Fast Retry (Inside Puppeteer)
-- **Trigger:** Booking window not open (disabled button detected)
-- **Frequency:** 9 attempts × 5 seconds = 45 seconds
-- **Max Coverage:** 45 seconds from initial trigger
-- **Location:** `scripts/booking-automation.ts:1366-1457`
+### Early-Start Wait-and-Refresh (Inside Puppeteer)
+- **Trigger:** Arrived on class details page before booking window opens ("not yet available for sign-up")
+- **Approach:** Inngest fires event 60s early; Puppeteer completes prep, sleeps until 2s before window, then refreshes
+- **Frequency:** Up to 15 refreshes x 2 seconds = 30 seconds coverage
+- **Location:** `scripts/booking-automation.ts` (`waitForBookingWindow()`)
 
 ### Inngest Retry (Class Full)
 - **Trigger:** Error message includes "full" (case-insensitive)

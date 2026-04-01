@@ -22,9 +22,10 @@
 - ✅ **COMPLETED: Event-Driven Booking Automation System**
   - Migrated from GitHub Actions cron to Inngest event-driven triggers
   - **Production Architecture:** Inngest schedules events → GitHub Actions executes Puppeteer
-  - Puppeteer scripts for YMCA Daxko platform (login, navigation, class finding)
+  - Puppeteer scripts for YMCA/GroupExPro platform (login, navigation, class finding)
   - Precise timing: triggers at exact booking window times (not polling)
-  - Intelligent retry logic: clock drift (12×15s) and class full (15min intervals)
+  - Early-start optimization: fires 60s early, waits on class details page, refreshes at booking window open
+  - Intelligent retry logic: class full (15min intervals until class starts)
   - Parallel processing for multiple users (<60s total booking time)
   - Database integration (booking attempts tracking)
   - Error handling and screenshot capture
@@ -35,7 +36,7 @@
   - Environment variables configured (Supabase, Inngest, GitHub)
   - End-to-end production testing in progress
 - ✅ **COMPLETED: Production Testing**
-  - Clock drift retry logic: Tested and working (12 × 15s, 8m 3s total)
+  - Early-start optimization: Tested and working (fires 60s early, booking click within 2-4s of window open)
   - Successful bookings: Multiple confirmed reservations via automation
   - Waitlist handling: Tested and working correctly
   - Immediate booking dialog: Tested (Book Now and Skip This Week options)
@@ -69,23 +70,13 @@
   - Critical for classes that appear after "Load more results"
   - Prevents click failures on elements outside viewport
   - Smooth scrolling with 500ms animation delay
-- ✅ **COMPLETED: Booking Window Detection with Fast Retry Loop (v2.7)**
-  - Detects disabled RESERVE buttons (booking window not yet open)
-  - Extracts button disabled states and tooltip messages
-  - Fast retry loop: 9 attempts × 5s = 45s coverage of critical first minute
-  - **Optimized timing (v2.10)**: Checks immediately after detection, then waits only if still disabled
-  - Catches window opening up to 5 seconds faster (immediate retry after detection)
-  - Page reload and re-check every 5 seconds until window opens
-  - Breaks immediately when booking window opens
-  - Meets <60s booking KPI even with early triggers
-  - Priority order: reserved > disabled button > cancelled > not reservable > full > available
-  - Prevents "Booking result unclear" errors
-- ✅ **COMPLETED: Retry Architecture Simplification (v2.10)**
-  - Removed outer retry loop (3×15s) - complexity reduction
-  - Single retry strategy: Fast retry (9×5s) in Puppeteer + Class full retry (15min) in Inngest
-  - Re-navigate to correct day after page reload (fixes day navigation bug)
-  - Prevent outer retry loop for "booking window not open" errors (infinite loop fix)
-  - Cleaner code: -74 lines, simpler logic, easier debugging
+- ✅ **COMPLETED: Early-Start Booking Optimization (v2.32, replaced v2.7/v2.10 clock drift logic)**
+  - Inngest fires event 60s before booking window opens
+  - Puppeteer completes all prep (YMCA navigation, login, land on class details page) before window
+  - `waitForBookingWindow()`: sleeps until 2s before window, refreshes every 2s (15 attempts max)
+  - Detects "not yet available for sign-up" text on GroupExPro class details page
+  - Booking click within 2-4s of window opening (was ~57s median)
+  - Replaced old clock drift retry logic (9x5s fast retry, 12x15s retry) with simpler wait-and-refresh
 - ✅ **COMPLETED: Failure Scenarios Audit (v2.10)**
   - Comprehensive audit of all 16 failure scenarios
   - Documented retry behavior for each failure type
@@ -177,6 +168,13 @@
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.32:** Early-Start Booking Optimization (April 2026)
+  - Inngest fires booking events 60s before window opens (was: at exact window time)
+  - New `waitForBookingWindow()` in Puppeteer: sleeps then refreshes every 2s on class details page
+  - Booking click within 2-4s of window opening (was: ~57s median delay)
+  - `expected_booking_time` passed through Inngest -> GH Actions -> Puppeteer
+  - Replaced clock drift retry logic with early-start wait-and-refresh
+  - Documentation updated: removed Daxko references, updated to GroupExPro flow
 - **v2.31:** Invite-Only Private Beta (February 2026)
   - Signup form replaced with invite-only message (static server component)
   - Server action and Supabase dashboard signups disabled at all layers
@@ -458,7 +456,7 @@ Users could miss bookings if they unpause, activate a class, or remove a skip be
 | :---- | :---- | :---- | :---- |
 | **Event-Driven Scheduling** | Inngest triggers bookings at exact window times (e.g., Friday 7:30 AM for Saturday 9:30 AM class) | High | ✅ |
 | **Browser Automation** | Puppeteer logs into gym site and completes booking flow | High | ✅ |
-| **Intelligent Retry Logic** | Clock drift: 12 retries × 15s; Class full: every 15min until class starts | High | ✅ |
+| **Early-Start Optimization** | Fires 60s early, waits on class details page, refreshes at window open; Class full: every 15min | High | ✅ |
 | **Booking Logic** | Reserve if available, waitlist if full, skip if already booked | High | ✅ |
 | **Error Handling** | Detect failures, log errors, send notification | High | ✅ |
 | **Status Updates** | Write booking results back to database | High | ✅ |
@@ -490,7 +488,7 @@ Users could miss bookings if they unpause, activate a class, or remove a skip be
    - Uploads screenshots (on failure)
    - Send email notification (future)
 6. **Retry handling:**
-   - **Booking window not open yet** → Retry in 15s (up to 12 times = 3 min total)
+   - **Early-start wait** → Refreshes every 2s on class details page until booking window opens (up to 15 attempts)
    - **Class full** → Retry every 15 min until class starts
    - **Success or permanent failure** → Stop
 7. **Daily scheduler** (midnight UTC) → Re-schedules all active classes for next occurrence
@@ -576,14 +574,14 @@ Users could miss bookings if they unpause, activate a class, or remove a skip be
 
 The system handles two types of failures with different retry strategies:
 
-**Clock Drift (Booking Window Not Open Yet):**
-- **Detection:** "Booking window not open yet" error or disabled RESERVE button with tooltip
-- **Retry Logic:** 12 attempts × 15 seconds = 3 minutes total
-- **Implementation:** Within Puppeteer script (`booking-automation.ts`)
-- **Behavior:** Page refresh, re-navigation, re-attempt booking
-- **Reason:** Gym website clock may be 1-2 minutes off from our system clock
-- **Outcome:** Catches booking window as soon as it opens
-- **Testing:** ✅ Tested in production (Nov 16, 2025) - Failed after 12 retries in 8m 3s as expected
+**Early-Start Optimization (Booking Window Not Open Yet):**
+- **Approach:** Inngest fires event 60s before booking window opens
+- **Prep Phase:** Puppeteer navigates YMCA schedule, finds class, clicks Register, logs into GroupExPro, lands on class details page
+- **Wait Phase:** `waitForBookingWindow()` sleeps until 2s before window, then refreshes every 2s (up to 15 attempts = 30s coverage)
+- **Detection:** "not yet available for sign-up" text on GroupExPro class details page
+- **Implementation:** `scripts/booking-automation.ts` (`waitForBookingWindow()`)
+- **Reason:** Completes all prep work before window opens, then clicks within 2-4 seconds
+- **Edge case:** If GH Actions cold start exceeds 60s, window already passed - proceeds normally without waiting
 
 **Class Full (No Spots Available):**
 - **Detection:** "Class Full" pill visible or "Class is full" error message
@@ -661,7 +659,7 @@ booking\_attempts (
 4. **Inngest triggers** → Calls Next.js `/api/inngest` webhook
 5. **Booking function runs** → Fetches class data → Creates booking attempt → Triggers GitHub Actions via API
 6. **GitHub Actions executes** → Runs Puppeteer → Books class → Updates Supabase DB directly
-7. **Retry handling** → Inngest reschedules events for clock drift or full classes
+7. **Retry handling** → Inngest handles retries for full classes (every 15 min until class starts)
 8. **Email sent** → Via Resend/SendGrid → User notified (future)
 9. **User checks dashboard** → Next.js queries Supabase → Shows status
 10. **Daily scheduler** (midnight UTC) → Re-schedules all active classes for next week
@@ -837,7 +835,7 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 - Prototype limited to 5 users (Brock, Nicole, + 3 additional testers)
 - Manual class schedule entry (no auto-import)
 - Email notifications only
-- Single gym system (YMCA Daxko platform)
+- Single gym system (YMCA/GroupExPro platform)
 - Functional UI (not polished design)
 
 ---
@@ -850,7 +848,7 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 - Users can add/edit/delete recurring classes
 - Inngest triggers bookings at exact window times
 - System books at least 1 class successfully for each user
-- Intelligent retry logic handles clock drift and full classes
+- Early-start optimization and intelligent retry logic handle timing and full classes
 - ~~Users receive email notifications~~ (future)
 - Dashboard shows accurate booking status
 - No security vulnerabilities (credentials encrypted)
@@ -923,40 +921,41 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 
 ---
 
-## Appendix A: YMCA Booking Flow (Daxko Platform)
+## Appendix A: YMCA Booking Flow (GroupExPro Platform)
 
-**Target URL:** `https://ops1.operations.daxko.com/Online/4032/GXP/ClassSchedule.mvc`
+**Flow:** YMCA schedule (public) -> Register link -> GroupExPro login -> Class details -> Booking
 
-**Manual Booking Steps:**
+**Automated Booking Steps:**
 
-1. Navigate to URL → Login page appears  
-2. Enter username/password → Submit  
-3. Select branch from dropdown (e.g., "Asheville \- Downtown")  
-4. Navigate to class schedule for target day  
-5. Find target class (e.g., "BODYPUMP 4:15 PM")  
-6. Check button text:  
-   - "RESERVE" → Click to book  
-   - "ADD TO WAITLIST" → Click to join waitlist  
-   - "RESERVED" → Already booked, stop  
-   - "FULL" → No action available  
-7. If button clicked → Confirmation page appears  
-8. Verify confirmation text → Done
+1. Navigate to YMCA schedule page with date + branch filters
+2. Find target class by name (fuzzy match) and time
+3. Click "Register" link on class row -> redirects to GroupExPro
+4. Login to GroupExPro with username/password
+5. Land on class details page
+6. If booking window not yet open: "not yet available for sign-up" error shown
+7. Wait for booking window (early-start: refresh every 2s)
+8. Check action buttons:
+   - "Reserve a Spot" -> Click to book -> Status: `'confirmed'`
+   - "Join the Waitlist" -> Click to join waitlist -> Status: `'waitlisted'`
+   - "Cancel Reservation" -> Already booked, stop -> Status: `'confirmed'`
+   - "Cancel Waitlist" -> Already on waitlist, stop -> Status: `'waitlisted'`
+9. Ensure checkbox is checked next to member name
+10. Click action button -> Booking confirmed
 
 **Automation Considerations:**
 
-- Must handle dynamic JavaScript-rendered content  
-- Branch selection is critical (wrong branch \= wrong class)  
-- Button text is the source of truth for availability  
-- Session can timeout (need to detect and re-login)  
-- Page layout may vary by branch
+- YMCA schedule is public (no login required for class discovery)
+- GroupExPro handles authentication separately
+- Early-start optimization allows arriving before booking window opens
+- Checkbox next to member name is usually pre-checked but must be verified
+- Must handle dynamic JavaScript-rendered content (buttons may load after redirect)
 
 **Guardrails:**
 
-- Never proceed if "RESERVED" status showing  
-- Stop if wrong branch detected in dropdown  
-- Halt on login failure or unexpected page  
-- Skip if booking window not yet open  
-- Log all actions for debugging
+- Never proceed if "Cancel Reservation" showing (already booked)
+- Halt on login failure or unexpected page
+- Wait for booking window if arrived early (don't click before window opens)
+- Log all actions and take screenshots for debugging
 
 ---
 
@@ -1050,10 +1049,10 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 
 **Inngest Events:**
 - Initial booking attempts: 100 events/month
-- Clock drift retries (worst case, 12 per booking): 1,200 events/month
+- Cancel events (dedup): 100 events/month
 - Class full retries (avg 2 per booking): 200 events/month
 - Daily scheduler: 30 events/month
-- **Total: ~1,530 events/month** (3% of free tier limit)
+- **Total: ~430 events/month** (<1% of free tier limit)
 
 **GitHub Actions Minutes:**
 - Per booking: 2-6 minutes (Puppeteer execution)

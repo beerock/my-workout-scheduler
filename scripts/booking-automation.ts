@@ -835,6 +835,63 @@ async function completeGroupExProBooking(
  * @param params Booking parameters
  * @returns Booking result
  */
+/**
+ * Wait for the booking window to open by refreshing the GroupExPro class details page.
+ * Called when we arrive early (before the booking window opens).
+ * The page shows "not yet available for sign-up" until the window opens,
+ * then a refresh reveals "Reserve a Spot" or "Join the Waitlist".
+ */
+async function waitForBookingWindow(
+  page: Page,
+  expectedBookingTime: number
+): Promise<{ refreshCount: number }> {
+  const now = Date.now()
+  const msUntilOpen = expectedBookingTime - now
+
+  // If window already passed, skip waiting
+  if (msUntilOpen <= 0) {
+    console.log('   Booking window already open, proceeding immediately')
+    return { refreshCount: 0 }
+  }
+
+  console.log(`   Booking window opens in ${Math.round(msUntilOpen / 1000)}s`)
+
+  // Sleep until 2s before the window opens
+  const sleepMs = Math.max(0, msUntilOpen - 2000)
+  if (sleepMs > 0) {
+    console.log(`   Sleeping ${Math.round(sleepMs / 1000)}s until 2s before window...`)
+    await new Promise(resolve => setTimeout(resolve, sleepMs))
+  }
+
+  // Tight refresh loop: reload every 2s, max 15 attempts (30s window)
+  const MAX_REFRESHES = 15
+  const REFRESH_INTERVAL_MS = 2000
+
+  for (let i = 1; i <= MAX_REFRESHES; i++) {
+    console.log(`   Refresh ${i}/${MAX_REFRESHES}...`)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+
+    // Check if "not yet available" text is gone
+    const stillBlocked = await page.evaluate(() => {
+      const text = document.body.innerText.toLowerCase()
+      return text.includes('not yet available for sign-up')
+    })
+
+    if (!stillBlocked) {
+      console.log(`   Booking window is open after ${i} refresh(es)`)
+      return { refreshCount: i }
+    }
+
+    if (i < MAX_REFRESHES) {
+      await new Promise(resolve => setTimeout(resolve, REFRESH_INTERVAL_MS))
+    }
+  }
+
+  // Exhausted refreshes - proceed anyway, completeGroupExProBooking handles gracefully
+  console.log('   Max refreshes reached, proceeding anyway')
+  return { refreshCount: MAX_REFRESHES }
+}
+
 async function bookClassYMCAHybrid(
   page: Page,
   params: BookingParams
@@ -949,6 +1006,14 @@ async function bookClassYMCAHybrid(
         errorMessage: `Login failed: ${loginResult.error}\n\nWhat to do: Try logging into your gym website manually. If successful, update your credentials in Dashboard → Gym Credentials. If you can't log in, reset your password on the gym website first.`,
         screenshotPath,
       }
+    }
+
+    // STEP 5.5: Wait for booking window if we arrived early
+    if (params.expectedBookingTime && params.expectedBookingTime > Date.now()) {
+      console.log('\n⏳ Step 5.5: Waiting for booking window to open...')
+      const waitResult = await waitForBookingWindow(page, params.expectedBookingTime)
+      screenshotPath = await takeScreenshot(page, '04-after-wait')
+      console.log(`   Total refreshes: ${waitResult.refreshCount}`)
     }
 
     // STEP 6: Complete booking on GroupExPro class details page

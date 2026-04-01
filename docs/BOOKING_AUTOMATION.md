@@ -1,46 +1,47 @@
 # Booking Automation System
 
-This document describes the automated booking system that runs via GitHub Actions to book workout classes on the YMCA Daxko platform.
+This document describes the automated booking system that uses Inngest event-driven scheduling and GitHub Actions with Puppeteer to book workout classes via YMCA/GroupExPro.
 
 ## Overview
 
 The automation system:
-1. Runs every 15 minutes via GitHub Actions cron schedule
-2. Queries the database for classes that need booking
-3. Uses Puppeteer to automate the booking process on the gym website
-4. Records all attempts in the `booking_attempts` table
-5. Handles errors gracefully and logs results
+1. Daily scheduler (Inngest cron) calculates booking window times for all active classes
+2. Inngest fires events 60s before each booking window opens (early-start optimization)
+3. GitHub Actions runs Puppeteer to navigate YMCA schedule, login to GroupExPro, and land on class details page
+4. Puppeteer waits for the exact booking window moment, refreshes, and clicks "Reserve a Spot"
+5. Records all attempts in the `booking_attempts` table and sends email notifications
 
 ## Architecture
 
 ### Components
 
-1. **GitHub Actions Workflow** (`.github/workflows/booking-automation.yml`)
-   - Scheduled to run every 15 minutes (`*/15 * * * *`)
-   - Can be manually triggered via `workflow_dispatch`
-   - Sets up Node.js environment and runs the automation script
-   - **Note**: GitHub Actions cron schedules can be delayed or skipped during high-load periods. If scheduled runs don't appear, manually trigger the workflow or wait for the next scheduled interval.
+1. **Inngest Scheduler** (`lib/inngest/scheduler.ts`)
+   - Calculates exact booking window open times per class
+   - Fires `booking/attempt` events 60s before window opens (early-start)
+   - Sends `booking/cancel` events to prevent duplicate runs
 
-2. **Main Automation Script** (`scripts/run-booking-automation.ts`)
-   - Entry point for the automation
-   - Queries database for classes needing booking
-   - Groups classes by user
-   - Orchestrates the booking process
-   - Logs results and handles errors
+2. **Inngest Functions** (`lib/inngest/functions.ts`)
+   - `bookClassFunction`: Orchestrates booking flow - triggers GitHub Actions via workflow_dispatch, waits for result
+   - `dailySchedulerFunction`: Daily cron that schedules all active classes
+   - Handles class full retries (every 15 minutes until class starts)
+   - Sends email notifications on success/failure
 
-3. **Database Helpers** (`scripts/database-helpers.ts`)
-   - `getClassesNeedingBooking()`: Queries for classes due for booking
-   - `createBookingAttempt()`: Records booking attempts
-   - `updateBookingAttempt()`: Updates attempt status
-   - `clearSkipDate()`: Clears skip dates after processing
-   - `getGymCredentials()`: Retrieves and decrypts credentials
+3. **GitHub Actions Workflow** (`.github/workflows/booking-automation.yml`)
+   - Triggered via `workflow_dispatch` from Inngest (not cron)
+   - Receives `class_id` and `expected_booking_time` as inputs
+   - Sets up Node.js environment and runs Puppeteer automation
 
 4. **Puppeteer Booking Script** (`scripts/booking-automation.ts`)
-   - Handles browser automation
-   - Logs into gym website
-   - Selects branch
-   - Finds and books classes
-   - Takes screenshots for debugging
+   - YMCA schedule navigation -> GroupExPro login -> class details page
+   - `waitForBookingWindow()`: Early-start wait-and-refresh (sleeps until 2s before window, refreshes every 2s)
+   - `completeGroupExProBooking()`: Clicks "Reserve a Spot" or "Join the Waitlist"
+   - Takes screenshots at key steps for debugging
+
+5. **Database Helpers** (`scripts/database-helpers.ts`)
+   - `getAllActiveClasses()`: Get all active recurring classes
+   - `createBookingAttempt()`: Records booking attempts
+   - `updateBookingAttempt()`: Updates attempt status
+   - `checkExistingBooking()`: Check for duplicate bookings
 
 ## Booking Logic
 
@@ -99,83 +100,73 @@ The system prevents duplicate booking attempts for the same class occurrence:
 
 ## Booking Process Flow
 
-1. **Query Database**
-   - Get all active classes
-   - Filter by pause status and skip dates
-   - Check booking windows
-   - Check for existing successful bookings (duplicate prevention)
-   - Join with gym credentials
+1. **Daily Scheduling** (Inngest cron, runs daily at midnight UTC)
+   - Queries all active classes from database
+   - Calculates next booking window open time for each class
+   - Fires `booking/attempt` events with `ts` set to 60s before window opens
 
-2. **Group by User**
-   - Classes are grouped by `user_id`
-   - Credentials are decrypted once per user
+2. **Early-Start Trigger** (Inngest, ~60s before booking window)
+   - Inngest fires the event, which triggers `bookClassFunction`
+   - Function validates class is still active, not paused, not skipped
+   - Triggers GitHub Actions workflow via `workflow_dispatch` with `class_id` and `expected_booking_time`
 
-3. **For Each Class**
-   - Create `booking_attempt` record with status `'pending'`
-   - Launch Puppeteer browser
-   - Navigate to gym URL
-   - Login with credentials
-   - Select branch
-   - Navigate to target day's schedule
-   - Find class matching type and time
-   - **TWO-STEP BOOKING PROCESS:**
-     - **Step 1:** Click RESERVE button on class list → navigates to class description page
-     - **Step 2:** On class description page:
-       - Select checkbox next to user's name in "Active Members" section
-       - Click RESERVE or WAITLIST button
-       - Navigate to confirmation page
-   - Verify result using confirmation page keywords ("Awesome!", "Now that reservation is complete")
-   - Update `booking_attempt` with final status
+3. **Puppeteer Automation** (GitHub Actions)
+   - **Step 1:** Navigate to YMCA schedule with date + branch filter
+   - **Step 2:** Find target class on schedule by name and time
+   - **Step 3:** Check class state (available, full, cancelled, not reservable)
+   - **Step 4:** Click Register link -> redirects to GroupExPro login
+   - **Step 5:** Login to GroupExPro with encrypted credentials
+   - **Step 5.5:** `waitForBookingWindow()` - if arrived early, sleep until 2s before window, then refresh every 2s until "not yet available" text disappears (up to 15 attempts)
+   - **Step 6:** `completeGroupExProBooking()` - click "Reserve a Spot" or "Join the Waitlist"
+   - Send result event back to Inngest
 
-4. **Result Statuses**
+4. **Result Handling** (Inngest)
+   - Receives `booking/result` event from GitHub Actions
+   - Updates `booking_attempts` table
+   - Sends email notification (success, failure, or retry)
+   - If class is full: schedules retry in 15 minutes
+
+5. **Result Statuses**
    - `'confirmed'`: Successfully booked
    - `'waitlisted'`: Added to waitlist
    - `'failed'`: Booking failed (error logged)
-   - `'skipped'`: Skipped due to `next_skip_date`
+   - `'skipped'`: Skipped due to skip settings
 
-## YMCA Daxko Booking Flow Details
+## YMCA/GroupExPro Booking Flow Details
 
-The YMCA Daxko platform requires a **two-step booking process**:
+The booking uses a hybrid flow: YMCA schedule for class discovery, GroupExPro for authentication and booking.
 
-### Step 1: Class List → Class Description Page
-- Find class on schedule page by type and time
-- Click RESERVE button on class row
-- **Result:** Navigates to class description/reservation page
+### Step 1: YMCA Schedule -> Register Link
+- Navigate to YMCA schedule page with date and branch filters
+- Find target class by name (fuzzy match) and time
+- Click the "Register" link on the class row
+- **Result:** Redirects to GroupExPro login page
 
-### Step 2: Class Description Page → Confirmation
-The class description page shows:
-- Class details (name, location, time, duration)
-- "Select Group Members for Reservation" section
-- **"Active Members"** or **"Active Members (Accepting Spot in WaitList)"** header
-- If full: Orange warning banner: "Reservation Spots are full. Any one Active Member can Join Waitlist."
-- "Active Members" list with checkboxes next to member names
-- **RESERVE button (Note: button ALWAYS says "RESERVE" even when joining waitlist!)**
+### Step 2: GroupExPro Login -> Class Details
+- Login form with username/password
+- After login, redirected to class details page
+- **Key insight:** You can reach this page BEFORE the booking window opens
+
+### Step 3: Early-Start Wait (if applicable)
+- If `expectedBookingTime` is in the future, the page shows: "This class is not yet available for sign-up"
+- `waitForBookingWindow()` sleeps until 2s before the window, then refreshes every 2s
+- Once the "not yet available" text disappears, the page shows action buttons
+
+### Step 4: Class Details -> Booking
+The class details page shows:
+- Class information (name, date, time, location)
+- Checkbox next to member name (usually pre-checked)
+- **"Reserve a Spot"** button (if spots available)
+- **"Join the Waitlist"** button (if class is full but waitlist available)
+- **"Cancel Reservation"** / **"Cancel Waitlist"** (if already booked)
 
 **Required actions:**
-1. ✅ Detect if class is full by checking for "Accepting Spot in WaitList" text
-2. ✅ Select checkbox next to user's name
-3. ✅ Click RESERVE button (will book or waitlist depending on availability)
+1. ✅ Ensure checkbox is checked next to member name
+2. ✅ Click "Reserve a Spot" or "Join the Waitlist"
 
-**Result:** Navigates to confirmation page
-
-### Step 3: Confirmation Page
-
-**For Successful Booking:**
-- "Awesome!" heading
-- Green checkmark icon
-- **"Now that reservation is complete, you can..."** text
-- Class details and booked user's name
-
-**For Waitlist Addition:**
-- "Awesome!" heading
-- Green checkmark icon
-- **"Now that you are in waitlist, you can..."** text
-- Class details and waitlisted user's name
-
-**Detection keywords:**
-- **Waitlist detection:** `"now that you are in waitlist"`, `"you are in waitlist"`, `"added to waitlist"`
-- **Booking detection:** `"now that reservation is complete"`, `"reservation is complete"`
-- **Important:** Always check for waitlist text first before confirming as booked
+**Already booked detection:**
+- "Cancel Reservation" text -> already confirmed
+- "Cancel Waitlist" text -> already on waitlist
 
 ## Error Handling
 
@@ -215,14 +206,12 @@ The class description page shows:
 ## Screenshots
 
 Screenshots are automatically taken at key points:
-- `01-initial-page`: After navigating to gym URL
-- `02-login-failed`: If login fails
-- `03-after-login`: After successful login
-- `04-branch-selection-failed`: If branch selection fails
-- `04-after-branch-selection`: After selecting branch
-- `05-navigation-failed`: If day navigation fails
-- `05-schedule-page`: After navigating to schedule
-- `06-after-booking-attempt`: After booking attempt
+- `01-ymca-schedule`: After navigating to YMCA schedule
+- `02-class-found`: After finding class on schedule
+- `03-groupexpro-login-failed`: If GroupExPro login fails
+- `04-after-wait`: After early-start wait-and-refresh completes
+- `05-booking-result`: After booking attempt
+- `99-error`: On unexpected errors
 
 Screenshots are:
 - Saved to `screenshots/` directory
@@ -269,32 +258,40 @@ browser = await puppeteer.launch({
 })
 ```
 
-## YMCA Daxko Platform
+## Early-Start Optimization (v2.32)
 
-### Target Website
-- URL: `https://ops1.operations.daxko.com/Online/4032/GXP/ClassSchedule.mvc`
-- Requires login (username/password)
-- Has branch selection dropdown
-- Shows class schedule in table/list format
+### How It Works
+1. Inngest fires the booking event **60 seconds before** the booking window opens
+2. GitHub Actions starts, Puppeteer navigates to YMCA schedule, finds class, clicks Register
+3. GroupExPro login completes, landing on class details page
+4. If arrived before booking window: page shows "not yet available for sign-up" error
+5. `waitForBookingWindow()` sleeps until 2s before window, then refreshes every 2s
+6. Once booking window opens (text disappears), clicks "Reserve a Spot"
+
+### Timing
+- **Before early-start:** ~57s median delay (25s GH Actions overhead + 32.5s Puppeteer navigation)
+- **With early-start:** ~2-4s after window opens (all prep done during the 60s early window)
+
+### Edge Cases
+| Scenario | Handling |
+|---|---|
+| GH Actions outlier (2.5+ min cold start) | Booking window already passed, skips wait, proceeds normally |
+| Server clock drift | 15 refreshes over 30s covers up to 30s drift |
+| Login fails | Fails before wait step - no time wasted |
+| Already booked at same time | Detected on class details page |
+| 15 refreshes exhausted | Proceeds anyway, `completeGroupExProBooking` handles gracefully |
+
+## GroupExPro Platform
+
+### Target Flow
+- YMCA schedule page (public) -> Register link -> GroupExPro login -> Class details -> Booking
+- GroupExPro handles authentication and booking separately from the YMCA schedule
 
 ### Button States
-- **"RESERVE"**: Available → Click to book → Status: `'confirmed'`
-- **"ADD TO WAITLIST"**: Full but waitlist available → Click → Status: `'waitlisted'`
-- **"RESERVED"**: Already booked → No action → Status: `'confirmed'`
-- **"FULL"**: No spots, no waitlist → Status: `'failed'`
-
-### Selectors
-
-The Puppeteer script uses flexible selectors to find elements:
-- **Username field**: `input[name="username"]`, `input[id*="user"]`, etc.
-- **Password field**: `input[type="password"]`
-- **Login button**: `button[type="submit"]`, `button:has-text("Login")`, etc.
-- **Branch selector**: `select[name*="branch"]`, `select[id*="branch"]`, etc.
-- **Day navigation**: `a:has-text("Monday")`, `button:has-text("Monday")`, etc.
-- **Class rows**: `tr`, `.class-item`, `.schedule-item`, etc.
-- **Booking buttons**: `button:has-text("RESERVE")`, `button:has-text("WAITLIST")`, etc.
-
-**Note**: The actual selectors may need adjustment based on the real YMCA Daxko platform structure. Test and update selectors as needed.
+- **"Reserve a Spot"**: Available -> Click to book -> Status: `'confirmed'`
+- **"Join the Waitlist"**: Full but waitlist available -> Click -> Status: `'waitlisted'`
+- **"Cancel Reservation"**: Already booked -> No action -> Status: `'confirmed'`
+- **"Cancel Waitlist"**: Already on waitlist -> No action -> Status: `'waitlisted'`
 
 ## Security Considerations
 
@@ -370,11 +367,8 @@ The automation script logs:
 ## Future Enhancements
 
 Potential improvements:
-- Email notifications for booking results
-- Retry logic for transient failures
+- Playwright migration (replace Puppeteer for better stability)
 - Browser session reuse (login once per user)
-- More robust timezone handling
 - Support for multiple gym platforms
-- Webhook notifications
-- Dashboard for monitoring bookings
+- Real-time dashboard updates via WebSocket
 
