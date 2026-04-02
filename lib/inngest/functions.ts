@@ -19,7 +19,7 @@ import { formatTime12Hour } from '@/lib/date-utils';
 /**
  * Main booking function - triggered at exact booking window time
  * Handles:
- * 1. Early-start optimization (fires 60s early, waits on class details page, refreshes at booking window open)
+ * 1. Early-start optimization (fires 90s early, waits on class details page, refreshes at booking window open)
  * 2. Class full retries (every 15 minutes until class starts)
  */
 export const bookClassFunction = inngest.createFunction(

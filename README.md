@@ -107,8 +107,8 @@ my-workout-scheduler/
 
 ### Automated Booking
 - **Event-driven scheduling:** Inngest triggers bookings at exact window times
-- **Precise timing:** Books within 60 seconds of registration opening
-- **Intelligent retry:** Clock drift (12×15s) and class full (15min intervals)
+- **Precise timing:** Books within 5 seconds of registration opening (early-start optimization)
+- **Intelligent retry:** Class full retries every 15min until class starts
 - **Hybrid architecture:** Inngest schedules → GitHub Actions runs Puppeteer
 - **Duplicate prevention:** Detects already-booked classes
 

@@ -203,7 +203,7 @@ export async function scheduleBooking(classData: {
       attemptNumber: 1,
       expectedBookingTime: bookingTime.getTime(), // UTC ms - actual booking window time
     },
-    ts: bookingTime.getTime() - EARLY_START_MS, // fire 60s early
+    ts: bookingTime.getTime() - EARLY_START_MS, // fire 90s early
   });
 
   return bookingTime;

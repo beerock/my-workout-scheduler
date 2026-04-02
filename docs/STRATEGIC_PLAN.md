@@ -232,7 +232,7 @@ Popular gym classes fill up within minutes of registration opening. Fitness enth
 My Workout Scheduler automatically books your gym classes the instant registration opens.
 
 - **Set it once:** Add your recurring classes to your schedule
-- **We handle the rest:** Our system books within 60 seconds of registration opening
+- **We handle the rest:** Our system books within 5 seconds of registration opening
 - **Never miss out:** Intelligent retry if class is full, auto-waitlist, instant notifications
 
 ### THE MARKET
@@ -520,7 +520,7 @@ The project already has significant portfolio value in `/prototype`:
 > "In My Workout Scheduler, I had to balance immediate user needs against technical debt. For example, I deferred multi-gym support to focus on retry logic - because a system that successfully books one gym is more valuable than one that partially supports three gyms. I use a modified RICE framework documented in my backlog."
 
 **For "How do you measure success?":**
-> "My north star metric is booking success rate - the percentage of requested classes we successfully book. Secondary metrics include booking latency (P95 under 60 seconds) and retry-to-success rate (how often we recover from 'class full' state). I track these in my database and review weekly."
+> "My north star metric is booking success rate - the percentage of requested classes we successfully book. Secondary metrics include booking latency (P95 under 5 seconds) and retry-to-success rate (how often we recover from 'class full' state). I track these in my database and review weekly."
 
 **For "Tell me about a technical tradeoff you made":**
 > "I chose Puppeteer browser automation over API integration because the gym's API requires partner status we don't have. The tradeoff: Puppeteer is brittle when UI changes, but it let us ship in weeks instead of months. I mitigated the risk with screenshot capture on failure and fuzzy matching for class names."
@@ -545,7 +545,7 @@ The project already has significant portfolio value in `/prototype`:
 > "Built and launched gym class booking automation from 0→1, achieving 80%+ success rate with 5 active users. Defined product vision, wrote PRDs, prioritized roadmap, and iterated through 30+ versions based on user feedback."
 
 **Technical Product Skills:**
-> "Designed event-driven architecture (Inngest + Puppeteer) with intelligent retry logic, reducing booking latency to <60 seconds. Made key technical tradeoffs between API integration and browser automation."
+> "Designed event-driven architecture (Inngest + Puppeteer) with intelligent retry logic, reducing booking latency to <5 seconds. Made key technical tradeoffs between API integration and browser automation."
 
 **Metrics-Driven:**
 > "Established success metrics framework tracking booking success rate, latency, and retry effectiveness. Used data to prioritize retry logic improvements, increasing success rate from 60% to 80%+."
@@ -1032,9 +1032,9 @@ Please:
 
 ### The Problem
 
-**KPI Target:** Book classes in <60 seconds from booking window opening
-**Actual Performance:** 90-120 seconds total time
-**Impact:** Popular classes fill up before our automation completes
+**KPI Target:** Book classes in <5 seconds from booking window opening
+**Actual Performance:** 1-4 seconds (early-start optimization)
+**Impact:** Booking click happens before most humans can refresh the page
 
 **Real-World Incident (Jan 18, 2026):**
 A popular class opened with 30 spots. By the time our automation completed (~90 seconds), only 1 spot remained. The class filled in ~90 seconds. User had to manually book to secure the spot.

@@ -18,7 +18,7 @@ Core Puppeteer automation logic for booking gym classes.
 - YMCA schedule -> GroupExPro login -> class details -> booking flow
 - Duplicate prevention (checks if already booked/waitlisted)
 - Booking window detection
-- Early-start optimization (fires 60s before booking window, waits on class details page)
+- Early-start optimization (fires 90s before booking window, waits on class details page)
 - Error handling and screenshot capture
 
 **Usage:** Called by Inngest functions, not run directly.

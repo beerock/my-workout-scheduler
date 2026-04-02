@@ -6,7 +6,7 @@ This document describes the automated booking system that uses Inngest event-dri
 
 The automation system:
 1. Daily scheduler (Inngest cron) calculates booking window times for all active classes
-2. Inngest fires events 60s before each booking window opens (early-start optimization)
+2. Inngest fires events 90s before each booking window opens (early-start optimization)
 3. GitHub Actions runs Puppeteer to navigate YMCA schedule, login to GroupExPro, and land on class details page
 4. Puppeteer waits for the exact booking window moment, refreshes, and clicks "Reserve a Spot"
 5. Records all attempts in the `booking_attempts` table and sends email notifications
@@ -17,7 +17,7 @@ The automation system:
 
 1. **Inngest Scheduler** (`lib/inngest/scheduler.ts`)
    - Calculates exact booking window open times per class
-   - Fires `booking/attempt` events 60s before window opens (early-start)
+   - Fires `booking/attempt` events 90s before window opens (early-start)
    - Sends `booking/cancel` events to prevent duplicate runs
 
 2. **Inngest Functions** (`lib/inngest/functions.ts`)
@@ -103,9 +103,9 @@ The system prevents duplicate booking attempts for the same class occurrence:
 1. **Daily Scheduling** (Inngest cron, runs daily at midnight UTC)
    - Queries all active classes from database
    - Calculates next booking window open time for each class
-   - Fires `booking/attempt` events with `ts` set to 60s before window opens
+   - Fires `booking/attempt` events with `ts` set to 90s before window opens
 
-2. **Early-Start Trigger** (Inngest, ~60s before booking window)
+2. **Early-Start Trigger** (Inngest, ~90s before booking window)
    - Inngest fires the event, which triggers `bookClassFunction`
    - Function validates class is still active, not paused, not skipped
    - Triggers GitHub Actions workflow via `workflow_dispatch` with `class_id` and `expected_booking_time`
@@ -261,7 +261,7 @@ browser = await puppeteer.launch({
 ## Early-Start Optimization (v2.32)
 
 ### How It Works
-1. Inngest fires the booking event **60 seconds before** the booking window opens
+1. Inngest fires the booking event **90 seconds before** the booking window opens
 2. GitHub Actions starts, Puppeteer navigates to YMCA schedule, finds class, clicks Register
 3. GroupExPro login completes, landing on class details page
 4. If arrived before booking window: page shows "not yet available for sign-up" error
@@ -270,7 +270,7 @@ browser = await puppeteer.launch({
 
 ### Timing
 - **Before early-start:** ~57s median delay (25s GH Actions overhead + 32.5s Puppeteer navigation)
-- **With early-start:** ~2-4s after window opens (all prep done during the 60s early window)
+- **With early-start:** ~2-4s after window opens (all prep done during the 90s early window)
 
 ### Edge Cases
 | Scenario | Handling |

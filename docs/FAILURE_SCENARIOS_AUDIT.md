@@ -32,7 +32,7 @@ This document audits all possible failure scenarios in the booking automation, t
 **Trigger:** GroupExPro class details page shows "not yet available for sign-up" error after early-start arrival
 
 **How Early-Start Handles This:**
-The system fires the Inngest event 60s before the booking window opens. Puppeteer completes all prep (YMCA navigation, login, landing on class details page), then enters a wait-and-refresh loop:
+The system fires the Inngest event 90s before the booking window opens. Puppeteer completes all prep (YMCA navigation, login, landing on class details page), then enters a wait-and-refresh loop:
 - Sleeps until 2s before the expected booking window time
 - Refreshes every 2s, up to 15 attempts (30s window)
 - Once "not yet available" text disappears, proceeds to click "Reserve a Spot"
@@ -603,7 +603,7 @@ if (status === 'failed' && errorMessage?.toLowerCase().includes('full')) {
 
 ### Early-Start Wait-and-Refresh (Inside Puppeteer)
 - **Trigger:** Arrived on class details page before booking window opens ("not yet available for sign-up")
-- **Approach:** Inngest fires event 60s early; Puppeteer completes prep, sleeps until 2s before window, then refreshes
+- **Approach:** Inngest fires event 90s early; Puppeteer completes prep, sleeps until 2s before window, then refreshes
 - **Frequency:** Up to 15 refreshes x 2 seconds = 30 seconds coverage
 - **Location:** `scripts/booking-automation.ts` (`waitForBookingWindow()`)
 
