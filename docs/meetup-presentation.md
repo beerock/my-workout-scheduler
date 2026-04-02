@@ -34,7 +34,7 @@ Brock Busby - Lenny's Newsletter Meetup - 2026
 
 | Goal | Target |
 |------|--------|
-| Book a class | **< 60 seconds** after window opens |
+| Book a class | **< 5 seconds** after window opens |
 | Infrastructure cost | **$0/month** |
 | Users | 5 |
 | Reliability | Book it or know exactly why it failed |
@@ -47,8 +47,8 @@ Brock Busby - Lenny's Newsletter Meetup - 2026
 
 - **v1:** Automation books in ~90-95 seconds. Works great.
 - **New Year's:** Resolution crowd hits. Monday 4:15 PM starts filling in under 60 seconds.
-- **v2:** Optimized with Claude down to **under 60 seconds**. Still hitting it.
-- **Reality:** The class fills anyway -- people are mashing the app the instant it opens.
+- **v2:** Optimized with Claude down to **under 5 seconds** (early-start: arrive before window, refresh at exact moment).
+- **Reality:** Now we're faster than the humans mashing the app.
 
 > I solved the technical problem and hit a market problem. That's a real product story.
 

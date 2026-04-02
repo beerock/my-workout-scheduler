@@ -4,7 +4,7 @@
 **Status:** ✅ **SUPERSEDED** - Now using Inngest event-driven scheduling + early-start optimization  
 **Related:** [PRD](./My%20Workout%20Scheduler%20PRD.md) Section 5.3  
 **Original Decision:** GitHub Actions with 15-minute cron schedule + clock drift retry logic  
-**Current Architecture:** Inngest fires events 60s before booking window; GitHub Actions runs Puppeteer; early-start wait-and-refresh replaces clock drift retries
+**Current Architecture:** Inngest fires events 90s before booking window; GitHub Actions runs Puppeteer; early-start wait-and-refresh replaces clock drift retries
 
 ---
 
@@ -258,18 +258,18 @@ This still improves on pure GitHub Actions by adding immediate triggers.
 
 **1. Scheduling (SUPERSEDED)**
 - ~~15-minute cron schedule~~ -> Inngest event-driven scheduling
-- Inngest fires booking events at precise times (60s before booking window opens)
+- Inngest fires booking events at precise times (90s before booking window opens)
 - GitHub Actions triggered via workflow_dispatch from Inngest
 
 **2. Early-Start Optimization (replaced clock drift retries)**
-- Inngest fires event 60s before booking window opens
+- Inngest fires event 90s before booking window opens
 - Puppeteer completes all prep (login, navigation, landing on class details page) before window opens
 - Wait-and-refresh loop: sleeps until 2s before window, then refreshes every 2s (up to 15 attempts)
 - Result: booking click within 2-4 seconds of window opening (was ~57s)
 
 **3. Architecture (Current)**
 ```
-Inngest Event (60s early)
+Inngest Event (90s early)
   -> GitHub Actions workflow_dispatch
     -> Puppeteer:
       1. Navigate YMCA schedule
@@ -284,7 +284,7 @@ Inngest Event (60s early)
 **Files Modified:**
 - `.github/workflows/booking-automation.yml` - Workflow dispatch (triggered by Inngest)
 - `scripts/booking-automation.ts` - Puppeteer automation with early-start wait-and-refresh
-- `lib/inngest/scheduler.ts` - Event scheduling (fires 60s early)
+- `lib/inngest/scheduler.ts` - Event scheduling (fires 90s early)
 - `lib/inngest/functions.ts` - Orchestration (triggers GH Actions, handles retries)
 
 #### Benefits
@@ -333,7 +333,7 @@ Inngest Event (60s early)
 4. ✅ Migrated from Daxko to GroupExPro booking flow
 
 **Current Implementation:**
-- Inngest scheduling: `lib/inngest/scheduler.ts` (fires events 60s before booking window)
+- Inngest scheduling: `lib/inngest/scheduler.ts` (fires events 90s before booking window)
 - Inngest orchestration: `lib/inngest/functions.ts` (triggers GH Actions, handles retries)
 - GitHub Actions workflow: `.github/workflows/booking-automation.yml` (workflow_dispatch)
 - Puppeteer automation: `scripts/booking-automation.ts` (with `waitForBookingWindow()`)

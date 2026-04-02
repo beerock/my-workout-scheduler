@@ -530,7 +530,7 @@ Brief summaries of completed work. See PRD version history for full details.
 ### Early-Start Booking Optimization ✅
 **Completed:** April 1, 2026 (v2.32)
 
-Inngest fires events 60s before booking window. Puppeteer completes all prep before window opens, then refreshes at exact moment. Booking click within 2-4s of window opening (was ~57s). Replaced clock drift retry logic.
+Inngest fires events 90s before booking window. Puppeteer completes all prep before window opens, then refreshes at exact moment. Booking click within 2-4s of window opening (was ~57s). Replaced clock drift retry logic.
 
 ---
 

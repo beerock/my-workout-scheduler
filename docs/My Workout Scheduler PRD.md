@@ -24,7 +24,7 @@
   - **Production Architecture:** Inngest schedules events → GitHub Actions executes Puppeteer
   - Puppeteer scripts for YMCA/GroupExPro platform (login, navigation, class finding)
   - Precise timing: triggers at exact booking window times (not polling)
-  - Early-start optimization: fires 60s early, waits on class details page, refreshes at booking window open
+  - Early-start optimization: fires 90s early, waits on class details page, refreshes at booking window open
   - Intelligent retry logic: class full (15min intervals until class starts)
   - Parallel processing for multiple users (<60s total booking time)
   - Database integration (booking attempts tracking)
@@ -36,7 +36,7 @@
   - Environment variables configured (Supabase, Inngest, GitHub)
   - End-to-end production testing in progress
 - ✅ **COMPLETED: Production Testing**
-  - Early-start optimization: Tested and working (fires 60s early, booking click within 2-4s of window open)
+  - Early-start optimization: Tested and working (fires 90s early, booking click within 2-4s of window open)
   - Successful bookings: Multiple confirmed reservations via automation
   - Waitlist handling: Tested and working correctly
   - Immediate booking dialog: Tested (Book Now and Skip This Week options)
@@ -71,7 +71,7 @@
   - Prevents click failures on elements outside viewport
   - Smooth scrolling with 500ms animation delay
 - ✅ **COMPLETED: Early-Start Booking Optimization (v2.32, replaced v2.7/v2.10 clock drift logic)**
-  - Inngest fires event 60s before booking window opens
+  - Inngest fires event 90s before booking window opens
   - Puppeteer completes all prep (YMCA navigation, login, land on class details page) before window
   - `waitForBookingWindow()`: sleeps until 2s before window, refreshes every 2s (15 attempts max)
   - Detects "not yet available for sign-up" text on GroupExPro class details page
@@ -169,7 +169,7 @@
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
 - **v2.32:** Early-Start Booking Optimization (April 2026)
-  - Inngest fires booking events 60s before window opens (was: at exact window time)
+  - Inngest fires booking events 90s before window opens (was: at exact window time)
   - New `waitForBookingWindow()` in Puppeteer: sleeps then refreshes every 2s on class details page
   - Booking click within 2-4s of window opening (was: ~57s median delay)
   - `expected_booking_time` passed through Inngest -> GH Actions -> Puppeteer
@@ -293,7 +293,7 @@ Gym classes (especially popular ones like BODYPUMP) fill up within minutes of re
 
 ### Success Metrics (Prototype)
 
-- **Primary KPI:** Successfully book user into class within 60 seconds of registration opening  
+- **Primary KPI:** Successfully book user into class within 5 seconds of registration opening  
 - Secondary: 80%+ booking success rate (excluding legitimately full classes)  
 - User satisfaction: Users no longer manually book classes
 
@@ -456,7 +456,7 @@ Users could miss bookings if they unpause, activate a class, or remove a skip be
 | :---- | :---- | :---- | :---- |
 | **Event-Driven Scheduling** | Inngest triggers bookings at exact window times (e.g., Friday 7:30 AM for Saturday 9:30 AM class) | High | ✅ |
 | **Browser Automation** | Puppeteer logs into gym site and completes booking flow | High | ✅ |
-| **Early-Start Optimization** | Fires 60s early, waits on class details page, refreshes at window open; Class full: every 15min | High | ✅ |
+| **Early-Start Optimization** | Fires 90s early, waits on class details page, refreshes at window open; Class full: every 15min | High | ✅ |
 | **Booking Logic** | Reserve if available, waitlist if full, skip if already booked | High | ✅ |
 | **Error Handling** | Detect failures, log errors, send notification | High | ✅ |
 | **Status Updates** | Write booking results back to database | High | ✅ |
@@ -575,7 +575,7 @@ Users could miss bookings if they unpause, activate a class, or remove a skip be
 The system handles two types of failures with different retry strategies:
 
 **Early-Start Optimization (Booking Window Not Open Yet):**
-- **Approach:** Inngest fires event 60s before booking window opens
+- **Approach:** Inngest fires event 90s before booking window opens
 - **Prep Phase:** Puppeteer navigates YMCA schedule, finds class, clicks Register, logs into GroupExPro, lands on class details page
 - **Wait Phase:** `waitForBookingWindow()` sleeps until 2s before window, then refreshes every 2s (up to 15 attempts = 30s coverage)
 - **Detection:** "not yet available for sign-up" text on GroupExPro class details page
@@ -856,7 +856,7 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 ### Nice to Have
 
 - 80%+ booking success rate  
-- Booking happens within 60 seconds of registration  
+- Booking happens within 5 seconds of registration opening  
 - Email notifications are reliable  
 - UI is usable on mobile
 
