@@ -62,7 +62,12 @@ export function Combobox({
   const filtered = useMemo(() => filterFn(query, options), [query, options, filterFn])
 
   // Whether to show the custom entry option
-  const showCustomOption = allowCustom && query.trim().length > 0
+  // Only show when query doesn't exactly match an existing option (case-insensitive)
+  const queryTrimmed = query.trim()
+  const exactMatchExists = queryTrimmed.length > 0 && filtered.some(
+    (o) => o.label.toLowerCase() === queryTrimmed.toLowerCase()
+  )
+  const showCustomOption = allowCustom && queryTrimmed.length > 0 && !exactMatchExists
 
   // Total selectable items (filtered + optional custom)
   const totalItems = filtered.length + (showCustomOption ? 1 : 0)

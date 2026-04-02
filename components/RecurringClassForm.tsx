@@ -116,11 +116,17 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
       // Convert time to HH:MM:SS format for database
       const timeWithSeconds = `${formData.class_time}:00`
 
+      // Detect custom class: either explicitly marked custom via Combobox,
+      // or typed value doesn't match any class in the master list
+      const isCustom = isCustomClass || !YMCA_MASTER_CLASSES.some(
+        (c) => c.display.toLowerCase() === formData.class_type.toLowerCase()
+      )
+
       const result = await saveRecurringClass(
         {
           ...formData,
           class_time: timeWithSeconds,
-          isCustomClassName: isCustomClass,
+          isCustomClassName: isCustom,
         },
         (initialClass && !isCopy) ? initialClass.id : undefined
       )
