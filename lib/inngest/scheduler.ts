@@ -5,6 +5,9 @@
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { inngest } from './client';
 
+/** Fire booking event this many ms early to allow GH Actions + Puppeteer prep time */
+export const EARLY_START_MS = 90 * 1000;
+
 /**
  * Calculate when the booking window opens for a class
  * Accounts for the class's specific timezone
@@ -187,11 +190,6 @@ export async function scheduleBooking(classData: {
       classDate,
     },
   });
-
-  // Early-start: fire event 90s before booking window opens so GH Actions + Puppeteer
-  // can complete all prep (login, navigation) and be ready to refresh at the exact moment
-  // 90s covers P95 cold start (30s) + Puppeteer nav (35s) with ~25s buffer
-  const EARLY_START_MS = 90 * 1000;
 
   // Schedule new booking attempt
   await inngest.send({

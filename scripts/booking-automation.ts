@@ -821,21 +821,6 @@ async function completeGroupExProBooking(
 // =============================================================================
 
 /**
- * Book a class using the YMCA/GroupExPro flow
- *
- * Flow:
- * 1. Calculate target date in gym timezone
- * 2. Navigate to YMCA schedule (with date + branch filter)
- * 3. Find class by name/time
- * 4. Check class state (available, waitlist, full, cancelled)
- * 5. Click Register → GroupExPro login (enter credentials)
- * 6. Complete booking on GroupExPro class details page
- *
- * @param page Puppeteer page instance
- * @param params Booking parameters
- * @returns Booking result
- */
-/**
  * Wait for the booking window to open by refreshing the GroupExPro class details page.
  * Called when we arrive early (before the booking window opens).
  * The page shows "not yet available for sign-up" until the window opens,
@@ -863,13 +848,15 @@ async function waitForBookingWindow(
     await new Promise(resolve => setTimeout(resolve, sleepMs))
   }
 
-  // Tight refresh loop: reload every 2s, max 15 attempts (30s window)
+  // Tight refresh loop: reload every 2s, max 15 attempts
+  // Uses domcontentloaded (not networkidle2) because we only check for text absence,
+  // not JS-rendered buttons. completeGroupExProBooking has its own waitForFunction.
   const MAX_REFRESHES = 15
   const REFRESH_INTERVAL_MS = 2000
 
   for (let i = 1; i <= MAX_REFRESHES; i++) {
     console.log(`   Refresh ${i}/${MAX_REFRESHES}...`)
-    await page.reload({ waitUntil: 'networkidle2' })
+    await page.reload({ waitUntil: 'domcontentloaded' })
 
     // Check if "not yet available" text is gone
     const stillBlocked = await page.evaluate(() => {
@@ -892,6 +879,22 @@ async function waitForBookingWindow(
   return { refreshCount: MAX_REFRESHES }
 }
 
+/**
+ * Book a class using the YMCA/GroupExPro flow
+ *
+ * Flow:
+ * 1. Calculate target date in gym timezone
+ * 2. Navigate to YMCA schedule (with date + branch filter)
+ * 3. Find class by name/time
+ * 4. Check class state (available, waitlist, full, cancelled)
+ * 5. Click Register → GroupExPro login (enter credentials)
+ * 5.5. Wait for booking window (early-start: sleep then refresh)
+ * 6. Complete booking on GroupExPro class details page
+ *
+ * @param page Puppeteer page instance
+ * @param params Booking parameters
+ * @returns Booking result
+ */
 async function bookClassYMCAHybrid(
   page: Page,
   params: BookingParams
