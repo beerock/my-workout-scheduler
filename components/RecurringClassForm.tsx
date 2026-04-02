@@ -5,11 +5,15 @@ import { saveRecurringClass, type RecurringClassFormData } from '@/app/actions/r
 import { useRouter } from 'next/navigation'
 import { COMMON_TIMEZONES, formatDateInGymTimezone, getDayName, formatTime12Hour } from '@/lib/date-utils'
 import type { RecurringClass } from '@/lib/database.types'
-import { Button, Modal, Input, Select, Alert, TimeInput } from '@/components/ui'
+import { Button, Modal, Input, Select, Alert, TimeInput, Combobox } from '@/components/ui'
+import { YMCA_BRANCHES, YMCA_MASTER_CLASSES, fuzzyMatchClasses } from '@/lib/constants/ymca'
+import type { ComboboxOption } from '@/components/ui'
+import { useToast } from '@/contexts/ToastContext'
 
 type Props = {
   initialClass?: RecurringClass | null
   isCopy?: boolean // Indicates if this is a copy operation
+  defaultBranch?: string | null
   onSuccess?: () => void
 }
 
@@ -23,8 +27,9 @@ const DAYS_OF_WEEK = [
   { value: '6', label: 'Saturday' },
 ]
 
-export default function RecurringClassForm({ initialClass, isCopy = false, onSuccess }: Props) {
+export default function RecurringClassForm({ initialClass, isCopy = false, defaultBranch, onSuccess }: Props) {
   const router = useRouter()
+  const toast = useToast()
 
   // Form reset key - increment to reset Input/Select component state after success
   const [formKey, setFormKey] = useState(0)
@@ -52,11 +57,12 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
     class_time: string
     branch: string
   } | null>(null)
+  const [isCustomClass, setIsCustomClass] = useState(false)
   const [formData, setFormData] = useState<RecurringClassFormData>({
     day_of_week: initialClass?.day_of_week ?? 1,
     class_time: initialClass?.class_time ? initialClass.class_time.substring(0, 5) : '',
     class_type: initialClass?.class_type || '',
-    branch: initialClass?.branch || '',
+    branch: initialClass?.branch || defaultBranch || '',
     booking_window_hours: initialClass?.booking_window_hours ?? 26,
     timezone: initialClass?.timezone || 'America/New_York',
   })
@@ -112,10 +118,17 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
       // Convert time to HH:MM:SS format for database
       const timeWithSeconds = `${formData.class_time}:00`
 
+      // Detect custom class: either explicitly marked custom via Combobox,
+      // or typed value doesn't match any class in the master list
+      const isCustom = isCustomClass || !YMCA_MASTER_CLASSES.some(
+        (c) => c.display.toLowerCase() === formData.class_type.toLowerCase()
+      )
+
       const result = await saveRecurringClass(
         {
           ...formData,
           class_time: timeWithSeconds,
+          isCustomClassName: isCustom,
         },
         (initialClass && !isCopy) ? initialClass.id : undefined
       )
@@ -152,6 +165,11 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
       if (result.success) {
         setSuccess(true)
         setFormKey(k => k + 1) // Reset form to clear touched state
+
+        // Show toast for custom class names
+        if (result.isCustomClassName) {
+          toast.info(`Class saved. We've noted "${formData.class_type}" as a new class — an admin will review it.`)
+        }
 
         // Check if booking window is already open (server-side check)
         if (result.bookingWindowAlreadyOpen && result.id) {
@@ -379,30 +397,56 @@ export default function RecurringClassForm({ initialClass, isCopy = false, onSuc
     label: tz.label,
   }))
 
+  // Class options for Combobox
+  const classOptions: ComboboxOption[] = YMCA_MASTER_CLASSES.map(c => ({
+    value: c.display,
+    label: c.display,
+  }))
+
+  // Fuzzy filter for Combobox
+  const filterClasses = (query: string, options: ComboboxOption[]): ComboboxOption[] => {
+    const matched = fuzzyMatchClasses(query)
+    const matchedValues = new Set(matched.map(m => m.display))
+    return options.filter(o => matchedValues.has(o.value))
+  }
+
+  // Branch options for Select
+  const branchOptions = YMCA_BRANCHES.map(branch => ({
+    value: branch,
+    label: branch,
+  }))
+
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Group 1: Class Identity (WHAT & WHERE) */}
-        <Input
+        <Combobox
           key={`class_type-${formKey}`}
           label="Class Name"
           name="class_type"
-          type="text"
           value={formData.class_type}
-          onChange={handleChange}
+          onChange={(value, custom) => {
+            setFormData(prev => ({ ...prev, class_type: value }))
+            setIsCustomClass(custom)
+          }}
+          options={classOptions}
+          filterFn={filterClasses}
+          placeholder="Search classes..."
+          hint="Search by name or browse the list"
+          allowCustom
+          customLabel="Add custom class"
           required
-          placeholder="e.g., BODYPUMP"
         />
 
-        <Input
+        <Select
           key={`branch-${formKey}`}
-          label="Location"
+          label="Branch"
           name="branch"
-          type="text"
           value={formData.branch}
           onChange={handleChange}
+          options={branchOptions}
+          placeholder="Select a branch"
           required
-          placeholder="e.g., Downtown YMCA"
         />
 
         {/* Group 2: Schedule (WHEN) */}

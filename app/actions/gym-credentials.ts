@@ -5,7 +5,6 @@ import { encryptPassword } from '@/lib/encryption'
 import { revalidatePath } from 'next/cache'
 
 export type GymCredentialsFormData = {
-  gym_url: string
   username: string
   password: string
   default_branch: string
@@ -54,12 +53,10 @@ export async function saveGymCredentials(
     if (existing) {
       // Update existing credentials
       const updateData: {
-        gym_url: string
         username: string
         encrypted_password?: string
         default_branch: string | null
       } = {
-        gym_url: data.gym_url,
         username: data.username,
         default_branch: data.default_branch || null,
       }
@@ -86,7 +83,7 @@ export async function saveGymCredentials(
         .from('gym_credentials')
         .insert({
           user_id: user.id,
-          gym_url: data.gym_url,
+          gym_url: 'https://www.ymcawnc.org/schedules', // Hardcoded for WNC YMCA (single org MVP)
           username: data.username,
           encrypted_password: encryptedPassword,
           default_branch: data.default_branch || null,
@@ -134,7 +131,7 @@ export async function getGymCredentials() {
 
     const { data: credentials, error } = await supabase
       .from('gym_credentials')
-      .select('id, gym_url, username, default_branch, created_at, updated_at')
+      .select('id, username, default_branch, created_at, updated_at')
       .eq('user_id', user.id)
       .maybeSingle()
 

@@ -36,7 +36,8 @@ export type SendEmailParams = {
     | 'first_booking_success'
     | 'credentials_updated'
     | 'daily_digest'
-    | 'pause_reminder';
+    | 'pause_reminder'
+    | 'admin_custom_class';
 };
 
 export type SendEmailResult = {
