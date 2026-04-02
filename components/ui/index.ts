@@ -10,6 +10,7 @@ export { Modal, type ModalProps } from './Modal'
 // Form Components
 export { Input, type InputProps } from './Input'
 export { Select, type SelectProps, type SelectOption } from './Select'
+export { Combobox, type ComboboxProps, type ComboboxOption } from './Combobox'
 export { TimeInput, type TimeInputProps } from './TimeInput'
 export { Checkbox, type CheckboxProps } from './Checkbox'
 export { FormField } from './FormField'

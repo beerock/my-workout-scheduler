@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import RecurringClassForm from '@/components/RecurringClassForm'
 import { getRecurringClass } from '@/app/actions/recurring-classes'
+import { getGymCredentials } from '@/app/actions/gym-credentials'
 import EditorialLayout from '@/components/EditorialLayout'
 import { Card } from '@/components/ui'
 
@@ -21,6 +22,9 @@ export default async function AddClassPage({ searchParams }: Props) {
   if (!user) {
     redirect('/login')
   }
+
+  // Fetch user's default branch for pre-selecting
+  const { credentials } = await getGymCredentials()
 
   // Check if we're copying from an existing class
   const params = await searchParams
@@ -49,7 +53,7 @@ export default async function AddClassPage({ searchParams }: Props) {
     >
       <div className="max-w-2xl mx-auto">
         <Card className="opacity-0 animate-fade-in-up">
-          <RecurringClassForm initialClass={classToCopy} isCopy={!!classToCopy} />
+          <RecurringClassForm initialClass={classToCopy} isCopy={!!classToCopy} defaultBranch={credentials?.default_branch} />
         </Card>
       </div>
     </EditorialLayout>
