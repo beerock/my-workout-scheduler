@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { scheduleBooking, calculateBookingWindowOpen, calculateNextClassDate } from '@/lib/inngest/scheduler'
 import { inngest } from '@/lib/inngest/client'
+import { notifyAdminCustomClass } from '@/lib/notifications/send-admin-notification'
 
 export type RecurringClassFormData = {
   day_of_week: number
@@ -24,6 +25,7 @@ export type RecurringClassResult = {
   skipClearWarning?: boolean
   skipDate?: string | null
   deactivatedWarning?: boolean  // Signal that class is deactivated and needs user choice
+  isCustomClassName?: boolean   // Signal to show custom class toast
   classDetails?: {
     class_type: string
     day_of_week: number
@@ -192,6 +194,18 @@ export async function saveRecurringClass(
       resultId = newClass.id
     }
 
+    // Fire-and-forget: notify admins if custom class name
+    if (data.isCustomClassName) {
+      notifyAdminCustomClass({
+        userId: user.id,
+        className: data.class_type,
+        classId: resultId,
+        branch: data.branch,
+        dayOfWeek: data.day_of_week,
+        classTime: data.class_time,
+      }).catch((err) => console.error('[CustomClass] Admin notification failed:', err))
+    }
+
     // Schedule booking with Inngest
     try {
       const bookingTime = calculateBookingWindowOpen(
@@ -210,6 +224,7 @@ export async function saveRecurringClass(
         return {
           success: true,
           id: resultId,
+          isCustomClassName: data.isCustomClassName,
         }
       }
 
@@ -224,6 +239,7 @@ export async function saveRecurringClass(
           id: resultId,
           bookingWindowAlreadyOpen: true,
           bookingTime,
+          isCustomClassName: data.isCustomClassName,
           classDetails: {
             class_type: data.class_type,
             day_of_week: data.day_of_week,
@@ -248,6 +264,7 @@ export async function saveRecurringClass(
           id: resultId,
           bookingWindowAlreadyOpen: false,
           bookingTime,
+          isCustomClassName: data.isCustomClassName,
         }
       }
     } catch (schedulingError) {
@@ -258,6 +275,7 @@ export async function saveRecurringClass(
       return {
         success: true,
         id: resultId,
+        isCustomClassName: data.isCustomClassName,
         error: 'Class saved but failed to schedule booking. The daily scheduler will pick it up.',
       }
     }

@@ -155,6 +155,20 @@ export function getResendApiKey(): string {
 }
 
 /**
+ * Get admin email addresses for notifications
+ *
+ * Reads comma-separated ADMIN_EMAILS env var. Returns empty array if unset,
+ * allowing graceful degradation when admin emails aren't configured.
+ *
+ * @returns Array of admin email addresses
+ */
+export function getAdminEmails(): string[] {
+  const raw = process.env.ADMIN_EMAILS
+  if (!raw) return []
+  return raw.split(',').map(e => e.trim()).filter(Boolean)
+}
+
+/**
  * Validate that all required environment variables are set
  *
  * Useful for startup checks or health endpoints.

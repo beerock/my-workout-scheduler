@@ -47,6 +47,8 @@ export function Combobox({
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(-1)
+  const [showPulse, setShowPulse] = useState(false)
+  const [unresolvedHint, setUnresolvedHint] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const listboxRef = useRef<HTMLUListElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -72,16 +74,41 @@ export function Combobox({
   // Total selectable items (filtered + optional custom)
   const totalItems = filtered.length + (showCustomOption ? 1 : 0)
 
+  // Auto-resolve on close: if value is empty and query is non-empty, try to match
+  const attemptAutoResolve = useCallback(() => {
+    const trimmed = query.trim()
+    if (!value && trimmed) {
+      const matches = filterFn(trimmed, options)
+      if (matches.length === 1) {
+        // Single match - auto-select it
+        onChange(matches[0].value, false)
+        setQuery('')
+        setUnresolvedHint('')
+        setShowPulse(true)
+        setTimeout(() => setShowPulse(false), 600)
+      } else if (matches.length > 1) {
+        // Ambiguous - keep text, show hint
+        setUnresolvedHint('Multiple classes match — please select from the list')
+      } else if (allowCustom) {
+        // Zero matches with custom allowed
+        setUnresolvedHint('Select a class or use "Add custom class" below')
+      } else {
+        setUnresolvedHint('No matching classes found')
+      }
+    }
+  }, [query, value, filterFn, options, onChange, allowCustom])
+
   // Close on outside click
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        attemptAutoResolve()
         setIsOpen(false)
       }
     }
     document.addEventListener('mousedown', handleMouseDown)
     return () => document.removeEventListener('mousedown', handleMouseDown)
-  }, [])
+  }, [attemptAutoResolve])
 
   // Scroll active option into view
   useEffect(() => {
@@ -108,6 +135,7 @@ export function Combobox({
       setQuery('')
       setIsOpen(false)
       setActiveIndex(-1)
+      setUnresolvedHint('')
       inputRef.current?.blur()
     },
     [onChange]
@@ -119,6 +147,7 @@ export function Combobox({
       onChange('', false)
       setQuery('')
       setIsOpen(false)
+      setUnresolvedHint('')
       inputRef.current?.focus()
     },
     [onChange]
@@ -129,6 +158,7 @@ export function Combobox({
       const val = e.target.value
       setQuery(val)
       setActiveIndex(-1)
+      setUnresolvedHint('')
       if (!isOpen) setIsOpen(true)
       // Clear the selected value when user starts typing
       if (value) {
@@ -172,6 +202,7 @@ export function Combobox({
           e.preventDefault()
           setIsOpen(false)
           setActiveIndex(-1)
+          setUnresolvedHint('')
           // Restore original value if user escapes without selecting
           if (value) {
             setQuery('')
@@ -195,8 +226,8 @@ export function Combobox({
     ? 'border-danger-500 focus:border-danger-500 focus:ring-2 focus:ring-danger-500/20'
     : 'border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20'
 
-  // Display value: show selected value when not editing, query when editing
-  const displayValue = isOpen ? query : value || ''
+  // Display value: show selected value when not editing, query when editing or unresolved
+  const displayValue = isOpen ? query : (value || (unresolvedHint ? query : ''))
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -237,7 +268,7 @@ export function Combobox({
             error ? `${comboboxId}-error` : hint ? `${comboboxId}-hint` : undefined
           }
           autoComplete="off"
-          className={`${baseInputStyles} ${stateStyles}`}
+          className={`${baseInputStyles} ${stateStyles} ${showPulse ? 'animate-auto-resolve-pulse' : ''}`}
           placeholder={value ? '' : placeholder}
           value={displayValue}
           onChange={handleInputChange}
@@ -365,12 +396,24 @@ export function Combobox({
       )}
 
       {/* Hint text */}
-      {hint && !error && (
+      {hint && !error && !unresolvedHint && (
         <p
           id={`${comboboxId}-hint`}
           className="mt-2 font-dm-sans text-sm text-gray-500"
         >
           {hint}
+        </p>
+      )}
+
+      {/* Unresolved hint (ambiguous/zero match on blur) */}
+      {unresolvedHint && !error && (
+        <p
+          className="mt-2 font-dm-sans text-sm text-warning-600 flex items-center gap-1"
+        >
+          <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          {unresolvedHint}
         </p>
       )}
     </div>

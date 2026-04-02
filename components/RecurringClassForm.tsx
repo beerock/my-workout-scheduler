@@ -8,6 +8,7 @@ import type { RecurringClass } from '@/lib/database.types'
 import { Button, Modal, Input, Select, Alert, TimeInput, Combobox } from '@/components/ui'
 import { YMCA_BRANCHES, YMCA_MASTER_CLASSES, fuzzyMatchClasses } from '@/lib/constants/ymca'
 import type { ComboboxOption } from '@/components/ui'
+import { useToast } from '@/contexts/ToastContext'
 
 type Props = {
   initialClass?: RecurringClass | null
@@ -28,6 +29,7 @@ const DAYS_OF_WEEK = [
 
 export default function RecurringClassForm({ initialClass, isCopy = false, defaultBranch, onSuccess }: Props) {
   const router = useRouter()
+  const toast = useToast()
 
   // Form reset key - increment to reset Input/Select component state after success
   const [formKey, setFormKey] = useState(0)
@@ -163,6 +165,11 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
       if (result.success) {
         setSuccess(true)
         setFormKey(k => k + 1) // Reset form to clear touched state
+
+        // Show toast for custom class names
+        if (result.isCustomClassName) {
+          toast.info(`Class saved. We've noted "${formData.class_type}" as a new class — an admin will review it.`)
+        }
 
         // Check if booking window is already open (server-side check)
         if (result.bookingWindowAlreadyOpen && result.id) {
