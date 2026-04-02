@@ -305,6 +305,22 @@ Add filter and sort controls to the My Schedule page, similar to Booking History
 
 ---
 
+### Admin CMS / Database-Driven Class Catalog
+**Status:** Backlogged | **Priority:** Low
+
+Move gym reference data (orgs, branches, class names) from constants file (`lib/constants/ymca.ts`) to database tables with an admin interface. Currently the master class list is hardcoded for simplicity (1 org, 97 classes). A DB-driven catalog enables admin management without code deploys and scales to multiple gym organizations.
+
+**Requirements:**
+- `class_catalog` table with status column (official/pending/rejected) - custom class submissions become `pending`, admin promotes to `official`
+- Admin UI for managing orgs, branches, and class names
+- Promote custom class names from `custom_class_names` dedup table to official catalog
+- Combobox reads from DB instead of constants file
+
+**Dependencies:** Multi-org support, admin dashboard
+**Last Updated:** April 2, 2026
+
+---
+
 ### Email Notification Enhancements
 **Status:** Schema ready, implementation deferred | **Priority:** Low
 
