@@ -282,12 +282,10 @@ When automation re-runs for a class the user is already reserved or waitlisted f
 
 Nice-to-have features that aren't critical.
 
-### Code Cleanup from Class Selector Audit
-**Status:** Backlogged | **Priority:** Low
+### ~~Code Cleanup from Class Selector Audit~~ ✅
+**Status:** Completed | **Completed:** April 3, 2026
 
-Low-priority items from v2.33 audit: fix dead ternary in `getEmailConfig` (both branches identical), replace deprecated `substr` with `substring` in Combobox/Input/Select ID generation, move custom option inside `<ul>` listbox for ARIA compliance, replace `useId()` for SSR-safe IDs, type `updateData: any` in `toggleRecurringClassActive`, consolidate duplicate `getSiteUrl` in `lib/env.ts` vs `lib/env-utils.ts`.
-
-**Last Updated:** April 2, 2026
+All 6 items resolved: dead ternary fixed, `substr` replaced with `useId()`, custom option moved inside `<ul>` for ARIA, `updateData: any` typed, `lib/env.ts` consolidated into `lib/env-utils.ts`.
 
 ---
 

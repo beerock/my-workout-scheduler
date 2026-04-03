@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo, useId } from 'react'
 
 export interface ComboboxOption {
   value: string
@@ -52,10 +52,7 @@ export function Combobox({
   const inputRef = useRef<HTMLInputElement>(null)
   const listboxRef = useRef<HTMLUListElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const comboboxId = useMemo(
-    () => `combobox-${Math.random().toString(36).substr(2, 9)}`,
-    []
-  )
+  const comboboxId = useId()
   const listboxId = `${comboboxId}-listbox`
 
   const hasError = !!error
@@ -352,43 +349,43 @@ export function Combobox({
                 {option.label}
               </li>
             ))}
-          </ul>
 
-          {/* Custom entry option */}
-          {showCustomOption && (
-            <div
-              id={`${comboboxId}-option-${filtered.length}`}
-              role="option"
-              data-index={filtered.length}
-              aria-selected={activeIndex === filtered.length}
-              className={`border-t border-gray-100 px-4 py-3 cursor-pointer transition-colors ${
-                activeIndex === filtered.length
-                  ? 'bg-primary-50'
-                  : 'hover:bg-gray-50'
-              }`}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                selectOption(query.trim(), true)
-              }}
-              onMouseEnter={() => setActiveIndex(filtered.length)}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-3 h-3 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-                  </svg>
+            {/* Custom entry option */}
+            {showCustomOption && (
+              <li
+                id={`${comboboxId}-option-${filtered.length}`}
+                role="option"
+                data-index={filtered.length}
+                aria-selected={activeIndex === filtered.length}
+                className={`border-t border-gray-100 px-4 py-3 cursor-pointer transition-colors ${
+                  activeIndex === filtered.length
+                    ? 'bg-primary-50'
+                    : 'hover:bg-gray-50'
+                }`}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  selectOption(query.trim(), true)
+                }}
+                onMouseEnter={() => setActiveIndex(filtered.length)}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-dm-sans text-sm text-gray-900">
+                      {customLabel}: <span className="font-semibold">&ldquo;{query.trim()}&rdquo;</span>
+                    </p>
+                    <p className="font-dm-sans text-xs text-gray-400">
+                      We&apos;ll notify admins to add this to the list
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-dm-sans text-sm text-gray-900">
-                    {customLabel}: <span className="font-semibold">&ldquo;{query.trim()}&rdquo;</span>
-                  </p>
-                  <p className="font-dm-sans text-xs text-gray-400">
-                    We&apos;ll notify admins to add this to the list
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+              </li>
+            )}
+          </ul>
 
           {/* Screen reader announcement */}
           <div aria-live="polite" className="sr-only">
