@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { getAuthCallbackUrl } from '@/lib/env'
+import { getAuthCallbackUrl } from '@/lib/env-utils'
 import { Button, Input, Alert } from '@/components/ui'
 import AuthLayout from '@/components/AuthLayout'
 import { validateEmail } from '@/lib/validation'

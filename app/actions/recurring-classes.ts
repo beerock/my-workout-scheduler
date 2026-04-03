@@ -486,7 +486,7 @@ export async function toggleRecurringClassActive(
     }
 
     // If DEACTIVATING (active = false), check for skip and prompt user
-    let updateData: any = { active }
+    let updateData: { active: boolean; skip_next_occurrence?: boolean; skip_target_datetime?: string | null } = { active }
 
     if (active === false) {
       // Fetch current class with all fields needed

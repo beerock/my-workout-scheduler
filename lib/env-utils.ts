@@ -52,6 +52,13 @@ export function getSiteUrl(): string {
 }
 
 /**
+ * Get the auth callback URL for email verification and password reset
+ */
+export function getAuthCallbackUrl(): string {
+  return `${getSiteUrl()}/auth/callback`
+}
+
+/**
  * Get email configuration with environment-aware defaults
  *
  * Returns the configured sender email and name, with sensible defaults
@@ -65,10 +72,8 @@ export function getSiteUrl(): string {
  * // Development: { fromEmail: 'onboarding@resend.dev', fromName: 'My Workout Scheduler' }
  */
 export function getEmailConfig() {
-  const isDevelopment = process.env.NODE_ENV === 'development'
-
   return {
-    fromEmail: process.env.RESEND_FROM_EMAIL || (isDevelopment ? 'onboarding@resend.dev' : 'onboarding@resend.dev'),
+    fromEmail: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
     fromName: process.env.RESEND_FROM_NAME || 'My Workout Scheduler',
   }
 }
