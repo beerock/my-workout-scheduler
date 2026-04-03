@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { saveRecurringClass, type RecurringClassFormData } from '@/app/actions/recurring-classes'
 import { useRouter } from 'next/navigation'
 import { COMMON_TIMEZONES, formatDateInGymTimezone, getDayName, formatTime12Hour } from '@/lib/date-utils'
@@ -8,7 +8,6 @@ import type { RecurringClass } from '@/lib/database.types'
 import { Button, Modal, Input, Select, Alert, TimeInput, Combobox } from '@/components/ui'
 import { YMCA_BRANCHES, YMCA_MASTER_CLASSES, fuzzyMatchClasses } from '@/lib/constants/ymca'
 import type { ComboboxOption } from '@/components/ui'
-import { useCallback } from 'react'
 
 // Module-level constants (derived from static data, never change)
 const classOptions: ComboboxOption[] = YMCA_MASTER_CLASSES.map(c => ({
@@ -594,11 +593,13 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
         <p className="text-gray-700">
           Changing the class schedule will clear your skip for{' '}
           <strong>
-            {skipClearData && formatDateInGymTimezone(
-              new Date(skipClearData.skipDate || ''),
-              skipClearData.formData.timezone,
-              'short'
-            )}
+            {skipClearData?.skipDate
+              ? formatDateInGymTimezone(
+                  new Date(skipClearData.skipDate),
+                  skipClearData.formData.timezone,
+                  'short'
+                )
+              : 'this week'}
           </strong>. Do you want to continue?
         </p>
 

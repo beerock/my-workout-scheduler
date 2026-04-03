@@ -14,7 +14,6 @@ import { Button, Modal } from '@/components/ui'
 
 type Props = {
   classes: RecurringClass[]
-  gymUrl?: string | null
   schedulePaused?: boolean
   onUpdate?: () => void
 }
@@ -30,6 +29,7 @@ type ClassToBook = {
 type DeactivateWithSkip = {
   id: string
   skipDate: string | null
+  timezone: string
 }
 
 // Diagonal Badge Component matching Complete Badge System
@@ -62,7 +62,7 @@ function DiagonalBadge({
   )
 }
 
-export default function ScheduleList({ classes, gymUrl, schedulePaused = false, onUpdate }: Props) {
+export default function ScheduleList({ classes, schedulePaused = false, onUpdate }: Props) {
   const router = useRouter()
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
@@ -172,7 +172,8 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
 
       // Check for skip clear warning (deactivating a class with active skip)
       if (result.skipClearWarning) {
-        setDeactivateWithSkip({ id, skipDate: result.skipDate || null })
+        const classItem = classes.find(c => c.id === id)
+        setDeactivateWithSkip({ id, skipDate: result.skipDate || null, timezone: classItem?.timezone || 'America/New_York' })
         setShowDeactivateSkipDialog(true)
         setTogglingId(null)
         return
@@ -451,7 +452,6 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <SkipButton
                     recurringClass={classItem}
-                    gymUrl={gymUrl}
                     onUpdate={onUpdate}
                     schedulePaused={schedulePaused}
                     variant="gradient"
@@ -641,7 +641,7 @@ export default function ScheduleList({ classes, gymUrl, schedulePaused = false, 
         <p className="text-gray-700">
           Note: Deactivating this class will clear the skip currently set
           {deactivateWithSkip?.skipDate && (
-            <> for <strong>{formatDateInGymTimezone(new Date(deactivateWithSkip.skipDate), 'America/New_York', 'short')}</strong></>
+            <> for <strong>{formatDateInGymTimezone(new Date(deactivateWithSkip.skipDate), deactivateWithSkip.timezone, 'short')}</strong></>
           )}.
         </p>
       </Modal>

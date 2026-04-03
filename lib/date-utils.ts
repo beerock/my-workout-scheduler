@@ -218,26 +218,6 @@ export function isDateToday(dateStr: string | null): boolean {
   )
 }
 
-/**
- * Check if class has already passed
- */
-export function hasClassPassed(
-  classDate: string,
-  classTime: string,
-  timezone: string = 'America/New_York'
-): boolean {
-  const [hours, minutes, seconds] = classTime.split(':').map(Number)
-  
-  // Parse the class date string (YYYY-MM-DD) as local date
-  const [year, month, day] = classDate.split('-').map(Number)
-  
-  // Create date object for the class in local time
-  const classDateTime = new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0)
-  
-  const now = new Date()
-  
-  return now > classDateTime
-}
 
 /**
  * Common timezones for dropdown
