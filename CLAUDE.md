@@ -8,7 +8,7 @@
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version:** v2.32 - Early-Start Booking Optimization (see PRD for full version history)
+**Current Version:** v2.33 - Class Selector & Admin Notifications (see PRD for full version history)
 
 ---
 
@@ -36,7 +36,7 @@ app/actions/      → Server actions (all form submissions)
 app/dashboard/    → Protected pages
 lib/date-utils.ts → Date calculations (CRITICAL - always use this)
 lib/inngest/      → Event-driven booking functions
-components/ui/    → Design system components (19 components)
+components/ui/    → Design system components (20 components)
 scripts/          → Puppeteer automation
 supabase/         → Migrations and RLS policies
 .claude/          → Hooks, agents, and skills
@@ -211,4 +211,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: April 1, 2026 (v2.32)*
+*Last Updated: April 2, 2026 (v2.33)*

@@ -21,9 +21,10 @@ This document provides complete API documentation, usage examples, and best prac
 **Form Components:**
 5. [Input](#input)
 6. [Select](#select)
-7. [TimeInput](#timeinput)
-8. [Checkbox](#checkbox)
-9. [FormField](#formfield)
+7. [Combobox](#combobox)
+8. [TimeInput](#timeinput)
+9. [Checkbox](#checkbox)
+10. [FormField](#formfield)
 
 **Navigation:**
 10. [DropdownMenu](#dropdownmenu)
@@ -1426,6 +1427,63 @@ interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>
 - ✅ Native select element (works with screen readers)
 - ✅ Label association
 - ✅ `aria-invalid` and `aria-describedby` for errors
+
+---
+
+## Combobox
+
+**File:** `components/ui/Combobox.tsx`
+
+**Purpose:** Searchable select with optional custom entry support. Combines text input with filtered dropdown list. Used for class name selection with 97 YMCA classes.
+
+### Props
+
+```typescript
+interface ComboboxProps {
+  label?: string
+  name: string
+  value: string
+  onChange: (value: string, isCustom: boolean) => void
+  options: ComboboxOption[]   // { value: string; label: string }
+  placeholder?: string        // Default: "Search..."
+  hint?: string
+  error?: string
+  required?: boolean
+  allowCustom?: boolean       // Default: false
+  customLabel?: string        // Default: "Add custom class"
+  filterFn?: (query: string, options: ComboboxOption[]) => ComboboxOption[]
+  className?: string
+}
+```
+
+### Usage
+
+```tsx
+<Combobox
+  label="Class Name"
+  name="class_type"
+  value={formData.class_type}
+  onChange={(val, isCustom) => {
+    setFormData(prev => ({ ...prev, class_type: val }))
+    setIsCustomClass(isCustom)
+  }}
+  options={classOptions}
+  filterFn={filterClasses}
+  allowCustom
+  customLabel="Add custom class"
+  placeholder="Search classes..."
+  hint="Search by name or browse the list"
+  required
+/>
+```
+
+### Features
+
+- **Fuzzy search:** Filters options as user types via `filterFn` prop
+- **Auto-resolve on blur:** Single exact match auto-selects with pulse animation; ambiguous matches show warning hint
+- **Custom entry:** When `allowCustom` is true, shows "Add custom class" option at bottom of dropdown
+- **Keyboard navigation:** Arrow keys, Enter to select, Escape to close
+- **Accessibility:** `role="combobox"`, `aria-expanded`, `aria-activedescendant`, screen reader announcements
 
 ---
 
