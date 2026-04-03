@@ -12,6 +12,8 @@ import {
   StatCard,
   Divider,
   Footer,
+  Combobox,
+  type ComboboxOption,
 } from '@/components/ui'
 import { PrototypeNav } from '@/components/PrototypeNav'
 
@@ -20,6 +22,7 @@ export default function DesignSystemComponentsPage() {
   const [inputValue, setInputValue] = useState('')
   const [inputFocused, setInputFocused] = useState(false)
   const [selectValue, setSelectValue] = useState('')
+  const [comboboxValue, setComboboxValue] = useState('')
   const [checkboxChecked, setCheckboxChecked] = useState(false)
   const [radioValue, setRadioValue] = useState('option1')
   const [textareaValue, setTextareaValue] = useState('')
@@ -279,6 +282,30 @@ export default function DesignSystemComponentsPage() {
                       </svg>
                     </div>
                   </div>
+                </div>
+
+                {/* Combobox */}
+                <div className="space-y-2">
+                  <Combobox
+                    label="Search Classes"
+                    name="class_demo"
+                    value={comboboxValue}
+                    onChange={(val) => setComboboxValue(val)}
+                    options={[
+                      { value: 'BODYPUMP', label: 'BODYPUMP' },
+                      { value: 'BODYPUMP Express', label: 'BODYPUMP Express' },
+                      { value: 'BODYPUMP HEAVY', label: 'BODYPUMP HEAVY' },
+                      { value: 'Yoga', label: 'Yoga' },
+                      { value: 'Power Yoga', label: 'Power Yoga' },
+                      { value: 'Zumba', label: 'Zumba' },
+                      { value: 'Aqua Fit', label: 'Aqua Fit' },
+                      { value: 'Cycling', label: 'Cycling' },
+                    ]}
+                    placeholder="Search classes..."
+                    hint="Type to search, click outside to auto-resolve"
+                    allowCustom
+                    customLabel="Add custom class"
+                  />
                 </div>
 
                 {/* Time Input */}
