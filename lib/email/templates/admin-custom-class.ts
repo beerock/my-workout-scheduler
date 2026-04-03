@@ -19,7 +19,6 @@ export type AdminCustomClassEmailProps = {
   userId: string;
   dashboardUrl: string;
   settingsUrl: string;
-  editClassUrl: string;
   supabaseStudioUrl?: string;
 };
 
@@ -112,8 +111,6 @@ export function adminCustomClassEmail(props: AdminCustomClassEmailProps): { subj
     preheader: `A user added "${safeClassName}" - not in the official class list`,
     body,
     severity: 'info',
-    ctaText: 'View Class',
-    ctaLink: props.editClassUrl,
     showUnsubscribe: false,
     dashboardUrl: props.dashboardUrl,
     settingsUrl: props.settingsUrl,

@@ -96,7 +96,6 @@ export async function notifyAdminCustomClass(params: AdminCustomClassParams): Pr
     const siteUrl = getSiteUrl();
     const dashboardUrl = `${siteUrl}/dashboard`;
     const settingsUrl = `${siteUrl}/dashboard/account`;
-    const editClassUrl = `${siteUrl}/dashboard/schedule/${classId}/edit`;
 
     const projectRef = getSupabaseProjectRef();
     const RECURRING_CLASSES_TABLE_ID = '17486';
@@ -116,7 +115,6 @@ export async function notifyAdminCustomClass(params: AdminCustomClassParams): Pr
       userId,
       dashboardUrl,
       settingsUrl,
-      editClassUrl,
       supabaseStudioUrl,
     });
 
