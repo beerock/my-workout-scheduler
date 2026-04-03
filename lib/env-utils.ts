@@ -155,17 +155,18 @@ export function getResendApiKey(): string {
 }
 
 /**
- * Get admin email addresses for notifications
+ * Get admin user IDs for notifications
  *
- * Reads comma-separated ADMIN_EMAILS env var. Returns empty array if unset,
- * allowing graceful degradation when admin emails aren't configured.
+ * Reads comma-separated ADMIN_USER_IDS env var. Returns empty array if unset,
+ * allowing graceful degradation when admin IDs aren't configured.
+ * Email addresses are derived from user IDs via Supabase auth.
  *
- * @returns Array of admin email addresses
+ * @returns Array of admin user IDs (UUIDs)
  */
-export function getAdminEmails(): string[] {
-  const raw = process.env.ADMIN_EMAILS
+export function getAdminUserIds(): string[] {
+  const raw = process.env.ADMIN_USER_IDS
   if (!raw) return []
-  return raw.split(',').map(e => e.trim()).filter(Boolean)
+  return raw.split(',').map(id => id.trim()).filter(Boolean)
 }
 
 /**

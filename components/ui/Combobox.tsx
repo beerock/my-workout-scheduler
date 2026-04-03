@@ -78,9 +78,23 @@ export function Combobox({
   const attemptAutoResolve = useCallback(() => {
     const trimmed = query.trim()
     if (!value && trimmed) {
+      // First: check for exact case-insensitive match against any option
+      const exactMatch = options.find(
+        (o) => o.label.toLowerCase() === trimmed.toLowerCase()
+      )
+      if (exactMatch) {
+        onChange(exactMatch.value, false)
+        setQuery('')
+        setUnresolvedHint('')
+        setShowPulse(true)
+        setTimeout(() => setShowPulse(false), 600)
+        return
+      }
+
+      // Second: check fuzzy filter results
       const matches = filterFn(trimmed, options)
       if (matches.length === 1) {
-        // Single match - auto-select it
+        // Single fuzzy match - auto-select it
         onChange(matches[0].value, false)
         setQuery('')
         setUnresolvedHint('')

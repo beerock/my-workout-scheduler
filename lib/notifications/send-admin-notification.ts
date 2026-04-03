@@ -10,7 +10,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { sendEmailNotification } from '@/lib/email/send-notification';
 import { adminCustomClassEmail } from '@/lib/email/templates/admin-custom-class';
 import { normalizeClassName } from '@/lib/constants/ymca';
-import { getAdminEmails, getSiteUrl } from '@/lib/env-utils';
+import { getAdminUserIds, getSiteUrl } from '@/lib/env-utils';
 
 export type AdminCustomClassParams = {
   userId: string;
@@ -85,10 +85,10 @@ export async function notifyAdminCustomClass(params: AdminCustomClassParams): Pr
       return;
     }
 
-    // 4. Get admin emails
-    const adminEmails = getAdminEmails();
-    if (adminEmails.length === 0) {
-      console.log(`[AdminNotify] No ADMIN_EMAILS configured, skipping email send`);
+    // 4. Get admin user IDs and resolve their emails
+    const adminUserIds = getAdminUserIds();
+    if (adminUserIds.length === 0) {
+      console.log(`[AdminNotify] No ADMIN_USER_IDS configured, skipping email send`);
       return;
     }
 
@@ -99,8 +99,9 @@ export async function notifyAdminCustomClass(params: AdminCustomClassParams): Pr
     const editClassUrl = `${siteUrl}/dashboard/schedule/${classId}/edit`;
 
     const projectRef = getSupabaseProjectRef();
+    const RECURRING_CLASSES_TABLE_ID = '17486';
     const supabaseStudioUrl = projectRef
-      ? `https://supabase.com/dashboard/project/${projectRef}/editor/table/recurring_classes?filter=id%3Deq.${classId}`
+      ? `https://supabase.com/dashboard/project/${projectRef}/editor/${RECURRING_CLASSES_TABLE_ID}?schema=public&filter=id%3Aeq%3A${classId}`
       : undefined;
 
     // 6. Generate email
@@ -119,8 +120,16 @@ export async function notifyAdminCustomClass(params: AdminCustomClassParams): Pr
       supabaseStudioUrl,
     });
 
-    // 7. Send to each admin
-    for (const adminEmail of adminEmails) {
+    // 7. Resolve admin emails from user IDs and send
+    for (const adminId of adminUserIds) {
+      const { data: adminData } = await supabase.auth.admin.getUserById(adminId);
+      const adminEmail = adminData?.user?.email;
+
+      if (!adminEmail) {
+        console.error(`[AdminNotify] Could not resolve email for admin ${adminId}, skipping`);
+        continue;
+      }
+
       const result = await sendEmailNotification({
         to: adminEmail,
         subject,
