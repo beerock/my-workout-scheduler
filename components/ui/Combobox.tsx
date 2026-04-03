@@ -136,6 +136,7 @@ export function Combobox({
     if (!isOpen) {
       setIsOpen(true)
       setActiveIndex(-1)
+      setUnresolvedHint('')
       // If a value is selected, show it as the query for editing
       if (value && !query) {
         setQuery(value)

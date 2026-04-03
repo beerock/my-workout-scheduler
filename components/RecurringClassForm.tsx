@@ -9,6 +9,18 @@ import { Button, Modal, Input, Select, Alert, TimeInput, Combobox } from '@/comp
 import { YMCA_BRANCHES, YMCA_MASTER_CLASSES, fuzzyMatchClasses } from '@/lib/constants/ymca'
 import type { ComboboxOption } from '@/components/ui'
 import { useToast } from '@/contexts/ToastContext'
+import { useCallback } from 'react'
+
+// Module-level constants (derived from static data, never change)
+const classOptions: ComboboxOption[] = YMCA_MASTER_CLASSES.map(c => ({
+  value: c.display,
+  label: c.display,
+}))
+
+const branchOptions = YMCA_BRANCHES.map(branch => ({
+  value: branch,
+  label: branch,
+}))
 
 type Props = {
   initialClass?: RecurringClass | null
@@ -397,24 +409,10 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
     label: tz.label,
   }))
 
-  // Class options for Combobox
-  const classOptions: ComboboxOption[] = YMCA_MASTER_CLASSES.map(c => ({
-    value: c.display,
-    label: c.display,
-  }))
-
-  // Fuzzy filter for Combobox
-  const filterClasses = (query: string, options: ComboboxOption[]): ComboboxOption[] => {
-    const matched = fuzzyMatchClasses(query)
-    const matchedValues = new Set(matched.map(m => m.display))
-    return options.filter(o => matchedValues.has(o.value))
-  }
-
-  // Branch options for Select
-  const branchOptions = YMCA_BRANCHES.map(branch => ({
-    value: branch,
-    label: branch,
-  }))
+  // Fuzzy filter for Combobox - memoized to avoid invalidating Combobox internals
+  const filterClasses = useCallback((_query: string, _options: ComboboxOption[]): ComboboxOption[] => {
+    return fuzzyMatchClasses(_query).map(m => ({ value: m.display, label: m.display }))
+  }, [])
 
   return (
     <>

@@ -6,11 +6,6 @@
 import puppeteer, { Browser, Page } from 'puppeteer'
 import * as fs from 'fs'
 import * as path from 'path'
-import { YMCA_BRANCHES, type YMCABranch } from '../lib/constants/ymca'
-
-// Re-export for any consumers that imported from this file
-export { YMCA_BRANCHES, type YMCABranch }
-
 // Detect production environment (GitHub Actions)
 const IS_PRODUCTION = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
 
