@@ -491,7 +491,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
         {success && (
           <Alert variant="success">
             {savedCustomClassName
-              ? `Class saved. We've noted "${savedCustomClassName}" as a new class - an admin will review it.`
+              ? 'Class saved - admin will review the new name.'
               : 'Class saved successfully!'}
           </Alert>
         )}
