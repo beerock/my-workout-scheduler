@@ -36,6 +36,7 @@ app/actions/      → Server actions (all form submissions)
 app/dashboard/    → Protected pages
 lib/date-utils.ts → Date calculations (CRITICAL - always use this)
 lib/inngest/      → Event-driven booking functions
+lib/constants/    → Shared reference data (YMCA branches, master class list)
 components/ui/    → Design system components (20 components)
 scripts/          → Puppeteer automation
 supabase/         → Migrations and RLS policies
@@ -74,6 +75,8 @@ supabase/         → Migrations and RLS policies
 - **GH Actions inputs:** Never use `${{ inputs.* }}` directly in `run:` commands (shell injection risk). Assign to `env:` block first, reference as `$ENV_VAR` in shell.
 - **Puppeteer `waitUntil`:** Use `domcontentloaded` for refresh loops checking text presence/absence. Use `networkidle2` for navigation where JS-rendered content is needed. `completeGroupExProBooking` has its own `waitForFunction` for buttons.
 - **Early-start constant:** `EARLY_START_MS` is exported from `lib/inngest/scheduler.ts` at module scope. Change there to adjust the early-start buffer (currently 90s).
+- **Supabase Studio URLs:** Table editor uses numeric table IDs, not names (`/editor/17486` not `/editor/table/recurring_classes`). Filter syntax: `filter=column%3Aoperator%3Avalue` (colons, not equals). Find table ID from the URL when navigating in the dashboard.
+- **Email template XSS:** `_base-template.ts` renders `preheader` as raw HTML. Always pass `escapeHtml()` output for any user-provided content in preheader, subject, or body. The `body` prop is also raw HTML - templates must escape user content before interpolating.
 
 ---
 
@@ -205,6 +208,11 @@ npm run restore                 # Restore from backup
 ```
 NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ENCRYPTION_KEY
 INNGEST_EVENT_KEY, INNGEST_SIGNING_KEY, RESEND_API_KEY
+```
+
+### Optional Env Vars
+```
+ADMIN_USER_IDS    # Comma-separated Supabase auth UUIDs for admin notifications
 ```
 
 See `.env.example` for full template.
