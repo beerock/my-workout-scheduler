@@ -8,7 +8,6 @@ import type { RecurringClass } from '@/lib/database.types'
 import { Button, Modal, Input, Select, Alert, TimeInput, Combobox } from '@/components/ui'
 import { YMCA_BRANCHES, YMCA_MASTER_CLASSES, fuzzyMatchClasses } from '@/lib/constants/ymca'
 import type { ComboboxOption } from '@/components/ui'
-import { useToast } from '@/contexts/ToastContext'
 import { useCallback } from 'react'
 
 // Module-level constants (derived from static data, never change)
@@ -41,8 +40,6 @@ const DAYS_OF_WEEK = [
 
 export default function RecurringClassForm({ initialClass, isCopy = false, defaultBranch, onSuccess }: Props) {
   const router = useRouter()
-  const toast = useToast()
-
   // Form reset key - increment to reset Input/Select component state after success
   const [formKey, setFormKey] = useState(0)
 
@@ -70,6 +67,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
     branch: string
   } | null>(null)
   const [isCustomClass, setIsCustomClass] = useState(false)
+  const [savedCustomClassName, setSavedCustomClassName] = useState<string | null>(null)
   const [formData, setFormData] = useState<RecurringClassFormData>({
     day_of_week: initialClass?.day_of_week ?? 1,
     class_time: initialClass?.class_time ? initialClass.class_time.substring(0, 5) : '',
@@ -176,14 +174,8 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
 
       if (result.success) {
         setSuccess(true)
+        setSavedCustomClassName(result.isCustomClassName ? formData.class_type : null)
         setFormKey(k => k + 1) // Reset form to clear touched state
-
-        // Show toast for custom class names
-        console.log('[RecurringClassForm] result.isCustomClassName:', result.isCustomClassName)
-        if (result.isCustomClassName) {
-          console.log('[RecurringClassForm] firing custom class toast')
-          toast.info(`Class saved. We've noted "${formData.class_type}" as a new class — an admin will review it.`)
-        }
 
         // Check if booking window is already open (server-side check)
         if (result.bookingWindowAlreadyOpen && result.id) {
@@ -497,7 +489,11 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
         )}
 
         {success && (
-          <Alert variant="success">Class saved successfully!</Alert>
+          <Alert variant="success">
+            {savedCustomClassName
+              ? `Class saved. We've noted "${savedCustomClassName}" as a new class - an admin will review it.`
+              : 'Class saved successfully!'}
+          </Alert>
         )}
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
