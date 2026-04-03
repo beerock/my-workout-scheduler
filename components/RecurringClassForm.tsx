@@ -179,7 +179,9 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
         setFormKey(k => k + 1) // Reset form to clear touched state
 
         // Show toast for custom class names
+        console.log('[RecurringClassForm] result.isCustomClassName:', result.isCustomClassName)
         if (result.isCustomClassName) {
+          console.log('[RecurringClassForm] firing custom class toast')
           toast.info(`Class saved. We've noted "${formData.class_type}" as a new class — an admin will review it.`)
         }
 
