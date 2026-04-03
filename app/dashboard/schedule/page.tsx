@@ -206,7 +206,6 @@ export default async function SchedulePage() {
 
         <ScheduleList
           classes={classes}
-          gymUrl={credentials?.gym_url || null}
           schedulePaused={isPaused}
         />
       </section>

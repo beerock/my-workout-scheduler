@@ -289,6 +289,42 @@ All 6 items resolved: dead ternary fixed, `substr` replaced with `useId()`, cust
 
 ---
 
+### Email Template XSS Hardening
+**Status:** Backlogged | **Priority:** High
+
+Most booking email templates interpolate user-supplied `className` and `branchName` as raw HTML without `escapeHtml()`. Only admin templates use escaping. Apply `escapeHtml()` to all user-derived props across all email templates.
+
+**Last Updated:** April 3, 2026
+
+---
+
+### Timezone Bugs in Booking Flow
+**Status:** Backlogged | **Priority:** High
+
+Three timezone issues found in audit: (1) `getFixedClassStartTime` in `functions.ts` passes local-tz Date to `fromZonedTime` - works on Vercel UTC by accident; (2) `calculateNextClassDate` in `scheduler.ts` reads date components in UTC, not gym timezone - affects late-evening class dedup keys; (3) `calculateNextOccurrence` in `date-utils.ts` has the same pattern. Fix: use `formatInTimeZone()` from `date-fns-tz` instead of manual getters after `toZonedTime`.
+
+**Last Updated:** April 3, 2026
+
+---
+
+### Duplicate Booking Run Prevention
+**Status:** Backlogged | **Priority:** Medium
+
+Inngest `check-duplicate-runs` step queries for pending booking attempts before the current attempt record is created, so two simultaneous runs both pass the check. Fix: either insert attempt record first with a DB unique constraint, or use Inngest concurrency config keyed by classId + classDate.
+
+**Last Updated:** April 3, 2026
+
+---
+
+### Code Cleanup from Ship Audit
+**Status:** Backlogged | **Priority:** Low
+
+Items from April 3, 2026 audit: delete `booking-automation-daxko-backup.ts` (dead Daxko flow), remove unused `DropdownMenu` component, remove unused env-utils exports (`isProduction`/`isDevelopment`/`isPreview`/`validateEnv`/`getEnvironment`), extract shared `BookNowDialog` component (duplicated across 4 files), register test scripts in package.json, merge redundant DB queries in `getDashboardStats`, use `upsert` in user-settings writes.
+
+**Last Updated:** April 3, 2026
+
+---
+
 ### Code Cleanup from Early-Start Audit
 **Status:** Backlogged | **Priority:** Low
 

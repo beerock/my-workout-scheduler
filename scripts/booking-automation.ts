@@ -507,7 +507,7 @@ async function performGroupExProLogin(
     }
 
     await emailField.type(username, { delay: 50 })
-    console.log(`   Entered email: ${username}`)
+    console.log('   Entered email: [redacted]')
 
     // Find password field
     const passwordField = await page.$('input[type="password"]')

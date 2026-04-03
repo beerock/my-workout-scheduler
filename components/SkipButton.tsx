@@ -22,13 +22,12 @@ type ClassToBook = {
 
 type Props = {
   recurringClass: RecurringClass
-  gymUrl?: string | null
   onUpdate?: () => void
   schedulePaused?: boolean
   variant?: 'default' | 'gradient' | 'menu-item'
 }
 
-export default function SkipButton({ recurringClass, gymUrl, onUpdate, schedulePaused, variant = 'default' }: Props) {
+export default function SkipButton({ recurringClass, onUpdate, schedulePaused, variant = 'default' }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [classToBook, setClassToBook] = useState<ClassToBook | null>(null)
