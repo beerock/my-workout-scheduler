@@ -67,7 +67,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
     branch: string
   } | null>(null)
   const [isCustomClass, setIsCustomClass] = useState(false)
-  const [savedCustomClassName, setSavedCustomClassName] = useState<string | null>(null)
+  const [savedIsCustomClass, setSavedIsCustomClass] = useState(false)
   const [formData, setFormData] = useState<RecurringClassFormData>({
     day_of_week: initialClass?.day_of_week ?? 1,
     class_time: initialClass?.class_time ? initialClass.class_time.substring(0, 5) : '',
@@ -174,7 +174,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
 
       if (result.success) {
         setSuccess(true)
-        setSavedCustomClassName(result.isCustomClassName ? formData.class_type : null)
+        setSavedIsCustomClass(!!result.isCustomClassName)
         setFormKey(k => k + 1) // Reset form to clear touched state
 
         // Check if booking window is already open (server-side check)
@@ -490,7 +490,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
 
         {success && (
           <Alert variant="success">
-            {savedCustomClassName
+            {savedIsCustomClass
               ? "Saved! We'll review your custom class name."
               : 'Class saved successfully!'}
           </Alert>
