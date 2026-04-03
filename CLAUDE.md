@@ -78,6 +78,7 @@ supabase/         → Migrations and RLS policies
 - **Supabase Studio URLs:** Table editor uses numeric table IDs, not names (`/editor/17486` not `/editor/table/recurring_classes`). Filter syntax: `filter=column%3Aoperator%3Avalue` (colons, not equals). Find table ID from the URL when navigating in the dashboard.
 - **Email template XSS:** `_base-template.ts` renders `preheader` as raw HTML. Always pass `escapeHtml()` output for any user-provided content in preheader, subject, or body. The `body` prop is also raw HTML - templates must escape user content before interpolating.
 - **Toast vs Alert:** `useToast()` / `Toast` component is unverified in production — use inline `<Alert>` for form feedback instead.
+- **Custom class dedup:** `custom_class_names` table deduplicates admin notification emails. Only one email per unique normalized class name. Clear the table to allow re-notification of the same name.
 
 ---
 
