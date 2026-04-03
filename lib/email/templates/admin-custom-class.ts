@@ -30,7 +30,7 @@ export function adminCustomClassEmail(props: AdminCustomClassEmailProps): { subj
   const safeUserName = props.userName ? escapeHtml(props.userName) : null;
   const dayName = DAY_NAMES[props.dayOfWeek] || `Day ${props.dayOfWeek}`;
 
-  const subject = `New custom class name: ${props.className}`;
+  const subject = `New custom class name: ${safeClassName}`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.primary}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
@@ -109,7 +109,7 @@ export function adminCustomClassEmail(props: AdminCustomClassEmailProps): { subj
 
   const html = baseEmailTemplate({
     title: 'Custom Class Name Submitted',
-    preheader: `A user added "${props.className}" - not in the official class list`,
+    preheader: `A user added "${safeClassName}" - not in the official class list`,
     body,
     severity: 'info',
     ctaText: 'View Class',
