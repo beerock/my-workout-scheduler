@@ -6,7 +6,6 @@
 import puppeteer, { Browser, Page } from 'puppeteer'
 import * as fs from 'fs'
 import * as path from 'path'
-
 // Detect production environment (GitHub Actions)
 const IS_PRODUCTION = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
 
@@ -26,23 +25,6 @@ const YMCA_SCHEDULE_BASE_URL = 'https://www.ymcawnc.org/schedules'
  * IANA timezone that auto-handles DST
  */
 const YMCA_TIMEZONE = 'America/New_York'
-
-/**
- * Available YMCA branches (hardcoded for MVP)
- * Used for URL-based location filtering on schedule page
- * Exported for use in UI dropdown components
- */
-export const YMCA_BRANCHES = [
-  'Asheville YMCA',
-  'Black Mountain YMCA',
-  'Corpening Memorial YMCA',
-  'Ferguson Family YMCA',
-  'Hendersonville Family YMCA',
-  'Reuter Family YMCA',
-  'Woodfin YMCA',
-] as const
-
-export type YMCABranch = typeof YMCA_BRANCHES[number]
 
 // =============================================================================
 // YMCA Helper Functions

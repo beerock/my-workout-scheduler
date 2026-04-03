@@ -145,6 +145,10 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateY(100%)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        autoResolvePulse: {
+          '0%': { backgroundColor: 'rgb(232, 241, 255)' },
+          '100%': { backgroundColor: 'transparent' },
+        },
       },
       animation: {
         // Using 'forwards' keeps elements visible after animation
@@ -156,6 +160,7 @@ const config: Config = {
         'shimmer': 'shimmer 2s infinite linear',
         'slide-in-right': 'slideInRight 0.3s ease-out forwards',
         'slide-in-up': 'slideInUp 0.3s ease-out forwards',
+        'auto-resolve-pulse': 'autoResolvePulse 0.6s ease-out forwards',
       },
     },
   },

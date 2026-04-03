@@ -155,6 +155,21 @@ export function getResendApiKey(): string {
 }
 
 /**
+ * Get admin user IDs for notifications
+ *
+ * Reads comma-separated ADMIN_USER_IDS env var. Returns empty array if unset,
+ * allowing graceful degradation when admin IDs aren't configured.
+ * Email addresses are derived from user IDs via Supabase auth.
+ *
+ * @returns Array of admin user IDs (UUIDs)
+ */
+export function getAdminUserIds(): string[] {
+  const raw = process.env.ADMIN_USER_IDS
+  if (!raw) return []
+  return raw.split(',').map(id => id.trim()).filter(Boolean)
+}
+
+/**
  * Validate that all required environment variables are set
  *
  * Useful for startup checks or health endpoints.

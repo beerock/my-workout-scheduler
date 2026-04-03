@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { saveGymCredentials, type GymCredentialsFormData } from '@/app/actions/gym-credentials'
 import { useRouter } from 'next/navigation'
-import { Button, Input, Alert } from '@/components/ui'
+import { Button, Input, Select, Alert } from '@/components/ui'
+import { YMCA_BRANCHES } from '@/lib/constants/ymca'
 
 type Credentials = {
   id: string
-  gym_url: string
   username: string
   default_branch: string | null
   created_at: string
@@ -28,7 +28,6 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [formData, setFormData] = useState<GymCredentialsFormData>({
-    gym_url: initialCredentials?.gym_url || '',
     username: initialCredentials?.username || '',
     password: '', // Never pre-fill password
     default_branch: initialCredentials?.default_branch || '',
@@ -45,7 +44,6 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
   useEffect(() => {
     if (initialCredentials) {
       setFormData({
-        gym_url: initialCredentials.gym_url,
         username: initialCredentials.username,
         password: '', // Never pre-fill password
         default_branch: initialCredentials.default_branch || '',
@@ -60,7 +58,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
     setSuccess(false)
 
     // Basic validation
-    if (!formData.gym_url || !formData.username) {
+    if (!formData.username) {
       setError('Please fill in all required fields')
       setLoading(false)
       return
@@ -102,7 +100,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value,
@@ -125,17 +123,6 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Input
-        key={`gym_url-${formKey}`}
-        label="Gym URL"
-        name="gym_url"
-        type="url"
-        value={formData.gym_url}
-        onChange={handleChange}
-        required
-        placeholder="https://operations.daxko.com/online/4032/GXP/ClassSchedule.mvc"
-        hint="The URL where you log in to book classes"
-      />
       <Input
         key={`username-${formKey}`}
         label="Gym Login"
@@ -203,15 +190,15 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
         />
       )}
 
-      <Input
+      <Select
         key={`default_branch-${formKey}`}
         label="Default Branch"
         name="default_branch"
-        type="text"
         value={formData.default_branch}
         onChange={handleChange}
-        placeholder="e.g., Asheville - Downtown"
-        hint="Your preferred gym branch (optional)"
+        placeholder="Select your home branch"
+        hint="Your most-visited location - used as default when adding classes"
+        options={YMCA_BRANCHES.map(branch => ({ value: branch, label: branch }))}
       />
 
       {error && (

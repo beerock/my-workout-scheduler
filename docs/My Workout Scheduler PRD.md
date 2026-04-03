@@ -168,6 +168,12 @@
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.33:** Class Selector & Admin Notifications (April 2026)
+  - Searchable Combobox component for class selection (97 YMCA classes, fuzzy match, auto-resolve on blur)
+  - Branch dropdowns replace free-text on credentials and class forms (7 WNC YMCA branches)
+  - Removed gym URL field from credentials (hardcoded in booking script)
+  - Custom class entry with admin email notification and dedup (one email per unique name)
+  - Shared YMCA constants file (`lib/constants/ymca.ts`) for branches and class list
 - **v2.32:** Early-Start Booking Optimization (April 2026)
   - Inngest fires booking events 90s before window opens (was: at exact window time)
   - New `waitForBookingWindow()` in Puppeteer: sleeps then refreshes every 2s on class details page
