@@ -100,6 +100,8 @@ export async function saveRecurringClass(
     }
 
     let resultId: string
+    // Only show the custom class toast if it's a new class or the class name changed
+    let showCustomClassToast = false
 
     if (id) {
       // Fetch existing class to check for field changes and active status
@@ -176,6 +178,10 @@ export async function saveRecurringClass(
       }
 
       resultId = id
+      // Only notify/toast if the class name itself changed to something custom
+      if (data.isCustomClassName && existingClass.class_type !== data.class_type) {
+        showCustomClassToast = true
+      }
     } else {
       // Insert new class
       const { data: newClass, error } = await supabase
@@ -192,10 +198,11 @@ export async function saveRecurringClass(
       }
 
       resultId = newClass.id
+      showCustomClassToast = !!data.isCustomClassName
     }
 
-    // Fire-and-forget: notify admins if custom class name
-    if (data.isCustomClassName) {
+    // Fire-and-forget: notify admins if custom class name (dedup table handles repeats)
+    if (showCustomClassToast) {
       notifyAdminCustomClass({
         userId: user.id,
         className: data.class_type,
@@ -224,7 +231,7 @@ export async function saveRecurringClass(
         return {
           success: true,
           id: resultId,
-          isCustomClassName: data.isCustomClassName,
+          isCustomClassName: showCustomClassToast,
         }
       }
 
@@ -239,7 +246,7 @@ export async function saveRecurringClass(
           id: resultId,
           bookingWindowAlreadyOpen: true,
           bookingTime,
-          isCustomClassName: data.isCustomClassName,
+          isCustomClassName: showCustomClassToast,
           classDetails: {
             class_type: data.class_type,
             day_of_week: data.day_of_week,
@@ -264,7 +271,7 @@ export async function saveRecurringClass(
           id: resultId,
           bookingWindowAlreadyOpen: false,
           bookingTime,
-          isCustomClassName: data.isCustomClassName,
+          isCustomClassName: showCustomClassToast,
         }
       }
     } catch (schedulingError) {
@@ -275,7 +282,7 @@ export async function saveRecurringClass(
       return {
         success: true,
         id: resultId,
-        isCustomClassName: data.isCustomClassName,
+        isCustomClassName: showCustomClassToast,
         error: 'Class saved but failed to schedule booking. The daily scheduler will pick it up.',
       }
     }
