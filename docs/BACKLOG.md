@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** March 19, 2026
+**Last Updated:** April 6, 2026
 
 ---
 
@@ -10,36 +10,68 @@ This document tracks features and improvements organized by priority and status.
 
 Items that MUST be completed before MVP launch.
 
-### Contact/Support Form
-**Status:** Required before launch | **Priority:** High
+### Credential Testing on Credentials Page
+**Status:** Backlogged | **Priority:** High
 
-Add contact form at `/contact` and support email link in footer for user support.
+Allow users to test their gym credentials before saving, ensuring they work with the booking system (GroupExPro login). Painful during recent onboarding - should tie into invite code onboarding flow.
 
 **Requirements:**
-- Contact form with Name, Email, Subject dropdown, Message fields
-- Send via Resend to help@beerock.com
-- Pre-fill user info if logged in
-- Add "Contact" link to footer
+- "Test Credentials" button on credentials page
+- Attempts GroupExPro login to verify credentials work
+- Clear success/failure feedback
+- Consider integration with invite code onboarding flow
 
-**Last Updated:** November 19, 2025
+**Dependencies:** Invite Code Signup Gate (for onboarding flow integration)
+
+**Last Updated:** April 6, 2026
+
+---
+
+### SEO & Marketing
+**Status:** Partially complete | **Priority:** Medium
+
+**Completed (v2.19):** Metadata, sitemap, robots.txt, favicon, OG images, canonical URLs, `NEXT_PUBLIC_SITE_URL` set in Vercel production.
+
+**Still needed:**
+- Google Search Console setup
+- Manifest.json for PWA
+
+**Last Updated:** April 6, 2026
 
 ---
 
 ### Three-Zone Skip Cleanup Testing
-**Status:** Production testing required | **Priority:** High
+**Status:** Bug fixed, testing still needed | **Priority:** Medium
 
-The three-zone skip cleanup logic (v2.12) needs comprehensive production testing to verify all time-based zones work correctly when users pause/deactivate classes.
+The three-zone skip cleanup logic (v2.12) needs production testing. The UTC vs local time comparison bug in `user-settings.ts` was fixed in v2.34, but the three zones should still be verified end-to-end.
 
 **Test Document:** `docs/TESTING_SKIP_THREE_ZONE_LOGIC.md`
 
-**Zones to test:**
-- Zone A (before booking window): Preserve both skip fields
-- Zone B (inside booking window): Clear flag only, keep datetime
-- Zone C (after class time): Clear both fields
+**Last Updated:** April 6, 2026
 
-**Known bug (from audit Mar 2026):** `app/actions/user-settings.ts:132` compares `new Date(skip_target_datetime)` (UTC) against `new Date()` (local time) — may cause zone misclassification. Fix: use `.toISOString()` for UTC-to-UTC comparison.
+---
 
-**Last Updated:** March 19, 2026
+### Tighten Supabase Rate Limits
+**Status:** Quick config change needed | **Priority:** High
+
+Supabase auth rate limits are still at testing values (50 req/hr for password reset). Tighten to production values in Supabase Dashboard > Authentication > Rate Limits.
+
+**Requirements:**
+- Password Reset: 3 requests per hour per email
+- Email Verification Resend: 1 request per 60 seconds per user
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Review Support Email
+**Status:** Quick review needed | **Priority:** Low
+
+Confirm `help@beerock.com` is correct and receiving mail in error pages.
+
+**Files:** `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx`
+
+**Last Updated:** January 2, 2026
 
 ---
 
@@ -52,56 +84,14 @@ The three-zone skip cleanup logic (v2.12) needs comprehensive production testing
 
 ---
 
-### Review Support Email
-**Status:** Quick review needed | **Priority:** Low
-
-Confirm `help@beerock.com` is correct in error pages before MVP launch.
-
-**Files:** `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx`
-
-**Last Updated:** January 2, 2026
-
----
-
-### SEO & Marketing
-**Status:** Partially complete | **Priority:** Medium
-
-**Completed (v2.19):** Metadata, sitemap, robots.txt, favicon, OG images, canonical URLs
-
-**Still needed before launch:**
-- Set `NEXT_PUBLIC_SITE_URL` in Vercel production
-- Google Search Console setup
-- Manifest.json for PWA
-
-**Last Updated:** January 2, 2026
-
----
-
 ## Post-MVP: High Priority
 
 Important features for near-term after launch.
 
-### Credential Testing on Credentials Page
-**Status:** Backlogged | **Priority:** High
-
-Allow users to test their gym credentials before saving, ensuring they work with the booking system (GroupExPro login).
-
-**Requirements:**
-- "Test Credentials" button on credentials page
-- Attempts GroupExPro login to verify credentials work
-- Clear success/failure feedback
-- Consider UX for guiding new users to verify against groupexpro.com
-
-**Context:** YMCA of WNC users are typically onboarded via GroupExPro first. See `docs/YMCA_MAIN_SITE_BOOKING_FLOW.md` for booking flow details.
-
-**Last Updated:** January 16, 2026
-
----
-
 ### Invite Code Signup Gate
 **Status:** Backlogged | **Priority:** High
 
-Allow new users to sign up only with a valid invite code. Replaces the current hard-disabled signup page with a gated flow.
+Allow new users to sign up only with a valid invite code. Replaces the current hard-disabled signup page with a gated flow for smoother friend onboarding.
 
 **Requirements:**
 - Invite code input field on signup page (shown before the registration form)
@@ -109,9 +99,9 @@ Allow new users to sign up only with a valid invite code. Replaces the current h
 - Admin can generate and manage invite codes (Supabase table)
 - Codes can be single-use or multi-use with an optional expiration
 
-**Dependencies:** Admin dashboard (for code management), or manual DB inserts for MVP
+**Dependencies:** Manual DB inserts for MVP
 
-**Last Updated:** February 18, 2026
+**Last Updated:** April 6, 2026
 
 ---
 
@@ -120,44 +110,108 @@ Allow new users to sign up only with a valid invite code. Replaces the current h
 
 Add Google and Apple OAuth as preferred login method with account linking support.
 
-**Key features:**
+**Requirements:**
 - OAuth buttons on login/signup pages
 - Account linking in profile settings
-- Profile photo from OAuth providers
 - Users must maintain at least one login method
 
 **Dependencies:** Google Cloud Console setup, Apple Developer setup, Supabase OAuth config
 
-**Last Updated:** November 19, 2025
+**Last Updated:** April 6, 2026
 
 ---
 
-### Rate Limiting on Auth & Booking Endpoints
-**Status:** Backlogged | **Priority:** Medium
+### Retry Chain Cancellation Fix
+**Status:** Backlogged | **Priority:** High
 
-Add rate limiting to prevent brute force attacks and booking spam using Upstash Redis.
+When a user cancels/deletes a class during a retry cycle, `cancelOn` kills the sleeping run but the already-dispatched retry event spawns a new uncancellable run. Fix by either looping retries within one function invocation or re-checking class state before proceeding.
 
-**Limits:**
-- Login: 5 attempts per 15 minutes per IP
-- Signup: 3 attempts per hour per IP
-- Password reset: 3 attempts per hour per email
-- Trigger booking (`/api/trigger-booking`): 5 attempts per hour per user
-
-**Last Updated:** February 10, 2026
+**Last Updated:** April 6, 2026
 
 ---
 
-### Manual "Book Now" Button
+### Timeout Retry Double-Book Prevention
+**Status:** Backlogged | **Priority:** High
+
+When the 10-minute `waitForEvent` times out, the function schedules a retry without checking if GitHub Actions already completed successfully. This could trigger a second booking attempt. Fix by querying `booking_attempts` status before retrying after timeout.
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Manual Trigger Cancel Event
+**Status:** Backlogged | **Priority:** High
+
+The `/api/trigger-booking` endpoint sends a `booking/attempt` event without first cancelling any existing scheduled event for the same class+date. This could create concurrent booking attempts. Fix by sending `booking/cancel` before the manual trigger, consistent with `scheduleBooking()`.
+
+**Last Updated:** April 6, 2026
+
+---
+
+## Post-MVP: Medium Priority
+
+### GitHub Timeout Handling
+**Status:** Planned | **Priority:** Medium
+
+Improve handling of GitHub Actions delays/outages. Currently, 10m timeout causes false failure states. GH Actions has been reliable in practice, so this is not urgent.
+
+**Plan Document:** `docs/plans/GITHUB_TIMEOUT_HANDLING.md`
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Transient Error Retry During Full-Class Retries
 **Status:** Backlogged | **Priority:** Medium
 
-Add UI button to immediately trigger booking attempt for a class (bypassing scheduled automation).
+If a retry attempt fails for a non-"full" reason (timeout, network error, etc.), continue the retry cycle rather than giving up permanently.
 
-**Requirements:**
-- "Book Now" button on each active class
-- Real-time status updates during booking
-- Rate limiting to prevent spam
+**Last Updated:** January 18, 2026
 
-**Last Updated:** January 10, 2025
+---
+
+### Skip Notification for Already-Booked Classes
+**Status:** Backlogged | **Priority:** Medium
+
+When automation re-runs for a class the user is already reserved for, it returns `status: 'confirmed'` and sends a false "your class is booked!" notification. Fix: return a distinct status (e.g., `already_confirmed`) from the Puppeteer script and skip notification.
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Retry Logic Error Code Refactor
+**Status:** Backlogged | **Priority:** Medium
+
+Retry trigger uses `errorMessage?.toLowerCase().includes('full')` which is fragile. Also, `isClassFullError` is missing the `'no spots'` keyword that `categorizeFailure` has. Refactor to use structured error codes instead of string matching.
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Replace window.alert() with Inline Alerts
+**Status:** Backlogged | **Priority:** Medium
+
+10 instances of `window.alert()` in SkipButton and ScheduleList for error feedback. Replace with inline `<Alert variant="error">` components, consistent with the rest of the app.
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Duplicate Booking Run Prevention
+**Status:** Backlogged | **Priority:** Medium
+
+Inngest `check-duplicate-runs` step queries for pending booking attempts before the current attempt record is created, so two simultaneous runs both pass the check.
+
+**Last Updated:** April 3, 2026
+
+---
+
+### PauseBanner Inline Error Display
+**Status:** Backlogged | **Priority:** Medium
+
+The PauseBanner inline variant (header button) has no error display - when pause/resume fails, the user sees nothing. The banner variant correctly shows errors.
+
+**Last Updated:** April 6, 2026
 
 ---
 
@@ -166,13 +220,6 @@ Add UI button to immediately trigger booking attempt for a class (bypassing sche
 
 Show real-time retry status so users know when system is retrying vs needs action.
 
-**Requirements:**
-- Status badges: Confirmed, Retrying, Failed - Action Needed
-- Retry info panel: next attempt time, attempts count
-- Action callout for permanent failures with fix steps
-
-**Dependencies:** Failure scenarios audit (completed v2.10)
-
 **Last Updated:** November 28, 2025
 
 ---
@@ -180,45 +227,9 @@ Show real-time retry status so users know when system is retrying vs needs actio
 ### NextClassCard Failure Handling (Phase 2)
 **Status:** Backlogged | **Priority:** Medium
 
-Enhance NextClassCard to handle failure states and retry scenarios. Phase 1 (booking status display) completed in v2.17.
-
-**Requirements:**
-- Show "Retrying" state with next retry time
-- Skip failed classes, show next bookable class
-- Failure alert banner with error details
+Enhance NextClassCard to handle failure states and retry scenarios.
 
 **Last Updated:** January 2, 2026
-
----
-
-### User Troubleshooting Guide
-**Status:** Backlogged | **Priority:** Medium
-
-Create user-facing documentation for diagnosing common booking failures.
-
-**Sections needed:**
-- Common failure scenarios (from v2.10 audit)
-- Self-service debugging tools
-- Quick fixes checklist
-- When to contact support
-
-**Last Updated:** November 28, 2025
-
----
-
-### Admin Dashboard
-**Status:** Backlogged | **Priority:** Medium
-
-Admin UI for user management and analytics without direct database access.
-
-**Phase 1 (first priority):**
-- User list with search/filter
-- User details view
-- Delete user with audit logging
-
-**Future phases:** Analytics charts, bulk operations, system settings
-
-**Last Updated:** November 21, 2025
 
 ---
 
@@ -231,50 +242,12 @@ Update booking status in UI without page refresh using Supabase Realtime.
 
 ---
 
-### GitHub Timeout Handling
-**Status:** Planned | **Priority:** High
-
-Improve handling of GitHub Actions delays/outages. Currently, 10m timeout causes false failure states and no user notification even when bookings succeed. New approach: 5m timeout with immediate retry, delay warning email, and 20m hard stop with systems issue notification.
-
-**Requirements:**
-- Reduce wait-for-result timeout from 10m to 5m
-- Send "delay warning" email on first timeout (suggest manual booking backup)
-- Immediate retry (no 15m sleep) for GitHub timeouts
-- After 20m total elapsed, send "systems issue" email and stop
-- Two new email templates: delay-warning, systems-issue
-
-**Plan Document:** `docs/plans/GITHUB_TIMEOUT_HANDLING.md`
-
-**Last Updated:** January 20, 2026
-
----
-
-### Transient Error Retry During Full-Class Retries
+### Manual "Book Now" Button
 **Status:** Backlogged | **Priority:** Medium
 
-If a retry attempt fails for a non-"full" reason (timeout, network error, element not found, etc.), continue the retry cycle rather than giving up permanently. Currently, only errors containing "full" trigger retries; other failures during the retry cycle terminate the process.
+Add UI button to immediately trigger booking attempt for a class.
 
-**Requirements:**
-- Detect transient errors vs permanent failures during retry cycle
-- Continue 15-minute retry cycle for transient errors
-- Consider shorter backoff (e.g., 2-3 minutes) for transient errors before resuming normal cycle
-- Log distinction between "still full" and "transient error" retries
-
-**Last Updated:** January 18, 2026
-
----
-
-### Skip Notification for Already-Booked Classes
-**Status:** Backlogged | **Priority:** Medium
-
-When automation re-runs for a class the user is already reserved or waitlisted for, it correctly detects the existing booking but still sends a success notification email. This is confusing since no new action was taken.
-
-**Requirements:**
-- Return a distinct status (e.g., `already_confirmed` / `already_waitlisted`) from the Puppeteer script
-- Skip sending notification email for these statuses in `bookClassFunction`
-- Log the detection but don't create a new booking_attempts record
-
-**Last Updated:** March 30, 2026
+**Last Updated:** January 10, 2025
 
 ---
 
@@ -282,67 +255,110 @@ When automation re-runs for a class the user is already reserved or waitlisted f
 
 Nice-to-have features that aren't critical.
 
-### ~~Code Cleanup from Class Selector Audit~~ ✅
-**Status:** Completed | **Completed:** April 3, 2026
+### Code Cleanup Sprint
+**Status:** Backlogged | **Priority:** Low
 
-All 6 items resolved: dead ternary fixed, `substr` replaced with `useId()`, custom option moved inside `<ul>` for ARIA, `updateData: any` typed, `lib/env.ts` consolidated into `lib/env-utils.ts`.
+Combined cleanup items from multiple audits (April 2026):
+- Delete `booking-automation-daxko-backup.ts` (dead Daxko flow, 80K)
+- Remove unused `DropdownMenu` component
+- Remove unused env-utils exports (`isProduction`/`isDevelopment`/`isPreview`/`validateEnv`/`getEnvironment`)
+- Remove dead export `calculateClassStartTime` from scheduler.ts
+- Remove Toast infrastructure (ToastContext, ToastProvider in layout, Toast component) - unused, use Alert instead
+- Delete orphaned `proxy.ts` at root
+- Delete `app/api/test-db/route.ts` (test endpoint in production)
+- Move/delete root-level test files, register remaining scripts in package.json
+- Extract shared `BookNowDialog` component (duplicated across 4 files)
+- Extract shared stats card components (duplicated between dashboard and schedule pages)
+
+**Last Updated:** April 6, 2026
 
 ---
 
 ### Email Template XSS Hardening
-**Status:** Backlogged | **Priority:** High
-
-Most booking email templates interpolate user-supplied `className` and `branchName` as raw HTML without `escapeHtml()`. Only admin templates use escaping. Apply `escapeHtml()` to all user-derived props across all email templates.
-
-**Last Updated:** April 3, 2026
-
----
-
-### Timezone Bugs in Booking Flow
-**Status:** Backlogged | **Priority:** High
-
-Three timezone issues found in audit: (1) `getFixedClassStartTime` in `functions.ts` passes local-tz Date to `fromZonedTime` - works on Vercel UTC by accident; (2) `calculateNextClassDate` in `scheduler.ts` reads date components in UTC, not gym timezone - affects late-evening class dedup keys; (3) `calculateNextOccurrence` in `date-utils.ts` has the same pattern. Fix: use `formatInTimeZone()` from `date-fns-tz` instead of manual getters after `toZonedTime`.
-
-**Last Updated:** April 3, 2026
-
----
-
-### Duplicate Booking Run Prevention
-**Status:** Backlogged | **Priority:** Medium
-
-Inngest `check-duplicate-runs` step queries for pending booking attempts before the current attempt record is created, so two simultaneous runs both pass the check. Fix: either insert attempt record first with a DB unique constraint, or use Inngest concurrency config keyed by classId + classDate.
-
-**Last Updated:** April 3, 2026
-
----
-
-### Code Cleanup from Ship Audit
 **Status:** Backlogged | **Priority:** Low
 
-Items from April 3, 2026 audit: delete `booking-automation-daxko-backup.ts` (dead Daxko flow), remove unused `DropdownMenu` component, remove unused env-utils exports (`isProduction`/`isDevelopment`/`isPreview`/`validateEnv`/`getEnvironment`), extract shared `BookNowDialog` component (duplicated across 4 files), register test scripts in package.json, merge redundant DB queries in `getDashboardStats`, use `upsert` in user-settings writes.
+6 booking email templates interpolate `className` and `branchName` as raw HTML without `escapeHtml()`. Low risk for closed system with 3 trusted users and curated class dropdown. Modern email clients strip scripts.
 
-**Last Updated:** April 3, 2026
+**Last Updated:** April 6, 2026
 
 ---
 
-### Code Cleanup from Early-Start Audit
+### RLS Policy Tightening
 **Status:** Backlogged | **Priority:** Low
 
-Minor items from v2.32 audit: remove dead export `calculateClassStartTime` from `lib/inngest/scheduler.ts`, gate production class card preview log behind `IS_PRODUCTION` flag, move `EARLY_START_MS` constant to module scope.
+`notification_log` and `notification_digest_queue` have INSERT/UPDATE/DELETE policies allowing `{public}` role with `qual = true`. These should be restricted to `service_role` only.
 
-**Last Updated:** April 1, 2026
+**Last Updated:** April 6, 2026
+
+---
+
+### Notification Dedup with Admin Toggle
+**Status:** Backlogged | **Priority:** Low
+
+When admin email toggles suppress an email, it logs with `delivery_status: 'failed'`, which counts as "already sent" in dedup checks. Affects welcome emails and class-full retry notifications. Fix by filtering dedup queries to `delivery_status = 'sent'`.
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Server-Side Input Validation Gaps
+**Status:** Backlogged | **Priority:** Low
+
+Several server actions lack validation that the client enforces: `class_time` format not validated, `booking_window_hours` uses `|| 26` (swallows explicit zero), no length limits on `class_type`/`branch`, gym credentials username has no length limit.
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Arbitrary Hex Color Cleanup
+**Status:** Backlogged | **Priority:** Low
+
+DiagonalBadge `pending` gradient, GetStartedBanner purple gradient, and PauseBanner Resume button use arbitrary hex colors instead of design tokens.
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Contact/Support Form
+**Status:** Backlogged | **Priority:** Low
+
+Add contact form at `/contact` for user support. Not needed while system is closed to friends who can reach out directly.
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Rate Limiting on Auth & Booking Endpoints
+**Status:** Backlogged | **Priority:** Low
+
+Application-level rate limiting via Upstash Redis. Not needed with 3 trusted users, Supabase rate limits provide baseline protection.
+
+**Last Updated:** April 6, 2026
+
+---
+
+### Admin Dashboard
+**Status:** Backlogged | **Priority:** Low
+
+Admin UI for user management. Supabase Studio works fine for 3 users.
+
+**Last Updated:** April 6, 2026
+
+---
+
+### User Troubleshooting Guide
+**Status:** Backlogged | **Priority:** Low
+
+User-facing documentation for diagnosing common booking failures.
+
+**Last Updated:** November 28, 2025
 
 ---
 
 ### My Schedule Filtering & Sorting
 **Status:** Backlogged | **Priority:** Low
 
-Add filter and sort controls to the My Schedule page, similar to Booking History. Helps users with multiple classes quickly find and manage specific classes.
-
-**Requirements:**
-- Filter by status: All, Active, Inactive, Skipped
-- Sort options: Day ascending/descending, next booking, class name
-- Persist filter/sort preferences in URL params or localStorage
+Add filter and sort controls to the My Schedule page.
 
 **Last Updated:** January 13, 2026
 
@@ -351,15 +367,10 @@ Add filter and sort controls to the My Schedule page, similar to Booking History
 ### Admin CMS / Database-Driven Class Catalog
 **Status:** Backlogged | **Priority:** Low
 
-Move gym reference data (orgs, branches, class names) from constants file (`lib/constants/ymca.ts`) to database tables with an admin interface. Currently the master class list is hardcoded for simplicity (1 org, 97 classes). A DB-driven catalog enables admin management without code deploys and scales to multiple gym organizations.
-
-**Requirements:**
-- `class_catalog` table with status column (official/pending/rejected) - custom class submissions become `pending`, admin promotes to `official`
-- Admin UI for managing orgs, branches, and class names
-- Promote custom class names from `custom_class_names` dedup table to official catalog
-- Combobox reads from DB instead of constants file
+Move gym reference data from constants file to database tables with admin interface.
 
 **Dependencies:** Multi-org support, admin dashboard
+
 **Last Updated:** April 2, 2026
 
 ---
@@ -367,14 +378,7 @@ Move gym reference data (orgs, branches, class names) from constants file (`lib/
 ### Email Notification Enhancements
 **Status:** Schema ready, implementation deferred | **Priority:** Low
 
-**Items:**
-- Daily digest (one summary email per day)
-- Weekly summary alternative
-- Dedicated unsubscribe page (currently links to account settings)
-- Email delivery tracking via Resend webhooks
-- First booking success celebration email
-- Credentials updated security email
-- 4-hour "still trying" reminder (only if first retry email was >8 hours ago; schema placeholder `booking_failure_retrying_4hr` exists)
+Daily digest, weekly summary, dedicated unsubscribe page, delivery tracking, celebration/security emails.
 
 **Last Updated:** January 2026
 
@@ -385,9 +389,6 @@ Move gym reference data (orgs, branches, class names) from constants file (`lib/
 
 Add checkbox on login page to control session persistence.
 
-- Checked: Session persists across browser restarts
-- Unchecked: Session ends when browser closes
-
 **Last Updated:** November 19, 2025
 
 ---
@@ -395,11 +396,7 @@ Add checkbox on login page to control session persistence.
 ### Supabase Double Confirm Email Changes
 **Status:** Config change needed | **Priority:** Low
 
-Disable "Secure email change" in Supabase to send only ONE verification email instead of two. Password verification already proves identity.
-
-**Action:** Toggle off in Supabase Dashboard → Authentication → Settings
-
-**Documentation:** `docs/SUPABASE_EMAIL_SETTINGS.md`
+Disable "Secure email change" in Supabase to send only ONE verification email.
 
 **Last Updated:** November 19, 2025
 
@@ -408,7 +405,7 @@ Disable "Secure email change" in Supabase to send only ONE verification email in
 ### Unverified Account Cleanup Job
 **Status:** Backlogged | **Priority:** Low
 
-Daily cron to delete accounts where `email_confirmed_at IS NULL AND created_at > 48 hours old`.
+Daily cron to delete unverified accounts older than 48 hours.
 
 **Last Updated:** November 23, 2025
 
@@ -417,10 +414,7 @@ Daily cron to delete accounts where `email_confirmed_at IS NULL AND created_at >
 ### Booking Automation Improvements
 **Status:** Backlogged | **Priority:** Low
 
-**Items:**
-- Early exit on page load failure (break retry loop if schedule doesn't load)
-- Exponential backoff for outer retry loop (15s → 30s → 60s)
-- Booking performance metrics (timing, retry counts, detection stats)
+Early exit on page load failure, exponential backoff, performance metrics.
 
 **Last Updated:** November 27, 2025
 
@@ -438,9 +432,7 @@ Auto-try fallback branches when primary branch class is full/unavailable.
 ### Performance Optimizations
 **Status:** Backlogged | **Priority:** Low
 
-**Items:**
-- Browser session reuse (one browser per user for multiple classes)
-- Cookie persistence across automation runs (skip login if cookies valid)
+Browser session reuse and cookie persistence across automation runs.
 
 **Last Updated:** January 14, 2025
 
@@ -476,7 +468,7 @@ Analytics dashboard with success rates, failure reasons, trends over time.
 ### Multi-Gym Support
 **Status:** Backlogged | **Priority:** Low
 
-Support multiple gym systems with gym-specific forms and booking scripts. Includes timezone inheritance from gym entity.
+Support multiple gym systems with gym-specific forms and booking scripts.
 
 **Last Updated:** November 2025
 
@@ -485,11 +477,7 @@ Support multiple gym systems with gym-specific forms and booking scripts. Includ
 ### Event Cancellation for Pause/Inactive/Skip
 **Status:** Backlogged | **Priority:** Low
 
-Cancel Inngest events when user pauses, deactivates, or skips (currently relies on runtime checks).
-
-**Current behavior:** Events still fire but runtime protection prevents booking. Acceptable for MVP.
-
-**When to implement:** If log noise becomes a problem at 50+ users
+Cancel Inngest events when user pauses, deactivates, or skips. Currently relies on runtime checks, acceptable for MVP.
 
 **Last Updated:** December 29, 2025
 
@@ -498,25 +486,7 @@ Cancel Inngest events when user pauses, deactivates, or skips (currently relies 
 ### Auth Callback Error Param Sanitization
 **Status:** Backlogged | **Priority:** Low
 
-Auth callback route passes error messages as URL query params (`/login?error=...`), which could appear in browser history or analytics. Currently safe (messages are generic), but should be sanitized if Supabase errors ever become more detailed.
-
-**Requirements:**
-- Use error codes instead of raw messages in URL params
-- Map codes to user-friendly messages on the login page
-
-**Last Updated:** February 10, 2026
-
----
-
-### DiagonalBadge Pending Color Design Token
-**Status:** Backlogged | **Priority:** Low
-
-The DiagonalBadge `pending` variant uses arbitrary hex colors (`#ff9500`/`#ff6b00`) with no matching design token. Other badge variants now use proper tokens. Add an `orange` token to the design system or map to an existing token.
-
-**Requirements:**
-- Add orange color scale to `tailwind.config.ts` or pick closest existing token
-- Replace hex values in DiagonalBadge gradient
-- Update `DESIGN_SYSTEM.md` if new token added
+Use error codes instead of raw messages in auth callback URL params.
 
 **Last Updated:** February 10, 2026
 
@@ -527,8 +497,6 @@ The DiagonalBadge `pending` variant uses arbitrary hex colors (`#ff9500`/`#ff6b0
 
 Portfolio case study for `/prototype/email-notifications` page.
 
-**Planning document:** `docs/CASE_STUDY_PLANNING.md`
-
 **Last Updated:** November 2025
 
 ---
@@ -536,14 +504,9 @@ Portfolio case study for `/prototype/email-notifications` page.
 ### Test-Driven Iteration Loop for Booking Automation
 **Status:** Backlogged | **Priority:** Low
 
-Define assertion-based test specs for the Puppeteer booking flow so Claude can iterate autonomously against them during future automation changes. Two layers: (1) unit tests for date math, pagination targeting, and booking window logic, (2) integration smoke tests against dry-run with DOM assertions.
+Assertion-based test specs for the Puppeteer booking flow.
 
-**Requirements:**
-- Unit test specs for `lib/date-utils.ts` and pagination logic
-- Integration test spec targeting `test:booking-dry-run` with structured assertions
-- Retry-aware assertions that distinguish code bugs from site flakiness
-
-**When to implement:** Next time booking automation needs significant iteration (e.g., site layout change, new gym support).
+**When to implement:** Next time booking automation needs significant iteration.
 
 **Last Updated:** February 13, 2026
 
@@ -552,15 +515,9 @@ Define assertion-based test specs for the Puppeteer booking flow so Claude can i
 ### Migrate Puppeteer to Playwright
 **Status:** Backlogged | **Priority:** Low
 
-Replace Puppeteer with Playwright for booking automation. Playwright offers built-in auto-wait (eliminating manual waitForSelector/waitForFunction boilerplate), better selectors (getByRole, getByText), faster browser contexts, and superior debugging tools (trace viewer, codegen).
+Replace Puppeteer with Playwright for better auto-wait, selectors, and debugging.
 
-**Requirements:**
-- Swap `puppeteer` dependency for `playwright`
-- Rewrite browser launch, selectors, and wait logic in `scripts/booking-automation.ts` and test scripts
-- Update GitHub Actions workflow (Playwright install command, cache paths)
-- Verify dry-run and real booking flows work end-to-end
-
-**When to implement:** Next time booking scripts need significant changes, or if Puppeteer flakiness becomes a pain point.
+**When to implement:** Next time booking scripts need significant changes.
 
 **Last Updated:** April 1, 2026
 
@@ -569,16 +526,20 @@ Replace Puppeteer with Playwright for booking automation. Playwright offers buil
 ### CI Failure Diagnostic Prompt
 **Status:** Backlogged | **Priority:** Low
 
-A ready-made Claude Code prompt that fetches the latest failed GitHub Actions run, categorizes the failure (infra/deps/build/test/config), and suggests fixes. Manual invocation only — no autonomous CI watcher.
+Ready-made prompt for diagnosing GitHub Actions failures.
 
-**Requirements:**
-- Prompt file at `scripts/ci-doctor.md` using `gh run` CLI commands
-- Failure categorization with suggested fix per category
-- For config/secrets issues, create a GitHub issue instead of auto-fixing
-
-**When to implement:** When CI failures become frequent enough to justify the setup time.
+**When to implement:** When CI failures become frequent enough to justify setup.
 
 **Last Updated:** February 13, 2026
+
+---
+
+### Pre-Launch Checklist Cleanup
+**Status:** Backlogged | **Priority:** Low
+
+`docs/PRE_LAUNCH_CHECKLIST.md` is stale (Jan 2026). Most items are done. Collapse completed sections, remove generic QA checklists, fix stale `NEXT_PUBLIC_APP_URL` reference. Only outstanding items: Supabase rate limits (separate backlog entry), admin email toggle verification, redirect URL confirmation.
+
+**Last Updated:** April 6, 2026
 
 ---
 
@@ -586,80 +547,94 @@ A ready-made Claude Code prompt that fetches the latest failed GitHub Actions ru
 
 Brief summaries of completed work. See PRD version history for full details.
 
+### Timezone Bug Fixes & Audit Quick Fixes ✅
+**Completed:** April 6, 2026 (v2.34)
+
+Fixed 3 timezone bugs (getFixedClassStartTime, calculateNextClassDate, calculateNextOccurrence) and skip zone UTC comparison. Removed screenshot references from error messages, fixed escapeHtml on email subject, gitignored debug directory.
+
+---
+
+### Code Cleanup from Class Selector Audit ✅
+**Completed:** April 3, 2026
+
+All 6 items resolved: dead ternary, `substr` replaced with `useId()`, custom option ARIA fix, `updateData: any` typed, `lib/env.ts` consolidated.
+
+---
+
 ### Early-Start Booking Optimization ✅
 **Completed:** April 1, 2026 (v2.32)
 
-Inngest fires events 90s before booking window. Puppeteer completes all prep before window opens, then refreshes at exact moment. Booking click within 2-4s of window opening (was ~57s). Replaced clock drift retry logic.
-
----
-
-### Event-Driven Trigger Architecture ✅
-**Completed:** November 16, 2025 (v2.0)
-
-Migrated from 15-minute cron polling to Inngest event-driven architecture. Bookings now trigger at exact booking window times with zero wasted runs. Architecture: Inngest → GitHub Actions → Supabase.
-
----
-
-### Retry Logic for Full Classes ✅
-**Completed:** November 16, 2025 (v2.0)
-
-Class full retries via Inngest (every 15 min until class starts). Clock drift retries replaced by early-start optimization in v2.32.
-
----
-
-### Password Security Requirements ✅
-**Completed:** January 2026 (v2.25)
-
-Implemented password complexity: 8+ chars, lowercase, uppercase, digit. Visual checklist on signup/password forms. Server-side validation.
-
----
-
-### Production Email Configuration ✅
-**Completed:** November 2025
-
-Domain `beerock.com` verified in Resend. DKIM enabled. Production emails from `noreply@beerock.com`.
-
----
-
-### User Profile Email Verification Notifications ✅
-**Completed:** November 19, 2025
-
-Email verification success notifications on dashboard and profile pages. Detects multiple Supabase redirect patterns.
-
----
-
-### Skip/Edit Interaction Behavior ✅
-**Completed:** November 30, 2025 (v2.12)
-
-When editing class day/time, skip is cleared with user confirmation modal. Other edits (branch, class type) preserve skip state.
-
----
-
-### Authentication Security Priority 1 ✅
-**Completed:** November 23, 2025 (v2.9)
-
-Password confirmation on signup, resend verification on login, Cloudflare Turnstile bot protection, persistent auth notifications.
-
----
-
-### GitHub Actions Workflow Caching ✅
-**Completed:** January 18, 2026
-
-Added caching for `node_modules` and Puppeteer browsers (`~/.cache/puppeteer`) to booking automation workflow. Reduces run time from ~90s to ~60s on cache hits. Cache auto-invalidates when `package-lock.json` changes. See `docs/GITHUB_ACTIONS_SETUP.md` for cache management commands.
-
----
-
-### Disable Supabase Signups at Dashboard Level ✅
-**Completed:** February 18, 2026
-
-Disabled "Allow new users to sign up" in Supabase Dashboard (Authentication > Sign In / Providers > Email). Complements the UI and server action blocks to fully close signups at the infrastructure level.
+Inngest fires events 90s before booking window. Booking click within 2-4s of window opening (was ~57s).
 
 ---
 
 ### Supabase Free-Tier Keep-Alive ✅
 **Completed:** March 19, 2026 (v2.31)
 
-Added dedicated `supabaseKeepAliveFunction` Inngest cron (every 3 days at midnight UTC) to prevent Supabase free-tier database pause. Uses lightweight `head: true` count query on `user_settings`. Safety net independent of the daily scheduler.
+Dedicated Inngest cron (every 3 days) prevents Supabase free-tier database pause.
+
+---
+
+### Disable Supabase Signups at Dashboard Level ✅
+**Completed:** February 18, 2026
+
+Disabled signups in Supabase Dashboard, complementing UI and server action blocks.
+
+---
+
+### GitHub Actions Workflow Caching ✅
+**Completed:** January 18, 2026
+
+Cache for node_modules and Puppeteer browsers. ~90s to ~60s on cache hits.
+
+---
+
+### Password Security Requirements ✅
+**Completed:** January 2026 (v2.25)
+
+Password complexity: 8+ chars, lowercase, uppercase, digit. Visual checklist and server-side validation.
+
+---
+
+### Event-Driven Trigger Architecture ✅
+**Completed:** November 16, 2025 (v2.0)
+
+Migrated from 15-minute cron to Inngest event-driven architecture.
+
+---
+
+### Retry Logic for Full Classes ✅
+**Completed:** November 16, 2025 (v2.0)
+
+Class full retries via Inngest every 15 min until class starts.
+
+---
+
+### Authentication Security Priority 1 ✅
+**Completed:** November 23, 2025 (v2.9)
+
+Password confirmation, resend verification, Turnstile bot protection.
+
+---
+
+### Skip/Edit Interaction Behavior ✅
+**Completed:** November 30, 2025 (v2.12)
+
+Skip cleared with confirmation on day/time edit, preserved for other edits.
+
+---
+
+### Production Email Configuration ✅
+**Completed:** November 2025
+
+Domain beerock.com verified in Resend. DKIM enabled.
+
+---
+
+### User Profile Email Verification Notifications ✅
+**Completed:** November 19, 2025
+
+Email verification success notifications on dashboard and profile pages.
 
 ---
 
@@ -668,30 +643,16 @@ Added dedicated `supabaseKeepAliveFunction` Inngest cron (every 3 days at midnig
 Items deprioritized or unlikely to be implemented.
 
 ### Daxko API Integration
-**Status:** Archived - No longer relevant
-
-Daxko is no longer in the booking flow (migrated to GroupExPro). Puppeteer automation with early-start optimization achieves 2-4s booking latency.
-
----
+Archived - Daxko no longer in booking flow (migrated to GroupExPro)
 
 ### SMS Notifications
-**Status:** Archived - Cost concerns
-
-Per-message SMS costs not justified for MVP. Email notifications sufficient.
-
----
+Archived - Per-message costs not justified. Email sufficient.
 
 ### GitHub Actions Automation Delay
-**Status:** Archived - Acceptable as-is
-
-~60 second delay after booking script completes before next workflow step. Not worth fixing - bookings succeed correctly.
-
----
+Archived - ~60s delay acceptable, bookings succeed correctly
 
 ### Duplicate Detection Race Window
-**Status:** Archived - Defense-in-depth, acceptable
-
-45-second race window where duplicate bookings could both proceed. Unlikely in practice due to Inngest idempotency keys.
+Archived - 45s race window unlikely in practice due to Inngest idempotency keys
 
 ---
 
@@ -699,11 +660,15 @@ Per-message SMS costs not justified for MVP. Email notifications sufficient.
 
 ### Production Deployment
 - **URL:** https://myworkout.beerock.com
-- **Architecture:** Inngest → GitHub Actions (Puppeteer) → Supabase
+- **Architecture:** Inngest -> GitHub Actions (Puppeteer) -> Supabase
 - **Monitoring:** Inngest Dashboard
+- **Users:** 3 active (closed friend group, invite-only)
 
 ### Inngest Sync
 Auto-syncs on Vercel deploy (configured). No manual sync needed.
 
 ### User Deletion
 Inngest events NOT canceled on user delete (fail gracefully, acceptable for MVP).
+
+### ENCRYPTION_KEY
+Production key scoped to Production only in Vercel (April 6, 2026). Dev/preview needs separate key added.

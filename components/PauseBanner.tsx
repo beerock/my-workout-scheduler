@@ -3,16 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateSchedulePaused } from '@/app/actions/user-settings'
-import { formatTime12Hour } from '@/lib/date-utils'
-import { Button, Modal } from '@/components/ui'
-
-type ClassWithOpenWindow = {
-  id: string
-  class_type: string
-  day_of_week: number
-  class_time: string
-  branch: string
-}
+import { Button } from '@/components/ui'
+import BookNowDialog from './BookNowDialog'
+import type { ClassToBook } from '@/hooks/useBookNowDialog'
 
 type Props = {
   isPaused: boolean
@@ -35,7 +28,7 @@ export default function PauseBanner({ isPaused: initialPaused, onUpdate, variant
   const [paused, setPaused] = useState(initialPaused)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [classesWithOpenWindows, setClassesWithOpenWindows] = useState<ClassWithOpenWindow[]>([])
+  const [classesWithOpenWindows, setClassesWithOpenWindows] = useState<ClassToBook[]>([])
   const [currentDialogIndex, setCurrentDialogIndex] = useState(0)
   const [showBookNowDialog, setShowBookNowDialog] = useState(false)
   const [bookingClass, setBookingClass] = useState(false)
@@ -43,13 +36,6 @@ export default function PauseBanner({ isPaused: initialPaused, onUpdate, variant
   useEffect(() => {
     setPaused(initialPaused)
   }, [initialPaused])
-
-  const formatClassDisplay = (classData: ClassWithOpenWindow): string => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    const dayName = days[classData.day_of_week]
-    const time = formatTime12Hour(classData.class_time)
-    return `${classData.class_type} - ${dayName} ${time} @ ${classData.branch}`
-  }
 
   const handleToggle = async () => {
     const newPaused = !paused
@@ -143,45 +129,17 @@ export default function PauseBanner({ isPaused: initialPaused, onUpdate, variant
     }
   }
 
-  // Book Now Dialog - shared across variants
-  const BookNowDialog = (
-    <Modal
+  const BookNowDialogElement = (
+    <BookNowDialog
+      classToBook={classesWithOpenWindows[currentDialogIndex] || null}
       isOpen={showBookNowDialog && !!classesWithOpenWindows[currentDialogIndex]}
-      onClose={handleSkipBooking}
-      title="Booking Window Already Open!"
-      size="md"
-      footer={
-        <>
-          <Button
-            variant="ghost"
-            onClick={handleSkipBooking}
-            disabled={bookingClass}
-          >
-            No, Skip This Week
-          </Button>
-          <Button
-            variant="success"
-            onClick={handleBookNow}
-            loading={bookingClass}
-          >
-            Yes, Book Now
-          </Button>
-        </>
-      }
-    >
-      <p className="text-gray-700">
-        Booking window is open for <strong>{classesWithOpenWindows[currentDialogIndex] && formatClassDisplay(classesWithOpenWindows[currentDialogIndex])}</strong>. Would you like to book now?
-      </p>
-      {classesWithOpenWindows.length > 1 && (
-        <p className="text-sm text-gray-500 mt-2">
-          Class {currentDialogIndex + 1} of {classesWithOpenWindows.length}
-        </p>
-      )}
-      <p className="mt-4 text-sm text-gray-500">
-        <strong>Book Now:</strong> Books this week&apos;s class immediately.<br />
-        <strong>Skip This Week:</strong> Class won&apos;t be booked this week, automatic booking resumes next week.
-      </p>
-    </Modal>
+      booking={bookingClass}
+      onBookNow={handleBookNow}
+      onSkip={handleSkipBooking}
+      subtitle={classesWithOpenWindows.length > 1
+        ? `Class ${currentDialogIndex + 1} of ${classesWithOpenWindows.length}`
+        : undefined}
+    />
   )
 
   // ========================================
@@ -203,7 +161,7 @@ export default function PauseBanner({ isPaused: initialPaused, onUpdate, variant
             </svg>
             {loading ? 'Resuming...' : 'Resume All'}
           </button>
-          {BookNowDialog}
+          {BookNowDialogElement}
         </>
       )
     }
@@ -222,7 +180,7 @@ export default function PauseBanner({ isPaused: initialPaused, onUpdate, variant
           </svg>
           {loading ? 'Pausing...' : 'Pause All'}
         </button>
-        {BookNowDialog}
+        {BookNowDialogElement}
       </>
     )
   }
@@ -233,7 +191,7 @@ export default function PauseBanner({ isPaused: initialPaused, onUpdate, variant
 
   // Only show banner when paused - this replaces where Next Class card would be
   if (!paused) {
-    return <>{BookNowDialog}</>
+    return <>{BookNowDialogElement}</>
   }
 
   // Paused state: Show prominent amber banner on ALL screen sizes
@@ -315,7 +273,7 @@ export default function PauseBanner({ isPaused: initialPaused, onUpdate, variant
           <p className="relative mt-4 text-sm text-danger-600 font-dm-sans">{error}</p>
         )}
       </div>
-      {BookNowDialog}
+      {BookNowDialogElement}
     </>
   )
 }

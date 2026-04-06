@@ -123,15 +123,16 @@ export async function updateSchedulePaused(
         .not('skip_target_datetime', 'is', null)
 
       if (!fetchError && classesWithSkips && classesWithSkips.length > 0) {
-        const now = new Date()
+        const nowMs = Date.now()
         const classesToClearBoth: string[] = [] // Zone C: Clear both fields
         const classesToClearFlag: string[] = [] // Zone B: Clear flag only
 
         // Categorize each class into zones
         for (const classItem of classesWithSkips) {
-          const classTime = new Date(classItem.skip_target_datetime)
+          // Both sides are UTC milliseconds - consistent comparison
+          const classTimeMs = new Date(classItem.skip_target_datetime).getTime()
 
-          // Calculate booking window open time
+          // Calculate booking window open time (already returns UTC Date)
           const bookingWindowOpen = calculateBookingWindowOpen(
             classItem.day_of_week,
             classItem.class_time,
@@ -139,11 +140,11 @@ export async function updateSchedulePaused(
             classItem.timezone
           )
 
-          // Three-zone logic
-          if (classTime <= now) {
+          // Three-zone logic (all comparisons in UTC milliseconds)
+          if (classTimeMs <= nowMs) {
             // Zone C: Past occurrence
             classesToClearBoth.push(classItem.id)
-          } else if (bookingWindowOpen <= now) {
+          } else if (bookingWindowOpen.getTime() <= nowMs) {
             // Zone B: Inside booking window
             classesToClearFlag.push(classItem.id)
           }
