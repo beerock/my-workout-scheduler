@@ -664,7 +664,7 @@ async function completeGroupExProBooking(
       return {
         status: 'failed',
         errorMessage:
-          'No "Reserve a Spot" or "Join the Waitlist" button found on class details page.\n\nWhat to do: Try booking manually through the gym website. Check the screenshot in booking history to see what page we landed on.',
+          'No "Reserve a Spot" or "Join the Waitlist" button found on class details page.\n\nWhat to do: Try booking manually through the gym website.',
         selectedBranch: branchUsed,
       }
     }
@@ -786,7 +786,7 @@ async function completeGroupExProBooking(
     return {
       status: 'failed',
       errorMessage:
-        "Booking result unclear after clicking button.\n\nWhat to do RIGHT NOW:\n1. Check your gym account to see if the class was booked\n2. Check the screenshots in booking history\n3. If booked: Great! You're all set (ignore this error)\n4. If not booked: Try booking manually",
+        "Booking result unclear after clicking button.\n\nWhat to do RIGHT NOW:\n1. Check your gym account to see if the class was booked\n2. If booked: Great! You're all set (ignore this error)\n3. If not booked: Try booking manually",
       selectedBranch: branchUsed,
     }
   } catch (error) {
@@ -927,7 +927,7 @@ async function bookClassYMCAHybrid(
         branchUsed: branch,
         errorMessage:
           searchResult.errorMessage ||
-          `Class "${classType}" at ${classTime} not found on YMCA schedule.\n\nWhy this happens:\n• Class name doesn't match exactly (check for typos)\n• Wrong time, day, or branch selected\n• Gym no longer offers this class\n\nWhat to do:\n1. Go to your gym's website and find the exact class listing\n2. Update your class settings to match EXACTLY\n3. Check the screenshot in booking history to see what classes were found`,
+          `Class "${classType}" at ${classTime} not found on YMCA schedule.\n\nWhy this happens:\n• Class name doesn't match exactly (check for typos)\n• Wrong time, day, or branch selected\n• Gym no longer offers this class\n\nWhat to do:\n1. Go to your gym's website and find the exact class listing\n2. Update your class settings to match EXACTLY`,
         screenshotPath,
       }
     }
@@ -1022,7 +1022,7 @@ async function bookClassYMCAHybrid(
     return {
       status: 'failed',
       branchUsed: branch,
-      errorMessage: `Something unexpected went wrong: ${errorMessage}\n\nThis might be a one-time glitch. The system will try again at the next scheduled time.\n\nIf this happens repeatedly (3+ times), please check the error details in booking history and report the issue with screenshots.`,
+      errorMessage: `Something unexpected went wrong: ${errorMessage}\n\nThis might be a one-time glitch. The system will try again at the next scheduled time.\n\nIf this happens repeatedly (3+ times), please report the issue to help@beerock.com with the error details above.`,
       screenshotPath,
     }
   }
@@ -1093,7 +1093,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
     return {
       status: 'failed',
       branchUsed: null,
-      errorMessage: `Something unexpected went wrong: ${errorMessage}\n\nThis might be a one-time glitch. The system will try again at the next scheduled time.\n\nIf this happens repeatedly (3+ times), please check the error details in booking history and report the issue with screenshots.`,
+      errorMessage: `Something unexpected went wrong: ${errorMessage}\n\nThis might be a one-time glitch. The system will try again at the next scheduled time.\n\nIf this happens repeatedly (3+ times), please report the issue to help@beerock.com with the error details above.`,
     }
   } finally {
     // Keep browser open if KEEP_BROWSER_OPEN env var is set (for debugging)

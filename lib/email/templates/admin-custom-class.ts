@@ -29,7 +29,8 @@ export function adminCustomClassEmail(props: AdminCustomClassEmailProps): { subj
   const safeUserName = props.userName ? escapeHtml(props.userName) : null;
   const dayName = DAY_NAMES[props.dayOfWeek] || `Day ${props.dayOfWeek}`;
 
-  const subject = `New custom class name: ${safeClassName}`;
+  // Use unescaped className in subject (plain text, not HTML)
+  const subject = `New custom class name: ${props.className}`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.primary}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">

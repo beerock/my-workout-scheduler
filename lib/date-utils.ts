@@ -13,14 +13,6 @@ export function getDayName(dayOfWeek: number): string {
 }
 
 /**
- * Get short day name
- */
-export function getShortDayName(dayOfWeek: number): string {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  return days[dayOfWeek] || 'Unknown'
-}
-
-/**
  * Format time from HH:MM:SS or HH:MM to 12-hour format
  */
 export function formatTime12Hour(time: string): string {
@@ -41,45 +33,6 @@ export function formatTime12Hour(time: string): string {
   const period = hours >= 12 ? 'PM' : 'AM'
   const hours12 = hours % 12 || 12
   return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`
-}
-
-/**
- * Format date in a user-friendly format (e.g., "Monday, Nov 11")
- * Uses local time components to avoid timezone issues
- */
-export function formatDate(date: Date | string): string {
-  let d: Date
-  if (typeof date === 'string') {
-    // Parse date string (YYYY-MM-DD) as local date to avoid timezone issues
-    const [year, month, day] = date.split('-').map(Number)
-    d = new Date(year, month - 1, day, 0, 0, 0, 0)
-  } else {
-    d = date
-  }
-  return d.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
-/**
- * Format date in short format (e.g., "Nov 11")
- * Uses local time components to avoid timezone issues
- */
-export function formatDateShort(date: Date | string): string {
-  let d: Date
-  if (typeof date === 'string') {
-    // Parse date string (YYYY-MM-DD) as local date to avoid timezone issues
-    const [year, month, day] = date.split('-').map(Number)
-    d = new Date(year, month - 1, day, 0, 0, 0, 0)
-  } else {
-    d = date
-  }
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  })
 }
 
 /**
@@ -133,13 +86,18 @@ export function calculateNextOccurrence(
     daysUntil += 7
   }
 
-  // Create class datetime in gym's timezone
-  const classDateInGymTz = new Date(nowInGymTz)
-  classDateInGymTz.setDate(nowInGymTz.getDate() + daysUntil)
-  classDateInGymTz.setHours(classHour, classMinute, 0, 0)
+  // Build the target date by offsetting from today in gym timezone
+  const targetDate = new Date(nowInGymTz)
+  targetDate.setDate(nowInGymTz.getDate() + daysUntil)
+  // Extract timezone-correct date components, then build an ISO-like string
+  // (setHours() modifies UTC hours, not timezone-local hours, so we avoid it)
+  const year = targetDate.getFullYear()
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0')
+  const day = String(targetDate.getDate()).padStart(2, '0')
+  const dateStr = `${year}-${month}-${day}T${String(classHour).padStart(2, '0')}:${String(classMinute).padStart(2, '0')}:00`
 
   // Convert to UTC for storage (this becomes TIMESTAMP WITH TIME ZONE)
-  return fromZonedTime(classDateInGymTz, timezone)
+  return fromZonedTime(dateStr, timezone)
 }
 
 /**
@@ -163,61 +121,6 @@ export function formatDateInGymTimezone(
 
   return new Intl.DateTimeFormat('en-US', options).format(datetime)
 }
-
-/**
- * Check if a date string is in the past
- * Uses local time components to avoid timezone issues
- */
-export function isDateInPast(dateStr: string | null): boolean {
-  if (!dateStr) return true
-  
-  // Parse date string (YYYY-MM-DD) as local date
-  const [year, month, day] = dateStr.split('-').map(Number)
-  const date = new Date(year, month - 1, day, 0, 0, 0, 0)
-  
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  
-  return date < today
-}
-
-/**
- * Check if a date string is in the future
- * Uses local time components to avoid timezone issues
- */
-export function isDateInFuture(dateStr: string | null): boolean {
-  if (!dateStr) return false
-  
-  // Parse date string (YYYY-MM-DD) as local date
-  const [year, month, day] = dateStr.split('-').map(Number)
-  const date = new Date(year, month - 1, day, 0, 0, 0, 0)
-  
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  
-  return date > today
-}
-
-/**
- * Check if a date string is today
- * Uses local time components to avoid timezone issues
- */
-export function isDateToday(dateStr: string | null): boolean {
-  if (!dateStr) return false
-  
-  // Parse date string (YYYY-MM-DD) as local date
-  const [year, month, day] = dateStr.split('-').map(Number)
-  const date = new Date(year, month - 1, day, 0, 0, 0, 0)
-  
-  const today = new Date()
-  
-  return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
-  )
-}
-
 
 /**
  * Common timezones for dropdown

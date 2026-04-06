@@ -9,6 +9,8 @@ import {
 } from '@/app/actions/recurring-classes'
 import { getDayName, formatTime12Hour, formatDateInGymTimezone } from '@/lib/date-utils'
 import SkipButton from './SkipButton'
+import BookNowDialog from './BookNowDialog'
+import { useBookNowDialog } from '@/hooks/useBookNowDialog'
 import type { RecurringClass } from '@/lib/database.types'
 import { Button, Modal } from '@/components/ui'
 
@@ -16,14 +18,6 @@ type Props = {
   classes: RecurringClass[]
   schedulePaused?: boolean
   onUpdate?: () => void
-}
-
-type ClassToBook = {
-  id: string
-  class_type: string
-  day_of_week: number
-  class_time: string
-  branch: string
 }
 
 type DeactivateWithSkip = {
@@ -67,9 +61,6 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<string | null>(null)
-  const [classToBook, setClassToBook] = useState<ClassToBook | null>(null)
-  const [showBookNowDialog, setShowBookNowDialog] = useState(false)
-  const [bookingClass, setBookingClass] = useState(false)
   const [deactivateWithSkip, setDeactivateWithSkip] = useState<DeactivateWithSkip | null>(null)
   const [showDeactivateSkipDialog, setShowDeactivateSkipDialog] = useState(false)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
@@ -77,6 +68,10 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
   const [isMounted, setIsMounted] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
+
+  const bookNow = useBookNowDialog({
+    onComplete: onUpdate || (() => router.refresh()),
+  })
 
   // Track client-side mount for portal rendering
   useEffect(() => {
@@ -136,12 +131,6 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
     }
   }
 
-  const formatClassDisplay = (classData: ClassToBook): string => {
-    const dayName = getDayName(classData.day_of_week)
-    const time = formatTime12Hour(classData.class_time)
-    return `${classData.class_type} - ${dayName} ${time} @ ${classData.branch}`
-  }
-
   const handleDelete = async (id: string) => {
     setDeletingId(id)
     setOpenMenuId(null)
@@ -182,8 +171,7 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
       if (result.success) {
         // Check if booking window is already open (activate scenario)
         if (result.bookingWindowAlreadyOpen && result.classDetails) {
-          setClassToBook({ id, ...result.classDetails })
-          setShowBookNowDialog(true)
+          bookNow.openDialog({ id, ...result.classDetails })
           setTogglingId(null)
         } else {
           // No dialog needed, just refresh
@@ -215,48 +203,6 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
   const handleCancelDeactivateSkip = () => {
     setShowDeactivateSkipDialog(false)
     setDeactivateWithSkip(null)
-  }
-
-  const handleBookNow = async () => {
-    if (!classToBook) return
-
-    setBookingClass(true)
-    try {
-      const response = await fetch('/api/trigger-booking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classId: classToBook.id })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to trigger booking')
-      }
-
-      // Success - close dialog and refresh
-      setShowBookNowDialog(false)
-      setClassToBook(null)
-      setBookingClass(false)
-      if (onUpdate) {
-        onUpdate()
-      } else {
-        router.refresh()
-      }
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to book class')
-      setBookingClass(false)
-    }
-  }
-
-  const handleSkipBooking = () => {
-    setShowBookNowDialog(false)
-    setClassToBook(null)
-    if (onUpdate) {
-      onUpdate()
-    } else {
-      router.refresh()
-    }
   }
 
   // Get asymmetric offset class for card (first card normal, then alternate)
@@ -580,39 +526,13 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
         )
       })()}
 
-      {/* Book Now Dialog - Single class */}
-      <Modal
-        isOpen={showBookNowDialog && !!classToBook}
-        onClose={handleSkipBooking}
-        title="Booking Window Already Open!"
-        size="md"
-        footer={
-          <>
-            <Button
-              variant="ghost"
-              onClick={handleSkipBooking}
-              disabled={bookingClass}
-            >
-              No, Skip This Week
-            </Button>
-            <Button
-              variant="success"
-              onClick={handleBookNow}
-              loading={bookingClass}
-            >
-              Yes, Book Now
-            </Button>
-          </>
-        }
-      >
-        <p className="text-gray-700">
-          Booking window is open for <strong>{classToBook && formatClassDisplay(classToBook)}</strong>. Would you like to book now?
-        </p>
-        <p className="mt-4 text-sm text-gray-500">
-          <strong>Book Now:</strong> Books this week&apos;s class immediately.<br />
-          <strong>Skip This Week:</strong> Class won&apos;t be booked this week, automatic booking resumes next week.
-        </p>
-      </Modal>
+      <BookNowDialog
+        classToBook={bookNow.classToBook}
+        isOpen={bookNow.showDialog}
+        booking={bookNow.booking}
+        onBookNow={bookNow.handleBookNow}
+        onSkip={bookNow.handleSkipBooking}
+      />
 
       {/* Deactivate with Skip Confirmation Dialog */}
       <Modal
