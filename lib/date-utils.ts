@@ -133,13 +133,18 @@ export function calculateNextOccurrence(
     daysUntil += 7
   }
 
-  // Create class datetime in gym's timezone
-  const classDateInGymTz = new Date(nowInGymTz)
-  classDateInGymTz.setDate(nowInGymTz.getDate() + daysUntil)
-  classDateInGymTz.setHours(classHour, classMinute, 0, 0)
+  // Build the target date by offsetting from today in gym timezone
+  const targetDate = new Date(nowInGymTz)
+  targetDate.setDate(nowInGymTz.getDate() + daysUntil)
+  // Extract timezone-correct date components, then build an ISO-like string
+  // (setHours() modifies UTC hours, not timezone-local hours, so we avoid it)
+  const year = targetDate.getFullYear()
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0')
+  const day = String(targetDate.getDate()).padStart(2, '0')
+  const dateStr = `${year}-${month}-${day}T${String(classHour).padStart(2, '0')}:${String(classMinute).padStart(2, '0')}:00`
 
   // Convert to UTC for storage (this becomes TIMESTAMP WITH TIME ZONE)
-  return fromZonedTime(classDateInGymTz, timezone)
+  return fromZonedTime(dateStr, timezone)
 }
 
 /**

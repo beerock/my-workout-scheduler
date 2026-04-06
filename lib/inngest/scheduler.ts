@@ -2,7 +2,7 @@
  * Scheduling helper functions for calculating booking window times
  * Handles timezone conversions to ensure accurate booking triggers
  */
-import { fromZonedTime, toZonedTime } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { inngest } from './client';
 
 /** Fire booking event this many ms early to allow GH Actions + Puppeteer prep time */
@@ -135,12 +135,10 @@ export function calculateNextClassDate(
   const classDate = new Date(nowInClassTz);
   classDate.setDate(nowInClassTz.getDate() + daysUntil);
 
-  // Format as YYYY-MM-DD
-  const year = classDate.getFullYear();
-  const month = String(classDate.getMonth() + 1).padStart(2, '0');
-  const day = String(classDate.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
+  // Format as YYYY-MM-DD using timezone-aware formatting
+  // (getFullYear/getMonth/getDate read UTC components, which differ from
+  // timezone-local components for late-evening classes)
+  return formatInTimeZone(classDate, timezone, 'yyyy-MM-dd');
 }
 
 /**

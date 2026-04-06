@@ -767,8 +767,10 @@ function getFixedClassStartTime(
 ): Date {
   const [hours, minutes] = classTime.split(':').map(Number);
   const [year, month, day] = classDate.split('-').map(Number);
-  const dateInTz = new Date(year, month - 1, day, hours, minutes, 0, 0);
-  return fromZonedTime(dateInTz, timezone);
+  // Build an ISO-like string so fromZonedTime interprets it in the given timezone
+  // (avoids new Date() constructor which uses runtime-local timezone)
+  const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+  return fromZonedTime(dateStr, timezone);
 }
 
 /**

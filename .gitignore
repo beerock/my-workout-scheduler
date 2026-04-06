@@ -52,6 +52,9 @@ Thumbs.db
 # automation screenshots
 /screenshots
 
+# debug dumps
+/debug
+
 # database backups
 /backups
 
