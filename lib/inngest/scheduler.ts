@@ -47,19 +47,25 @@ export function calculateBookingWindowOpen(
     daysUntil += 7;
   }
 
-  // Create class date/time in the class's timezone
-  const classDateInTz = new Date(nowInClassTz);
-  classDateInTz.setDate(nowInClassTz.getDate() + daysUntil);
+  // Build the target date by offsetting from today in gym timezone
+  const targetDate = new Date(nowInClassTz);
+  targetDate.setDate(nowInClassTz.getDate() + daysUntil);
+  // Build ISO-like string to avoid setHours() which modifies UTC hours on
+  // toZonedTime() result and can be ~1hr off on DST transition days
   const [hours, minutes] = classTime.split(':').map(Number);
-  classDateInTz.setHours(hours, minutes, 0, 0);
+  const year = targetDate.getFullYear();
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const day = String(targetDate.getDate()).padStart(2, '0');
+  const classDateStr = `${year}-${month}-${day}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+  const classDateUtc = fromZonedTime(classDateStr, timezone);
 
-  // Subtract booking window hours
-  const bookingWindowOpensInTz = new Date(
-    classDateInTz.getTime() - bookingWindowHours * 60 * 60 * 1000
+  // Subtract booking window hours (in UTC milliseconds, safe from DST)
+  const bookingWindowOpensUtc = new Date(
+    classDateUtc.getTime() - bookingWindowHours * 60 * 60 * 1000
   );
 
-  // Convert to UTC for Inngest (Inngest expects UTC timestamps)
-  return fromZonedTime(bookingWindowOpensInTz, timezone);
+  // Already UTC for Inngest
+  return bookingWindowOpensUtc;
 }
 
 /**
@@ -91,14 +97,17 @@ export function calculateClassStartTime(
     daysUntil += 7;
   }
 
-  // Create class start time in timezone
-  const classDate = new Date(nowInClassTz);
-  classDate.setDate(nowInClassTz.getDate() + daysUntil);
+  // Build ISO-like string to avoid setHours() DST edge case
+  const targetDate = new Date(nowInClassTz);
+  targetDate.setDate(nowInClassTz.getDate() + daysUntil);
   const [hours, minutes] = classTime.split(':').map(Number);
-  classDate.setHours(hours, minutes, 0, 0);
+  const year = targetDate.getFullYear();
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const day = String(targetDate.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 
   // Convert to UTC
-  return fromZonedTime(classDate, timezone);
+  return fromZonedTime(dateStr, timezone);
 }
 
 /**

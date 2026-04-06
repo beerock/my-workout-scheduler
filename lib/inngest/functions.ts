@@ -12,6 +12,7 @@ import {
 import { scheduleBooking } from './scheduler';
 import { differenceInMinutes, format, subHours } from 'date-fns';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
+import { getDayName } from '@/lib/date-utils';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { sendBookingNotification } from '@/lib/notifications/send-booking-notification';
 import { formatTime12Hour } from '@/lib/date-utils';
@@ -773,18 +774,3 @@ function getFixedClassStartTime(
   return fromZonedTime(dateStr, timezone);
 }
 
-/**
- * Helper function to get day name from day of week number
- */
-function getDayName(dayOfWeek: number): string {
-  const days = [
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-  ];
-  return days[dayOfWeek] || `Day ${dayOfWeek}`;
-}

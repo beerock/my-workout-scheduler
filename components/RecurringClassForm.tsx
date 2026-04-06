@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { saveRecurringClass, type RecurringClassFormData } from '@/app/actions/recurring-classes'
 import { useRouter } from 'next/navigation'
-import { COMMON_TIMEZONES, formatDateInGymTimezone, getDayName, formatTime12Hour } from '@/lib/date-utils'
+import { COMMON_TIMEZONES, formatDateInGymTimezone } from '@/lib/date-utils'
 import type { RecurringClass } from '@/lib/database.types'
 import { Button, Modal, Input, Select, Alert, TimeInput, Combobox } from '@/components/ui'
+import BookNowDialog from '@/components/BookNowDialog'
+import type { ClassToBook } from '@/hooks/useBookNowDialog'
 import { YMCA_BRANCHES, YMCA_MASTER_CLASSES, fuzzyMatchClasses } from '@/lib/constants/ymca'
 import type { ComboboxOption } from '@/components/ui'
 
@@ -76,11 +78,16 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
     timezone: initialClass?.timezone || 'America/New_York',
   })
 
-  const formatClassDisplay = (): string => {
+  const getClassToBookForDialog = (): ClassToBook | null => {
+    if (!savedClassId) return null
     const source = savedClassDetails || formData
-    const dayName = getDayName(source.day_of_week)
-    const time = formatTime12Hour(source.class_time)
-    return `${source.class_type} - ${dayName} ${time} @ ${source.branch}`
+    return {
+      id: savedClassId,
+      class_type: source.class_type,
+      day_of_week: source.day_of_week,
+      class_time: source.class_time,
+      branch: source.branch,
+    }
   }
 
   // Update form when initialClass changes
@@ -523,46 +530,19 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
         </div>
       </form>
 
-      {/* Book Now Dialog */}
-      <Modal
+      <BookNowDialog
+        classToBook={getClassToBookForDialog()}
         isOpen={showBookNowDialog}
-        onClose={handleSkipBooking}
-        title="Booking Window Already Open!"
-        size="md"
-        footer={
-          <>
-            <Button
-              variant="ghost"
-              onClick={handleSkipBooking}
-              disabled={bookingClass}
-            >
-              No, Skip This Week
-            </Button>
-            <Button
-              variant="success"
-              onClick={handleBookNow}
-              loading={bookingClass}
-            >
-              Yes, Book Now
-            </Button>
-          </>
-        }
+        booking={bookingClass}
+        onBookNow={handleBookNow}
+        onSkip={handleSkipBooking}
       >
-        <p className="text-gray-700">
-          Booking window is open for <strong>{formatClassDisplay()}</strong>. Would you like to book now?
-        </p>
-
         {error && (
           <div className="mt-4 p-3 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm">
             {error}
           </div>
         )}
-
-        <p className="mt-4 text-sm text-gray-500">
-          <strong>Book Now:</strong> Books this week&apos;s class immediately.<br />
-          <strong>Skip This Week:</strong> Class won&apos;t be booked this week, automatic booking resumes next week.
-        </p>
-      </Modal>
+      </BookNowDialog>
 
       {/* Skip Clear Confirmation Dialog */}
       <Modal
