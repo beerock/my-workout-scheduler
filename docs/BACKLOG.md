@@ -196,14 +196,6 @@ Enhance NextClassCard to handle failure states and retry scenarios.
 
 ---
 
-### Parallelize getDashboardStats Queries
-**Status:** Backlogged | **Priority:** Medium
-
-`getDashboardStats()` makes 4-5 sequential Supabase queries (~400-1000ms). The first 3 (active count, user classes, booking attempts) are independent and can run with `Promise.all`. Called on every dashboard and schedule page load.
-
-**Last Updated:** April 7, 2026
-
----
 
 ### Real-time Status Updates
 **Status:** Backlogged | **Priority:** Medium
@@ -520,6 +512,13 @@ Ready-made prompt for diagnosing GitHub Actions failures.
 ## Completed (Summary)
 
 Brief summaries of completed work. See PRD version history for full details.
+
+### getDashboardStats Query Parallelization ✅
+**Completed:** April 7, 2026
+
+Parallelized 3 independent Supabase queries (active count, user classes, booking attempts) with `Promise.all`. Saves ~200-400ms per dashboard/schedule page load.
+
+---
 
 ### Skip/Pause Independence & Documentation ✅
 **Completed:** April 7, 2026

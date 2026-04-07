@@ -31,50 +31,50 @@ export async function getDashboardStats(): Promise<{
       return { success: false, error: 'Not authenticated' }
     }
 
-    // 1. Count active classes
-    const { count: activeClasses, error: activeError } = await supabase
-      .from('recurring_classes')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('active', true)
+    // Queries 1, 2, 3 are independent - run in parallel
+    const [activeResult, classesResult, attemptsResult] = await Promise.all([
+      // 1. Count active classes
+      supabase
+        .from('recurring_classes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('active', true),
+      // 2. Get active recurring classes (needed for queries 4 & 5)
+      supabase
+        .from('recurring_classes')
+        .select('id, class_type, day_of_week, class_time, timezone, branch, skip_next_occurrence')
+        .eq('user_id', user.id)
+        .eq('active', true),
+      // 3. All booking attempts for success rate calculation
+      supabase
+        .from('booking_attempts')
+        .select('status, error_message, recurring_classes!inner(user_id)')
+        .eq('recurring_classes.user_id', user.id)
+        .neq('status', 'pending')
+        .neq('status', 'skipped'),
+    ])
 
-    if (activeError) {
-      console.error('Error fetching active classes:', activeError)
+    if (activeResult.error) {
+      console.error('Error fetching active classes:', activeResult.error)
       return { success: false, error: 'Failed to fetch active classes' }
     }
 
-    // 2. Get active recurring classes for this user (needed for booking_attempts query and next class)
-    const { data: userClasses, error: classesError } = await supabase
-      .from('recurring_classes')
-      .select('id, class_type, day_of_week, class_time, timezone, branch, skip_next_occurrence')
-      .eq('user_id', user.id)
-      .eq('active', true)
-
-    if (classesError) {
-      console.error('Error fetching user classes:', classesError)
+    if (classesResult.error) {
+      console.error('Error fetching user classes:', classesResult.error)
       return { success: false, error: 'Failed to fetch user classes' }
     }
 
+    const activeClasses = activeResult.count
+    const userClasses = classesResult.data
     const classIds = userClasses?.map(c => c.id) || []
 
-    // 3. Calculate all-time success rate across ALL booking attempts (active + inactive classes)
-    // This reflects true system reliability, not just current schedule
-    // IMPORTANT: Exclude active retries (class full + future class time) from failure count
+    // Calculate success rate from attempts
     let successRate = 0
     let totalBookingAttempts = 0
 
-    // Query all booking attempts for this user via join with recurring_classes
-    const { data: allAttempts, error: attemptsError } = await supabase
-      .from('booking_attempts')
-      .select('status, error_message, recurring_classes!inner(user_id)')
-      .eq('recurring_classes.user_id', user.id)
-      .neq('status', 'pending')  // Exclude pending (not finalized)
-      .neq('status', 'skipped')  // Exclude skipped (user choice, not system failure)
-
-    if (attemptsError) {
-      console.error('Error fetching booking attempts:', attemptsError)
-    } else if (allAttempts && allAttempts.length > 0) {
-      // Helper to check if an attempt is a "class full" situation (informational, not a failure)
+    if (attemptsResult.error) {
+      console.error('Error fetching booking attempts:', attemptsResult.error)
+    } else if (attemptsResult.data && attemptsResult.data.length > 0) {
       const isClassFull = (attempt: { status: string; error_message: string | null }) => {
         if (attempt.status !== 'failed') return false
         if (!attempt.error_message) return false
@@ -82,8 +82,7 @@ export async function getDashboardStats(): Promise<{
         return msg.includes('full') && !msg.includes('waitlist')
       }
 
-      // Filter out "class full" from the failure count - these aren't actual failures
-      const countableAttempts = allAttempts.filter(a => !isClassFull(a))
+      const countableAttempts = attemptsResult.data.filter(a => !isClassFull(a))
       totalBookingAttempts = countableAttempts.length
 
       const successful = countableAttempts.filter(
