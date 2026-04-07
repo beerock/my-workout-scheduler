@@ -139,7 +139,9 @@ When automation re-runs for a class the user is already reserved for, it returns
 ### Retry Logic Error Code Refactor
 **Status:** Backlogged | **Priority:** Medium
 
-Retry trigger uses `errorMessage?.toLowerCase().includes('full')` which is fragile. Also, `isClassFullError` is missing the `'no spots'` keyword that `categorizeFailure` has. Refactor to use structured error codes instead of string matching.
+Retry trigger uses `errorMessage?.toLowerCase().includes('full')` which is fragile. 4 different "class full" detection implementations across 6 files with inconsistent keyword coverage. `isClassFullError` misses `'no spots'` and `'no waitlist option'`. Refactor to a single shared function with structured error codes.
+
+**Files:** `lib/booking-error-utils.ts`, `lib/notifications/send-booking-notification.ts`, `lib/email/get-email-template.ts`, `app/actions/dashboard-stats.ts`, `app/actions/booking-history.ts`, `lib/inngest/functions.ts`
 
 **Last Updated:** April 6, 2026
 
@@ -190,6 +192,15 @@ Enhance NextClassCard to handle failure states and retry scenarios.
 
 ---
 
+### Parallelize getDashboardStats Queries
+**Status:** Backlogged | **Priority:** Medium
+
+`getDashboardStats()` makes 4-5 sequential Supabase queries (~400-1000ms). The first 3 (active count, user classes, booking attempts) are independent and can run with `Promise.all`. Called on every dashboard and schedule page load.
+
+**Last Updated:** April 7, 2026
+
+---
+
 ### Real-time Status Updates
 **Status:** Backlogged | **Priority:** Medium
 
@@ -218,16 +229,18 @@ Nice-to-have features that aren't critical.
 Combined cleanup items from multiple audits (April 2026):
 - Delete `booking-automation-daxko-backup.ts` (dead Daxko flow, 80K)
 - Remove unused `DropdownMenu` component
-- Remove unused env-utils exports (`isProduction`/`isDevelopment`/`isPreview`/`validateEnv`/`getEnvironment`)
+- Remove unused `StatusIndicator` and `StatCard` components (prototype-only)
+- Remove unused env-utils exports (`isProduction`/`isDevelopment`/`isPreview`/`validateEnv`/`getEnvironment`/`getResendApiKey`)
 - Remove dead export `calculateClassStartTime` from scheduler.ts
 - Remove Toast infrastructure (ToastContext, ToastProvider in layout, Toast component) - unused, use Alert instead
-- Delete orphaned `proxy.ts` at root
 - Delete `app/api/test-db/route.ts` (test endpoint in production)
-- Move/delete root-level test files, register remaining scripts in package.json
-- Extract shared `BookNowDialog` component (duplicated across 4 files)
+- Delete empty `app/api/book-classes/` directory
+- Remove `getClassesNeedingBooking()` from database-helpers.ts (dead pre-Inngest code)
+- Remove unused Insert type aliases from database.types.ts
+- Register remaining scripts in package.json
 - Extract shared stats card components (duplicated between dashboard and schedule pages)
 
-**Last Updated:** April 6, 2026
+**Last Updated:** April 7, 2026
 
 ---
 

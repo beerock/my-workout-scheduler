@@ -13,11 +13,9 @@ export { Select, type SelectProps, type SelectOption } from './Select'
 export { Combobox, type ComboboxProps, type ComboboxOption } from './Combobox'
 export { TimeInput, type TimeInputProps } from './TimeInput'
 export { Checkbox, type CheckboxProps } from './Checkbox'
-export { FormField } from './FormField'
 
 // Navigation & Menus
 export { DropdownMenu, type DropdownMenuProps, type DropdownMenuItem } from './DropdownMenu'
-export { Tabs, TabPanel, type TabsProps, type Tab, type TabPanelProps } from './Tabs'
 
 // Feedback Components
 export { Alert, type AlertProps } from './Alert'

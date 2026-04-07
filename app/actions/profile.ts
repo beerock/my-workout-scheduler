@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { validateEmail, validatePassword, getPasswordErrorMessage } from '@/lib/validation'
+import { getAuthCallbackUrl } from '@/lib/env-utils'
 
 export type ProfileResult = {
   success: boolean
@@ -103,7 +104,7 @@ export async function updateEmail(
         email: newEmail,
       },
       {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+        emailRedirectTo: getAuthCallbackUrl(),
       }
     )
 
