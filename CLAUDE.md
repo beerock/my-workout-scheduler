@@ -57,6 +57,8 @@ supabase/         → Migrations and RLS policies
 
 - **Signups disabled:** Invite-only private beta. Disabled at 3 layers: signup page UI, `signupWithTurnstile` server action, and Supabase dashboard (Authentication > Sign In / Providers > Email). Re-enable all three when adding invite codes.
 - **Date/time:** Always use `lib/date-utils.ts`. Use `calculateBookingWindowOpen` from `lib/inngest/scheduler.ts` for booking window calculations
+- **date-fns `format()` on Vercel:** `format()` uses server timezone (UTC on Vercel), not the gym's timezone. Always use `formatInTimeZone()` from `date-fns-tz` for date strings. Same applies to `startOfWeek`/`endOfWeek` -- pass `toZonedTime()` result.
+- **`getClassById` (database-helpers.ts):** Does NOT filter on `active` -- Inngest functions need access to deactivated classes for skip cleanup. Don't re-add an active filter.
 - **Encryption:** AES-256-GCM for gym passwords, key in `ENCRYPTION_KEY` env var (never sent to database)
 - **Inngest sync:** Auto-syncs on Vercel deploy (configured via Inngest dashboard). No manual sync needed.
 - **Inngest endpoint update:** To change the app's endpoint URL (e.g. after domain migration), use **Add App → Sync with Vercel** — there is no edit button on existing apps
