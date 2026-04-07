@@ -10,7 +10,7 @@ import {
   getAllActiveClasses,
 } from '@/scripts/database-helpers';
 import { scheduleBooking } from './scheduler';
-import { differenceInMinutes, format, subHours } from 'date-fns';
+import { differenceInMinutes, subHours } from 'date-fns';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { getDayName } from '@/lib/date-utils';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
@@ -332,7 +332,7 @@ export const bookClassFunction = inngest.createFunction(
         try {
           const formattedDate = formatInTimeZone(timeoutClassStartTime, classData.timezone, 'MMMM d, yyyy');
           const dayName = formatInTimeZone(timeoutClassStartTime, classData.timezone, 'EEEE');
-          const classDateISO = format(timeoutClassStartTime, 'yyyy-MM-dd'); // Internal use, keep UTC
+          const classDateISO = formatInTimeZone(timeoutClassStartTime, classData.timezone, 'yyyy-MM-dd');
           const stoppedCheckingTime = formatInTimeZone(timeoutClassStartTime, classData.timezone, "EEEE, MMMM d 'at' h:mm a");
 
           // Query for actual first attempt time from database
@@ -407,8 +407,7 @@ export const bookClassFunction = inngest.createFunction(
         );
         const formattedDate = formatInTimeZone(classStartTime, classData.timezone, 'MMMM d, yyyy');
         const dayName = formatInTimeZone(classStartTime, classData.timezone, 'EEEE');
-        // ISO date string for deduplication (YYYY-MM-DD) - internal use, keep UTC
-        const classDateISO = format(classStartTime, 'yyyy-MM-dd');
+        const classDateISO = formatInTimeZone(classStartTime, classData.timezone, 'yyyy-MM-dd');
         // Formatted class start time for email display
         const classStartTimeFormatted = formatInTimeZone(classStartTime, classData.timezone, "EEEE, MMMM d 'at' h:mm a");
 
@@ -505,7 +504,7 @@ export const bookClassFunction = inngest.createFunction(
           try {
             const formattedDate = formatInTimeZone(classStartTime, classData.timezone, 'MMMM d, yyyy');
             const dayName = formatInTimeZone(classStartTime, classData.timezone, 'EEEE');
-            const classDateISO = format(classStartTime, 'yyyy-MM-dd'); // Internal use, keep UTC
+            const classDateISO = formatInTimeZone(classStartTime, classData.timezone, 'yyyy-MM-dd');
             const stoppedCheckingTime = formatInTimeZone(classStartTime, classData.timezone, "EEEE, MMMM d 'at' h:mm a");
 
             // Query for actual first attempt time from database

@@ -651,7 +651,6 @@ export async function getClassById(classId: string): Promise<ClassNeedingBooking
     .from('recurring_classes')
     .select('*')
     .eq('id', classId)
-    .eq('active', true)
     .single() as { data: Database['public']['Tables']['recurring_classes']['Row'] | null, error: any }
 
   if (classError || !classData) {
