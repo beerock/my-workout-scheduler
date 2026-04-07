@@ -141,7 +141,7 @@
   - Clear lifecycle: flag cleared after skip, datetime cleared at next booking attempt
 - **v2.12:** Skip functionality enhancements
   - Skip edit confirmation modal prevents accidental skip removal when changing schedule
-  - Three-zone cleanup logic for intelligent pause/inactive interaction
+  - Skip and pause are fully independent (pause never modifies skip fields)
   - Disabled skip buttons with helpful tooltips when paused or inactive
   - Time-based skip field management (preserve future skips, clear past skips)
 - **v2.20:** Email handling UX improvements
@@ -369,29 +369,18 @@ When editing a class with an active skip:
 - Two-pass server action pattern: first call returns warning, second call with `confirmSkipClear=true` clears skip
 - Modal appears BEFORE booking window check
 
-**Skip Cleanup with Pause/Inactive (Three-Zone Logic)**
+**Skip and Pause Independence**
 
-Intelligent skip field management when pausing or deactivating:
-
-**Zone A (Before Booking Window):**
-- Condition: `now < booking_window_open_time`
-- Action: Preserve both `skip_next_occurrence` and `skip_target_datetime`
-- Rationale: Future skip still valid, user may unpause/reactivate before window
-
-**Zone B (Inside Booking Window):**
-- Condition: `booking_window_open_time <= now < class_time`
-- Action: Clear `skip_next_occurrence` flag only, keep `skip_target_datetime` for UI
-- Rationale: Scheduled trigger time passed (no automatic booking), clear flag so manual booking can proceed
-
-**Zone C (Past Class Time):**
-- Condition: `class_time <= now`
-- Action: Clear both fields completely
-- Rationale: Data hygiene - occurrence already passed
+Pause and skip are fully independent features:
+- **Pausing** does NOT modify skip fields. Skips persist across pause/unpause cycles.
+- **Deactivating** a class clears both skip fields (with user confirmation dialog).
+- Skips are consumed by the booking function at runtime (clears flag, keeps datetime for UI display).
+- Stale `skip_target_datetime` is cleaned up at the next booking occurrence.
 
 **UI Behavior:**
 - Skip buttons disabled when schedule paused or class inactive
 - Tooltips explain why: "Cannot skip while schedule is paused" or "Cannot skip inactive class"
-- Skip badge remains visible but cancel (×) button disabled
+- Skip badge remains visible but cancel (x) button disabled
 
 **Example Configuration:**
 
@@ -641,8 +630,8 @@ recurring\_classes (
   booking\_window\_hours,
   timezone,
   active (boolean),
-  skip\_next\_occurrence (boolean),  -- Flag checked by Inngest; cleared by pause/inactive based on three-zone logic
-  skip\_target\_datetime (timestamptz),  -- Full datetime for UI; preserved in Zone B, cleared in Zone C
+  skip\_next\_occurrence (boolean),  -- Flag checked by Inngest at runtime; cleared after skip is consumed
+  skip\_target\_datetime (timestamptz),  -- Full datetime for UI display; cleaned up at next booking occurrence
   created\_at
 )
 
