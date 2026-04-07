@@ -40,49 +40,6 @@ Allow users to test their gym credentials before saving, ensuring they work with
 
 ---
 
-### Three-Zone Skip Cleanup Testing
-**Status:** Bug fixed, testing still needed | **Priority:** Medium
-
-The three-zone skip cleanup logic (v2.12) needs production testing. The UTC vs local time comparison bug in `user-settings.ts` was fixed in v2.34, but the three zones should still be verified end-to-end.
-
-**Test Document:** `docs/TESTING_SKIP_THREE_ZONE_LOGIC.md`
-
-**Last Updated:** April 6, 2026
-
----
-
-### Tighten Supabase Rate Limits
-**Status:** Quick config change needed | **Priority:** High
-
-Supabase auth rate limits are still at testing values (50 req/hr for password reset). Tighten to production values in Supabase Dashboard > Authentication > Rate Limits.
-
-**Requirements:**
-- Password Reset: 3 requests per hour per email
-- Email Verification Resend: 1 request per 60 seconds per user
-
-**Last Updated:** April 6, 2026
-
----
-
-### Review Support Email
-**Status:** Quick review needed | **Priority:** Low
-
-Confirm `help@beerock.com` is correct and receiving mail in error pages.
-
-**Files:** `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx`
-
-**Last Updated:** January 2, 2026
-
----
-
-### Skip/Pause Interaction Behavior
-**Status:** Decision made, needs documentation | **Priority:** Low
-
-**Decision:** Skip state is independent and preserved regardless of pause/unpause actions. Current implementation is correct - no code changes needed, just documentation.
-
-**Last Updated:** November 29, 2025
-
----
 
 ## Post-MVP: High Priority
 
@@ -546,6 +503,27 @@ Ready-made prompt for diagnosing GitHub Actions failures.
 ## Completed (Summary)
 
 Brief summaries of completed work. See PRD version history for full details.
+
+### Skip/Pause Independence & Documentation ✅
+**Completed:** April 7, 2026
+
+Removed three-zone skip cleanup from pause path - pause and skip are fully independent. Pausing never modifies skip fields. Deactivating clears both skip fields with user confirmation. Documented in CLAUDE.md and PRD.
+
+---
+
+### Support Email Verified ✅
+**Completed:** April 7, 2026
+
+`help@beerock.com` confirmed consistent across all 9+ files (error pages, email templates, booking scripts, docs).
+
+---
+
+### Supabase Rate Limits Tightened ✅
+**Completed:** April 6, 2026
+
+Auth rate limits configured in Supabase Dashboard: 25 emails/hr, 10 sign-ups/sign-ins per 5 min.
+
+---
 
 ### Timezone Bug Fixes & Audit Quick Fixes ✅
 **Completed:** April 6, 2026 (v2.34)
