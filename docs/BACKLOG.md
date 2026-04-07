@@ -97,11 +97,13 @@ When the 10-minute `waitForEvent` times out, the function schedules a retry with
 ---
 
 ### Manual Trigger Cancel Event
-**Status:** Backlogged | **Priority:** High
+**Status:** In progress (separate session) | **Priority:** High
 
 The `/api/trigger-booking` endpoint sends a `booking/attempt` event without first cancelling any existing scheduled event for the same class+date. This could create concurrent booking attempts. Fix by sending `booking/cancel` before the manual trigger, consistent with `scheduleBooking()`.
 
-**Last Updated:** April 6, 2026
+**Addressed by:** "Already Registered/Duplicate Booking Prevention" plan (Bug 2).
+
+**Last Updated:** April 7, 2026
 
 ---
 
@@ -141,9 +143,11 @@ When automation re-runs for a class the user is already reserved for, it returns
 
 Retry trigger uses `errorMessage?.toLowerCase().includes('full')` which is fragile. 4 different "class full" detection implementations across 6 files with inconsistent keyword coverage. `isClassFullError` misses `'no spots'` and `'no waitlist option'`. Refactor to a single shared function with structured error codes.
 
+**Partially addressed:** "Already Registered" plan adds "filled to capacity" detection and touches several of the same files. Remaining work is consolidating all 6 files to use one shared detection function.
+
 **Files:** `lib/booking-error-utils.ts`, `lib/notifications/send-booking-notification.ts`, `lib/email/get-email-template.ts`, `app/actions/dashboard-stats.ts`, `app/actions/booking-history.ts`, `lib/inngest/functions.ts`
 
-**Last Updated:** April 6, 2026
+**Last Updated:** April 7, 2026
 
 ---
 
