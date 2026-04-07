@@ -37,7 +37,7 @@ app/dashboard/    → Protected pages
 lib/date-utils.ts → Date calculations (CRITICAL - always use this)
 lib/inngest/      → Event-driven booking functions
 lib/constants/    → Shared reference data (YMCA branches, master class list)
-components/ui/    → Design system components (20 components)
+components/ui/    → Design system components (18 components)
 scripts/          → Puppeteer automation
 supabase/         → Migrations and RLS policies
 .claude/          → Hooks, agents, and skills
@@ -160,10 +160,11 @@ Migration → types → server action → component (in that order). Use `/creat
 **Sections (in order):**
 1. **Pre-MVP Required** - Must complete before launch
 2. **Post-MVP: High Priority** - Near-term after launch
-3. **Post-MVP: Low Priority** - Nice-to-have
-4. **Completed (Summary)** - 3-4 line summaries only
-5. **Archived** - Deprioritized/unlikely with brief reason
-6. **Operational Notes** - Key deployment info
+3. **Post-MVP: Medium Priority** - Important but not urgent
+4. **Post-MVP: Low Priority** - Nice-to-have
+5. **Completed (Summary)** - 3-4 line summaries only
+6. **Archived** - Deprioritized/unlikely with brief reason
+7. **Operational Notes** - Key deployment info
 
 **Required entry format:**
 ```
