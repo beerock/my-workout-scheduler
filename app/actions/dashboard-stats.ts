@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { startOfWeek, endOfWeek } from 'date-fns'
+import { toZonedTime } from 'date-fns-tz'
 import { calculateNextOccurrence, formatTime12Hour } from '@/lib/date-utils'
 
 export type DashboardStats = {
@@ -31,21 +32,15 @@ export async function getDashboardStats(): Promise<{
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Queries 1, 2, 3 are independent - run in parallel
-    const [activeResult, classesResult, attemptsResult] = await Promise.all([
-      // 1. Count active classes
-      supabase
-        .from('recurring_classes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('active', true),
-      // 2. Get active recurring classes (needed for queries 4 & 5)
+    // Queries 1 & 2 are independent - run in parallel
+    const [classesResult, attemptsResult] = await Promise.all([
+      // 1. Get active recurring classes (also gives us active count)
       supabase
         .from('recurring_classes')
         .select('id, class_type, day_of_week, class_time, timezone, branch, skip_next_occurrence')
         .eq('user_id', user.id)
         .eq('active', true),
-      // 3. All booking attempts for success rate calculation
+      // 2. All booking attempts for success rate calculation
       supabase
         .from('booking_attempts')
         .select('status, error_message, recurring_classes!inner(user_id)')
@@ -54,18 +49,13 @@ export async function getDashboardStats(): Promise<{
         .neq('status', 'skipped'),
     ])
 
-    if (activeResult.error) {
-      console.error('Error fetching active classes:', activeResult.error)
-      return { success: false, error: 'Failed to fetch active classes' }
-    }
-
     if (classesResult.error) {
       console.error('Error fetching user classes:', classesResult.error)
       return { success: false, error: 'Failed to fetch user classes' }
     }
 
-    const activeClasses = activeResult.count
     const userClasses = classesResult.data
+    const activeClasses = userClasses?.length ?? 0
     const classIds = userClasses?.map(c => c.id) || []
 
     // Calculate success rate from attempts
@@ -94,10 +84,12 @@ export async function getDashboardStats(): Promise<{
     }
 
     // 4. Count bookings this week (confirmed + waitlisted)
+    // Use Eastern time for week boundaries since all classes are ET
     let bookingsThisWeek = 0
     if (classIds.length > 0) {
-      const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 }).toISOString()
-      const weekEnd = endOfWeek(new Date(), { weekStartsOn: 0 }).toISOString()
+      const nowET = toZonedTime(new Date(), 'America/New_York')
+      const weekStart = startOfWeek(nowET, { weekStartsOn: 0 }).toISOString()
+      const weekEnd = endOfWeek(nowET, { weekStartsOn: 0 }).toISOString()
 
       const { count: weekCount, error: weekError } = await supabase
         .from('booking_attempts')
