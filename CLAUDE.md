@@ -78,6 +78,7 @@ supabase/         → Migrations and RLS policies
 - **GH Actions inputs:** Never use `${{ inputs.* }}` directly in `run:` commands (shell injection risk). Assign to `env:` block first, reference as `$ENV_VAR` in shell.
 - **Puppeteer `waitUntil`:** Use `domcontentloaded` for refresh loops checking text presence/absence. Use `networkidle2` for navigation where JS-rendered content is needed. `completeGroupExProBooking` has its own `waitForFunction` for buttons.
 - **Puppeteer `page.content()` timing:** Always capture `page.content()` AFTER `waitForFunction` completes, not before. Content captured before the wait may miss JS-rendered text (e.g., "filled to capacity" banner on GroupExPro).
+- **Puppeteer `page.evaluate()` types:** Returns `any` -- TypeScript won't catch type mismatches inside evaluate blocks. Keep `YMCAClassSearchResult` and other Puppeteer return types manually synced when adding new statuses.
 - **Early-start constant:** `EARLY_START_MS` is exported from `lib/inngest/scheduler.ts` at module scope. Change there to adjust the early-start buffer (currently 90s).
 - **Supabase Studio URLs:** Table editor uses numeric table IDs, not names (`/editor/17486` not `/editor/table/recurring_classes`). Filter syntax: `filter=column%3Aoperator%3Avalue` (colons, not equals). Find table ID from the URL when navigating in the dashboard.
 - **Email template XSS:** `_base-template.ts` renders `preheader` as raw HTML. Always pass `escapeHtml()` output for any user-provided content in preheader, subject, or body. The `body` prop is also raw HTML - templates must escape user content before interpolating.
@@ -86,6 +87,8 @@ supabase/         → Migrations and RLS policies
 - **Toast vs Alert:** `useToast()` / `Toast` component is unverified in production — use inline `<Alert>` for form feedback instead.
 - **Custom class dedup:** `custom_class_names` table deduplicates admin notification emails. Only one email per unique normalized class name. Clear the table to allow re-notification of the same name.
 - **No-registration classes:** Classes without a Register/Waitlist button on the YMCA schedule return `status: 'no_registration'` (not `'failed'`). This skips retry logic and sends a friendly info email instead of a critical failure. Re-detected weekly -- if the class ever gains online registration, normal booking takes over. Respects `email_on_success` preference.
+- **New booking status checklist:** `BookingResult` + `YMCAClassSearchResult` (booking-automation.ts), `BookingAttemptPartial` + `createBookingAttempt` + `updateBookingAttempt` (database-helpers.ts), `BookingEmailData` + `EmailTemplate.notificationType` (get-email-template.ts), `SendEmailParams` (send-notification.ts), `SendBookingNotificationParams` (send-booking-notification.ts), `BookingStatus` + `StatusCounts` + `VISIBLE_STATUSES` (booking-history.ts), `FilterCounts` (BookingHistory.tsx), `statusConfig` (BookingHistoryCard.tsx), plus 2 DB CHECK constraints (booking_attempts + notification_log).
+- **`criticalKeywords` triplicate:** Three independent `criticalKeywords` arrays exist: `get-email-template.ts` (email routing), `booking-error-utils.ts` (dashboard display), `send-booking-notification.ts` (preference filtering). Keep all three in sync when adding/removing error categories.
 
 ---
 
