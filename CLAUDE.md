@@ -77,9 +77,12 @@ supabase/         → Migrations and RLS policies
 - **Testing:** Always use admin account (brockbusby@gmail.com, uid: `a02ef692-1933-46b0-a77c-7258a577a5b5`) for booking tests. Never use other users' classes or credentials.
 - **GH Actions inputs:** Never use `${{ inputs.* }}` directly in `run:` commands (shell injection risk). Assign to `env:` block first, reference as `$ENV_VAR` in shell.
 - **Puppeteer `waitUntil`:** Use `domcontentloaded` for refresh loops checking text presence/absence. Use `networkidle2` for navigation where JS-rendered content is needed. `completeGroupExProBooking` has its own `waitForFunction` for buttons.
+- **Puppeteer `page.content()` timing:** Always capture `page.content()` AFTER `waitForFunction` completes, not before. Content captured before the wait may miss JS-rendered text (e.g., "filled to capacity" banner on GroupExPro).
 - **Early-start constant:** `EARLY_START_MS` is exported from `lib/inngest/scheduler.ts` at module scope. Change there to adjust the early-start buffer (currently 90s).
 - **Supabase Studio URLs:** Table editor uses numeric table IDs, not names (`/editor/17486` not `/editor/table/recurring_classes`). Filter syntax: `filter=column%3Aoperator%3Avalue` (colons, not equals). Find table ID from the URL when navigating in the dashboard.
 - **Email template XSS:** `_base-template.ts` renders `preheader` as raw HTML. Always pass `escapeHtml()` output for any user-provided content in preheader, subject, or body. The `body` prop is also raw HTML - templates must escape user content before interpolating.
+- **New email templates checklist:** Template file + `get-email-template.ts` (import, type, routing) + `send-notification.ts` (type union) + `email-preview.ts` (import, type, switch case, registry) + migration for `notification_log` CHECK constraint.
+- **notification_log CHECK constraint:** Adding new email notification types requires a Supabase migration to update the `notification_log_notification_type_check` constraint. Without this, email logging will fail at runtime. See migration 014 for the pattern (drop + recreate).
 - **Toast vs Alert:** `useToast()` / `Toast` component is unverified in production — use inline `<Alert>` for form feedback instead.
 - **Custom class dedup:** `custom_class_names` table deduplicates admin notification emails. Only one email per unique normalized class name. Clear the table to allow re-notification of the same name.
 
