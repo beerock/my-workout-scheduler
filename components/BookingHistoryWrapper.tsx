@@ -35,12 +35,14 @@ export default function BookingHistoryWrapper({ initialHistory, totalCount, stat
     confirmed: statusCounts.confirmed,
     waitlisted: statusCounts.waitlisted,
     retrying: statusCounts.classFull,
+    no_registration: statusCounts.noRegistration,
     failed: statusCounts.failed,
   } : {
     all: totalCount,
     confirmed: 0,
     waitlisted: 0,
     retrying: 0,
+    no_registration: 0,
     failed: 0,
   }
 

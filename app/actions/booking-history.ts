@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { subDays } from 'date-fns'
 
 // Only show completed booking statuses (hide pending/skipped)
-export type BookingStatus = 'confirmed' | 'waitlisted' | 'failed'
+export type BookingStatus = 'confirmed' | 'waitlisted' | 'failed' | 'no_registration'
 
 export type BookingHistoryItem = {
   id: string
@@ -28,6 +28,7 @@ export type StatusCounts = {
   waitlisted: number
   classFull: number  // "Class full" errors (derived from failed)
   failed: number     // Actual failures (failed minus class full)
+  noRegistration: number // Classes without online registration
 }
 
 export type BookingHistoryResult = {
@@ -39,7 +40,7 @@ export type BookingHistoryResult = {
 }
 
 // Visible statuses for booking history (filter out pending/skipped)
-const VISIBLE_STATUSES: BookingStatus[] = ['confirmed', 'waitlisted', 'failed']
+const VISIBLE_STATUSES: BookingStatus[] = ['confirmed', 'waitlisted', 'failed', 'no_registration']
 
 // Filter options include 'retrying' which is derived from failed + 'full' error
 export type FilterOption = 'all' | BookingStatus | 'retrying'
@@ -95,7 +96,7 @@ export async function getBookingHistory(
 
     // Get counts by status for filter pills (run in parallel)
     // We need all failed items to separate "class full" from actual failures
-    const [confirmedResult, waitlistedResult, failedResult] = await Promise.all([
+    const [confirmedResult, waitlistedResult, failedResult, noRegistrationResult] = await Promise.all([
       supabase
         .from('booking_attempts')
         .select('id', { count: 'exact', head: true })
@@ -114,6 +115,12 @@ export async function getBookingHistory(
         .in('recurring_class_id', classIds)
         .gte('created_at', sinceDate)
         .eq('status', 'failed'),
+      supabase
+        .from('booking_attempts')
+        .select('id', { count: 'exact', head: true })
+        .in('recurring_class_id', classIds)
+        .gte('created_at', sinceDate)
+        .eq('status', 'no_registration'),
     ])
 
     // Calculate class full vs actual failed counts
@@ -121,7 +128,8 @@ export async function getBookingHistory(
     const classFullCount = allFailedItems.filter(item => isClassFullError(item.error_message)).length
     const actualFailedCount = allFailedItems.length - classFullCount
 
-    const allCount = (confirmedResult.count ?? 0) + (waitlistedResult.count ?? 0) + allFailedItems.length
+    const noRegistrationCount = noRegistrationResult.count ?? 0
+    const allCount = (confirmedResult.count ?? 0) + (waitlistedResult.count ?? 0) + allFailedItems.length + noRegistrationCount
 
     const statusCounts: StatusCounts = {
       all: allCount,
@@ -129,6 +137,7 @@ export async function getBookingHistory(
       waitlisted: waitlistedResult.count ?? 0,
       classFull: classFullCount,
       failed: actualFailedCount,
+      noRegistration: noRegistrationCount,
     }
 
     // Determine the total count for the current filter
@@ -146,6 +155,9 @@ export async function getBookingHistory(
       case 'failed':
         filterTotalCount = statusCounts.failed
         break
+      case 'no_registration':
+        filterTotalCount = statusCounts.noRegistration
+        break
       default:
         filterTotalCount = statusCounts.all
     }
@@ -160,7 +172,7 @@ export async function getBookingHistory(
     // Apply status filter
     if (statusFilter === 'all') {
       attemptsQuery = attemptsQuery.in('status', VISIBLE_STATUSES)
-    } else if (statusFilter === 'confirmed' || statusFilter === 'waitlisted') {
+    } else if (statusFilter === 'confirmed' || statusFilter === 'waitlisted' || statusFilter === 'no_registration') {
       attemptsQuery = attemptsQuery.eq('status', statusFilter)
     } else if (statusFilter === 'retrying') {
       // "Class full" errors - failed status with 'full' in error message (but not 'waitlist')

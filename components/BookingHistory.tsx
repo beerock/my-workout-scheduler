@@ -10,6 +10,7 @@ type FilterCounts = {
   confirmed: number
   waitlisted: number
   retrying: number
+  no_registration: number
   failed: number
 }
 
@@ -32,6 +33,7 @@ const filterButtons: { id: FilterOption; label: string; variant: 'default' | 'su
   { id: 'confirmed', label: 'Booked', variant: 'success' },
   { id: 'waitlisted', label: 'Waitlisted', variant: 'warning' },
   { id: 'retrying', label: 'Class Full', variant: 'primary' },
+  { id: 'no_registration', label: 'No Auto-Reg', variant: 'primary' },
   { id: 'failed', label: 'Failed', variant: 'danger' },
 ]
 
@@ -41,6 +43,7 @@ const filterLabels: Record<FilterOption, string> = {
   confirmed: 'booked',
   waitlisted: 'waitlisted',
   retrying: 'class full',
+  no_registration: 'no auto-reg',
   failed: 'failed',
 }
 

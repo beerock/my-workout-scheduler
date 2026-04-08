@@ -511,6 +511,13 @@ Ready-made prompt for diagnosing GitHub Actions failures.
 
 Brief summaries of completed work. See PRD version history for full details.
 
+### No Auto-Registration Detection ✅
+**Completed:** April 8, 2026
+
+Classes without online registration (drop-in, special programs, paid programs) now return `no_registration` status instead of a scary critical failure email. Sends a friendly blue info email explaining the class doesn't offer online booking. Weekly re-detection, respects `email_on_success` preference.
+
+---
+
 ### Already-Booked Email Templates & Duplicate Prevention ✅
 **Completed:** April 8, 2026
 
