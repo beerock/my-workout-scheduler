@@ -34,7 +34,7 @@ This document provides user-friendly error messages for all booking failure scen
 | Scenario | What to Fix |
 |----------|-------------|
 | Class cancelled | Remove or update your class schedule |
-| Class not reservable | Contact gym or remove from schedule |
+| Class has no online registration | Info email sent -- may be drop-in, special program, or paid class |
 | Login failed | Update your gym credentials |
 | Time conflict | Cancel conflicting class or adjust schedule |
 
@@ -144,39 +144,20 @@ Go to Dashboard → Schedule → Find this class → Click "Delete"
 
 ---
 
-### 4. Class Not Reservable
+### 4. No Online Registration
 
-**Current (Technical):**
-```
-"Class is not reservable - booking not possible"
-```
+**Status:** `no_registration` (informational, not a failure)
 
-**Improved (User-Friendly):**
-```
-This class cannot be reserved online.
+**Email subject:** "No Auto-Registration: {className} on {dayOfWeek}"
 
-Why this happens:
-• The class requires special registration (like a program enrollment)
-• It's restricted to certain membership levels
-• The gym doesn't allow online booking for this class
-• You may need to register in person or by phone
+**Email explains this usually means:**
+- Drop-in class (just show up)
+- Requires in-person or phone registration
+- Special program with separate enrollment
 
-What happens next:
-❌ We cannot book "not reservable" classes (this is permanent)
-❌ The system will not retry booking this class
+**Behavior:** Info email sent weekly (same as booking success). No retry. Respects `email_on_success` preference. User can stop by deleting/deactivating the class.
 
-What you should do:
-1. Contact your gym to ask about booking requirements for this class
-2. Ask if you can book in person or by phone
-3. Remove this class from your automated schedule if it can't be booked online
-
-How to remove this class:
-Go to Dashboard → Schedule → Find this class → Click "Delete"
-
-Alternative: If this class can be booked online, there may be a configuration issue. Verify the class name and time match exactly. Or email us at help@beerock.com for help.
-```
-
-**Category:** 🔴 Action Required
+**Category:** ℹ️ Informational (blue)
 
 ---
 
