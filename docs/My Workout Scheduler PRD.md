@@ -1,6 +1,6 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.29
+**Version:** 2.34
 **Product Owner:** Brock Busby
 **Last Updated:** January 13, 2026
 **Status:** Production - Deployed and Testing
@@ -168,6 +168,11 @@
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.34:** No Auto-Registration Detection (April 2026)
+  - Classes without online registration return `no_registration` status instead of critical failure
+  - New info email template: "No Auto-Registration" (blue severity, weekly, respects email_on_success)
+  - Dashboard "No Auto-Reg" badge in booking history with filter pill
+  - Removed stale `not_reservable` status and error routing
 - **v2.33:** Class Selector & Admin Notifications (April 2026)
   - Searchable Combobox component for class selection (97 YMCA classes, fuzzy match, auto-resolve on blur)
   - Branch dropdowns replace free-text on credentials and class forms (7 WNC YMCA branches)

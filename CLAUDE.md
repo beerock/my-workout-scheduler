@@ -8,7 +8,7 @@
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version:** v2.33 - Class Selector & Admin Notifications (see PRD for full version history)
+**Current Version:** v2.34 - No Auto-Registration Detection (see PRD for full version history)
 
 ---
 
@@ -232,4 +232,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: April 7, 2026 (v2.33)*
+*Last Updated: April 8, 2026 (v2.34)*

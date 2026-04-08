@@ -113,7 +113,7 @@ The system prevents duplicate booking attempts for the same class occurrence:
 3. **Puppeteer Automation** (GitHub Actions)
    - **Step 1:** Navigate to YMCA schedule with date + branch filter
    - **Step 2:** Find target class on schedule by name and time
-   - **Step 3:** Check class state (available, full, cancelled, not reservable)
+   - **Step 3:** Check class state (available, full, cancelled, no registration)
    - **Step 4:** Click Register link -> redirects to GroupExPro login
    - **Step 5:** Login to GroupExPro with encrypted credentials
    - **Step 5.5:** `waitForBookingWindow()` - if arrived early, sleep until 2s before window, then refresh every 2s until "not yet available" text disappears (up to 15 attempts)
@@ -123,14 +123,16 @@ The system prevents duplicate booking attempts for the same class occurrence:
 4. **Result Handling** (Inngest)
    - Receives `booking/result` event from GitHub Actions
    - Updates `booking_attempts` table
-   - Sends email notification (success, failure, or retry)
+   - Sends email notification (success, failure, retry, or no-registration info)
    - If class is full: schedules retry in 15 minutes
+   - If no registration: sends friendly info email, no retry
 
 5. **Result Statuses**
    - `'confirmed'`: Successfully booked
    - `'waitlisted'`: Added to waitlist
    - `'failed'`: Booking failed (error logged)
    - `'skipped'`: Skipped due to skip settings
+   - `'no_registration'`: Class doesn't offer online registration (info email sent)
 
 ## YMCA/GroupExPro Booking Flow Details
 
