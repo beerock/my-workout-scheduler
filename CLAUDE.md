@@ -159,6 +159,7 @@ Migration → types → server action → component (in that order). Use `/creat
 | Config/infrastructure task | `PRE_LAUNCH_CHECKLIST.md` |
 | Development task | `BACKLOG.md` (appropriate section) |
 | Major architecture change | README.md (features, automation, structure sections) |
+| Any doc edit | Update "Last Updated" date/version at top of modified doc |
 
 ### BACKLOG.md Structure (STRICT)
 
