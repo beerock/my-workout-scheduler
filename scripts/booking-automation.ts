@@ -598,6 +598,7 @@ async function completeGroupExProBooking(
   status: 'confirmed' | 'waitlisted' | 'failed'
   errorMessage?: string
   selectedBranch: string
+  alreadyBooked?: boolean
 }> {
   try {
     console.log('📋 Completing booking on GroupExPro class details page...')
@@ -605,10 +606,7 @@ async function completeGroupExProBooking(
     const currentUrl = page.url()
     console.log(`   Current URL: ${currentUrl}`)
 
-    const pageContent = await page.content()
-    const pageContentLower = pageContent.toLowerCase()
-
-    // Wait for action button to render (may be dynamically loaded after login redirect)
+    // Wait for action button or status text to render (may be dynamically loaded after login redirect)
     try {
       await page.waitForFunction(
         () => {
@@ -616,13 +614,18 @@ async function completeGroupExProBooking(
           return text.includes('Reserve a Spot') ||
                  text.includes('Join the Waitlist') ||
                  text.includes('Cancel Reservation') ||
-                 text.includes('Cancel Waitlist')
+                 text.includes('Cancel Waitlist') ||
+                 text.includes('filled to capacity')
         },
         { timeout: 10000 }
       )
     } catch {
       console.log('⚠️  Timed out waiting for action button to render, proceeding anyway...')
     }
+
+    // Capture page content AFTER waitForFunction to ensure JS-rendered content is present
+    const pageContent = await page.content()
+    const pageContentLower = pageContent.toLowerCase()
 
     // STEP 1: Detect available vs waitlist by looking for action buttons
     const allButtons = await page.$$('button, a, input[type="submit"], input[type="button"]')
@@ -651,14 +654,26 @@ async function completeGroupExProBooking(
     }
 
     if (!actionButton) {
+      // Check if class is filled to capacity (no booking buttons, no existing reservation)
+      if (pageContentLower.includes('filled to capacity')) {
+        console.log('⚠️ Class filled to capacity on details page')
+        // Error message MUST contain "full" to trigger Inngest retry logic
+        return {
+          status: 'failed',
+          errorMessage:
+            "Class is currently full, but don't worry - we've got you covered!\n\nWe'll automatically keep trying every 15 minutes until the class starts. If someone cancels, we'll grab that spot for you. No action needed - just sit back and relax!",
+          selectedBranch: branchUsed,
+        }
+      }
+
       // Check if already reserved/waitlisted (page shows confirmation already)
       if (pageContentLower.includes('you have reserved') || pageContentLower.includes('cancel reservation')) {
         console.log('✅ Class already reserved')
-        return { status: 'confirmed', selectedBranch: branchUsed }
+        return { status: 'confirmed', alreadyBooked: true, selectedBranch: branchUsed }
       }
       if (pageContentLower.includes('you are on the waitlist') || pageContentLower.includes('cancel waitlist')) {
         console.log('✅ Already on waitlist')
-        return { status: 'waitlisted', selectedBranch: branchUsed }
+        return { status: 'waitlisted', alreadyBooked: true, selectedBranch: branchUsed }
       }
 
       return {
@@ -1012,6 +1027,7 @@ async function bookClassYMCAHybrid(
       branchUsed: bookingResult.selectedBranch,
       errorMessage: bookingResult.errorMessage || null,
       screenshotPath,
+      alreadyBooked: bookingResult.alreadyBooked,
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
@@ -1033,6 +1049,7 @@ export type BookingResult = {
   branchUsed: string | null
   errorMessage: string | null
   screenshotPath?: string
+  alreadyBooked?: boolean
 }
 
 export type BookingParams = {

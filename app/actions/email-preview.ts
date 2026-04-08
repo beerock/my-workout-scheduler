@@ -16,12 +16,16 @@ import { bookingFailureFinalEmail } from '@/lib/email/templates/booking-failure-
 import { welcomeEmail } from '@/lib/email/templates/welcome'
 import { pauseReminderEmail } from '@/lib/email/templates/pause-reminder'
 import { dailyDigestEmail } from '@/lib/email/templates/daily-digest'
+import { bookingAlreadyRegisteredEmail } from '@/lib/email/templates/booking-already-registered'
+import { bookingAlreadyWaitlistedEmail } from '@/lib/email/templates/booking-already-waitlisted'
 
 export type EmailTemplateType =
   | 'welcome'
   | 'pauseReminder'
   | 'bookingSuccess'
   | 'bookingWaitlist'
+  | 'bookingAlreadyRegistered'
+  | 'bookingAlreadyWaitlisted'
   | 'bookingRetrySuccessful'
   | 'bookingFailureCritical'
   | 'bookingFailureConfig'
@@ -111,6 +115,46 @@ export async function getEmailTemplatePreview(
         name: 'Booking Waitlisted',
         subject: result.subject,
         severity: 'warning',
+        html: result.html,
+      }
+    }
+
+    case 'bookingAlreadyRegistered': {
+      const result = bookingAlreadyRegisteredEmail({
+        className: 'BODYPUMP',
+        dayOfWeek: 'Monday',
+        date: 'January 13, 2026',
+        time: '5:00 PM',
+        branchName: 'Woodfin YMCA',
+        bookingTimestamp: 'Jan 12, 2026, 3:00 PM',
+        dashboardUrl: sampleUrls.dashboardUrl,
+        scheduleUrl: sampleUrls.scheduleUrl,
+        settingsUrl: sampleUrls.settingsUrl,
+      })
+      return {
+        name: 'Already Registered',
+        subject: result.subject,
+        severity: 'success',
+        html: result.html,
+      }
+    }
+
+    case 'bookingAlreadyWaitlisted': {
+      const result = bookingAlreadyWaitlistedEmail({
+        className: 'Cycle',
+        dayOfWeek: 'Wednesday',
+        date: 'January 15, 2026',
+        time: '7:00 AM',
+        branchName: 'Woodfin YMCA',
+        bookingTimestamp: 'Jan 14, 2026, 5:00 AM',
+        dashboardUrl: sampleUrls.dashboardUrl,
+        scheduleUrl: sampleUrls.scheduleUrl,
+        settingsUrl: sampleUrls.settingsUrl,
+      })
+      return {
+        name: 'Already Waitlisted',
+        subject: result.subject,
+        severity: 'success',
         html: result.html,
       }
     }
@@ -294,6 +338,8 @@ export async function getAllTemplateTypes(): Promise<
     { type: 'pauseReminder', name: 'Pause Reminder (7 days)', severity: 'warning' },
     { type: 'bookingSuccess', name: 'Booking Success', severity: 'success' },
     { type: 'bookingWaitlist', name: 'Booking Waitlisted', severity: 'warning' },
+    { type: 'bookingAlreadyRegistered', name: 'Already Registered', severity: 'success' },
+    { type: 'bookingAlreadyWaitlisted', name: 'Already Waitlisted', severity: 'success' },
     { type: 'bookingRetrySuccessful', name: 'Retry Successful', severity: 'success' },
     { type: 'bookingFailureCritical', name: 'Failure - Critical', severity: 'error' },
     { type: 'bookingFailureConfig', name: 'Failure - Configuration', severity: 'warning' },

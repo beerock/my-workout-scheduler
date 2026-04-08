@@ -25,6 +25,8 @@ export type SendEmailParams = {
   notificationType:
     | 'booking_success'
     | 'booking_waitlist'
+    | 'booking_already_registered'
+    | 'booking_already_waitlisted'
     | 'booking_retry_successful'
     | 'booking_failure_critical'
     | 'booking_failure_config'

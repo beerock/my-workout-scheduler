@@ -37,6 +37,14 @@ import {
   bookingFailureFinalEmail,
   type BookingFailureFinalEmailProps,
 } from './templates/booking-failure-final';
+import {
+  bookingAlreadyRegisteredEmail,
+  type BookingAlreadyRegisteredEmailProps,
+} from './templates/booking-already-registered';
+import {
+  bookingAlreadyWaitlistedEmail,
+  type BookingAlreadyWaitlistedEmailProps,
+} from './templates/booking-already-waitlisted';
 
 export type BookingEmailData = {
   className: string;
@@ -46,6 +54,7 @@ export type BookingEmailData = {
   branchName: string;
   status: 'confirmed' | 'waitlisted' | 'failed' | 'skipped';
   errorMessage?: string; // Required if status === 'failed'
+  alreadyBooked?: boolean; // True if user was already registered/waitlisted (no new action taken)
   isRetrySuccess?: boolean; // True if this was a successful retry after class was full
   isRetryExhausted?: boolean; // True if all retries failed and class time arrived
   retryCount?: number; // Number of retries (for success or exhausted scenarios)
@@ -64,6 +73,8 @@ export type EmailTemplate = {
   notificationType:
     | 'booking_success'
     | 'booking_waitlist'
+    | 'booking_already_registered'
+    | 'booking_already_waitlisted'
     | 'booking_retry_successful'
     | 'booking_failure_critical'
     | 'booking_failure_config'
@@ -125,6 +136,50 @@ function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'retry
  * Get appropriate email template based on booking result
  */
 export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
+  // Already registered (detected on class details page - no new action taken)
+  if (data.status === 'confirmed' && data.alreadyBooked) {
+    const emailData: BookingAlreadyRegisteredEmailProps = {
+      className: data.className,
+      dayOfWeek: data.dayOfWeek,
+      date: data.date,
+      time: data.time,
+      branchName: data.branchName,
+      bookingTimestamp: data.bookingTimestamp,
+      dashboardUrl: data.dashboardUrl,
+      scheduleUrl: data.scheduleUrl,
+      settingsUrl: data.settingsUrl,
+    };
+
+    const { subject, html } = bookingAlreadyRegisteredEmail(emailData);
+    return {
+      notificationType: 'booking_already_registered',
+      subject,
+      html,
+    };
+  }
+
+  // Already on waitlist (detected on class details page - no new action taken)
+  if (data.status === 'waitlisted' && data.alreadyBooked) {
+    const emailData: BookingAlreadyWaitlistedEmailProps = {
+      className: data.className,
+      dayOfWeek: data.dayOfWeek,
+      date: data.date,
+      time: data.time,
+      branchName: data.branchName,
+      bookingTimestamp: data.bookingTimestamp,
+      dashboardUrl: data.dashboardUrl,
+      scheduleUrl: data.scheduleUrl,
+      settingsUrl: data.settingsUrl,
+    };
+
+    const { subject, html } = bookingAlreadyWaitlistedEmail(emailData);
+    return {
+      notificationType: 'booking_already_waitlisted',
+      subject,
+      html,
+    };
+  }
+
   // Success (confirmed booking)
   if (data.status === 'confirmed') {
     // Special template for retry successes
