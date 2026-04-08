@@ -182,7 +182,7 @@ async function navigateToYMCASchedule(
  */
 type YMCAClassSearchResult = {
   found: boolean
-  status?: 'available' | 'waitlist' | 'full' | 'cancelled' | 'not_reservable'
+  status?: 'available' | 'waitlist' | 'full' | 'cancelled' | 'no_registration'
   registerUrl?: string
   errorMessage?: string
 }
@@ -341,12 +341,11 @@ async function findClassOnYMCA(
         }
       }
 
-      // No CTA found - not reservable
-      console.log(`⚠️ No booking CTA found - class may not be reservable`)
+      // No CTA found - class doesn't offer online registration
+      console.log(`ℹ️ No booking CTA found - class does not offer online registration`)
       return {
         found: true,
-        status: 'not_reservable',
-        errorMessage: 'Class does not have a booking option.',
+        status: 'no_registration',
       }
     }
 
@@ -973,12 +972,11 @@ async function bookClassYMCAHybrid(
       }
     }
 
-    if (searchResult.status === 'not_reservable') {
+    if (searchResult.status === 'no_registration') {
       return {
-        status: 'failed',
+        status: 'no_registration',
         branchUsed: branch,
-        errorMessage:
-          "This class cannot be reserved online.\n\nWhy this happens: May require special registration, restricted membership level, or in-person booking only.\n\nWhat to do: Contact your gym to ask about booking requirements. Remove from automated schedule if it can't be booked online.",
+        errorMessage: null,
         screenshotPath,
       }
     }
@@ -1045,7 +1043,7 @@ async function bookClassYMCAHybrid(
 }
 
 export type BookingResult = {
-  status: 'confirmed' | 'waitlisted' | 'failed' | 'skipped'
+  status: 'confirmed' | 'waitlisted' | 'failed' | 'skipped' | 'no_registration'
   branchUsed: string | null
   errorMessage: string | null
   screenshotPath?: string

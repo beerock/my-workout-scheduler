@@ -39,7 +39,8 @@ export type SendEmailParams = {
     | 'credentials_updated'
     | 'daily_digest'
     | 'pause_reminder'
-    | 'admin_custom_class';
+    | 'admin_custom_class'
+    | 'booking_no_registration';
 };
 
 export type SendEmailResult = {

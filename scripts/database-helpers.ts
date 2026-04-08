@@ -25,7 +25,7 @@ type UserSettingsPartial = {
 
 type BookingAttemptPartial = {
   attempt_timestamp: string
-  status: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped'
+  status: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped' | 'no_registration'
 }
 
 let supabaseClient: SupabaseClient | null = null
@@ -588,7 +588,7 @@ export async function getGymCredentials(userId: string): Promise<{
  */
 export async function createBookingAttempt(
   recurringClassId: string,
-  status: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped',
+  status: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped' | 'no_registration',
   branchUsed: string | null = null,
   errorMessage: string | null = null
 ): Promise<string> {
@@ -621,7 +621,7 @@ export async function createBookingAttempt(
 export async function updateBookingAttempt(
   attemptId: string,
   updates: {
-    status?: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped'
+    status?: 'pending' | 'confirmed' | 'waitlisted' | 'failed' | 'skipped' | 'no_registration'
     branch_used?: string | null
     error_message?: string | null
   }

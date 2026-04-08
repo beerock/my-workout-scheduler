@@ -45,6 +45,10 @@ import {
   bookingAlreadyWaitlistedEmail,
   type BookingAlreadyWaitlistedEmailProps,
 } from './templates/booking-already-waitlisted';
+import {
+  bookingNoRegistrationEmail,
+  type BookingNoRegistrationEmailProps,
+} from './templates/booking-no-registration';
 
 export type BookingEmailData = {
   className: string;
@@ -52,7 +56,7 @@ export type BookingEmailData = {
   date: string; // Formatted display date
   time: string; // Class time
   branchName: string;
-  status: 'confirmed' | 'waitlisted' | 'failed' | 'skipped';
+  status: 'confirmed' | 'waitlisted' | 'failed' | 'skipped' | 'no_registration';
   errorMessage?: string; // Required if status === 'failed'
   alreadyBooked?: boolean; // True if user was already registered/waitlisted (no new action taken)
   isRetrySuccess?: boolean; // True if this was a successful retry after class was full
@@ -80,7 +84,8 @@ export type EmailTemplate = {
     | 'booking_failure_config'
     | 'booking_failure_technical'
     | 'booking_failure_retrying'
-    | 'booking_failure_final';
+    | 'booking_failure_final'
+    | 'booking_no_registration';
   subject: string;
   html: string;
 };
@@ -104,7 +109,6 @@ function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'retry
     'login failed',
     'class cancelled',
     'class is cancelled',
-    'not reservable',
     'time conflict',
     'already have a class',
     'password',
@@ -136,6 +140,28 @@ function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'retry
  * Get appropriate email template based on booking result
  */
 export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
+  // No online registration (drop-in, special program, paid, etc.)
+  if (data.status === 'no_registration') {
+    const emailData: BookingNoRegistrationEmailProps = {
+      className: data.className,
+      dayOfWeek: data.dayOfWeek,
+      date: data.date,
+      time: data.time,
+      branchName: data.branchName,
+      bookingTimestamp: data.bookingTimestamp,
+      dashboardUrl: data.dashboardUrl,
+      scheduleUrl: data.scheduleUrl,
+      settingsUrl: data.settingsUrl,
+    };
+
+    const { subject, html } = bookingNoRegistrationEmail(emailData);
+    return {
+      notificationType: 'booking_no_registration',
+      subject,
+      html,
+    };
+  }
+
   // Already registered (detected on class details page - no new action taken)
   if (data.status === 'confirmed' && data.alreadyBooked) {
     const emailData: BookingAlreadyRegisteredEmailProps = {

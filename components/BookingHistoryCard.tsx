@@ -22,6 +22,7 @@ const statusConfig: Record<DisplayStatus, { variant: 'success' | 'warning' | 'da
   confirmed: { variant: 'success', label: 'Booked' },
   waitlisted: { variant: 'warning', label: 'Waitlisted' },
   retrying: { variant: 'info', label: 'Class Full' },
+  no_registration: { variant: 'info', label: 'No Auto-Reg' },
   failed: { variant: 'danger', label: 'Failed' },
 }
 
@@ -129,6 +130,7 @@ export default function BookingHistoryCard({ item, compact = false, animationDel
     displayStatus === 'confirmed' ? 'bg-success-500' :
     displayStatus === 'waitlisted' ? 'bg-warning-500' :
     displayStatus === 'retrying' ? 'bg-primary-500' :
+    displayStatus === 'no_registration' ? 'bg-primary-500' :
     'bg-danger-500'
 
   // Only apply animation if delay is provided (initial load, not filtering)
@@ -188,6 +190,15 @@ export default function BookingHistoryCard({ item, compact = false, animationDel
               {errorInfo.description}
             </span>
           </div>
+        </div>
+      )}
+
+      {/* No registration info section - informational, non-expandable */}
+      {displayStatus === 'no_registration' && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <span className="text-sm text-primary-600">
+            This class doesn&apos;t offer online registration. Check with your YMCA branch for details.
+          </span>
         </div>
       )}
 

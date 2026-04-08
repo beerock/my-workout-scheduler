@@ -18,6 +18,7 @@ import { pauseReminderEmail } from '@/lib/email/templates/pause-reminder'
 import { dailyDigestEmail } from '@/lib/email/templates/daily-digest'
 import { bookingAlreadyRegisteredEmail } from '@/lib/email/templates/booking-already-registered'
 import { bookingAlreadyWaitlistedEmail } from '@/lib/email/templates/booking-already-waitlisted'
+import { bookingNoRegistrationEmail } from '@/lib/email/templates/booking-no-registration'
 
 export type EmailTemplateType =
   | 'welcome'
@@ -32,6 +33,7 @@ export type EmailTemplateType =
   | 'bookingFailureTechnical'
   | 'bookingFailureRetrying'
   | 'bookingFailureFinal'
+  | 'bookingNoRegistration'
   | 'dailyDigest'
 
 export type TemplateInfo = {
@@ -285,6 +287,26 @@ export async function getEmailTemplatePreview(
       }
     }
 
+    case 'bookingNoRegistration': {
+      const result = bookingNoRegistrationEmail({
+        className: 'Pickle Ball',
+        dayOfWeek: 'Thursday',
+        date: 'April 10, 2026',
+        time: '1:15 PM',
+        branchName: 'Asheville YMCA',
+        bookingTimestamp: 'Apr 9, 2026, 11:15 AM',
+        dashboardUrl: sampleUrls.dashboardUrl,
+        scheduleUrl: sampleUrls.scheduleUrl,
+        settingsUrl: sampleUrls.settingsUrl,
+      })
+      return {
+        name: 'No Auto-Registration',
+        subject: result.subject,
+        severity: 'info',
+        html: result.html,
+      }
+    }
+
     case 'dailyDigest': {
       const result = dailyDigestEmail({
         items: [
@@ -346,6 +368,7 @@ export async function getAllTemplateTypes(): Promise<
     { type: 'bookingFailureTechnical', name: 'Failure - Technical', severity: 'warning' },
     { type: 'bookingFailureRetrying', name: 'Class Full - Retrying', severity: 'info' },
     { type: 'bookingFailureFinal', name: 'Retries Exhausted', severity: 'warning' },
+    { type: 'bookingNoRegistration', name: 'No Auto-Registration', severity: 'info' },
     { type: 'dailyDigest', name: 'Daily Digest (post-MVP)', severity: 'info' },
   ]
 }
