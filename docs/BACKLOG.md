@@ -96,15 +96,6 @@ When the 10-minute `waitForEvent` times out, the function schedules a retry with
 
 ---
 
-### Manual Trigger Cancel Event
-**Status:** In progress (separate session) | **Priority:** High
-
-The `/api/trigger-booking` endpoint sends a `booking/attempt` event without first cancelling any existing scheduled event for the same class+date. This could create concurrent booking attempts. Fix by sending `booking/cancel` before the manual trigger, consistent with `scheduleBooking()`.
-
-**Addressed by:** "Already Registered/Duplicate Booking Prevention" plan (Bug 2).
-
-**Last Updated:** April 7, 2026
-
 ---
 
 ## Post-MVP: Medium Priority
@@ -128,13 +119,6 @@ If a retry attempt fails for a non-"full" reason (timeout, network error, etc.),
 **Last Updated:** January 18, 2026
 
 ---
-
-### Skip Notification for Already-Booked Classes
-**Status:** Backlogged | **Priority:** Medium
-
-When automation re-runs for a class the user is already reserved for, it returns `status: 'confirmed'` and sends a false "your class is booked!" notification. Fix: return a distinct status (e.g., `already_confirmed`) from the Puppeteer script and skip notification.
-
-**Last Updated:** April 6, 2026
 
 ---
 
@@ -166,6 +150,20 @@ Retry trigger uses `errorMessage?.toLowerCase().includes('full')` which is fragi
 Inngest `check-duplicate-runs` step queries for pending booking attempts before the current attempt record is created, so two simultaneous runs both pass the check.
 
 **Last Updated:** April 3, 2026
+
+---
+
+### Duplicate Check Window & Re-Trigger UX
+**Status:** Backlogged | **Priority:** Medium
+
+The `check-duplicate-runs` step blocks new booking attempts if a `pending` attempt exists for the same class within the last 5 minutes. This is overly conservative -- GitHub Actions runs typically complete in 60-90 seconds. If a user triggers a booking, realizes they selected the wrong day/time, edits the class, and retries, they may have to wait several minutes with no feedback.
+
+**Requirements:**
+- Evaluate reducing the 5-minute window (e.g., 2 minutes)
+- Consider cancel-and-replace: when user edits + retriggers, cancel the pending attempt before sending a new one
+- Add UI feedback ("Booking in progress...") on the class card so users understand why retry is blocked
+
+**Last Updated:** April 8, 2026
 
 ---
 
@@ -512,6 +510,13 @@ Ready-made prompt for diagnosing GitHub Actions failures.
 ## Completed (Summary)
 
 Brief summaries of completed work. See PRD version history for full details.
+
+### Already-Booked Email Templates & Duplicate Prevention ✅
+**Completed:** April 8, 2026
+
+New "Great news! You're already registered/waitlisted" email templates when automation detects user is already booked. Added "filled to capacity" detection on class details page to trigger retry chain. Fixed missing `booking/cancel` in trigger-booking endpoint to prevent duplicate booking runs.
+
+---
 
 ### getDashboardStats Query Parallelization ✅
 **Completed:** April 7, 2026

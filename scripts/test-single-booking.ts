@@ -222,6 +222,7 @@ async function testSingleBooking() {
             status: bookingResult.status,
             branchUsed: bookingResult.branchUsed,
             errorMessage: bookingResult.errorMessage,
+            alreadyBooked: bookingResult.alreadyBooked || false,
           },
         })
         log.success('✅ Result event sent to Inngest')

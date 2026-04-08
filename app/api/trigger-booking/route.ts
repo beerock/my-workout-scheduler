@@ -58,6 +58,16 @@ export async function POST(request: NextRequest) {
       classData.timezone
     );
 
+    // Cancel any existing scheduled booking for this class+date
+    // Prevents duplicate runs when user triggers manually after daily scheduler already queued one
+    await inngest.send({
+      name: 'booking/cancel',
+      data: {
+        classId,
+        classDate,
+      },
+    });
+
     // Trigger Inngest booking event (immediate - booking window already open)
     await inngest.send({
       name: 'booking/attempt',

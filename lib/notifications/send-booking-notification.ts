@@ -23,6 +23,7 @@ export type SendBookingNotificationParams = {
   date: string; // Formatted date for display
   time: string; // Class time
   branchName: string;
+  alreadyBooked?: boolean; // True if user was already registered/waitlisted (no new action taken)
   isRetrySuccess?: boolean; // True if this was a successful retry after being full
   isRetryExhausted?: boolean; // True if all retries failed and class time arrived
   retryCount?: number; // Number of retries
@@ -215,6 +216,7 @@ export async function sendBookingNotification(
     branchName: params.branchName,
     status: params.status,
     errorMessage: params.errorMessage,
+    alreadyBooked: params.alreadyBooked,
     isRetrySuccess: params.isRetrySuccess,
     isRetryExhausted: params.isRetryExhausted,
     retryCount: params.retryCount,

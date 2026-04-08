@@ -390,7 +390,7 @@ export const bookClassFunction = inngest.createFunction(
       };
     }
 
-    const { status, errorMessage } = bookingResult.data;
+    const { status, errorMessage, alreadyBooked } = bookingResult.data;
     console.log(`[Inngest] Booking result: ${status}`);
     if (errorMessage) {
       console.log(`[Inngest] Error message: ${errorMessage}`);
@@ -430,6 +430,7 @@ export const bookClassFunction = inngest.createFunction(
           date: formattedDate,
           time: formatTime12Hour(classData.class_time),
           branchName: classData.branch,
+          alreadyBooked: alreadyBooked || false,
           isRetrySuccess,
           retryCount: attemptNumber,
           firstAttemptTime: firstAttemptTimeFormatted,
