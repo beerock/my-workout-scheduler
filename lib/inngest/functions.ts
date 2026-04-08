@@ -423,7 +423,7 @@ export const bookClassFunction = inngest.createFunction(
           bookingAttemptId: attemptId,
           recurringClassId: classId,
           classDate: classDateISO,
-          status: status as 'confirmed' | 'waitlisted' | 'failed' | 'skipped',
+          status: status as 'confirmed' | 'waitlisted' | 'failed' | 'skipped' | 'no_registration',
           errorMessage,
           className: classData.class_type,
           dayOfWeek: dayName,
@@ -443,6 +443,17 @@ export const bookClassFunction = inngest.createFunction(
         // Don't throw - notification failure shouldn't break booking flow
       }
     });
+
+    // No-registration classes: no retry logic needed
+    if (status === 'no_registration') {
+      return {
+        classId,
+        className: classData.class_type,
+        attemptId,
+        status: 'no_registration',
+        message: 'Class does not offer online registration',
+      };
+    }
 
     // Step 5: Handle retry logic for class full scenarios
     // If class is full, retry every 15 minutes until class starts

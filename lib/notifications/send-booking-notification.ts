@@ -16,7 +16,7 @@ export type SendBookingNotificationParams = {
   bookingAttemptId: string;
   recurringClassId: string; // For deduplication by class instance
   classDate: string; // ISO date string (YYYY-MM-DD) for deduplication
-  status: 'confirmed' | 'waitlisted' | 'failed' | 'skipped';
+  status: 'confirmed' | 'waitlisted' | 'failed' | 'skipped' | 'no_registration';
   errorMessage?: string; // Required if status === 'failed'
   className: string;
   dayOfWeek: string; // "Monday", "Tuesday", etc.
@@ -133,6 +133,14 @@ export async function sendBookingNotification(
   // 7. Apply individual notification toggles (immediate mode only)
   if (params.status === 'confirmed' && !emailOnSuccess) {
     console.log(`[Notification] User ${params.userId} has success emails disabled`);
+    return {
+      sent: false,
+      reason: 'User has success email notifications disabled',
+    };
+  }
+
+  if (params.status === 'no_registration' && !emailOnSuccess) {
+    console.log(`[Notification] User ${params.userId} has success emails disabled, skipping no-registration notification`);
     return {
       sent: false,
       reason: 'User has success email notifications disabled',
@@ -283,7 +291,6 @@ function isCriticalFailure(errorMessage: string): boolean {
     'login failed',
     'class cancelled',
     'class is cancelled',
-    'not reservable',
     'time conflict',
     'password',
     'credentials',

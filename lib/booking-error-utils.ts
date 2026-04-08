@@ -80,7 +80,6 @@ export function categorizeFailure(errorMessage: string | null): FailureCategoryI
     'login failed',
     'class cancelled',
     'class is cancelled',
-    'not reservable',
     'time conflict',
     'already have a class',
     'password',

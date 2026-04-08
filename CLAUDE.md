@@ -85,6 +85,7 @@ supabase/         → Migrations and RLS policies
 - **notification_log CHECK constraint:** Adding new email notification types requires a Supabase migration to update the `notification_log_notification_type_check` constraint. Without this, email logging will fail at runtime. See migration 014 for the pattern (drop + recreate).
 - **Toast vs Alert:** `useToast()` / `Toast` component is unverified in production — use inline `<Alert>` for form feedback instead.
 - **Custom class dedup:** `custom_class_names` table deduplicates admin notification emails. Only one email per unique normalized class name. Clear the table to allow re-notification of the same name.
+- **No-registration classes:** Classes without a Register/Waitlist button on the YMCA schedule return `status: 'no_registration'` (not `'failed'`). This skips retry logic and sends a friendly info email instead of a critical failure. Re-detected weekly -- if the class ever gains online registration, normal booking takes over. Respects `email_on_success` preference.
 
 ---
 
