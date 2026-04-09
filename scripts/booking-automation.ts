@@ -786,6 +786,23 @@ async function completeGroupExProBooking(
       }
     }
 
+    // Check for YMCA/GroupExPro reservation system error
+    // This occurs when the class appears on the schedule but the reservation system
+    // cannot process bookings (e.g., class missing from app, backend issue)
+    const hasReservationSystemError =
+      finalContent.includes('unable to reserve a spot') ||
+      finalContent.includes('unable to reserve')
+
+    if (hasReservationSystemError) {
+      console.log('⚠️  YMCA reservation system error - unable to reserve')
+      return {
+        status: 'failed',
+        errorMessage:
+          "The gym's reservation system is unable to process reservations for this class right now. This is a technical issue on the gym's end.\n\nWe'll automatically retry every 15 minutes until the class starts. If you need this class, you can also try booking manually through the gym's website or app.",
+        selectedBranch: branchUsed,
+      }
+    }
+
     if (isConfirmed) {
       console.log('✅ Successfully BOOKED class')
       return { status: 'confirmed', selectedBranch: branchUsed }
