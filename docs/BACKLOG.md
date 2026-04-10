@@ -351,6 +351,33 @@ Surface the branch phone number and address (from `YMCA_BRANCH_INFO` in `lib/con
 
 ---
 
+### Admin-Only Filter for Test Scripts
+**Status:** Backlogged | **Priority:** Low
+
+Dry-run and booking test scripts (`test-booking-automation-dry-run.ts`, `run-booking-automation.ts`) currently query the database for whatever class is next in the booking window regardless of user, which can surface other users' classes and decrypt their credentials during test runs. Per CLAUDE.md's testing rule ("Always use admin account... Never use other users' classes or credentials"), these scripts should filter to the admin user only.
+
+**Requirements:**
+- Filter test scripts to admin UID only via `ADMIN_USER_IDS` env var
+- Affects: `scripts/test-booking-automation-dry-run.ts`, `scripts/run-booking-automation.ts`, `scripts/test-single-booking.ts`
+
+**Last Updated:** April 10, 2026
+
+---
+
+### Drop Stale Daxko `gym_url` Column
+**Status:** Backlogged | **Priority:** Low
+
+The `gym_url` column in the `gym_credentials` table still holds stale Daxko URLs (e.g. `https://operations.daxko.com/online/4032/GXP/ClassSchedule.mvc`) from before v2.32 when Daxko was removed from the booking flow. The field was removed from the credentials form in v2.33 but the column, its data, and ~10 code references remain. Booking automation hardcodes the GroupExPro flow and ignores the column entirely.
+
+**Requirements:**
+- Add migration to drop the `gym_url` column
+- Remove references in `lib/database.types.ts`, `app/actions/gym-credentials.ts`, `scripts/database-helpers.ts`, `scripts/run-booking-automation.ts`, `scripts/test-*.ts`, `app/dashboard/schedule/page.tsx`
+- Verify no components still read the field
+
+**Last Updated:** April 10, 2026
+
+---
+
 ### Admin CMS / Database-Driven Class Catalog
 **Status:** Backlogged | **Priority:** Low
 
