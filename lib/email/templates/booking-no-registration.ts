@@ -16,6 +16,7 @@ export type BookingNoRegistrationEmailProps = {
   time: string;
   branchName: string;
   bookingTimestamp: string;
+  branchPhone?: string; // Optional - when provided, renders phone as tel: link for the "how to register" action
   dashboardUrl: string;
   scheduleUrl: string;
   settingsUrl: string;
@@ -28,6 +29,16 @@ export function bookingNoRegistrationEmail(props: BookingNoRegistrationEmailProp
   const safeTime = escapeHtml(props.time);
   const safeBranchName = escapeHtml(props.branchName);
   const safeTimestamp = escapeHtml(props.bookingTimestamp);
+
+  // Build the phone-integrated "how to register" line.
+  // Phone comes from YMCA_BRANCH_INFO constants (not user input) so it's safe
+  // to interpolate. We still extract digits only for the tel: href to prevent
+  // any injection via malformed constant data.
+  const phoneDigits = props.branchPhone?.replace(/\D/g, '') ?? '';
+  const telHref = phoneDigits ? `tel:+1${phoneDigits}` : null;
+  const registerInstructionLine = telHref
+    ? `Call your YMCA branch at <a href="${telHref}" style="color: ${emailDesign.colors.primary}; text-decoration: none; font-weight: 600;">${escapeHtml(props.branchPhone || '')}</a> to find out how to register. If this class never requires online registration, you can remove it from your schedule to stop these notifications.`
+    : `Check with your YMCA branch for details. If this class never requires online registration, you can remove it from your schedule to stop these notifications.`;
 
   const subject = `No Auto-Registration: ${safeClassName} on ${safeDayOfWeek}`;
 
@@ -67,7 +78,7 @@ export function bookingNoRegistrationEmail(props: BookingNoRegistrationEmailProp
     </div>
 
     <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      Check with your YMCA branch for details. If this class never requires online registration, you can remove it from your schedule to stop these notifications.
+      ${registerInstructionLine}
     </p>
 
     <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">

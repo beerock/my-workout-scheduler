@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** April 6, 2026
+**Last Updated:** April 10, 2026
 
 ---
 
@@ -213,6 +213,20 @@ Add UI button to immediately trigger booking attempt for a class.
 
 ---
 
+### Email Template Design Consolidation
+**Status:** Backlogged | **Priority:** Medium
+
+Booking email templates have been touched piecemeal over time and have diverged in structure (different box colors, inconsistent section ordering, varied action patterns, repeated tel: link building across 4 files). Do a full design pass across all booking templates to consolidate shared layouts and reuse common section components.
+
+**Requirements:**
+- Extract shared helpers for phone tel-link construction (currently duplicated 4x)
+- Standardize the class info card, "what to do next" guidance block, and action box patterns
+- Audit visual hierarchy and voice consistency across all failure/success templates
+
+**Last Updated:** April 10, 2026
+
+---
+
 ## Post-MVP: Low Priority
 
 Nice-to-have features that aren't critical.
@@ -328,14 +342,50 @@ Add filter and sort controls to the My Schedule page.
 
 ---
 
+### Dashboard Branch Contact Info Panel
+**Status:** Backlogged | **Priority:** Low
+
+Surface the branch phone number and address (from `YMCA_BRANCH_INFO` in `lib/constants/ymca.ts`) as an expandable detail on the schedule page or class detail views. Address field is already stored but not yet surfaced anywhere in the UI. This is polish that builds on the v2.35 phone-in-emails work.
+
+**Last Updated:** April 10, 2026
+
+---
+
+### Admin-Only Filter for Test Scripts
+**Status:** Backlogged | **Priority:** Low
+
+Dry-run and booking test scripts (`test-booking-automation-dry-run.ts`, `run-booking-automation.ts`) currently query the database for whatever class is next in the booking window regardless of user, which can surface other users' classes and decrypt their credentials during test runs. Per CLAUDE.md's testing rule ("Always use admin account... Never use other users' classes or credentials"), these scripts should filter to the admin user only.
+
+**Requirements:**
+- Filter test scripts to admin UID only via `ADMIN_USER_IDS` env var
+- Affects: `scripts/test-booking-automation-dry-run.ts`, `scripts/run-booking-automation.ts`, `scripts/test-single-booking.ts`
+
+**Last Updated:** April 10, 2026
+
+---
+
+### Drop Stale Daxko `gym_url` Column
+**Status:** Backlogged | **Priority:** Low
+
+The `gym_url` column in the `gym_credentials` table still holds stale Daxko URLs (e.g. `https://operations.daxko.com/online/4032/GXP/ClassSchedule.mvc`) from before v2.32 when Daxko was removed from the booking flow. The field was removed from the credentials form in v2.33 but the column, its data, and ~10 code references remain. Booking automation hardcodes the GroupExPro flow and ignores the column entirely.
+
+**Requirements:**
+- Add migration to drop the `gym_url` column
+- Remove references in `lib/database.types.ts`, `app/actions/gym-credentials.ts`, `scripts/database-helpers.ts`, `scripts/run-booking-automation.ts`, `scripts/test-*.ts`, `app/dashboard/schedule/page.tsx`
+- Verify no components still read the field
+
+**Last Updated:** April 10, 2026
+
+---
+
 ### Admin CMS / Database-Driven Class Catalog
 **Status:** Backlogged | **Priority:** Low
 
-Move gym reference data from constants file to database tables with admin interface.
+Move gym reference data from constants file to database tables with admin interface, including editable branch contact info (phone, address) currently hardcoded in `lib/constants/ymca.ts` via `YMCA_BRANCH_INFO`.
 
 **Dependencies:** Multi-org support, admin dashboard
 
-**Last Updated:** April 2, 2026
+**Last Updated:** April 10, 2026
 
 ---
 

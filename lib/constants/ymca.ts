@@ -20,6 +20,68 @@ export const YMCA_BRANCHES = [
 export type YMCABranch = typeof YMCA_BRANCHES[number]
 
 // =============================================================================
+// Branch Contact Info
+// =============================================================================
+
+/**
+ * Contact info for each branch. Used in booking emails to give users direct
+ * contact info when YMCA-side issues need human intervention.
+ *
+ * Source: Scraped from https://www.ymcawnc.org/locations on 2026-04-10.
+ *
+ * Forward-looking: when a real multi-gym CMS is built, this lookup moves from
+ * constants to a DB table. The helpers below keep the consuming code stable.
+ */
+export interface YMCABranchInfo {
+  phone: string   // Display format: "(828) 555-1234"
+  address: string // Street + city, no state/zip (matches scraped source)
+}
+
+export const YMCA_BRANCH_INFO: Record<YMCABranch, YMCABranchInfo> = {
+  'Asheville YMCA': {
+    phone: '(828) 210-9622',
+    address: '30 Woodfin St., Asheville',
+  },
+  'Black Mountain YMCA': {
+    phone: '(828) 552-3620',
+    address: '25 Jane Jacobs Rd., Black Mountain',
+  },
+  'Corpening Memorial YMCA': {
+    phone: '(828) 659-9622',
+    address: '348 Grace Corpening Dr., Marion',
+  },
+  'Ferguson Family YMCA': {
+    phone: '(828) 575-2940',
+    address: '31 Westridge Market Pl., Candler',
+  },
+  'Hendersonville Family YMCA': {
+    phone: '(828) 697-9622',
+    address: '810 6th Ave. W, Hendersonville',
+  },
+  'Reuter Family YMCA': {
+    phone: '(828) 651-9622',
+    address: '3 Town Square Blvd., Asheville',
+  },
+  'Woodfin YMCA': {
+    phone: '(828) 505-3990',
+    address: '40 N. Merrimon Ave., Ste. 101, Asheville',
+  },
+}
+
+/**
+ * Defensive lookup - branch name flows from DB and could theoretically drift
+ * from the constant. Returns null if the branch isn't in our map so callers
+ * can fall back gracefully.
+ */
+export function getBranchInfo(branchName: string): YMCABranchInfo | null {
+  return (YMCA_BRANCH_INFO as Record<string, YMCABranchInfo>)[branchName] ?? null
+}
+
+export function getBranchPhone(branchName: string): string | null {
+  return getBranchInfo(branchName)?.phone ?? null
+}
+
+// =============================================================================
 // Master Class List
 // =============================================================================
 
