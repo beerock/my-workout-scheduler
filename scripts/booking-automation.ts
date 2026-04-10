@@ -788,17 +788,26 @@ async function completeGroupExProBooking(
 
     // Check for YMCA/GroupExPro reservation system error
     // This occurs when the class appears on the schedule but the reservation system
-    // cannot process bookings (e.g., class missing from app, backend issue)
+    // cannot process bookings (e.g., class missing from app, backend issue).
+    // Also catches the waitlist variant defensively - we haven't seen it yet
+    // but the booking flow handles both Reserve and Waitlist buttons. Use
+    // specific full phrases only to avoid false positives on unrelated text
+    // that happens to include "unable to join" (e.g. "unable to join gym").
     const hasReservationSystemError =
       finalContent.includes('unable to reserve a spot') ||
-      finalContent.includes('unable to reserve')
+      finalContent.includes('unable to reserve') ||
+      finalContent.includes('unable to join the waitlist')
 
     if (hasReservationSystemError) {
       console.log('⚠️  YMCA reservation system error - unable to reserve')
       return {
         status: 'failed',
+        // NOTE: The phrase "YMCA's booking system" is used as a routing marker
+        // in lib/email/get-email-template.ts to select the ymca_system_error
+        // variant of the technical failure template. The routing layer
+        // matches on the lowercased full possessive phrase. Do not remove.
         errorMessage:
-          "The gym's reservation system is unable to process reservations for this class right now. This is a technical issue on the gym's end.\n\nWe'll automatically retry every 15 minutes until the class starts. If you need this class, you can also try booking manually through the gym's website or app.",
+          "The YMCA's booking system is having trouble with this class right now - it looks like an issue on their end. We recommend calling the YMCA to let them know, and you can also try booking directly through the YMCA website or app. We'll pick back up automatically for future classes.",
         selectedBranch: branchUsed,
       }
     }

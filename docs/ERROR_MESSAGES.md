@@ -1,6 +1,6 @@
 # Error Messages Guide
 
-**Last Updated:** April 8, 2026 (v2.34)
+**Last Updated:** April 10, 2026 (v2.35)
 
 This document provides user-friendly error messages for all booking failure scenarios, categorized by the action users need to take.
 

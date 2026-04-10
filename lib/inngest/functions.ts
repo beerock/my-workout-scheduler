@@ -455,16 +455,14 @@ export const bookClassFunction = inngest.createFunction(
       };
     }
 
-    // Step 5: Handle retry logic for class full or reservation system error scenarios
-    // Retry every 15 minutes until class starts
-    const lowerError = errorMessage?.toLowerCase() ?? '';
-    const isClassFull = lowerError.includes('full');
-    const isReservationSystemError = lowerError.includes('unable to reserve');
-    const shouldRetry = status === 'failed' && (isClassFull || isReservationSystemError);
-    const retryReason = isClassFull ? 'Class full' : 'Reservation system error';
-
-    if (shouldRetry) {
-      console.log(`[Inngest] ${retryReason} - checking if we should retry...`);
+    // Step 5: Handle retry logic for class full scenarios
+    // If class is full, retry every 15 minutes until class starts.
+    // NOTE: "unable to reserve" (YMCA system error) is intentionally NOT
+    // retried here - it's handled as a one-shot action email in v2.35 since
+    // silent retries don't help when the fix requires a human at YMCA to
+    // notice and correct the backend issue. See routing in get-email-template.ts.
+    if (status === 'failed' && errorMessage?.toLowerCase().includes('full')) {
+      console.log(`[Inngest] Class is full - checking if we should retry...`);
 
       // Calculate time until class starts (use fixed date from event)
       const classStartTime = getFixedClassStartTime(
@@ -509,7 +507,7 @@ export const bookClassFunction = inngest.createFunction(
           className: classData.class_type,
           attemptId,
           status: 'retrying',
-          message: `${retryReason} - scheduled retry #${attemptNumber + 1} in 15 minutes`,
+          message: `Class full - scheduled retry #${attemptNumber + 1} in 15 minutes`,
           nextAttemptNumber: attemptNumber + 1,
         };
       } else {
@@ -552,7 +550,7 @@ export const bookClassFunction = inngest.createFunction(
               recurringClassId: classId,
               classDate: classDateISO,
               status: 'failed',
-              errorMessage: `${retryReason} persisted until class time - retries exhausted`,
+              errorMessage: 'Class stayed full until class time - retries exhausted',
               className: classData.class_type,
               dayOfWeek: dayName,
               date: formattedDate,

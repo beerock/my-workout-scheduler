@@ -8,7 +8,7 @@
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version:** v2.34 - No Auto-Registration Detection (see PRD for full version history)
+**Current Version:** v2.35 - Branch Phone Numbers in Action Emails (see PRD for full version history)
 
 ---
 
@@ -63,6 +63,7 @@ supabase/         → Migrations and RLS policies
 - **Inngest sync:** Auto-syncs on Vercel deploy (configured via Inngest dashboard). No manual sync needed.
 - **Inngest endpoint update:** To change the app's endpoint URL (e.g. after domain migration), use **Add App → Sync with Vercel** — there is no edit button on existing apps
 - **Supabase keep-alive:** Daily scheduler (`0 0 * * *`) queries DB every day — primary protection against free-tier pause. `supabaseKeepAliveFunction` (every 3 days) is the independent safety net.
+- **Database backups:** Supabase free-tier daily backups (7-day retention) are the backup strategy. `pg_dump`/`psql` scripts were removed 2026-04-10 (unused, required `SUPABASE_DB_PASSWORD` which is no longer needed). Do not re-add.
 - **Supabase head query:** Use `.select('*', { count: 'exact', head: true })` for a count-only query with no data transfer (HTTP HEAD request — useful for health checks/pings).
 - **Inngest events:** Delete cancels events; inactive/pause uses runtime checks (events still fire but don't book)
 - **Skip/pause interaction:** Pause and skip are fully independent. Pausing does NOT touch skip fields. Skips persist across pause/unpause and are only cleared by the user or consumed by the booking function at runtime. Deactivate (`toggleRecurringClassActive`) always clears both skip fields with user confirmation dialog.
@@ -89,6 +90,12 @@ supabase/         → Migrations and RLS policies
 - **No-registration classes:** Classes without a Register/Waitlist button on the YMCA schedule return `status: 'no_registration'` (not `'failed'`). This skips retry logic and sends a friendly info email instead of a critical failure. Re-detected weekly -- if the class ever gains online registration, normal booking takes over. Respects `email_on_success` preference.
 - **New booking status checklist:** `BookingResult` + `YMCAClassSearchResult` (booking-automation.ts), `BookingAttemptPartial` + `createBookingAttempt` + `updateBookingAttempt` (database-helpers.ts), `BookingEmailData` + `EmailTemplate.notificationType` (get-email-template.ts), `SendEmailParams` (send-notification.ts), `SendBookingNotificationParams` (send-booking-notification.ts), `BookingStatus` + `StatusCounts` + `VISIBLE_STATUSES` (booking-history.ts), `FilterCounts` (BookingHistory.tsx), `statusConfig` (BookingHistoryCard.tsx), plus 2 DB CHECK constraints (booking_attempts + notification_log).
 - **`criticalKeywords` triplicate:** Three independent `criticalKeywords` arrays exist: `get-email-template.ts` (email routing), `booking-error-utils.ts` (dashboard display), `send-booking-notification.ts` (preference filtering). Keep all three in sync when adding/removing error categories.
+- **YMCA system error routing marker:** `get-email-template.ts` selects the `ymca_system_error` variant of the technical failure email by substring-matching `"ymca's booking system"` in the lowercased errorMessage. That phrase is deliberately embedded in the error message emitted by `scripts/booking-automation.ts` when GroupExPro returns "Unable to reserve a spot" / "Unable to join the waitlist". Do NOT remove the phrase from either side — breaks the email variant routing silently (falls back to generic technical email with no type error).
+- **`isClassCancelledError` / `criticalKeywords` cancellation coverage:** Both the helper and the keyword list in `get-email-template.ts` must cover the same cancellation phrase variants (`'class cancelled'`, `'class is cancelled'`, `'class has been cancelled'`, `'class has been canceled'`). If you add a new variant, update both.
+- **Branch contact info:** `YMCA_BRANCH_INFO` in `lib/constants/ymca.ts` holds phone + address for all 7 branches. `getBranchPhone(branchName)` is the defensive lookup consumed by `get-email-template.ts` and passed as `branchPhone` to 4 templates (`booking_failure_technical` both variants, `booking_failure_critical` only when class cancelled, `booking_failure_final`, `booking_no_registration`). Address field is stored but not yet surfaced anywhere — reserved for future calendar invites / dashboard polish.
+- **`/prototype/email-preview` is admin-only:** Gated via `app/prototype/email-preview/layout.tsx` (server-component redirect) plus `assertAdmin()` at the top of both server actions in `app/actions/email-preview.ts` (defense-in-depth). Requires `ADMIN_USER_IDS` env var set in both `.env.local` and Vercel. Non-admins silently redirect to `/`.
+- **Email templates are flat single functions:** By convention, each template in `lib/email/templates/` is ONE function - don't split into render helpers unless variants have materially different structure (see `booking-failure-technical.ts` `generic` vs `ymca_system_error` for the justified exception). PR review agents flag unnecessary splits as divergence.
+- **Preview regression check pattern:** When adding a variant or conditional feature to a shared email template, keep at least one existing preview case WITHOUT the new feature as a regression check (e.g., `bookingFailureCritical` renders the login scenario WITHOUT phone to verify it still looks correct for errors where phone doesn't apply). Rename its display label to clarify the scenario (e.g., "Failure - Critical (login)").
 
 ---
 
@@ -226,4 +233,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: April 8, 2026 (v2.34)*
+*Last Updated: April 10, 2026 (v2.35)*

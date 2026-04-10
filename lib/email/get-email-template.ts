@@ -49,6 +49,7 @@ import {
   bookingNoRegistrationEmail,
   type BookingNoRegistrationEmailProps,
 } from './templates/booking-no-registration';
+import { getBranchPhone } from '@/lib/constants/ymca';
 
 export type BookingEmailData = {
   className: string;
@@ -91,6 +92,20 @@ export type EmailTemplate = {
 };
 
 /**
+ * Detect the class-cancelled subset of critical errors. Used to gate whether
+ * we pass a branch phone number to the critical template - calling the front
+ * desk is useful for confirming a cancellation, but doesn't help with login
+ * failures, credentials issues, or time conflicts.
+ */
+function isClassCancelledError(errorMessage: string): boolean {
+  const msg = errorMessage.toLowerCase();
+  return msg.includes('class cancelled') ||
+    msg.includes('class is cancelled') ||
+    msg.includes('class has been cancelled') ||
+    msg.includes('class has been canceled');
+}
+
+/**
  * Categorize failure by error message keywords
  */
 function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'retrying' | 'technical' {
@@ -105,10 +120,14 @@ function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'retry
   ];
 
   // Critical errors (user must take action)
+  // NOTE: Keep this in sync with isClassCancelledError() above - both should
+  // cover the same set of cancellation phrases.
   const criticalKeywords = [
     'login failed',
     'class cancelled',
     'class is cancelled',
+    'class has been cancelled',
+    'class has been canceled',
     'time conflict',
     'already have a class',
     'password',
@@ -149,6 +168,7 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
       time: data.time,
       branchName: data.branchName,
       bookingTimestamp: data.bookingTimestamp,
+      branchPhone: getBranchPhone(data.branchName) ?? undefined,
       dashboardUrl: data.dashboardUrl,
       scheduleUrl: data.scheduleUrl,
       settingsUrl: data.settingsUrl,
@@ -291,6 +311,7 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
         bookingStartedTime: data.bookingStartedTime || data.firstAttemptTime || data.bookingTimestamp,
         stoppedCheckingTime: data.stoppedCheckingTime || data.classStartTime || 'class start time',
         retryCount: data.retryCount || 1,
+        branchPhone: getBranchPhone(data.branchName) ?? undefined,
         dashboardUrl: data.dashboardUrl,
         scheduleUrl: data.scheduleUrl,
         settingsUrl: data.settingsUrl,
@@ -307,6 +328,13 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
     const failureType = categorizeFailure(data.errorMessage);
 
     if (failureType === 'critical') {
+      // Only pass phone for class-cancelled errors - login/credentials/time
+      // conflicts don't benefit from phone. The template renders the "call
+      // the YMCA to confirm" section only when branchPhone is provided.
+      const branchPhone = isClassCancelledError(data.errorMessage)
+        ? (getBranchPhone(data.branchName) ?? undefined)
+        : undefined;
+
       const emailData: BookingFailureCriticalEmailProps = {
         className: data.className,
         dayOfWeek: data.dayOfWeek,
@@ -314,6 +342,7 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
         time: data.time,
         branchName: data.branchName,
         errorMessage: data.errorMessage,
+        branchPhone,
         dashboardUrl: data.dashboardUrl,
         credentialsUrl: data.credentialsUrl,
         settingsUrl: data.settingsUrl,
@@ -370,6 +399,14 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
     }
 
     // Technical failure
+    // Detect the YMCA system error variant via the routing marker phrase
+    // "YMCA's booking system" in the errorMessage (emitted by
+    // scripts/booking-automation.ts when GroupExPro returns "Unable to reserve
+    // a spot" / "Unable to join the waitlist"). The full possessive phrase is
+    // specific enough to avoid collisions with generic "booking system"
+    // wording that might appear in other error messages. Phone is passed for
+    // BOTH variants - the template decides its prominence.
+    const isYmcaSystemError = data.errorMessage.toLowerCase().includes("ymca's booking system");
     const emailData: BookingFailureTechnicalEmailProps = {
       className: data.className,
       dayOfWeek: data.dayOfWeek,
@@ -377,6 +414,8 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
       time: data.time,
       branchName: data.branchName,
       errorMessage: data.errorMessage,
+      variant: isYmcaSystemError ? 'ymca_system_error' : 'generic',
+      branchPhone: getBranchPhone(data.branchName) ?? undefined,
       dashboardUrl: data.dashboardUrl,
       scheduleUrl: data.scheduleUrl,
       settingsUrl: data.settingsUrl,
