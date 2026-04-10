@@ -11,7 +11,7 @@
  */
 
 import { baseEmailTemplate } from './_base-template';
-import { emailDesign } from '../design-tokens';
+import { emailDesign, escapeHtml } from '../design-tokens';
 
 export type BookingFailureFinalEmailProps = {
   className: string;
@@ -22,6 +22,7 @@ export type BookingFailureFinalEmailProps = {
   bookingStartedTime: string; // When we started trying to book
   stoppedCheckingTime: string; // When we stopped checking (class started)
   retryCount: number; // How many times we checked for openings
+  branchPhone?: string; // Optional - when provided, adds a "Call the YMCA" bullet and updates the tip copy
   dashboardUrl: string;
   scheduleUrl: string;
   settingsUrl: string;
@@ -29,6 +30,25 @@ export type BookingFailureFinalEmailProps = {
 
 export function bookingFailureFinalEmail(props: BookingFailureFinalEmailProps): { subject: string; html: string } {
   const subject = `⏱️ Could Not Get You In - ${props.className} on ${props.dayOfWeek}`;
+
+  // Phone link setup - phone comes from YMCA_BRANCH_INFO constants (not user input)
+  // but we still extract digits only for the tel: href for safety.
+  const phoneDigits = props.branchPhone?.replace(/\D/g, '') ?? '';
+  const telHref = phoneDigits ? `tel:+1${phoneDigits}` : null;
+  const safePhoneDisplay = props.branchPhone ? escapeHtml(props.branchPhone) : '';
+  const hasPhone = telHref !== null && safePhoneDisplay !== '';
+
+  // Optional 4th "Call the YMCA" bullet - only when phone is provided
+  const callBullet = hasPhone
+    ? `<li><strong>Call the YMCA:</strong> <a href="${telHref}" style="color: ${emailDesign.colors.primary}; text-decoration: none; font-weight: 600;">${safePhoneDisplay}</a> - ask the front desk if anyone just cancelled, or whether you can walk in for this session</li>`
+    : '';
+
+  // Tip box copy varies based on whether we provided a phone number.
+  // With phone: reference calling the front desk directly.
+  // Without phone: fall back to the original "high demand / check the app" copy.
+  const tipText = hasPhone
+    ? `<strong>💡 Tip:</strong> Classes in high demand often have last-minute openings. Calling the front desk (or walking in) can work when the online system doesn't.`
+    : `<strong>💡 Tip:</strong> This class is in high demand! People often cancel 24-48 hours before. You can also check your gym's app directly closer to class time.`;
 
   const retryText = props.retryCount > 1
     ? `The class was full. We checked for openings ${props.retryCount} times (every 15 minutes) but no spots became available.`
@@ -82,12 +102,13 @@ export function bookingFailureFinalEmail(props: BookingFailureFinalEmailProps): 
         <li><strong>Next week:</strong> We'll automatically try again at the same time</li>
         <li><strong>Backup option:</strong> Consider adding a different class as a backup</li>
         <li><strong>More options:</strong> Try this class on a different day or at another branch for better availability</li>
+        ${callBullet}
       </ul>
     </div>
 
     <div style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: #eff6ff; border-radius: ${emailDesign.borderRadius};">
       <p style="margin: 0; color: #1e40af; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-        <strong>💡 Tip:</strong> This class is in high demand! People often cancel 24-48 hours before. You can also check your gym's app directly closer to class time.
+        ${tipText}
       </p>
     </div>
   `;
