@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** April 6, 2026
+**Last Updated:** April 10, 2026
 
 ---
 
@@ -213,6 +213,20 @@ Add UI button to immediately trigger booking attempt for a class.
 
 ---
 
+### Email Template Design Consolidation
+**Status:** Backlogged | **Priority:** Medium
+
+Booking email templates have been touched piecemeal over time and have diverged in structure (different box colors, inconsistent section ordering, varied action patterns, repeated tel: link building across 4 files). Do a full design pass across all booking templates to consolidate shared layouts and reuse common section components.
+
+**Requirements:**
+- Extract shared helpers for phone tel-link construction (currently duplicated 4x)
+- Standardize the class info card, "what to do next" guidance block, and action box patterns
+- Audit visual hierarchy and voice consistency across all failure/success templates
+
+**Last Updated:** April 10, 2026
+
+---
+
 ## Post-MVP: Low Priority
 
 Nice-to-have features that aren't critical.
@@ -328,14 +342,23 @@ Add filter and sort controls to the My Schedule page.
 
 ---
 
+### Dashboard Branch Contact Info Panel
+**Status:** Backlogged | **Priority:** Low
+
+Surface the branch phone number and address (from `YMCA_BRANCH_INFO` in `lib/constants/ymca.ts`) as an expandable detail on the schedule page or class detail views. Address field is already stored but not yet surfaced anywhere in the UI. This is polish that builds on the v2.35 phone-in-emails work.
+
+**Last Updated:** April 10, 2026
+
+---
+
 ### Admin CMS / Database-Driven Class Catalog
 **Status:** Backlogged | **Priority:** Low
 
-Move gym reference data from constants file to database tables with admin interface.
+Move gym reference data from constants file to database tables with admin interface, including editable branch contact info (phone, address) currently hardcoded in `lib/constants/ymca.ts` via `YMCA_BRANCH_INFO`.
 
 **Dependencies:** Multi-org support, admin dashboard
 
-**Last Updated:** April 2, 2026
+**Last Updated:** April 10, 2026
 
 ---
 

@@ -29,7 +29,18 @@ export type BookingFailureFinalEmailProps = {
 };
 
 export function bookingFailureFinalEmail(props: BookingFailureFinalEmailProps): { subject: string; html: string } {
-  const subject = `⏱️ Could Not Get You In - ${props.className} on ${props.dayOfWeek}`;
+  // Escape all user-controlled fields defensively. className can be a custom
+  // class name typed by the user. Required per CLAUDE.md email template XSS
+  // gotcha - the base template renders body/preheader as raw HTML.
+  const safeClassName = escapeHtml(props.className);
+  const safeDayOfWeek = escapeHtml(props.dayOfWeek);
+  const safeDate = escapeHtml(props.date);
+  const safeTime = escapeHtml(props.time);
+  const safeBranchName = escapeHtml(props.branchName);
+  const safeBookingStartedTime = escapeHtml(props.bookingStartedTime);
+  const safeStoppedCheckingTime = escapeHtml(props.stoppedCheckingTime);
+
+  const subject = `⏱️ Could Not Get You In - ${safeClassName} on ${safeDayOfWeek}`;
 
   // Phone link setup - phone comes from YMCA_BRANCH_INFO constants (not user input)
   // but we still extract digits only for the tel: href for safety.
@@ -67,12 +78,12 @@ export function bookingFailureFinalEmail(props: BookingFailureFinalEmailProps): 
       <tr>
         <td style="padding: ${emailDesign.spacing.md};">
           <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-            ${props.className}
+            ${safeClassName}
           </p>
           <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-            📅 ${props.dayOfWeek}, ${props.date}<br>
-            🕐 ${props.time}<br>
-            📍 ${props.branchName}
+            📅 ${safeDayOfWeek}, ${safeDate}<br>
+            🕐 ${safeTime}<br>
+            📍 ${safeBranchName}
           </p>
         </td>
       </tr>
@@ -82,13 +93,13 @@ export function bookingFailureFinalEmail(props: BookingFailureFinalEmailProps): 
       <tr>
         <td style="padding: ${emailDesign.spacing.md};">
           <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small};">
-            <strong>Booking started:</strong> ${props.bookingStartedTime}
+            <strong>Booking started:</strong> ${safeBookingStartedTime}
           </p>
           <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small};">
             <strong>What happened:</strong> ${retryText}
           </p>
           <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small};">
-            <strong>Stopped checking:</strong> ${props.stoppedCheckingTime} (class started)
+            <strong>Stopped checking:</strong> ${safeStoppedCheckingTime} (class started)
           </p>
         </td>
       </tr>
@@ -114,8 +125,8 @@ export function bookingFailureFinalEmail(props: BookingFailureFinalEmailProps): 
   `;
 
   const html = baseEmailTemplate({
-    title: `Retries Exhausted: ${props.className}`,
-    preheader: `We tried to book ${props.className} but it stayed full until class time`,
+    title: `Retries Exhausted: ${safeClassName}`,
+    preheader: `We tried to book ${safeClassName} but it stayed full until class time`,
     body,
     severity: 'warning', // Yellow/amber tone - not critical, but informational
     ctaText: 'View My Schedule',

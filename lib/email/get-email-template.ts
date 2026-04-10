@@ -120,10 +120,14 @@ function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'retry
   ];
 
   // Critical errors (user must take action)
+  // NOTE: Keep this in sync with isClassCancelledError() above - both should
+  // cover the same set of cancellation phrases.
   const criticalKeywords = [
     'login failed',
     'class cancelled',
     'class is cancelled',
+    'class has been cancelled',
+    'class has been canceled',
     'time conflict',
     'already have a class',
     'password',
@@ -396,10 +400,13 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
 
     // Technical failure
     // Detect the YMCA system error variant via the routing marker phrase
-    // "booking system" in the errorMessage (emitted by scripts/booking-automation.ts
-    // when GroupExPro returns "Unable to reserve a spot" / "Unable to join the waitlist").
-    // Phone is passed for BOTH variants - the template decides its prominence.
-    const isYmcaSystemError = data.errorMessage.toLowerCase().includes('booking system');
+    // "YMCA's booking system" in the errorMessage (emitted by
+    // scripts/booking-automation.ts when GroupExPro returns "Unable to reserve
+    // a spot" / "Unable to join the waitlist"). The full possessive phrase is
+    // specific enough to avoid collisions with generic "booking system"
+    // wording that might appear in other error messages. Phone is passed for
+    // BOTH variants - the template decides its prominence.
+    const isYmcaSystemError = data.errorMessage.toLowerCase().includes("ymca's booking system");
     const emailData: BookingFailureTechnicalEmailProps = {
       className: data.className,
       dayOfWeek: data.dayOfWeek,

@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.34
+**Version:** 2.35
 **Product Owner:** Brock Busby
-**Last Updated:** April 8, 2026
+**Last Updated:** April 10, 2026
 **Status:** Production - Deployed and Testing
 
 
@@ -168,6 +168,14 @@
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.35:** Branch Phone Numbers in Action Emails (April 2026)
+  - New `YMCA_BRANCH_INFO` lookup in `lib/constants/ymca.ts` with phone + address for all 7 WNC branches
+  - Branch phone threaded into 4 email templates as tappable `tel:` links: `booking_failure_technical` (both new variants), `booking_failure_critical` (class-cancelled only), `booking_failure_final`, `booking_no_registration`
+  - New `ymca_system_error` variant of the technical failure email for the "Unable to reserve a spot" GroupExPro backend error — one-shot notification (no retries) with confident travel-agent tone, hero "Call the YMCA" CTA, and waitlist variant detection
+  - New "What to do next" credentials guidance section in `booking_failure_critical` for login/password errors
+  - Defensive XSS hardening: `booking-failure-critical.ts` and `booking-failure-final.ts` now escape all user-controlled fields (`className`, `date`, `time`, `branchName`, etc.)
+  - Admin-only gate on `/prototype/email-preview` (server-component layout + `assertAdmin()` defense-in-depth)
+  - Routing marker tightened from `"booking system"` → `"ymca's booking system"` to prevent collisions
 - **v2.34:** No Auto-Registration Detection (April 2026)
   - Classes without online registration return `no_registration` status instead of critical failure
   - New info email template: "No Auto-Registration" (blue severity, weekly, respects email_on_success)

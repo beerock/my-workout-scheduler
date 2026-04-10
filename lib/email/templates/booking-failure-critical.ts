@@ -41,7 +41,17 @@ function isCredentialsError(errorMessage: string): boolean {
 }
 
 export function bookingFailureCriticalEmail(props: BookingFailureCriticalEmailProps): { subject: string; html: string } {
-  const subject = `🔴 Action Required: ${props.className} booking failed`;
+  // Escape all user-controlled fields defensively. className can be a custom
+  // class name typed by the user; branchName comes from a fixed list but is
+  // escaped for parity with other templates. Required per CLAUDE.md email
+  // template XSS gotcha - the base template renders body/preheader as raw HTML.
+  const safeClassName = escapeHtml(props.className);
+  const safeDayOfWeek = escapeHtml(props.dayOfWeek);
+  const safeDate = escapeHtml(props.date);
+  const safeTime = escapeHtml(props.time);
+  const safeBranchName = escapeHtml(props.branchName);
+
+  const subject = `🔴 Action Required: ${safeClassName} booking failed`;
 
   // Determine CTA and error type context
   const isCredentialsProblem = isCredentialsError(props.errorMessage);
@@ -102,12 +112,12 @@ export function bookingFailureCriticalEmail(props: BookingFailureCriticalEmailPr
       <tr>
         <td style="padding: ${emailDesign.spacing.md};">
           <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-            ${props.className}
+            ${safeClassName}
           </p>
           <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-            📅 ${props.date}<br>
-            🕐 ${props.time}<br>
-            📍 ${props.branchName}
+            📅 ${safeDate}<br>
+            🕐 ${safeTime}<br>
+            📍 ${safeBranchName}
           </p>
         </td>
       </tr>
@@ -130,8 +140,8 @@ export function bookingFailureCriticalEmail(props: BookingFailureCriticalEmailPr
   `;
 
   const html = baseEmailTemplate({
-    title: `Action Required: ${props.className} Booking Failed`,
-    preheader: `We couldn't book ${props.className} on ${props.dayOfWeek} - action required`,
+    title: `Action Required: ${safeClassName} Booking Failed`,
+    preheader: `We couldn't book ${safeClassName} on ${safeDayOfWeek} - action required`,
     body,
     severity: 'error',
     ctaText,
