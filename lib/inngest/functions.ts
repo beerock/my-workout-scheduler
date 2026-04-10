@@ -456,7 +456,11 @@ export const bookClassFunction = inngest.createFunction(
     }
 
     // Step 5: Handle retry logic for class full scenarios
-    // If class is full, retry every 15 minutes until class starts
+    // If class is full, retry every 15 minutes until class starts.
+    // NOTE: "unable to reserve" (YMCA system error) is intentionally NOT
+    // retried here - it's handled as a one-shot action email in v2.35 since
+    // silent retries don't help when the fix requires a human at YMCA to
+    // notice and correct the backend issue. See routing in get-email-template.ts.
     if (status === 'failed' && errorMessage?.toLowerCase().includes('full')) {
       console.log(`[Inngest] Class is full - checking if we should retry...`);
 

@@ -218,13 +218,6 @@ npm run test:booking-dry-run    # Safe dry-run (always run first)
 npm run test:single-booking     # REAL booking!
 ```
 
-### Database Commands
-```bash
-npm run backup                  # Backup database (data only)
-npm run backup:full             # Backup database (schema + data)
-npm run restore                 # Restore from backup
-```
-
 ### Required Env Vars
 ```
 NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ENCRYPTION_KEY
