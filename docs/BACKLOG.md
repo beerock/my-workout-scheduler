@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** April 10, 2026
+**Last Updated:** April 11, 2026
 
 ---
 
@@ -476,6 +476,23 @@ Scrape gym website to auto-populate class dropdowns instead of manual entry.
 Analytics dashboard with success rates, failure reasons, trends over time.
 
 **Last Updated:** January 10, 2025
+
+---
+
+### Product Analytics (PostHog)
+**Status:** Backlogged | **Priority:** Low
+
+Add PostHog for deeper behavioral analytics beyond Vercel Analytics traffic counts. Useful if product questions emerge that traffic-only analytics can't answer — e.g., where users drop off in the Add Class flow, or which features go unused. Vercel Analytics (added April 10, 2026) covers pageviews and Core Web Vitals; PostHog would add funnels, session replay, and feature flags.
+
+**Requirements:**
+- Install `posthog-js` and initialize client-side in root layout
+- Define initial event taxonomy (signup, add_class, booking_success, pause, skip)
+- Configure PII masking if enabling session replay
+- Evaluate free-tier quota (1M events/mo, 1 year retention) vs. usage
+
+**Dependencies:** None
+
+**Last Updated:** April 11, 2026
 
 ---
 
