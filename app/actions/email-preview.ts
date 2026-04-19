@@ -27,6 +27,7 @@ import { dailyDigestEmail } from '@/lib/email/templates/daily-digest'
 import { bookingAlreadyRegisteredEmail } from '@/lib/email/templates/booking-already-registered'
 import { bookingAlreadyWaitlistedEmail } from '@/lib/email/templates/booking-already-waitlisted'
 import { bookingNoRegistrationEmail } from '@/lib/email/templates/booking-no-registration'
+import { waitlistConfirmationEmail } from '@/lib/email/templates/waitlist-confirmation'
 
 /**
  * Guard for admin-only access to email preview data.
@@ -61,6 +62,7 @@ export type EmailTemplateType =
   | 'bookingFailureFinal'
   | 'bookingNoRegistration'
   | 'dailyDigest'
+  | 'waitlistConfirmation'
 
 export type TemplateInfo = {
   name: string
@@ -434,6 +436,19 @@ export async function getEmailTemplatePreview(
       }
     }
 
+    case 'waitlistConfirmation': {
+      const result = waitlistConfirmationEmail({
+        email: 'new-signup@example.com',
+        siteUrl: 'https://myworkout.beerock.com',
+      })
+      return {
+        name: 'Waitlist Confirmation (showcase → coach voice hand-off)',
+        subject: result.subject,
+        severity: 'info',
+        html: result.html,
+      }
+    }
+
     default:
       throw new Error(`Unknown template type: ${templateType}`)
   }
@@ -461,5 +476,6 @@ export async function getAllTemplateTypes(): Promise<
     { type: 'bookingFailureFinal', name: 'Retries Exhausted', severity: 'warning' },
     { type: 'bookingNoRegistration', name: 'No Auto-Registration', severity: 'info' },
     { type: 'dailyDigest', name: 'Daily Digest (post-MVP)', severity: 'info' },
+    { type: 'waitlistConfirmation', name: 'Waitlist Confirmation', severity: 'info' },
   ]
 }

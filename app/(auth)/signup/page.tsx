@@ -1,22 +1,24 @@
 import Link from 'next/link'
 import AuthLayout from '@/components/AuthLayout'
-import { Alert } from '@/components/ui'
+import { WaitlistForm } from '@/components/WaitlistForm'
 
 export default function SignupPage() {
   return (
-    <AuthLayout title="Invite only" subtitle="My Workout Scheduler is currently in private beta">
-      <div className="space-y-4">
-        <Alert variant="info">
-          Sign-ups are currently closed. If you&apos;d like access, please reach out to the team for an invite.
-        </Alert>
+    <AuthLayout
+      title="Request an invite"
+      subtitle="Currently invite-only. Drop your email and we'll reach out when a spot opens."
+    >
+      <WaitlistForm />
 
-        <p className="text-center font-dm-sans text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link href="/login" className="text-primary-600 hover:text-primary-700 hover:underline font-medium">
-            Sign in
-          </Link>
-        </p>
-      </div>
+      <p className="mt-6 text-center font-dm-sans text-sm text-gray-600">
+        Already have an account?{' '}
+        <Link
+          href="/login"
+          className="text-primary-600 hover:text-primary-700 hover:underline font-medium"
+        >
+          Sign in
+        </Link>
+      </p>
     </AuthLayout>
   )
 }

@@ -76,13 +76,16 @@ export default async function Home() {
         {/* Hero Section */}
         <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           <div className="max-w-4xl mx-auto text-center">
-            {/* Badge */}
+            {/* Hero badge — showcase voice (see docs/VOICE.md). Signals an
+                intentional product scope rather than generic SaaS positioning.
+                Owner picks between this and the alternatives surfaced at the
+                Sprint 1 ★ review gate. */}
             <div
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 border border-primary-100 mb-6 sm:mb-8 opacity-0 animate-fade-in-up"
             >
               <div className="w-2 h-2 rounded-full bg-success-500 animate-pulse" />
               <span className="font-dm-sans text-sm text-primary-700">
-                Automated booking for YMCA classes
+                Invite-only · Asheville YMCA beta
               </span>
             </div>
 

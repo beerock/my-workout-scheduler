@@ -137,6 +137,32 @@ export interface Database {
           created_at?: string
         }
       }
+      waitlist_signups: {
+        Row: {
+          id: string
+          email: string
+          note: string | null
+          status: 'pending' | 'invited' | 'declined'
+          created_at: string
+          invited_at: string | null
+        }
+        Insert: {
+          id?: string
+          email: string
+          note?: string | null
+          status?: 'pending' | 'invited' | 'declined'
+          created_at?: string
+          invited_at?: string | null
+        }
+        Update: {
+          id?: string
+          email?: string
+          note?: string | null
+          status?: 'pending' | 'invited' | 'declined'
+          created_at?: string
+          invited_at?: string | null
+        }
+      }
     }
   }
 }
@@ -146,9 +172,11 @@ export type GymCredentials = Database['public']['Tables']['gym_credentials']['Ro
 export type RecurringClass = Database['public']['Tables']['recurring_classes']['Row']
 export type BookingAttempt = Database['public']['Tables']['booking_attempts']['Row']
 export type UserSettings = Database['public']['Tables']['user_settings']['Row']
+export type WaitlistSignup = Database['public']['Tables']['waitlist_signups']['Row']
 
 export type NewGymCredentials = Database['public']['Tables']['gym_credentials']['Insert']
 export type NewRecurringClass = Database['public']['Tables']['recurring_classes']['Insert']
 export type NewBookingAttempt = Database['public']['Tables']['booking_attempts']['Insert']
 export type NewUserSettings = Database['public']['Tables']['user_settings']['Insert']
+export type NewWaitlistSignup = Database['public']['Tables']['waitlist_signups']['Insert']
 
