@@ -50,13 +50,15 @@ export default function GetStartedBanner() {
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content — coach voice per docs/VOICE.md. Replaces the generic
+            "Ready to Start Your Fitness Journey?" cliché with an
+            outcome-forward line that previews what the product does. */}
         <div className="flex-1 min-w-0">
           <h2 className="font-sora text-xl sm:text-2xl font-bold text-white mb-1">
-            Ready to Start Your Fitness Journey?
+            One class added, and your Sundays go quiet.
           </h2>
           <p className="font-dm-sans text-sm sm:text-base text-white/80">
-            Add your first recurring class and we&apos;ll automatically book it for you every week.
+            Tell us which YMCA class you want. From there, it auto-books every week the moment registration opens — 26 hours before class starts.
           </p>
         </div>
 

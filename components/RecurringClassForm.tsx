@@ -497,8 +497,8 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
         {success && (
           <Alert variant="success">
             {savedIsCustomClass
-              ? "Saved! We'll review your custom class name."
-              : 'Class saved successfully!'}
+              ? "Saved — we'll verify your custom class name against the YMCA schedule and let you know if anything needs tweaking."
+              : 'Saved. The next registration window starts booking automatically.'}
           </Alert>
         )}
 

@@ -75,13 +75,15 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
       <Checkbox
         checked={notificationEmail}
         onChange={(e) => setNotificationEmail(e.target.checked)}
-        label="Enable email notifications"
-        description="Send me emails about my booking results"
+        label="Email me about my bookings"
+        description="Turn off entirely if you'd rather just check the dashboard."
       />
 
-      {/* Critical Emails Info Callout */}
+      {/* Critical Emails Info Callout — coach voice per docs/VOICE.md, FYI
+          tier. Replaces the compliance-speak "Critical alerts ... always sent"
+          line. */}
       <Alert variant="info">
-        <strong>Note:</strong> Critical alerts like login failures are always sent to keep your bookings running smoothly.
+        Some alerts we always send — login problems, cancelled classes — because those need your attention. Everything else you control below.
       </Alert>
 
       {/* Booking Results Section */}
@@ -97,24 +99,24 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
             checked={emailOnSuccess}
             onChange={(e) => setEmailOnSuccess(e.target.checked)}
             disabled={togglesDisabled}
-            label="Booking confirmed"
-            description="When a class is successfully booked"
+            label="Got you in"
+            description="When a class lands."
           />
 
           <Checkbox
             checked={emailOnWaitlist}
             onChange={(e) => setEmailOnWaitlist(e.target.checked)}
             disabled={togglesDisabled}
-            label="Waitlisted"
-            description="When added to a class waitlist"
+            label="On the waitlist"
+            description="When a class is packed and you've been added to its waitlist."
           />
 
           <Checkbox
             checked={emailOnRetry}
             onChange={(e) => setEmailOnRetry(e.target.checked)}
             disabled={togglesDisabled}
-            label="Class full (retry notifications)"
-            description="Updates when retrying for full classes, including when we get you in or stop trying"
+            label="Class full, watching for a spot"
+            description="Status updates while a packed class is being re-checked every 15 minutes."
           />
         </div>
       </div>
@@ -132,8 +134,8 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
             checked={emailOnPauseReminder}
             onChange={(e) => setEmailOnPauseReminder(e.target.checked)}
             disabled={togglesDisabled}
-            label="Pause reminder"
-            description="Remind me if my schedule has been paused for 7 days"
+            label="Pause check-in"
+            description="A quiet nudge if your schedule has been paused for a week."
           />
         </div>
       </div>
@@ -148,7 +150,7 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
       {/* Success Message */}
       {success && (
         <Alert variant="success">
-          Notification preferences updated successfully!
+          Saved — changes take effect on the next email.
         </Alert>
       )}
 
