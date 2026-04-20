@@ -21,15 +21,15 @@ export type BookingSuccessEmailProps = {
 };
 
 export function bookingSuccessEmail(props: BookingSuccessEmailProps): { subject: string; html: string } {
-  const subject = `✅ Confirmed: ${props.className} on ${props.dayOfWeek}`;
+  const subject = `Got you in — ${props.className} on ${props.dayOfWeek}`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.success}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      ✅ Your class is confirmed!
+      Got you in.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      Great news! We successfully booked your class.
+      Your seat is locked in. Here's what's on the schedule:
     </p>
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.success};">
@@ -48,12 +48,12 @@ export function bookingSuccessEmail(props: BookingSuccessEmailProps): { subject:
     </table>
 
     <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      <strong>What's next:</strong>
+      <strong>Before you go:</strong>
     </p>
     <ul style="margin: 0 0 ${emailDesign.spacing.lg}; padding-left: ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
       <li style="margin-bottom: ${emailDesign.spacing.sm};">Show up a few minutes early</li>
       <li style="margin-bottom: ${emailDesign.spacing.sm};">Bring water and a towel</li>
-      <li>Check your gym's cancellation policy if plans change</li>
+      <li>If your plans change, cancel through the YMCA so the spot opens up for someone else</li>
     </ul>
 
     <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
@@ -62,11 +62,11 @@ export function bookingSuccessEmail(props: BookingSuccessEmailProps): { subject:
   `;
 
   const html = baseEmailTemplate({
-    title: `Confirmed: ${props.className}`,
-    preheader: `Your ${props.className} class on ${props.dayOfWeek} is confirmed`,
+    title: `Got you in — ${props.className}`,
+    preheader: `Seat locked in for ${props.className} on ${props.dayOfWeek}.`,
     body,
     severity: 'success',
-    ctaText: 'View My Schedule',
+    ctaText: 'View schedule',
     ctaLink: props.scheduleUrl,
     showUnsubscribe: true, // Success emails can be unsubscribed
     dashboardUrl: props.dashboardUrl,

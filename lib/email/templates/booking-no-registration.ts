@@ -37,18 +37,18 @@ export function bookingNoRegistrationEmail(props: BookingNoRegistrationEmailProp
   const phoneDigits = props.branchPhone?.replace(/\D/g, '') ?? '';
   const telHref = phoneDigits ? `tel:+1${phoneDigits}` : null;
   const registerInstructionLine = telHref
-    ? `Call your YMCA branch at <a href="${telHref}" style="color: ${emailDesign.colors.primary}; text-decoration: none; font-weight: 600;">${escapeHtml(props.branchPhone || '')}</a> to find out how to register. If this class never requires online registration, you can remove it from your schedule to stop these notifications.`
-    : `Check with your YMCA branch for details. If this class never requires online registration, you can remove it from your schedule to stop these notifications.`;
+    ? `Call the branch at <a href="${telHref}" style="color: ${emailDesign.colors.primary}; text-decoration: none; font-weight: 600;">${escapeHtml(props.branchPhone || '')}</a> to reserve in person or ask how it works. If this class never registers online, remove it from your schedule to stop these notifications.`
+    : `Check with the branch for how this one works. If this class never registers online, remove it from your schedule to stop these notifications.`;
 
-  const subject = `No Auto-Registration: ${safeClassName} on ${safeDayOfWeek}`;
+  const subject = `${safeClassName} doesn't book online — here's how to reserve`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.primary}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      This class doesn't offer online registration
+      This class doesn't book online.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      We checked the YMCA schedule and this class doesn't have an online booking option, so we couldn't auto-register you.
+      Checked the YMCA schedule and this one doesn't have an online registration button — so there's nothing to auto-book.
     </p>
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.primary};">
@@ -68,12 +68,12 @@ export function bookingNoRegistrationEmail(props: BookingNoRegistrationEmailProp
 
     <div style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius};">
       <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-        This usually means:
+        Usually means one of three things:
       </p>
       <ul style="margin: 0; padding-left: 20px; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.8;">
-        <li>It's a drop-in class -- just show up!</li>
-        <li>It requires in-person or phone registration</li>
-        <li>It's a special program with separate enrollment</li>
+        <li>Drop-in — just show up.</li>
+        <li>In-person or phone registration only.</li>
+        <li>Special program with separate enrollment.</li>
       </ul>
     </div>
 
@@ -87,11 +87,11 @@ export function bookingNoRegistrationEmail(props: BookingNoRegistrationEmailProp
   `;
 
   const html = baseEmailTemplate({
-    title: `No Auto-Registration: ${safeClassName}`,
-    preheader: `${safeClassName} on ${safeDayOfWeek} doesn't offer online registration`,
+    title: `${safeClassName} doesn't book online`,
+    preheader: `${safeClassName} on ${safeDayOfWeek} doesn't register online — here's how to reserve.`,
     body,
     severity: 'info',
-    ctaText: 'View My Schedule',
+    ctaText: 'View schedule',
     ctaLink: props.scheduleUrl,
     showUnsubscribe: true,
     dashboardUrl: props.dashboardUrl,

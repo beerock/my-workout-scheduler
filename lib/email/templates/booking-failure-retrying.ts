@@ -27,15 +27,15 @@ export type BookingFailureRetryingEmailProps = {
 };
 
 export function bookingFailureRetryingEmail(props: BookingFailureRetryingEmailProps): { subject: string; html: string } {
-  const subject = `🔄 Class Full - We're Keeping an Eye Out for ${props.className}`;
+  const subject = `Class is packed — watching for a spot on ${props.className}`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.primary}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      🔄 We've Got This!
+      Class is packed — watching for an opening.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      Your class is currently full, but <strong>we're automatically keeping watch</strong> for an opening:
+      Registration opened and every seat was taken. Not the end of the line — waitlists clear all the time.
     </p>
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.primary};">
@@ -55,13 +55,13 @@ export function bookingFailureRetryingEmail(props: BookingFailureRetryingEmailPr
 
     <div style="margin: 0 0 ${emailDesign.spacing.lg};">
       <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-        What we're doing:
+        What happens from here:
       </p>
       <ul style="margin: 0; padding-left: 20px; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.8;">
-        <li><strong>Automatically checking every 15 minutes</strong> until the class starts</li>
-        <li>If someone cancels, we'll grab that spot for you immediately</li>
-        <li>You'll get a confirmation email if we successfully book it</li>
-        <li><strong>No action needed from you</strong> - just sit back and relax!</li>
+        <li>Checking every 15 minutes until class starts</li>
+        <li>Grabbing your seat the moment a spot opens</li>
+        <li>Confirmation email fires the moment the booking lands</li>
+        <li>Nothing you need to do on your end</li>
       </ul>
     </div>
 
@@ -69,13 +69,13 @@ export function bookingFailureRetryingEmail(props: BookingFailureRetryingEmailPr
       <tr>
         <td style="padding: ${emailDesign.spacing.md};">
           <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small};">
-            <strong>First attempt:</strong> ${props.firstAttemptTime}
+            <strong>First try:</strong> ${props.firstAttemptTime}
           </p>
           <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small};">
-            <strong>Status:</strong> Retrying every 15 minutes
+            <strong>Status:</strong> Checking every 15 minutes
           </p>
           <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small};">
-            <strong>Will keep trying until:</strong> ${props.classStartTime}
+            <strong>Watching until:</strong> ${props.classStartTime}
           </p>
         </td>
       </tr>
@@ -83,17 +83,17 @@ export function bookingFailureRetryingEmail(props: BookingFailureRetryingEmailPr
 
     <div style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: #fef3c7; border-radius: ${emailDesign.borderRadius};">
       <p style="margin: 0; color: #92400e; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-        <strong>Want to try a different time?</strong> You can add another class to your schedule as a backup.
+        <strong>Want a backup?</strong> Add another class at a different time to your schedule — that one books normally while this one stays on the watch.
       </p>
     </div>
   `;
 
   const html = baseEmailTemplate({
-    title: `Class Full: ${props.className}`,
-    preheader: `${props.className} is full - we're automatically retrying until ${props.classStartTime}`,
+    title: `Watching for a spot — ${props.className}`,
+    preheader: `${props.className} is packed. Watching every 15 minutes until ${props.classStartTime}.`,
     body,
     severity: 'info', // Blue informational color
-    ctaText: 'View Retry Status',
+    ctaText: 'View retry status',
     ctaLink: props.dashboardUrl,
     showUnsubscribe: true, // Users CAN disable retry notifications
     dashboardUrl: props.dashboardUrl,

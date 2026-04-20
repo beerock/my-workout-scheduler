@@ -14,32 +14,32 @@ export type PauseReminderEmailProps = {
 };
 
 export function pauseReminderEmail(props: PauseReminderEmailProps): { subject: string; html: string } {
-  const subject = `⏸️ Your workout schedule is still paused`;
+  const subject = `Still paused — quick check-in`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.warning}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      ⏸️ Your schedule is paused
+      Still paused — quick check-in.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      It's been a week since you paused your automated bookings.
+      A week ago you paused automated bookings. Nothing's been running since.
     </p>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      No rush—take all the time you need. But when you're ready to get back to your workout routine, we'll be here to handle the bookings for you.
+      No pressure either way. If you're ready to get back to it, unpause from the dashboard and booking picks up where it left off. If you're still on break, stay paused — that's the whole point.
     </p>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6; padding: ${emailDesign.spacing.md}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.warning};">
-      💡 If you're on a longer break, no worries! This is just a friendly check-in. You can unpause anytime from your dashboard.
+      Just a quiet check-in — ignore this one and we'll leave you alone.
     </p>
   `;
 
   const html = baseEmailTemplate({
-    title: 'Your workout schedule is paused',
-    preheader: "Ready to get back to it? We're here when you are.",
+    title: 'Still paused — quick check-in',
+    preheader: "Still paused. Unpause anytime — or ignore this and stay paused.",
     body,
     severity: 'warning',
-    ctaText: 'Unpause My Schedule',
+    ctaText: 'Unpause schedule',
     ctaLink: props.dashboardUrl,
     showUnsubscribe: true, // Pause reminders can be unsubscribed
     dashboardUrl: props.dashboardUrl,

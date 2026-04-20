@@ -29,7 +29,7 @@ export function dailyDigestEmail(props: DailyDigestEmailProps): { subject: strin
   const waitlistCount = props.items.filter(i => i.status === 'waitlisted').length;
   const failureCount = props.items.filter(i => i.status === 'failed').length;
 
-  const subject = `📬 Your Daily Booking Summary (${props.items.length} ${props.items.length === 1 ? 'class' : 'classes'})`;
+  const subject = `Yesterday's bookings — ${props.items.length} ${props.items.length === 1 ? 'class' : 'classes'}`;
 
   const itemsHtml = props.items.map(item => {
     const statusColor = {
@@ -45,9 +45,9 @@ export function dailyDigestEmail(props: DailyDigestEmailProps): { subject: strin
     }[item.status];
 
     const statusText = {
-      confirmed: 'Confirmed',
+      confirmed: 'Booked',
       waitlisted: 'Waitlisted',
-      failed: 'Failed',
+      failed: 'Needs attention',
     }[item.status];
 
     return `
@@ -71,20 +71,20 @@ export function dailyDigestEmail(props: DailyDigestEmailProps): { subject: strin
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.primary}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      📬 Your Daily Booking Summary
+      Here's what booked yesterday.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      Here's what happened with your class bookings in the past 24 hours:
+      A quick rundown of everything that ran over the past 24 hours.
     </p>
 
     <div style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius};">
       <p style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.small}; line-height: 1.6;">
-        ✅ <strong>${successCount}</strong> confirmed
-        &nbsp;|&nbsp;
+        ✅ <strong>${successCount}</strong> booked
+        &nbsp;·&nbsp;
         ⏳ <strong>${waitlistCount}</strong> waitlisted
-        &nbsp;|&nbsp;
-        ❌ <strong>${failureCount}</strong> failed
+        &nbsp;·&nbsp;
+        ❌ <strong>${failureCount}</strong> need attention
       </p>
     </div>
 
@@ -93,16 +93,16 @@ export function dailyDigestEmail(props: DailyDigestEmailProps): { subject: strin
     </table>
 
     <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      <strong>Note:</strong> This is a summary of all booking attempts. View your dashboard for full details and screenshots.
+      Full details on every attempt live on the dashboard.
     </p>
   `;
 
   const html = baseEmailTemplate({
-    title: 'Your Daily Booking Summary',
-    preheader: `${successCount} confirmed, ${waitlistCount} waitlisted, ${failureCount} failed`,
+    title: 'Yesterday\'s bookings',
+    preheader: `${successCount} booked · ${waitlistCount} waitlisted · ${failureCount} need attention.`,
     body,
     severity: 'info',
-    ctaText: 'View Full Dashboard',
+    ctaText: 'Open dashboard',
     ctaLink: props.dashboardUrl,
     showUnsubscribe: true, // Digest emails can be unsubscribed
     dashboardUrl: props.dashboardUrl,
