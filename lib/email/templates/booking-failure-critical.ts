@@ -89,11 +89,11 @@ export function bookingFailureCriticalEmail(props: BookingFailureCriticalEmailPr
   const credentialsGuidanceSection = isCredentialsProblem
     ? `
     <div style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: #eff6ff; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.primary};">
-      <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-        Quick fix:
+      <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.primary}; font-size: ${emailDesign.fontSize.small}; font-weight: 600;">
+        What to do
       </p>
       <p style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-        Open the <strong><a href="${props.credentialsUrl}" style="color: ${emailDesign.colors.primary}; text-decoration: none; font-weight: 600;">credentials page</a></strong> and re-save your gym login. Booking resumes the next try.
+        Open the <a href="${props.credentialsUrl}" style="color: ${emailDesign.colors.primary}; text-decoration: underline; font-weight: 600;">credentials page</a> and re-save your gym login. Booking resumes the next try.
       </p>
     </div>`
     : '';

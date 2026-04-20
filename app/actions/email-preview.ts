@@ -2,12 +2,12 @@
 
 /**
  * Server action for generating email template previews.
- * Used by the email preview prototype page.
+ * Used by the admin email preview page.
  *
  * Admin-only: both server actions below call assertAdmin() first to prevent
  * template data from leaking to non-admin users. This is layer 2 of a
  * defense-in-depth setup - layer 1 is the layout.tsx at
- * app/prototype/email-preview/layout.tsx which silently redirects non-admins
+ * app/admin/email-preview/layout.tsx which silently redirects non-admins
  * before the page even renders.
  */
 

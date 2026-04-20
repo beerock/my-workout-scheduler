@@ -55,7 +55,7 @@ export default function GetStartedBanner() {
             outcome-forward line that previews what the product does. */}
         <div className="flex-1 min-w-0">
           <h2 className="font-sora text-xl sm:text-2xl font-bold text-white mb-1">
-            One class added, and your Sundays go quiet.
+            Add one class. Skip every 4:59 AM alarm.
           </h2>
           <p className="font-dm-sans text-sm sm:text-base text-white/80">
             Tell us which YMCA class you want. From there, it auto-books every week the moment registration opens — 26 hours before class starts.

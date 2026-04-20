@@ -2,7 +2,7 @@
 -- Created: 2026-04-19
 -- Description: Adds waitlist_signups table for public landing page waitlist form.
 --              Anyone can submit (INSERT is public). Only the service role
---              can read or update entries (admin review via /dashboard/admin/waitlist).
+--              can read or update entries (admin review via /admin/waitlist).
 
 -- =============================================================================
 -- 1. CREATE waitlist_signups TABLE

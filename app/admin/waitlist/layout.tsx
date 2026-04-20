@@ -1,7 +1,7 @@
 /**
  * Admin Waitlist Layout - Admin-only access guard.
  *
- * Mirrors the pattern used by app/prototype/email-preview/layout.tsx:
+ * Mirrors the pattern used by app/admin/email-preview/layout.tsx:
  * - Runs as a server component before the child page renders, so unauthorized
  *   users never see even a flicker of the admin UI.
  * - Not logged in → silent redirect to '/'

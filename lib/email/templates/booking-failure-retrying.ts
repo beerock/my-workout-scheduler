@@ -35,7 +35,7 @@ export function bookingFailureRetryingEmail(props: BookingFailureRetryingEmailPr
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      Registration opened and every seat was taken. Not the end of the line — waitlists clear all the time.
+      Registration opened and both the class and the waitlist were already full — no spot to grab and no seat to save. Not the end of the line, though: waitlists clear all the time, and the retry loop is already running.
     </p>
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.primary};">
@@ -55,7 +55,7 @@ export function bookingFailureRetryingEmail(props: BookingFailureRetryingEmailPr
 
     <div style="margin: 0 0 ${emailDesign.spacing.lg};">
       <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-        What happens from here:
+        What's happening:
       </p>
       <ul style="margin: 0; padding-left: 20px; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.8;">
         <li>Checking every 15 minutes until class starts</li>

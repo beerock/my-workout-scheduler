@@ -103,17 +103,21 @@ export function bookingFailureFinalEmail(props: BookingFailureFinalEmailProps): 
       </tr>
     </table>
 
-    <div style="margin: 0 0 ${emailDesign.spacing.lg};">
-      <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-        Where to go from here:
-      </p>
-      <ul style="margin: 0; padding-left: 20px; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.8;">
-        <li><strong>Next week:</strong> Same class, same time, we run it back automatically.</li>
-        <li><strong>Want a backup?</strong> Add a different class or time to your schedule so future weeks have a fallback.</li>
-        <li><strong>More chances:</strong> Try this class on another day or at a different branch where it's less packed.</li>
-        ${callBullet}
-      </ul>
-    </div>
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.warning};">
+      <tr>
+        <td style="padding: ${emailDesign.spacing.md};">
+          <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.warning}; font-size: ${emailDesign.fontSize.small}; font-weight: 600;">
+            What to do
+          </p>
+          <ul style="margin: 0; padding-left: 20px; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.7;">
+            <li><strong>Next week:</strong> Same class, same time — we run it back automatically.</li>
+            <li><strong>Want a backup?</strong> Add a different class or time so future weeks have a fallback.</li>
+            <li><strong>More chances:</strong> Try another day or branch where it's less packed.</li>
+            ${callBullet}
+          </ul>
+        </td>
+      </tr>
+    </table>
 
     <div style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: #eff6ff; border-radius: ${emailDesign.borderRadius};">
       <p style="margin: 0; color: #1e40af; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">

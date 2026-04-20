@@ -14,29 +14,29 @@ export type PauseReminderEmailProps = {
 };
 
 export function pauseReminderEmail(props: PauseReminderEmailProps): { subject: string; html: string } {
-  const subject = `Still paused — quick check-in`;
+  const subject = `Hope you're somewhere good`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.warning}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      Still paused — quick check-in.
+      Hope you're somewhere good.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      A week ago you paused automated bookings. Nothing's been running since.
+      You paused bookings a week ago — beach week, travel, a season off, something in between. Whatever it was, the schedule's been quiet.
     </p>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      No pressure either way. If you're ready to get back to it, unpause from the dashboard and booking picks up where it left off. If you're still on break, stay paused — that's the whole point.
+      When you're back and ready to roll, unpause from the dashboard and booking picks up from the next class on your schedule. Still on break? Stay paused — that's what it's for.
     </p>
 
-    <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6; padding: ${emailDesign.spacing.md}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.warning};">
-      Just a quiet check-in — ignore this one and we'll leave you alone.
+    <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
+      Quiet check-in, no reply needed. We'll leave you be unless you come back to us.
     </p>
   `;
 
   const html = baseEmailTemplate({
-    title: 'Still paused — quick check-in',
-    preheader: "Still paused. Unpause anytime — or ignore this and stay paused.",
+    title: 'Hope you\'re somewhere good',
+    preheader: 'Still paused. Unpause when you\'re back — or ignore this and stay off the grid.',
     body,
     severity: 'warning',
     ctaText: 'Unpause schedule',

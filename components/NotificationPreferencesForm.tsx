@@ -71,6 +71,13 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Critical Emails Info Callout — moved to top per owner review so the
+          "we always send" rule is the first thing read, not a footnote after
+          the toggles. Coach voice per docs/VOICE.md (FYI tier). */}
+      <Alert variant="info">
+        Some alerts we always send — login problems, cancelled classes — because those need your attention. Everything else you control below.
+      </Alert>
+
       {/* Master Toggle */}
       <Checkbox
         checked={notificationEmail}
@@ -78,13 +85,6 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
         label="Email me about my bookings"
         description="Turn off entirely if you'd rather just check the dashboard."
       />
-
-      {/* Critical Emails Info Callout — coach voice per docs/VOICE.md, FYI
-          tier. Replaces the compliance-speak "Critical alerts ... always sent"
-          line. */}
-      <Alert variant="info">
-        Some alerts we always send — login problems, cancelled classes — because those need your attention. Everything else you control below.
-      </Alert>
 
       {/* Booking Results Section */}
       <div className={`space-y-4 ${togglesDisabled ? 'opacity-50 pointer-events-none' : ''}`}>

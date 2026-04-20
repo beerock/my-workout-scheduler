@@ -1,6 +1,6 @@
 # VOICE.md — My Workout Scheduler Style Guide
 
-**Last Updated:** April 19, 2026 (v2.36 — Sprint 1)
+**Last Updated:** April 19, 2026 (v2.36 — Sprint 1, revision 2)
 
 This guide codifies the product's voice across every user-facing surface: app copy, email templates, form states, landing page, and waitlist. It exists so that new copy lands consistent with what already ships, and so future coat-on-top edits don't drift the tone.
 
@@ -248,6 +248,36 @@ One-screen email. Opens in showcase voice ("Thanks for signing up"), names the p
 | `RecurringClassForm` inline preview | Coach | Working on it (anticipatory) |
 | Account page / notification prefs | Coach | FYI |
 | Toast / inline `<Alert>` copy | Coach | per context |
+
+---
+
+## Email section-name pattern
+
+Every booking email uses an info card (left-bar panel) to hold the actionable beat — the thing the user actually needs to read twice. The **section name** at the top of that card is calibrated by tier so the feeling of the card matches the feeling of the message.
+
+| Tier | Section name | Purpose |
+|------|--------------|---------|
+| **Confirmed** | **Before you go** | A single concrete reminder (arrive 5 min early, bring the app, etc.) or context about when/where. |
+| **Working on it** | **What's happening** | What the system is doing right now on the user's behalf. "Watching for an opening." "Running it back." |
+| **Need your help** | **What to do** | The concrete action the user takes. One sentence. Active verb. |
+| **FYI** | **Worth knowing** (or no section at all) | Optional. Use only when there's a non-obvious detail. Most FYI emails don't need a card. |
+
+**Rules:**
+- Pick one section-name per tier and use it everywhere in that tier. No drift.
+- Never use "What happens next" (passive, temporal) or "Heads up" (already covered by the body copy).
+- Two-line body max. Longer than that, the user skips it.
+
+## Email FROM / reply policy
+
+Every transactional email ships from **`noreply@beerock.com`**. The `noreply@` prefix is load-bearing: this inbox is NOT monitored, and pretending otherwise ("reply to this email with questions") sets up a support mirage that the product can't back.
+
+**What to do instead:**
+- **Never write "reply to this email"** in any template. Drop it on sight.
+- When a template genuinely needs a human-reachable channel, point to **`help@beerock.com`** as a plain text or `mailto:` link — that inbox IS monitored.
+- For class-specific human help (cancelled class, "call to reserve"), point to the **branch phone** (`branchPhone` prop via `getBranchPhone()` in `lib/constants/ymca.ts`) as a tappable `tel:` link, not a generic support address. The branch staff can actually resolve it; an email inbox cannot.
+- The footer on coach-voice emails may surface a footer-level support link to `help@beerock.com`, but the body text never asks for a reply.
+
+**Why not switch to a monitored FROM address:** a monitored inbox at the product domain invites inbound support volume that the beta can't absorb. Keeping `noreply@` honest — and routing intentional support to `help@` — scales with zero staffing and matches reader expectation from every other transactional email they receive.
 
 ---
 

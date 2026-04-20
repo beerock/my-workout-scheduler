@@ -66,20 +66,29 @@ export function bookingNoRegistrationEmail(props: BookingNoRegistrationEmailProp
       </tr>
     </table>
 
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.primary};">
+      <tr>
+        <td style="padding: ${emailDesign.spacing.md};">
+          <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.primary}; font-size: ${emailDesign.fontSize.small}; font-weight: 600;">
+            What to do
+          </p>
+          <p style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
+            ${registerInstructionLine}
+          </p>
+        </td>
+      </tr>
+    </table>
+
     <div style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius};">
-      <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-        Usually means one of three things:
+      <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; font-weight: 600;">
+        Why classes look like this
       </p>
-      <ul style="margin: 0; padding-left: 20px; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.8;">
+      <ul style="margin: 0; padding-left: 20px; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.small}; line-height: 1.6;">
         <li>Drop-in — just show up.</li>
         <li>In-person or phone registration only.</li>
         <li>Special program with separate enrollment.</li>
       </ul>
     </div>
-
-    <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      ${registerInstructionLine}
-    </p>
 
     <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
       <em>Checked at ${safeTimestamp}</em>

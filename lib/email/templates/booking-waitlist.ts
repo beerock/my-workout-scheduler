@@ -48,10 +48,11 @@ export function bookingWaitlistEmail(props: BookingWaitlistEmailProps): { subjec
     </table>
 
     <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      <strong>How to play it:</strong>
+      <strong>Before you go:</strong>
     </p>
     <ul style="margin: 0 0 ${emailDesign.spacing.lg}; padding-left: ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
       <li style="margin-bottom: ${emailDesign.spacing.sm};">Plan as if you're going — waitlists clear more often than you'd think</li>
+      <li style="margin-bottom: ${emailDesign.spacing.sm};">Arrive 5–10 minutes early so the YMCA desk can check you in if a spot opens at the door</li>
       <li style="margin-bottom: ${emailDesign.spacing.sm};">Watch your email closer to class time for the confirmation</li>
       <li>Nothing else needed on your end</li>
     </ul>

@@ -87,17 +87,13 @@ function renderGenericVariant(
 ): { subject: string; html: string } {
   const subject = `Hit a snag booking ${props.className} — running it back`;
 
-  const phoneSubLine = ctx.hasPhone
-    ? `<br><br>If you want to lock it in by hand, you can also call <a href="${ctx.telHref}" style="color: ${emailDesign.colors.primary}; text-decoration: none; font-weight: 600;">${ctx.safePhoneDisplay}</a> and book through the YMCA directly.`
-    : '';
-
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.warning}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
       Hit a snag — running it back.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      Something hiccupped on the way to booking your class. Usually this clears itself by the next try.
+      Something hiccupped on the way to booking your class. Usually this clears itself by the next try — no action needed on your end.
     </p>
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.warning};">
@@ -115,21 +111,39 @@ function renderGenericVariant(
       </tr>
     </table>
 
-    <div style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: #fef3c7; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.warning};">
-      <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-        What happened:
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.primary};">
+      <tr>
+        <td style="padding: ${emailDesign.spacing.md};">
+          <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.primary}; font-size: ${emailDesign.fontSize.small}; font-weight: 600;">
+            What's happening
+          </p>
+          <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
+            Retrying at the next scheduled check. You'll get a confirmation if it lands — another note like this one if it doesn't.
+          </p>
+          <p style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
+            Can't wait for the retry? Book the class yourself through the YMCA app or <a href="https://ymcawnc.com" style="color: ${emailDesign.colors.primary}; text-decoration: none; font-weight: 600;">ymcawnc.com</a> and skip the loop.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <div style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: #fef3c7; border-radius: ${emailDesign.borderRadius};">
+      <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; font-weight: 600;">
+        What tripped it
       </p>
-      <div style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
+      <p style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
         ${escapeHtml(props.errorMessage)}
-      </div>
+      </p>
     </div>
 
-    <p style="margin: 0 0 ${emailDesign.spacing.md}; padding: ${emailDesign.spacing.md}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      <strong>What happens next:</strong> Retrying at the next scheduled check. A confirmation email fires if the next try lands; another note like this one fires if it doesn't.${phoneSubLine}
+    ${ctx.hasPhone ? `
+    <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
+      Prefer to call it in? <a href="${ctx.telHref}" style="color: ${emailDesign.colors.primary}; text-decoration: none; font-weight: 600;">${ctx.safePhoneDisplay}</a> reaches the front desk.
     </p>
+    ` : ''}
 
-    <p style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      <strong>Seeing this repeatedly?</strong> Email <a href="mailto:help@beerock.com" style="color: ${emailDesign.colors.primary}; text-decoration: none;">help@beerock.com</a> with the error details above and we'll chase it down.
+    <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
+      Seeing this repeatedly? Email <a href="mailto:help@beerock.com" style="color: ${emailDesign.colors.primary}; text-decoration: none;">help@beerock.com</a> and we'll chase it down.
     </p>
   `;
 

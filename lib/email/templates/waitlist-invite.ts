@@ -2,7 +2,7 @@
  * Waitlist Invite Email Template
  *
  * Sent to a waitlist entry when the admin approves them in the
- * /dashboard/admin/waitlist review UI. Replaces Supabase's plain
+ * /admin/waitlist review UI. Replaces Supabase's plain
  * built-in "You have been invited" email so the first touchpoint
  * between a prospect and the product matches the rest of the brand.
  *

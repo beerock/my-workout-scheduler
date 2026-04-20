@@ -66,7 +66,7 @@ export function welcomeEmail(props: WelcomeEmailProps): { subject: string; html:
     </p>
 
     <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      Questions? Just reply to this email — real human reads every one.
+      Questions? Email <a href="mailto:help@beerock.com" style="color: ${emailDesign.colors.primary}; text-decoration: underline;">help@beerock.com</a> — a real human reads every one.
     </p>
   `;
 

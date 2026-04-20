@@ -212,7 +212,7 @@ export async function inviteWaitlistEntry(id: string): Promise<InviteResult> {
     }
   }
 
-  revalidatePath('/dashboard/admin/waitlist')
+  revalidatePath('/admin/waitlist')
   return { success: true, alreadyHadAccount, emailSent }
 }
 
@@ -228,7 +228,7 @@ export async function markWaitlistDeclined(id: string): Promise<void> {
     console.error('[admin-waitlist] mark declined failed:', error)
     throw new Error('Could not update waitlist entry.')
   }
-  revalidatePath('/dashboard/admin/waitlist')
+  revalidatePath('/admin/waitlist')
 }
 
 export async function deleteWaitlistEntry(id: string): Promise<void> {
@@ -240,5 +240,5 @@ export async function deleteWaitlistEntry(id: string): Promise<void> {
     console.error('[admin-waitlist] delete failed:', error)
     throw new Error('Could not delete waitlist entry.')
   }
-  revalidatePath('/dashboard/admin/waitlist')
+  revalidatePath('/admin/waitlist')
 }

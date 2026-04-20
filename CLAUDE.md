@@ -93,7 +93,7 @@ supabase/         → Migrations and RLS policies
 - **YMCA system error routing marker:** `get-email-template.ts` selects the `ymca_system_error` variant of the technical failure email by substring-matching `"ymca's booking system"` in the lowercased errorMessage. That phrase is deliberately embedded in the error message emitted by `scripts/booking-automation.ts` when GroupExPro returns "Unable to reserve a spot" / "Unable to join the waitlist". Do NOT remove the phrase from either side — breaks the email variant routing silently (falls back to generic technical email with no type error).
 - **`isClassCancelledError` / `criticalKeywords` cancellation coverage:** Both the helper and the keyword list in `get-email-template.ts` must cover the same cancellation phrase variants (`'class cancelled'`, `'class is cancelled'`, `'class has been cancelled'`, `'class has been canceled'`). If you add a new variant, update both.
 - **Branch contact info:** `YMCA_BRANCH_INFO` in `lib/constants/ymca.ts` holds phone + address for all 7 branches. `getBranchPhone(branchName)` is the defensive lookup consumed by `get-email-template.ts` and passed as `branchPhone` to 4 templates (`booking_failure_technical` both variants, `booking_failure_critical` only when class cancelled, `booking_failure_final`, `booking_no_registration`). Address field is stored but not yet surfaced anywhere — reserved for future calendar invites / dashboard polish.
-- **`/prototype/email-preview` is admin-only:** Gated via `app/prototype/email-preview/layout.tsx` (server-component redirect) plus `assertAdmin()` at the top of both server actions in `app/actions/email-preview.ts` (defense-in-depth). Requires `ADMIN_USER_IDS` env var set in both `.env.local` and Vercel. Non-admins silently redirect to `/`.
+- **`/admin/email-preview` and `/admin/waitlist` are admin-only:** Gated via a server-component layout redirect (`app/admin/*/layout.tsx`) plus `assertAdmin()` at the top of every server action (`app/actions/email-preview.ts`, `app/actions/admin-waitlist.ts`) for defense-in-depth. Requires `ADMIN_USER_IDS` env var set in both `.env.local` and Vercel. Non-admins silently redirect to `/`.
 - **Email templates are flat single functions:** By convention, each template in `lib/email/templates/` is ONE function - don't split into render helpers unless variants have materially different structure (see `booking-failure-technical.ts` `generic` vs `ymca_system_error` for the justified exception). PR review agents flag unnecessary splits as divergence.
 - **Preview regression check pattern:** When adding a variant or conditional feature to a shared email template, keep at least one existing preview case WITHOUT the new feature as a regression check (e.g., `bookingFailureCritical` renders the login scenario WITHOUT phone to verify it still looks correct for errors where phone doesn't apply). Rename its display label to clarify the scenario (e.g., "Failure - Critical (login)").
 
@@ -123,7 +123,7 @@ See `~/.claude/CLAUDE.md` for full worktree conventions (auto-setup, cleanup, mi
 - Run `/frontend-design` skill for new visual design work
 - Validate auth in server actions, use `revalidatePath` after mutations
 - Update `/prototype/design-system-components` when adding/modifying components
-- Update `/prototype/email-preview` when adding/updating email templates
+- Update `/admin/email-preview` when adding/updating email templates
 
 ### Never Do
 - Create inline buttons/forms — use component library

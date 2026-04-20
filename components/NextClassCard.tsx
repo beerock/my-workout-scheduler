@@ -180,13 +180,11 @@ export default function NextClassCard({
             </>
           ) : (
             <>
-              {/* Pending: Confident primary - blue accent, clean hierarchy.
-                  Coach voice per docs/VOICE.md: "On the list · [countdown]"
-                  replaces the dead "until class" label so the card reads
-                  as a living status instead of a passive countdown.
-                  Task 3 draft further variants (anticipatory / status-first
-                  / confident) plus moves the countdown to booking-open time
-                  rather than class-start time. */}
+              {/* Pending: reverted to "until class" pending label per
+                  owner review — "on the list" read as confusing status.
+                  Task 3 will move the countdown to booking-open time
+                  (what users actually care about) and draft a proper
+                  living-status label. */}
               <div className="flex items-baseline gap-1.5">
                 <span className="font-sora text-2xl sm:text-4xl font-bold text-white leading-none tracking-tight">
                   {countdown.value}
@@ -198,12 +196,12 @@ export default function NextClassCard({
                 )}
                 {/* Mobile only - inline with countdown */}
                 <span className="font-dm-sans text-sm text-white/50 sm:hidden">
-                  out · on the list
+                  until class
                 </span>
               </div>
               {/* Desktop only - below countdown */}
               <span className="hidden sm:inline font-dm-sans text-base text-white/50">
-                out · on the list
+                until class
               </span>
             </>
           )}
