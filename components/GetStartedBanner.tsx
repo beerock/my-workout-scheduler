@@ -58,7 +58,7 @@ export default function GetStartedBanner() {
             Add one class. Skip every 4:59 AM alarm.
           </h2>
           <p className="font-dm-sans text-sm sm:text-base text-white/80">
-            Tell us which YMCA class you want. From there, it auto-books every week the moment registration opens — 26 hours before class starts.
+            Tell us which YMCA class you want. From there, it auto-books every week the moment registration opens.
           </p>
         </div>
 
