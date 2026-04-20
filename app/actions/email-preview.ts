@@ -28,6 +28,7 @@ import { bookingAlreadyRegisteredEmail } from '@/lib/email/templates/booking-alr
 import { bookingAlreadyWaitlistedEmail } from '@/lib/email/templates/booking-already-waitlisted'
 import { bookingNoRegistrationEmail } from '@/lib/email/templates/booking-no-registration'
 import { waitlistConfirmationEmail } from '@/lib/email/templates/waitlist-confirmation'
+import { waitlistInviteEmail } from '@/lib/email/templates/waitlist-invite'
 
 /**
  * Guard for admin-only access to email preview data.
@@ -63,6 +64,7 @@ export type EmailTemplateType =
   | 'bookingNoRegistration'
   | 'dailyDigest'
   | 'waitlistConfirmation'
+  | 'waitlistInvite'
 
 export type TemplateInfo = {
   name: string
@@ -449,6 +451,20 @@ export async function getEmailTemplatePreview(
       }
     }
 
+    case 'waitlistInvite': {
+      const result = waitlistInviteEmail({
+        email: 'approved-invitee@example.com',
+        inviteUrl: 'https://myworkout.beerock.com/auth/callback?code=PREVIEW_PLACEHOLDER&next=%2Fdashboard',
+        siteUrl: 'https://myworkout.beerock.com',
+      })
+      return {
+        name: 'Waitlist Invite (branded, replaces Supabase default)',
+        subject: result.subject,
+        severity: 'info',
+        html: result.html,
+      }
+    }
+
     default:
       throw new Error(`Unknown template type: ${templateType}`)
   }
@@ -477,5 +493,6 @@ export async function getAllTemplateTypes(): Promise<
     { type: 'bookingNoRegistration', name: 'No Auto-Registration', severity: 'info' },
     { type: 'dailyDigest', name: 'Daily Digest (post-MVP)', severity: 'info' },
     { type: 'waitlistConfirmation', name: 'Waitlist Confirmation', severity: 'info' },
+    { type: 'waitlistInvite', name: 'Waitlist Invite (branded)', severity: 'info' },
   ]
 }
