@@ -85,7 +85,7 @@ export default async function Home() {
             >
               <div className="w-2 h-2 rounded-full bg-success-500 animate-pulse" />
               <span className="font-dm-sans text-sm text-primary-700">
-                Invite-only · Asheville YMCA beta
+                Invite-only · YMCA of Western NC beta
               </span>
             </div>
 

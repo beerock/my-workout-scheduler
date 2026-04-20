@@ -178,13 +178,26 @@ These are the exact transforms Sprint 1 applies. Use them to calibrate.
 
 ---
 
-## Showcase voice specifics
+## Naming: how to refer to the gym
+
+The product supports **the YMCA of Western North Carolina** (ymcawnc.com), which has multiple branches — Asheville, Woodfin, Black Mountain, Hendersonville, Corpening Memorial, Reuter Family, and Ferguson Family. "Asheville YMCA" is **one branch among several**, not shorthand for the whole organization. Using it as an org name erases every other branch's users.
+
+**Canonical forms, in order of preference:**
+
+| Context | Use | Example |
+|---------|-----|---------|
+| First mention in a body of copy (hero subtitle, email body, docs) | **"YMCA of Western North Carolina"** (full name) | "a small, invite-only beta for the YMCA of Western North Carolina" |
+| Subsequent mentions in the same surface, or compact UI (badges, buttons, menu items, page titles) | **"YMCA WNC"** or **"YMCA of Western NC"** | "Invite-only · YMCA of Western NC beta" |
+| Specific branch (correct usage) | The branch's actual name from `lib/constants/ymca.ts` | "Asheville YMCA", "Woodfin YMCA", "Black Mountain YMCA" |
+| Never | "Asheville YMCA" as org shorthand, "the YMCA" (too generic), "Asheville's YMCA" | — |
+
+Pick whichever compact form (WNC vs Western NC) reads better in the layout you're editing — consistency *within* a single surface matters more than which compact form you picked.
 
 ### Hero badge, landing page
 
 The badge above the hero headline is the first line of copy a prospective client reads. It has to signal intentional product scope.
 
-**Prefer:** "Currently invite-only · Asheville YMCA" / "Invite-only · built for Asheville YMCA" / something in that shape.
+**Prefer:** "Invite-only · YMCA of Western NC beta" (current shipped copy) / "Currently invite-only · YMCA of Western NC" / "A YMCA of Western NC beta · Invite-only" / something in that shape.
 
 **Avoid:** "Automated booking for YMCA classes" (generic, scalable-sounding, no scope signal). "Built for fitness enthusiasts" (cringe). "AI-powered automation" (hype, irrelevant).
 
@@ -198,7 +211,7 @@ The form itself and its confirmation state both live in showcase voice.
 
 ### Waitlist-confirmation email
 
-One-screen email. Opens in showcase voice ("Thanks for signing up"), names the product's scope ("Asheville YMCA beta"), warms into coach voice on the closing line ("When your invite lands, we'll get your first class on the schedule in under two minutes"). No CTA — there's nothing to click yet. No unsubscribe language — they signed up for exactly this.
+One-screen email. Opens in showcase voice ("Thanks for signing up"), names the product's scope ("the YMCA of Western North Carolina" — see the naming rule below), warms into coach voice on the closing line ("When your invite lands, we'll get your first class on the schedule in under two minutes"). No CTA — there's nothing to click yet. No unsubscribe language — they signed up for exactly this.
 
 ---
 

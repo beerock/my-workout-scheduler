@@ -39,7 +39,7 @@ export function waitlistConfirmationEmail(
     </p>
 
     <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      My Workout Scheduler is a small, invite-only beta for the Asheville YMCA — the product auto-books your recurring classes the moment registration opens, so you can stop setting 4:59 AM alarms.
+      My Workout Scheduler is a small, invite-only beta for the YMCA of Western North Carolina — the product auto-books your recurring classes the moment registration opens, so you can stop setting 4:59 AM alarms.
     </p>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">

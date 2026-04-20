@@ -16,7 +16,7 @@
 import { useState, useTransition } from 'react'
 import { Alert, Button } from '@/components/ui'
 import {
-  markWaitlistInvited,
+  inviteWaitlistEntry,
   markWaitlistDeclined,
   deleteWaitlistEntry,
 } from '@/app/actions/admin-waitlist'
@@ -46,14 +46,35 @@ function formatDate(iso: string): string {
 export function WaitlistAdminTable({ signups }: Props) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
 
   const runAction = (fn: () => Promise<void>) => {
     setError(null)
+    setInfo(null)
     startTransition(async () => {
       try {
         await fn()
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Action failed.')
+      }
+    })
+  }
+
+  const runInvite = (email: string, id: string) => {
+    setError(null)
+    setInfo(null)
+    startTransition(async () => {
+      try {
+        const result = await inviteWaitlistEntry(id)
+        if (result.alreadyHadAccount) {
+          setInfo(
+            `${email} already has an account — status flipped to invited; no new email sent.`
+          )
+        } else {
+          setInfo(`Invite email sent to ${email}.`)
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Invite failed.')
       }
     })
   }
@@ -69,6 +90,7 @@ export function WaitlistAdminTable({ signups }: Props) {
   return (
     <div className="space-y-4">
       {error && <Alert variant="error">{error}</Alert>}
+      {info && <Alert variant="success">{info}</Alert>}
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200">
@@ -121,10 +143,18 @@ export function WaitlistAdminTable({ signups }: Props) {
                       <Button
                         variant="primary"
                         size="sm"
-                        onClick={() => runAction(() => markWaitlistInvited(s.id))}
+                        onClick={() => {
+                          if (
+                            confirm(
+                              `Send invite email to ${s.email}?\n\nThis creates a Supabase auth account and sends a magic-link invite.`
+                            )
+                          ) {
+                            runInvite(s.email, s.id)
+                          }
+                        }}
                         disabled={pending}
                       >
-                        Mark invited
+                        Send invite
                       </Button>
                     )}
                     {s.status !== 'declined' && (
