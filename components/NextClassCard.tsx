@@ -9,6 +9,10 @@ type NextClassCardProps = {
   branch: string
   hoursUntil: number
   bookingStatus?: 'confirmed' | 'waitlisted' | 'pending'
+  // Pre-formatted booking-open timestamp (e.g. "Sun 2:15 PM") in the gym's
+  // timezone. Only relevant to the pending state; null after the window has
+  // opened, or when the booking already landed.
+  bookingOpensAt?: string | null
   onViewSchedule?: () => void
 }
 
@@ -28,6 +32,7 @@ export default function NextClassCard({
   branch,
   hoursUntil,
   bookingStatus = 'pending',
+  bookingOpensAt = null,
   onViewSchedule,
 }: NextClassCardProps) {
   // Format hours display with unit
@@ -178,30 +183,44 @@ export default function NextClassCard({
                 {countdown.value === 'Now' ? 'Starting now' : `in ${countdown.value} ${countdown.unit}`}
               </span>
             </>
-          ) : (
+          ) : bookingOpensAt ? (
             <>
-              {/* Pending: reverted to "until class" pending label per
-                  owner review — "on the list" read as confusing status.
-                  Task 3 will move the countdown to booking-open time
-                  (what users actually care about) and draft a proper
-                  living-status label. */}
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-sora text-2xl sm:text-4xl font-bold text-white leading-none tracking-tight">
-                  {countdown.value}
-                </span>
-                {countdown.unit && (
-                  <span className="font-dm-sans text-sm sm:text-base text-primary-300 uppercase font-semibold">
-                    {countdown.unit}
-                  </span>
-                )}
-                {/* Mobile only - inline with countdown */}
-                <span className="font-dm-sans text-sm text-white/50 sm:hidden">
-                  until class
+              {/* Pending, pre-window: living-status "Watching the list" chip
+                  per VOICE.md Working-on-it tier. The timestamp below anchors
+                  the "when" on the actionable moment (booking opens) rather
+                  than class start. Post-window (window open but not yet
+                  confirmed), the bookingOpensAt prop is null and the fallback
+                  branch renders instead — see below. */}
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span className="font-sora text-base sm:text-lg font-bold text-primary-300 uppercase tracking-wide">
+                  Watching
                 </span>
               </div>
-              {/* Desktop only - below countdown */}
-              <span className="hidden sm:inline font-dm-sans text-base text-white/50">
-                until class
+              <span className="font-dm-sans text-sm sm:text-base text-primary-200/80 font-medium">
+                Booking opens {bookingOpensAt}
+              </span>
+            </>
+          ) : (
+            <>
+              {/* Pending, window already open: the system is actively
+                  retrying. Same Working-on-it tier as the pre-window state
+                  but more honest ("checking every 15 min" is what is
+                  literally happening now, not a forecast). */}
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span className="font-sora text-base sm:text-lg font-bold text-primary-300 uppercase tracking-wide">
+                  Watching
+                </span>
+              </div>
+              <span className="font-dm-sans text-sm sm:text-base text-primary-200/80 font-medium">
+                Checking every 15 min
               </span>
             </>
           )}
