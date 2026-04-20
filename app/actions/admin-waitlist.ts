@@ -45,9 +45,19 @@ export async function listWaitlistSignups(): Promise<WaitlistSignup[]> {
   return (data ?? []) as WaitlistSignup[]
 }
 
-export type InviteResult = {
-  alreadyHadAccount: boolean
-}
+/**
+ * Result shape for inviteWaitlistEntry. Discriminated so the admin UI can
+ * render specific states without needing a try/catch around the call.
+ *
+ * We intentionally return errors as data instead of throwing because a
+ * thrown server-action error in Next.js 16 surfaces to the client as a
+ * generic "Server Components render" error overlay (especially in prod
+ * builds where messages are stripped), losing the actual reason. Returning
+ * a Result preserves the message.
+ */
+export type InviteResult =
+  | { success: true; alreadyHadAccount: boolean; emailSent: boolean }
+  | { success: false; stage: 'load' | 'link' | 'send' | 'status'; error: string }
 
 /**
  * One-click invite with a BRANDED email.
@@ -60,18 +70,12 @@ export type InviteResult = {
  *   2. We compose our own email with the waitlist-invite template and send
  *      it via Resend - same path every other email in the app uses.
  *
- * Error modes we handle gracefully:
- * - User already exists in auth: generateLink still returns a link (for
- *   subsequent re-invite use cases). We skip re-sending and flip status.
- *   Return alreadyHadAccount=true so the admin UI can note this.
- * - generateLink fails for other reasons: surface to caller, don't flip
- *   status.
- * - Resend send fails: surface to caller with explicit "link generated but
- *   email didn't send - check Resend logs" message so the admin knows the
- *   user record DID get created.
- *
- * The invite link redirects through /auth/callback with next=/dashboard,
- * where the existing welcome-email hook fires on first-time sign-in.
+ * Semantics:
+ * - Status is only flipped to 'invited' when the email actually sends
+ *   successfully. If send fails, status stays 'pending' so the admin can
+ *   retry after fixing the underlying config.
+ * - User already exists in auth: skip the email send, flip status. This
+ *   is a re-invite audit-trail case, not an error.
  */
 export async function inviteWaitlistEntry(id: string): Promise<InviteResult> {
   await assertAdmin()
@@ -86,7 +90,11 @@ export async function inviteWaitlistEntry(id: string): Promise<InviteResult> {
 
   if (loadError || !row) {
     console.error('[admin-waitlist] load for invite failed:', loadError)
-    throw new Error('Could not load that waitlist entry.')
+    return {
+      success: false,
+      stage: 'load',
+      error: loadError?.message ?? 'Could not load that waitlist entry.',
+    }
   }
 
   // Generate the invite magic link. `generateLink` with type='invite'
@@ -112,11 +120,12 @@ export async function inviteWaitlistEntry(id: string): Promise<InviteResult> {
 
     if (!alreadyExists) {
       console.error('[admin-waitlist] generateLink failed:', linkError)
-      throw new Error(`Could not generate invite link: ${linkError.message}`)
+      return {
+        success: false,
+        stage: 'link',
+        error: linkError.message || 'Could not generate invite link.',
+      }
     }
-    // User already has an account. We won't send a re-invite email — they
-    // should use /login or password reset. Fall through to the status flip
-    // so the audit trail reflects the intent.
     alreadyHadAccount = true
     inviteUrl = undefined
     console.log(
@@ -125,12 +134,17 @@ export async function inviteWaitlistEntry(id: string): Promise<InviteResult> {
   }
 
   // Send our branded invite email via Resend (only if we have a link).
+  let emailSent = false
   if (inviteUrl) {
     const resendKey = process.env.RESEND_API_KEY
     if (!resendKey) {
-      throw new Error(
-        'RESEND_API_KEY is not configured; the invite link was generated but no email was sent.'
-      )
+      console.error('[admin-waitlist] RESEND_API_KEY missing in this environment')
+      return {
+        success: false,
+        stage: 'send',
+        error:
+          'RESEND_API_KEY is not configured for this environment. The invite link was generated but no email was sent; status stays pending.',
+      }
     }
 
     const resend = new Resend(resendKey)
@@ -149,11 +163,36 @@ export async function inviteWaitlistEntry(id: string): Promise<InviteResult> {
     })
 
     if (sendError) {
-      console.error('[admin-waitlist] invite email send failed:', sendError)
-      throw new Error(
-        `Invite link generated but email send failed: ${sendError.message || 'unknown error'}`
+      // Log the FULL serialized error so Vercel log truncation doesn't hide
+      // the Resend statusCode / name / message. Common causes: fromEmail
+      // falling back to onboarding@resend.dev (sandbox restriction) if
+      // RESEND_FROM_EMAIL isn't set on this deployment's env.
+      console.error(
+        '[admin-waitlist] invite email send failed:',
+        JSON.stringify(
+          {
+            sendError,
+            fromEmail,
+            fromName,
+            to: row.email,
+            hasResendKey: !!resendKey,
+            resendKeyLength: resendKey.length,
+          },
+          null,
+          2
+        )
       )
+      const msgParts = [
+        sendError.message || 'Resend send failed',
+        sendError.name ? `(${sendError.name})` : '',
+      ].filter(Boolean)
+      return {
+        success: false,
+        stage: 'send',
+        error: `${msgParts.join(' ')}. Status stays pending — fix the config and retry. From: ${fromEmail}.`,
+      }
     }
+    emailSent = true
   }
 
   // Flip status + stamp invited_at
@@ -164,13 +203,17 @@ export async function inviteWaitlistEntry(id: string): Promise<InviteResult> {
 
   if (updateError) {
     console.error('[admin-waitlist] post-invite status update failed:', updateError)
-    throw new Error(
-      'Invite email sent, but could not update the row status. Reload and try again.'
-    )
+    return {
+      success: false,
+      stage: 'status',
+      error: emailSent
+        ? 'Invite email sent, but could not flip status. Reload and try again.'
+        : updateError.message || 'Could not update status.',
+    }
   }
 
   revalidatePath('/dashboard/admin/waitlist')
-  return { alreadyHadAccount }
+  return { success: true, alreadyHadAccount, emailSent }
 }
 
 export async function markWaitlistDeclined(id: string): Promise<void> {

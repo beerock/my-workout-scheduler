@@ -66,15 +66,25 @@ export function WaitlistAdminTable({ signups }: Props) {
     startTransition(async () => {
       try {
         const result = await inviteWaitlistEntry(id)
-        if (result.alreadyHadAccount) {
-          setInfo(
-            `${email} already has an account — status flipped to invited; no new email sent.`
-          )
+        if (result.success) {
+          if (result.alreadyHadAccount) {
+            setInfo(
+              `${email} already has an account — status flipped to invited; no new email sent.`
+            )
+          } else if (result.emailSent) {
+            setInfo(`Invite email sent to ${email}.`)
+          } else {
+            // Shouldn't hit this branch (success without email AND without
+            // existing account), but surface politely if it does.
+            setInfo(`${email} marked as invited.`)
+          }
         } else {
-          setInfo(`Invite email sent to ${email}.`)
+          setError(`[${result.stage}] ${result.error}`)
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Invite failed.')
+        // Unexpected throws (network loss, etc.) — server action now returns
+        // Result for known errors, so this catches the truly unexpected.
+        setError(err instanceof Error ? err.message : 'Invite failed unexpectedly.')
       }
     })
   }
