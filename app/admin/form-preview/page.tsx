@@ -108,7 +108,7 @@ export default function FormPreviewPage() {
   // "Registration opens" doesn't fit when registration is already open.
   const LeftBorderCard = ({
     children,
-    eyebrow = 'Registration opens',
+    eyebrow = 'Class registration opens',
   }: {
     children: React.ReactNode
     eyebrow?: string
@@ -266,37 +266,24 @@ export default function FormPreviewPage() {
                 </div>
 
                 <div>
-                  <p className="font-dm-sans text-xs text-gray-400 mb-1">Proposed A — names the per-class variability</p>
+                  <p className="font-dm-sans text-xs text-gray-400 mb-1">Shipped — unit inline next to the value (so "26" isn't orphaned)</p>
                   <div className="bg-white border border-gray-200 rounded-lg p-3">
-                    <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                    <label className="font-dm-sans text-sm font-medium text-gray-700 block mb-2">
                       Registration Opens
                     </label>
-                    <input
-                      type="number"
-                      defaultValue={26}
-                      className="w-20 px-3 py-2 border border-gray-300 rounded text-sm"
-                      readOnly
-                    />
-                    <p className="font-dm-sans text-xs text-gray-500 mt-1">
-                      Hours before class. Most are 26 — double-check the class page on the YMCA site if yours is different.
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="font-dm-sans text-xs text-gray-400 mb-1">Proposed B — shorter, same intent</p>
-                  <div className="bg-white border border-gray-200 rounded-lg p-3">
-                    <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
-                      Registration Opens
-                    </label>
-                    <input
-                      type="number"
-                      defaultValue={26}
-                      className="w-20 px-3 py-2 border border-gray-300 rounded text-sm"
-                      readOnly
-                    />
-                    <p className="font-dm-sans text-xs text-gray-500 mt-1">
-                      Hours before class. Usually 26 — verify on the YMCA class page to be safe.
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        defaultValue={26}
+                        className="w-24 px-4 py-3 font-dm-sans text-gray-900 bg-white border border-gray-200 rounded-lg"
+                        readOnly
+                      />
+                      <span className="font-dm-sans text-sm text-gray-700">
+                        hours before class
+                      </span>
+                    </div>
+                    <p className="font-dm-sans text-sm text-gray-500 mt-2">
+                      Most are 26 — double-check the class page on the YMCA site if yours is different.
                     </p>
                   </div>
                 </div>
@@ -439,17 +426,22 @@ export default function FormPreviewPage() {
                       </p>
                     </div>
                     <div>
-                      <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                      <label className="font-dm-sans text-sm font-medium text-gray-700 block mb-2">
                         Registration Opens
                       </label>
-                      <input
-                        type="number"
-                        defaultValue={26}
-                        className="w-20 px-3 py-2 border border-gray-300 rounded text-sm"
-                        readOnly
-                      />
-                      <p className="font-dm-sans text-xs text-gray-500 mt-1">
-                        Hours before class. Most are 26 — double-check the class page on the YMCA site if yours is different.
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          defaultValue={26}
+                          className="w-24 px-4 py-3 font-dm-sans text-gray-900 bg-white border border-gray-200 rounded-lg"
+                          readOnly
+                        />
+                        <span className="font-dm-sans text-sm text-gray-700">
+                          hours before class
+                        </span>
+                      </div>
+                      <p className="font-dm-sans text-sm text-gray-500 mt-2">
+                        Most are 26 — double-check the class page on the YMCA site if yours is different.
                       </p>
                     </div>
                   </div>

@@ -98,7 +98,7 @@ export default function FirstBookingPreview(inputs: Inputs) {
   return (
     <div className="bg-gray-50 border-l-4 border-l-primary-500 rounded-lg p-4">
       <p className="font-dm-sans text-xs uppercase tracking-wider text-primary-600 font-semibold mb-2">
-        Registration opens
+        Class registration opens
       </p>
       <p className="font-sora font-bold text-gray-900">{info.formatted}</p>
       <p className="font-dm-sans text-sm text-gray-600 mt-1">

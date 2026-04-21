@@ -196,7 +196,10 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
           setSavedClassDetails(result.classDetails || null)
           setShowBookNowDialog(true)
         } else {
-          // Booking window not open - delay redirect so user sees success state
+          // Booking window not open - delay redirect so user sees success state.
+          // Bumped from 1500ms → 3000ms because the success alert now carries
+          // a specific datetime ("First booking fires Sun Apr 27 · 2:15 PM")
+          // that users want a moment to register before the redirect fires.
           setTimeout(() => {
             if (onSuccess) {
               onSuccess()
@@ -204,7 +207,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
               router.push('/dashboard/schedule')
               router.refresh()
             }
-          }, 1500) // 1.5 second delay to show success button
+          }, 3000)
         }
 
       } else {
@@ -492,18 +495,43 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
             hint="All YMCA WNC classes run in Eastern time, wherever you are."
           />
 
-          <Input
-            key={`booking_window_hours-${formKey}`}
-            label="Registration Opens"
-            name="booking_window_hours"
-            type="number"
-            min={1}
-            max={168}
-            value={formData.booking_window_hours}
-            onChange={handleChange}
-            required
-            hint="Hours before class. Most are 26 — double-check the class page on the YMCA site if yours is different."
-          />
+          {/* Custom-rendered field because the "hours before class" unit
+              reads much better inline next to the value than buried in a
+              hint below. Matches the visual system of the shared Input
+              component (focus ring, border states, label + hint typography)
+              but tightens the input width and surfaces the unit. */}
+          <div>
+            <label
+              htmlFor="booking_window_hours"
+              className="block font-dm-sans text-sm font-medium text-gray-700 mb-2"
+            >
+              Registration Opens
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                key={`booking_window_hours-${formKey}`}
+                id="booking_window_hours"
+                name="booking_window_hours"
+                type="number"
+                min={1}
+                max={168}
+                value={formData.booking_window_hours}
+                onChange={handleChange}
+                required
+                className="w-24 px-4 py-3 font-dm-sans text-gray-900 bg-white border border-gray-200 rounded-lg focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all duration-200"
+                aria-describedby="booking_window_hours-hint"
+              />
+              <span className="font-dm-sans text-sm text-gray-700">
+                hours before class
+              </span>
+            </div>
+            <p
+              id="booking_window_hours-hint"
+              className="mt-2 font-dm-sans text-sm text-gray-500"
+            >
+              Most are 26 — double-check the class page on the YMCA site if yours is different.
+            </p>
+          </div>
         </div>
 
         {/* Inline first-booking preview. Renders null until required
