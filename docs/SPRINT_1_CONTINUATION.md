@@ -40,7 +40,7 @@ These were flagged during the task 5 preview walk but deferred to task 6 as holi
 
 ### Original task 6 scope
 
-- Run the `/frontend-design` skill with fresh eyes on these surfaces: `/` (landing), `/signup` (waitlist form), `/dashboard`, `/dashboard/schedule/add`, `/dashboard/account`, and the four `/admin/*` surfaces.
+- Run the `/frontend-design` skill with fresh eyes on these surfaces: `/` (landing), `/signup` (waitlist form), `/dashboard`, `/dashboard/schedule/add`, `/dashboard/account`, `/dashboard/credentials`, `/dashboard/schedule`, `/dashboard/schedule/history`, and the four `/admin/*` surfaces.
 - Landing-page craft-showcase polish — the landing is also a portfolio artifact for prospective clients. The voice register there is "showcase" (not coach). VOICE.md has the guardrails.
 - Holistic typography + hierarchy + spacing pass; not incremental edits.
 
@@ -56,6 +56,20 @@ These were flagged during the task 5 preview walk but deferred to task 6 as holi
 - **Never "reply to this email"** in any template. `noreply@beerock.com` is load-bearing; support routes to `help@beerock.com`.
 - **Never hardcode "26 hours before class"** in user copy (only in backend/test fixtures). It's a per-class value (`booking_window_hours` column). See `feedback_no_hardcoded_booking_window.md`.
 - **Admin-only gate pattern** — all four `/admin/*` routes use layout redirect + `assertAdmin()` in server actions. Don't collapse to one layer.
+
+## After task 6 — Sprint 1 wrap-up
+
+Before closing out Sprint 1, follow the CLAUDE.md "Documentation Update Triggers" table + run `/doc-sync` (global skill). Specific docs likely to need updating based on what shipped in tasks 1–5:
+
+- **`docs/COMPONENT_LIBRARY.md`** — new components: `ActionItemsCard`, `FirstBookingPreview`, `WaitlistForm`, `WaitlistAdminTable`. Modified: `NextClassCard` (new pending states + aria), `GetStartedBanner` (token swap + aria), `RecurringClassForm` (sections + inline preview + hidden timezone), `TimeInput` (flex-wrap).
+- **`docs/DESIGN_SYSTEM.md`** — if task 6 adds any new `shadow-*` tokens for the custom card shadows, document them here.
+- **`docs/BACKLOG.md`** — Post-MVP items discovered during Sprint 1: (1) redirect Inngest from preview to production app URL (see `project_inngest_preview_emails.md`), (2) possibly tokenize the custom rgba shadows if task 6 decides not to during the sprint, (3) any task 6 findings deferred as post-MVP.
+- **`docs/My Workout Scheduler PRD.md`** — add Sprint 1 version entry under the version history section (v2.36 or similar — sprint introduced VOICE.md, waitlist flow, dashboard failure surface, inline form preview, admin preview surfaces).
+- **`README.md`** — tech stack unchanged; may want to add a one-liner about the voice register split + the admin preview surfaces.
+- **`CLAUDE.md`** — bump the "Current Version" line. Add a new Critical Gotcha about Inngest-points-at-preview. Update the doc triggers table if any new patterns emerged.
+- **"Last Updated" stamps** on every doc touched.
+
+Then: update PR #122 body to mark all six tasks complete, walk all review surfaces one final time, and hand off to owner for final ★ sign-off before merge.
 
 ## How to resume
 
