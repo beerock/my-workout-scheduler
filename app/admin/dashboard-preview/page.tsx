@@ -35,7 +35,7 @@ export default function DashboardPreviewPage() {
     dayTime: 'Tuesday 11:30 AM',
     branch: 'Asheville YMCA',
     category: 'config',
-    message: "Couldn't find this class on the YMCA schedule. The name, time, or branch may have drifted.",
+    message: "Couldn't find this class on the YMCA schedule. It may have been renamed, rescheduled, or moved branches.",
     ctaText: 'Edit class',
     ctaHref: '/dashboard/schedule/edit/preview-config',
   }
@@ -46,7 +46,7 @@ export default function DashboardPreviewPage() {
     dayTime: 'Friday 6:00 AM',
     branch: 'Woodfin YMCA',
     category: 'config',
-    message: "Couldn't find this class on the YMCA schedule. The name, time, or branch may have drifted.",
+    message: "Couldn't find this class on the YMCA schedule. It may have been renamed, rescheduled, or moved branches.",
     ctaText: 'Edit class',
     ctaHref: '/dashboard/schedule/edit/preview-extra',
   }

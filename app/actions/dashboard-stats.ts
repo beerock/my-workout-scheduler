@@ -325,7 +325,7 @@ export async function getDashboardStats(): Promise<{
             dayTime,
             branch: cls.branch,
             category: 'config',
-            message: "Couldn't find this class on the YMCA schedule. The name, time, or branch may have drifted.",
+            message: "Couldn't find this class on the YMCA schedule. It may have been renamed, rescheduled, or moved branches.",
             ctaText: 'Edit class',
             // Deep link to the specific class when we can. The ActionItemsCard
             // only uses this single-item href when items.length === 1; the

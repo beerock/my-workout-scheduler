@@ -143,9 +143,17 @@ export default function NextClassCard({
 
       {/* Right: Status & Countdown Module */}
       <div className="relative w-full sm:w-auto flex items-center">
-        {/* Status Display - bold, readable, full-width on mobile */}
+        {/* Status Display - bold, readable, full-width on mobile.
+            Confirmed/waitlisted use row-on-mobile (short "in X hrs"
+            subtitle fits inline). Pending subtitles are longer
+            ("Opens Tue 6:00 AM", "Checking every 15 min") and would
+            wrap awkwardly on narrow screens, so they always stack. */}
         <div
-          className={`relative flex items-center justify-center gap-2 sm:flex-col sm:gap-1 w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl ${
+          className={`relative flex items-center justify-center w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl ${
+            bookingStatus === 'pending'
+              ? 'flex-col gap-1'
+              : 'gap-2 sm:flex-col sm:gap-1'
+          } ${
             bookingStatus === 'confirmed'
               ? 'bg-success-500/20 ring-1 ring-success-400/40'
               : bookingStatus === 'waitlisted'
@@ -201,7 +209,7 @@ export default function NextClassCard({
                 </span>
               </div>
               <span className="font-dm-sans text-sm sm:text-base text-primary-200/80 font-medium">
-                Booking opens {bookingOpensAt}
+                Opens {bookingOpensAt}
               </span>
             </>
           ) : (
