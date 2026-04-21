@@ -58,6 +58,31 @@ These were flagged during the task 5 preview walk but deferred to task 6 as holi
 - **Never hardcode "26 hours before class"** in user copy (only in backend/test fixtures). It's a per-class value (`booking_window_hours` column). See `feedback_no_hardcoded_booking_window.md`.
 - **Admin-only gate pattern** — all four `/admin/*` routes use layout redirect + `assertAdmin()` in server actions. Don't collapse to one layer.
 
+## Task 6 status (this session)
+
+**Shipped (ready for ★ review):**
+- Carryover 1 — Branch field swapped from `Select` to `Combobox` in `searchable={false}` mode. Added `searchable?: boolean` prop to `Combobox` (no-fork, one flag). Verified at 320px: text fits when it can, ellipsizes cleanly via `truncate` when a narrower container forces it. The original "cut off" behavior was a native `<select>` rendering quirk; the custom-dropdown input resolves it.
+- Carryover 2 — Dropped redundant hints on the RecurringClassForm. Class Name hint ("Search by name or browse the list") duplicated the placeholder; Time hint ("All YMCA WNC classes run in Eastern time…") duplicated the "(Eastern)" label suffix. Registration Opens hint stays — class-specific, load-bearing.
+- Carryover 3 — Custom rgba shadows (NextClassCard, GetStartedBanner) NOT tokenized. Two single-use surfaces don't earn named tokens. Logged as a Low-priority backlog entry so a future third user would trigger the extraction.
+
+**Staged for owner pick (not applied):**
+- Landing variants — new admin surface at `/admin/landing-preview`. Four headline variants, four subtitle variants, three feature-card framings, four CTA variants. Real landing at `/` is untouched. Owner picks, then wire the pick into `app/page.tsx`.
+
+**Deferred for owner triage (findings pass across the other user-facing pages):**
+
+Ranked rough-to-polish — each is a copy or small-markup call, not a redesign.
+
+1. **`/dashboard` subtitle — drop the exclamation.** `Welcome back! Your automated booking is paused/active.` is an FYI-tier line and VOICE.md says zero exclamation marks on FYI. "Welcome back." reads more in-register.
+2. **`/forgot-password` success state uses literal "Important:".** Violates VOICE.md § FYI ("'Important:', 'Please note:', 'Attention:' — all cut"). The warning box can lead with the content directly ("Check spam or the Promotions tab. The link expires in an hour.").
+3. **`/dashboard/schedule/add` subtitle is passive-voice corporate-speak.** `Configure a recurring weekly class that will be automatically booked` — coach-voice would be "Tell us which class to watch. We book it every week the second registration opens."
+4. **`/dashboard/credentials` subtitle is passive.** `Store your gym login securely. Your password is encrypted before being stored.` — "We encrypt your password before it hits the database" keeps the security signal without the passive construction.
+5. **`/dashboard/schedule` subtitle is flat corporate.** `Manage your recurring class schedule and booking preferences` → "Your weekly classes. Add, edit, pause."
+6. **`/dashboard/schedule` "Add Class" button uses hardcoded hex gradient** (`#1a6fff` → `#0052e6`) instead of Tailwind primary tokens. Minor design-system drift.
+7. **Footer tagline is cliché.** `Made for gym enthusiasts who value their time` is the exact kind of motivational-poster line VOICE.md bans. "Auto-booked YMCA WNC classes, since 2026" or similar product-neutral line would fit the showcase register.
+8. **`/login` and `/signup` "Request an invite" copy should follow whichever landing CTA direction the owner picks.** If landing uses "Join the waitlist", align these surfaces so the framing is consistent across the entry flow.
+
+Everything above is safe to ship during the wrap-up commit — pure copy plus one gradient-token swap, no component surgery. Owner to triage "fix now" vs. "Sprint 2."
+
 ## After task 6 — Sprint 1 wrap-up
 
 Before closing out Sprint 1, follow the CLAUDE.md "Documentation Update Triggers" table + run `/doc-sync` (global skill). Specific docs likely to need updating based on what shipped in tasks 1–5:
