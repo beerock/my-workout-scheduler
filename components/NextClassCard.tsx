@@ -116,9 +116,10 @@ export default function NextClassCard({
 
       {/* Left Content */}
       <div className="relative flex-1 min-w-0">
-        {/* Label with pulsing indicator */}
+        {/* Label with pulsing indicator — dot is decorative only, the
+            "Next Class" label carries the semantic meaning. */}
         <div className="flex items-center gap-2.5 mb-2">
-          <div className="relative">
+          <div className="relative" aria-hidden="true">
             <div className="w-2 h-2 rounded-full bg-success-400" />
             <div className="absolute inset-0 w-2 h-2 rounded-full bg-success-400 animate-ping opacity-75" />
           </div>
@@ -132,11 +133,13 @@ export default function NextClassCard({
           {dayTime}
         </h3>
 
-        {/* Class details */}
-        <p className="font-dm-sans text-sm sm:text-[15px] text-slate-300/90 mt-1.5 flex items-center gap-2">
-          <span className="text-lg sm:text-xl leading-none">{getCategoryEmoji(classType)}</span>
+        {/* Class details — flex-wrap so long class names or branch names
+            (Hendersonville YMCA is the longest branch) don't overflow
+            the card at 320px viewport width. */}
+        <p className="font-dm-sans text-sm sm:text-[15px] text-slate-300/90 mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <span className="text-lg sm:text-xl leading-none" aria-hidden="true">{getCategoryEmoji(classType)}</span>
           <span>{classType}</span>
-          <span className="text-slate-500">•</span>
+          <span className="text-slate-500" aria-hidden="true">•</span>
           <span className="text-slate-400">{branch}</span>
         </p>
       </div>
@@ -165,7 +168,7 @@ export default function NextClassCard({
             <>
               {/* Confirmed: Circled checkmark + BOOKED (consistent with SuccessRateCard) */}
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="font-sora text-base sm:text-lg font-bold text-success-400 uppercase tracking-wide">
@@ -181,7 +184,7 @@ export default function NextClassCard({
             <>
               {/* Waitlisted: Hourglass + WAITLIST */}
               <div className="flex items-center gap-2">
-                <span className="text-lg sm:text-xl">⏳</span>
+                <span className="text-lg sm:text-xl" aria-hidden="true">⏳</span>
                 <span className="font-sora text-base sm:text-lg font-bold text-warning-400 uppercase tracking-wide">
                   Waitlist
                 </span>
@@ -201,7 +204,7 @@ export default function NextClassCard({
                   the "when" on the actionable moment (booking opens)
                   rather than class start. */}
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="font-sora text-base sm:text-lg font-bold text-primary-300 uppercase tracking-wide">
@@ -219,7 +222,7 @@ export default function NextClassCard({
                   but more honest ("checking every 15 min" is what is
                   literally happening now, not a forecast). */}
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
