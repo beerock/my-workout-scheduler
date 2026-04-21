@@ -448,20 +448,26 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
             options={classOptions}
             filterFn={filterClasses}
             placeholder="Search classes..."
-            hint="Search by name or browse the list"
             allowCustom
             customLabel="Add custom class"
             required
           />
 
-          <Select
+          {/* Branch uses the Combobox in fixed-list mode (searchable={false})
+              so long branch names ("Hendersonville Family YMCA") truncate
+              gracefully at 320px instead of overflowing. Native <select> text
+              doesn't ellipsize reliably; the Combobox's custom dropdown does. */}
+          <Combobox
             key={`branch-${formKey}`}
             label="Branch"
             name="branch"
             value={formData.branch}
-            onChange={handleChange}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, branch: value }))
+            }
             options={branchOptions}
             placeholder="Select a branch"
+            searchable={false}
             required
           />
         </div>
@@ -492,7 +498,6 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
             value={formData.class_time}
             onChange={(value) => setFormData(prev => ({ ...prev, class_time: value }))}
             required
-            hint="All YMCA WNC classes run in Eastern time, wherever you are."
           />
 
           {/* Custom-rendered field because the "hours before class" unit

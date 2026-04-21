@@ -21,6 +21,12 @@ export interface ComboboxProps {
   customLabel?: string
   filterFn?: (query: string, options: ComboboxOption[]) => ComboboxOption[]
   className?: string
+  // When false, the field behaves as a fixed-list dropdown: no search icon,
+  // read-only input, no fuzzy matching, no custom-entry option. Use for
+  // short fixed lists (e.g. 7 branches) where typing-to-filter is noise and
+  // long labels need CSS truncation instead of overflow. Default true keeps
+  // the original Combobox behavior for Class Name et al.
+  searchable?: boolean
 }
 
 const defaultFilter = (query: string, options: ComboboxOption[]): ComboboxOption[] => {
@@ -43,6 +49,7 @@ export function Combobox({
   customLabel = 'Add custom class',
   filterFn = defaultFilter,
   className = '',
+  searchable = true,
 }: ComboboxProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -57,8 +64,13 @@ export function Combobox({
 
   const hasError = !!error
 
-  // Filter options based on query
-  const filtered = useMemo(() => filterFn(query, options), [query, options, filterFn])
+  // Filter options based on query. When non-searchable, always show the full
+  // list — the user can't type to filter, so gating options on query would
+  // just hide them all on open.
+  const filtered = useMemo(
+    () => (searchable ? filterFn(query, options) : options),
+    [searchable, query, options, filterFn]
+  )
 
   // Whether to show the custom entry option
   // Only show when query doesn't exactly match an existing option (case-insensitive)
@@ -66,13 +78,16 @@ export function Combobox({
   const exactMatchExists = queryTrimmed.length > 0 && filtered.some(
     (o) => o.label.toLowerCase() === queryTrimmed.toLowerCase()
   )
-  const showCustomOption = allowCustom && queryTrimmed.length > 0 && !exactMatchExists
+  const showCustomOption =
+    searchable && allowCustom && queryTrimmed.length > 0 && !exactMatchExists
 
   // Total selectable items (filtered + optional custom)
   const totalItems = filtered.length + (showCustomOption ? 1 : 0)
 
-  // Auto-resolve on close: if value is empty and query is non-empty, try to match
+  // Auto-resolve on close: if value is empty and query is non-empty, try to match.
+  // Non-searchable mode has no query (input is read-only), so skip entirely.
   const attemptAutoResolve = useCallback(() => {
+    if (!searchable) return
     const trimmed = query.trim()
     if (!value && trimmed) {
       // First: check for exact case-insensitive match against any option
@@ -107,7 +122,7 @@ export function Combobox({
         setUnresolvedHint('No matching classes found')
       }
     }
-  }, [query, value, filterFn, options, onChange, allowCustom])
+  }, [searchable, query, value, filterFn, options, onChange, allowCustom])
 
   // Close on outside click
   useEffect(() => {
@@ -134,12 +149,14 @@ export function Combobox({
       setIsOpen(true)
       setActiveIndex(-1)
       setUnresolvedHint('')
-      // If a value is selected, show it as the query for editing
-      if (value && !query) {
+      // In searchable mode, seed the query with the current value so the user
+      // can edit the selection. In fixed-list mode the input is read-only, so
+      // the query stays empty and displayValue falls back to `value`.
+      if (searchable && value && !query) {
         setQuery(value)
       }
     }
-  }, [isOpen, value, query])
+  }, [isOpen, value, query, searchable])
 
   const selectOption = useCallback(
     (optionValue: string, isCustom: boolean) => {
@@ -225,21 +242,29 @@ export function Combobox({
     [isOpen, activeIndex, totalItems, filtered, showCustomOption, query, value, handleOpen, selectOption]
   )
 
-  // Input styles matching Input.tsx exactly
+  // Input styles matching Input.tsx exactly. Non-searchable mode drops the
+  // left search icon (pl-4 instead of pl-11) and adds `truncate` so long
+  // selected labels ellipsize at narrow viewports instead of overflowing.
   const baseInputStyles = `
-    w-full pl-11 pr-11 py-3 font-dm-sans text-gray-900 bg-white
+    w-full ${searchable ? 'pl-11' : 'pl-4'} pr-11 py-3 font-dm-sans text-gray-900 bg-white
     border rounded-lg transition-all duration-200
     placeholder:text-gray-400
     focus:outline-none
     disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
+    ${!searchable ? 'cursor-pointer truncate' : ''}
   `
 
   const stateStyles = hasError
     ? 'border-danger-500 focus:border-danger-500 focus:ring-2 focus:ring-danger-500/20'
     : 'border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20'
 
-  // Display value: show selected value when not editing, query when editing or unresolved
-  const displayValue = isOpen ? query : (value || (unresolvedHint ? query : ''))
+  // Display value: search mode shows the editable query while open and the
+  // committed value otherwise. Fixed-list mode always shows the selected
+  // option's label (looked up so the display text matches the option label
+  // even if `value` is an id that differs from the display string).
+  const displayValue = searchable
+    ? (isOpen ? query : (value || (unresolvedHint ? query : '')))
+    : (options.find((o) => o.value === value)?.label ?? '')
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -255,12 +280,15 @@ export function Combobox({
 
       {/* Input wrapper with focus accent bar */}
       <div className="relative focus-accent-bar">
-        {/* Search icon */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
+        {/* Search icon — searchable mode only. Fixed-list dropdowns read as
+            overweight with a magnifying glass since you can't type to filter. */}
+        {searchable && (
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        )}
 
         {/* Input */}
         <input
@@ -274,17 +302,19 @@ export function Combobox({
           aria-activedescendant={
             activeIndex >= 0 ? `${comboboxId}-option-${activeIndex}` : undefined
           }
-          aria-autocomplete="list"
+          aria-autocomplete={searchable ? 'list' : 'none'}
           aria-invalid={hasError}
           aria-describedby={
             error ? `${comboboxId}-error` : hint ? `${comboboxId}-hint` : undefined
           }
           autoComplete="off"
+          readOnly={!searchable}
           className={`${baseInputStyles} ${stateStyles} ${showPulse ? 'animate-auto-resolve-pulse' : ''}`}
           placeholder={value ? '' : placeholder}
           value={displayValue}
           onChange={handleInputChange}
           onFocus={handleOpen}
+          onClick={!searchable ? handleOpen : undefined}
           onKeyDown={handleKeyDown}
           required={required && !value}
         />

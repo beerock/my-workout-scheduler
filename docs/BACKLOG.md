@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** April 11, 2026
+**Last Updated:** April 21, 2026
 
 ---
 
@@ -230,6 +230,19 @@ Booking email templates have been touched piecemeal over time and have diverged 
 ## Post-MVP: Low Priority
 
 Nice-to-have features that aren't critical.
+
+### Tokenize Custom Card Shadows
+**Status:** Backlogged | **Priority:** Low
+
+Two cards use inline `boxShadow` with custom rgba values because no existing `shadow-*` token matches. Single-use, so tokenizing now would be premature abstraction — revisit if a third surface needs the same treatment.
+
+**Components:**
+- `NextClassCard` dark-gradient depth shadow (`0 4px 16px rgba(0,0,0,0.2), 0 8px 32px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)`)
+- `GetStartedBanner` purple-glow shadow (`0 4px 24px rgba(139,92,246,0.25), 0 8px 32px rgba(124,58,237,0.15)`)
+
+**Last Updated:** April 21, 2026
+
+---
 
 ### Code Cleanup Sprint
 **Status:** Backlogged | **Priority:** Low
