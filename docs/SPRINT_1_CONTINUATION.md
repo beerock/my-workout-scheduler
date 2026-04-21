@@ -40,7 +40,8 @@ These were flagged during the task 5 preview walk but deferred to task 6 as holi
 
 ### Original task 6 scope
 
-- Run the `/frontend-design` skill with fresh eyes on these surfaces: `/` (landing), `/signup` (waitlist form), `/dashboard`, `/dashboard/schedule/add`, `/dashboard/account`, `/dashboard/credentials`, `/dashboard/schedule`, `/dashboard/schedule/history`, and the four `/admin/*` surfaces.
+- Run the `/frontend-design` skill with fresh eyes on **every user-facing page in the codebase**. At the start of the review, enumerate all `page.tsx` files under `app/` (e.g. `Glob` for `app/**/page.tsx`) and build a checklist. Don't skip a page just because it wasn't modified in Sprint 1 — a design review is holistic, not incremental. Expected inventory includes (but isn't limited to): `/` (landing), `/signup`, `/login`, `/auth/*`, `/dashboard`, `/dashboard/schedule`, `/dashboard/schedule/add`, `/dashboard/schedule/edit/[id]`, `/dashboard/schedule/history`, `/dashboard/credentials`, `/dashboard/account`, and the four `/admin/*` surfaces.
+- **Exclude `/prototype/*`** — per `CLAUDE.md`, the design-system-components and scheduler-v2 prototype pages are frozen artifacts (case-study preservation). Do NOT touch them.
 - Landing-page craft-showcase polish — the landing is also a portfolio artifact for prospective clients. The voice register there is "showcase" (not coach). VOICE.md has the guardrails.
 - Holistic typography + hierarchy + spacing pass; not incremental edits.
 
