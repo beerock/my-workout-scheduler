@@ -140,8 +140,11 @@ export const TimeInput: React.FC<TimeInputProps> = ({
         />
       )}
 
-      {/* Time picker row */}
-      <div className="flex items-center gap-2">
+      {/* Time picker row — flex-wrap so the AM/PM toggle drops to a
+          second line at ~320px viewport widths where the hour + minute
+          + AM/PM combination can't all fit on one row. Desktop sees no
+          change; there's always room. */}
+      <div className="flex flex-wrap items-center gap-2">
         {/* Clock icon */}
         <div className="flex-shrink-0">
           {ClockIcon}
