@@ -25,13 +25,17 @@ export default function FormPreviewPage() {
   }
 
   // Variant A sub-options — same tier + anchor, different supporting line.
+  // Eyebrow now reads "Registration opens" so the heading datetime reads
+  // as an answer to the eyebrow ("Registration opens [when?] Sun Apr 27 ·
+  // 2:15 PM"). Supporting line tells the user what the system does at
+  // that moment.
   const copyA1 = (
     <>
       <p className="font-sora font-bold text-gray-900">
         {previewCopy.dayDate} · {previewCopy.time}
       </p>
       <p className="font-dm-sans text-sm text-gray-600 mt-1">
-        Registration opens then — we click Reserve the second it does.
+        We click Reserve the second it opens.
       </p>
     </>
   )
@@ -42,7 +46,7 @@ export default function FormPreviewPage() {
         {previewCopy.dayDate} · {previewCopy.time}
       </p>
       <p className="font-dm-sans text-sm text-gray-600 mt-1">
-        That's when YMCA registration opens for your {previewCopy.classTime} class. We grab the spot automatically — you'll get a confirmation email.
+        That's when the YMCA opens registration for your {previewCopy.classTime} class. We grab the spot automatically — you'll get a confirmation email.
       </p>
     </>
   )
@@ -53,7 +57,7 @@ export default function FormPreviewPage() {
         {previewCopy.dayDate} · {previewCopy.time}
       </p>
       <p className="font-dm-sans text-sm text-gray-600 mt-1">
-        Registration opens, we grab your spot, email follows.
+        We grab your spot, email follows.
       </p>
     </>
   )
@@ -75,13 +79,17 @@ export default function FormPreviewPage() {
     </p>
   )
 
+  // Edge case needs a different eyebrow — "Registration opens" doesn't
+  // read right when registration is ALREADY open. "Booking now" keeps the
+  // same structural pattern (eyebrow + heading + supporting line) but
+  // signals the different temporal state.
   const copyWindowOpen = (
     <>
       <p className="font-sora font-bold text-gray-900">
-        Window's open right now.
+        Registration's already open.
       </p>
       <p className="font-dm-sans text-sm text-gray-600 mt-1">
-        Save and we'll book immediately — no waiting.
+        Hit save and we'll reserve your spot right now.
       </p>
     </>
   )
@@ -90,13 +98,20 @@ export default function FormPreviewPage() {
   // Visual treatments
   // ──────────────────────────────────────────────────────────────────────
 
-  // "First booking" eyebrow kept; the A1/A2/A3 headings no longer start
-  // with "First booking fires..." — they now lead with just the datetime.
-  // So the reader sees eyebrow + datetime + supporting line, no repetition.
-  const LeftBorderCard = ({ children }: { children: React.ReactNode }) => (
+  // Eyebrow default is "Registration opens" — reads naturally alongside a
+  // datetime heading ("Registration opens [when?] Sun Apr 27 · 2:15 PM").
+  // Edge case (window already open) passes a different eyebrow since
+  // "Registration opens" doesn't fit when registration is already open.
+  const LeftBorderCard = ({
+    children,
+    eyebrow = 'Registration opens',
+  }: {
+    children: React.ReactNode
+    eyebrow?: string
+  }) => (
     <div className="bg-gray-50 border-l-4 border-l-primary-500 rounded-lg p-4">
       <p className="font-dm-sans text-xs uppercase tracking-wider text-primary-600 font-semibold mb-2">
-        First booking
+        {eyebrow}
       </p>
       {children}
     </div>
@@ -171,9 +186,9 @@ export default function FormPreviewPage() {
 
             <div>
               <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
-                Edge case — booking window is already open
+                Edge case — booking window is already open (eyebrow switches to "Booking now")
               </p>
-              <LeftBorderCard>{copyWindowOpen}</LeftBorderCard>
+              <LeftBorderCard eyebrow="Booking now">{copyWindowOpen}</LeftBorderCard>
             </div>
           </div>
         </section>
