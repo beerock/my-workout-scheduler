@@ -83,13 +83,17 @@ export default function FormPreviewPage() {
   // read right when registration is ALREADY open. "Booking now" keeps the
   // same structural pattern (eyebrow + heading + supporting line) but
   // signals the different temporal state.
+  //
+  // Supporting line must be purely informational. The actual flow is:
+  // save → BookNowDialog modal → user chooses to Book Now or Skip. The
+  // preview must NOT imply we'll book on save.
   const copyWindowOpen = (
     <>
       <p className="font-sora font-bold text-gray-900">
         Registration's already open.
       </p>
       <p className="font-dm-sans text-sm text-gray-600 mt-1">
-        Hit save and we'll reserve your spot right now.
+        After saving, you'll choose whether to book this one now or skip.
       </p>
     </>
   )
