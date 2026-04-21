@@ -314,7 +314,7 @@ export async function getDashboardStats(): Promise<{
             dayTime,
             branch: cls.branch,
             category: 'credentials',
-            message: 'Your gym login stopped working. Re-save your credentials and booking resumes.',
+            message: 'Your gym login stopped working. Update your credentials — booking picks up at your next class.',
             ctaText: 'Update credentials',
             ctaHref: '/dashboard/credentials',
           })
@@ -327,7 +327,11 @@ export async function getDashboardStats(): Promise<{
             category: 'config',
             message: "Couldn't find this class on the YMCA schedule. The name, time, or branch may have drifted.",
             ctaText: 'Edit class',
-            ctaHref: '/dashboard/schedule',
+            // Deep link to the specific class when we can. The ActionItemsCard
+            // only uses this single-item href when items.length === 1; the
+            // multi-item case falls back to /dashboard/schedule so the user
+            // can pick which one to edit.
+            ctaHref: `/dashboard/schedule/edit/${cls.id}`,
           })
         }
       }

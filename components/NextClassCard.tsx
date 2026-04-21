@@ -185,19 +185,19 @@ export default function NextClassCard({
             </>
           ) : bookingOpensAt ? (
             <>
-              {/* Pending, pre-window: living-status "Watching the list" chip
-                  per VOICE.md Working-on-it tier. The timestamp below anchors
-                  the "when" on the actionable moment (booking opens) rather
-                  than class start. Post-window (window open but not yet
-                  confirmed), the bookingOpensAt prop is null and the fallback
-                  branch renders instead — see below. */}
+              {/* Pending, pre-window: "On deck" label per owner review —
+                  "Watching" was slightly dishonest here since we're on a
+                  timer, not actively monitoring the YMCA site. Coach-voice
+                  Working-on-it tier, differentiates cleanly from the
+                  post-window "Watching" state below. The timestamp anchors
+                  the "when" on the actionable moment (booking opens)
+                  rather than class start. */}
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="font-sora text-base sm:text-lg font-bold text-primary-300 uppercase tracking-wide">
-                  Watching
+                  On deck
                 </span>
               </div>
               <span className="font-dm-sans text-sm sm:text-base text-primary-200/80 font-medium">

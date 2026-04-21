@@ -24,7 +24,7 @@ export default function DashboardPreviewPage() {
     dayTime: 'Wednesday 8:00 AM',
     branch: 'Woodfin YMCA',
     category: 'credentials',
-    message: 'Your gym login stopped working. Re-save your credentials and booking resumes.',
+    message: 'Your gym login stopped working. Update your credentials — booking picks up at your next class.',
     ctaText: 'Update credentials',
     ctaHref: '/dashboard/credentials',
   }
@@ -37,7 +37,7 @@ export default function DashboardPreviewPage() {
     category: 'config',
     message: "Couldn't find this class on the YMCA schedule. The name, time, or branch may have drifted.",
     ctaText: 'Edit class',
-    ctaHref: '/dashboard/schedule',
+    ctaHref: '/dashboard/schedule/edit/preview-config',
   }
 
   const extraItem: DashboardActionItem = {
@@ -48,7 +48,7 @@ export default function DashboardPreviewPage() {
     category: 'config',
     message: "Couldn't find this class on the YMCA schedule. The name, time, or branch may have drifted.",
     ctaText: 'Edit class',
-    ctaHref: '/dashboard/schedule',
+    ctaHref: '/dashboard/schedule/edit/preview-extra',
   }
 
   return (
