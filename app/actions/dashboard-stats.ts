@@ -184,19 +184,34 @@ export async function getDashboardStats(): Promise<{
         }
       }
 
-      // Query booking status for the soonest class
-      // Only look for bookings made AFTER the booking window opened for this specific occurrence
-      // Use the class's own booking_window_hours (per-class, not a constant).
+      // Query booking status for the soonest class.
+      //
+      // Lookback window: we used to filter on attempts >= (occurrence - booking_window_hours),
+      // but that computed floor misses:
+      //   1. Early-start optimization attempts (scheduler fires ~90s before the window opens,
+      //      so attempt_timestamp can be slightly before the floor).
+      //   2. Classes where the stored booking_window_hours is shorter than the real YMCA window
+      //      (attempt fires at the real earlier moment, slips outside the computed floor).
+      //   3. Clock drift between scheduler and DB insert.
+      // All three manifested as a confirmed class rendering the "Watching / Checking every 15 min"
+      // fallback on the dashboard, which was obviously wrong.
+      //
+      // Fix: use (occurrence - 7 days) as the floor. For a WEEKLY recurring class, the only
+      // confirmed attempt that can exist for *this specific upcoming occurrence* is one made
+      // within the last 7 days (last week's occurrence was already consumed). Simpler and
+      // more forgiving than trying to precisely model the booking window.
       if (soonest && soonestClassId && soonestOccurrence) {
         const windowOpenMs =
           soonestOccurrence.getTime() - soonestBookingWindowHours * 60 * 60 * 1000
-        const bookingWindowOpen = new Date(windowOpenMs).toISOString()
+        const lookbackFloorMs =
+          soonestOccurrence.getTime() - 7 * 24 * 60 * 60 * 1000
+        const lookbackFloor = new Date(lookbackFloorMs).toISOString()
 
         const { data: bookingAttempt } = await supabase
           .from('booking_attempts')
           .select('status')
           .eq('recurring_class_id', soonestClassId)
-          .gte('attempt_timestamp', bookingWindowOpen)
+          .gte('attempt_timestamp', lookbackFloor)
           .in('status', ['confirmed', 'waitlisted'])
           .order('attempt_timestamp', { ascending: false })
           .limit(1)
