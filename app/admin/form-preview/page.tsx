@@ -24,13 +24,36 @@ export default function FormPreviewPage() {
     classTime: '4:15 PM',
   }
 
-  const copyA = (
+  // Variant A sub-options — same tier + anchor, different supporting line.
+  const copyA1 = (
     <>
       <p className="font-sora font-bold text-gray-900">
-        First booking fires {previewCopy.dayDate} · {previewCopy.time}
+        {previewCopy.dayDate} · {previewCopy.time}
       </p>
       <p className="font-dm-sans text-sm text-gray-600 mt-1">
-        Watching the list the moment registration opens.
+        Registration opens then — we click Reserve the second it does.
+      </p>
+    </>
+  )
+
+  const copyA2 = (
+    <>
+      <p className="font-sora font-bold text-gray-900">
+        {previewCopy.dayDate} · {previewCopy.time}
+      </p>
+      <p className="font-dm-sans text-sm text-gray-600 mt-1">
+        That's when YMCA registration opens for your {previewCopy.classTime} class. We grab the spot automatically — you'll get a confirmation email.
+      </p>
+    </>
+  )
+
+  const copyA3 = (
+    <>
+      <p className="font-sora font-bold text-gray-900">
+        {previewCopy.dayDate} · {previewCopy.time}
+      </p>
+      <p className="font-dm-sans text-sm text-gray-600 mt-1">
+        Registration opens, we grab your spot, email follows.
       </p>
     </>
   )
@@ -67,6 +90,9 @@ export default function FormPreviewPage() {
   // Visual treatments
   // ──────────────────────────────────────────────────────────────────────
 
+  // "First booking" eyebrow kept; the A1/A2/A3 headings no longer start
+  // with "First booking fires..." — they now lead with just the datetime.
+  // So the reader sees eyebrow + datetime + supporting line, no repetition.
   const LeftBorderCard = ({ children }: { children: React.ReactNode }) => (
     <div className="bg-gray-50 border-l-4 border-l-primary-500 rounded-lg p-4">
       <p className="font-dm-sans text-xs uppercase tracking-wider text-primary-600 font-semibold mb-2">
@@ -110,14 +136,28 @@ export default function FormPreviewPage() {
           <div className="space-y-6">
             <div>
               <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
-                Variant A — Factual / calendar-anchored
+                Variant A1 — Factual, plain-language supporting line
               </p>
-              <LeftBorderCard>{copyA}</LeftBorderCard>
+              <LeftBorderCard>{copyA1}</LeftBorderCard>
             </div>
 
             <div>
               <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
-                Variant B — Anticipatory coach-voice
+                Variant A2 — Factual, names the class context
+              </p>
+              <LeftBorderCard>{copyA2}</LeftBorderCard>
+            </div>
+
+            <div>
+              <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
+                Variant A3 — Factual, ultra-compact
+              </p>
+              <LeftBorderCard>{copyA3}</LeftBorderCard>
+            </div>
+
+            <div>
+              <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
+                Variant B — Anticipatory coach-voice (original, kept for comparison)
               </p>
               <LeftBorderCard>{copyB}</LeftBorderCard>
             </div>
@@ -144,7 +184,7 @@ export default function FormPreviewPage() {
             Visual treatments
           </h2>
           <p className="font-dm-sans text-sm text-gray-500 mb-6">
-            All rendered with copy variant A so visual differences stand out.
+            All rendered with copy variant A1 so visual differences stand out.
           </p>
 
           <div className="space-y-6">
@@ -152,21 +192,21 @@ export default function FormPreviewPage() {
               <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
                 Treatment 1 — Left-border card (highest visual weight)
               </p>
-              <LeftBorderCard>{copyA}</LeftBorderCard>
+              <LeftBorderCard>{copyA1}</LeftBorderCard>
             </div>
 
             <div>
               <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
                 Treatment 2 — Info Alert (matches other form feedback)
               </p>
-              <InfoAlert>{copyA}</InfoAlert>
+              <InfoAlert>{copyA1}</InfoAlert>
             </div>
 
             <div>
               <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
                 Treatment 3 — Bare hint (lightest touch)
               </p>
-              <BareHint>{copyA}</BareHint>
+              <BareHint>{copyA1}</BareHint>
             </div>
           </div>
         </section>
@@ -315,7 +355,7 @@ export default function FormPreviewPage() {
             {/* Section headers */}
             <div>
               <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-3">
-                Light section headers — breaks the flat list into three groupings
+                Light section headers — two groupings (Registration Opens folds under "When" since it's just another when-related field)
               </p>
 
               <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-6">
@@ -379,26 +419,20 @@ export default function FormPreviewPage() {
                         All YMCA WNC classes run in Eastern time, wherever you are.
                       </p>
                     </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-sora text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 pb-2 mb-3">
-                    Advanced
-                  </h3>
-                  <div>
-                    <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
-                      Registration Opens
-                    </label>
-                    <input
-                      type="number"
-                      defaultValue={26}
-                      className="w-20 px-3 py-2 border border-gray-300 rounded text-sm"
-                      readOnly
-                    />
-                    <p className="font-dm-sans text-xs text-gray-500 mt-1">
-                      Hours before class. Most are 26 — double-check the class page on the YMCA site if yours is different.
-                    </p>
+                    <div>
+                      <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                        Registration Opens
+                      </label>
+                      <input
+                        type="number"
+                        defaultValue={26}
+                        className="w-20 px-3 py-2 border border-gray-300 rounded text-sm"
+                        readOnly
+                      />
+                      <p className="font-dm-sans text-xs text-gray-500 mt-1">
+                        Hours before class. Most are 26 — double-check the class page on the YMCA site if yours is different.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
