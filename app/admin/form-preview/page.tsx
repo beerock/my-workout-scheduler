@@ -184,7 +184,7 @@ export default function FormPreviewPage() {
             {/* Field hint polish */}
             <div>
               <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-3">
-                "Registration Opens" field — hint copy
+                "Registration Opens" field — hint copy (context: ~95% of classes use 26 hrs, but it's class-specific and needs user confirmation)
               </p>
 
               <div className="space-y-3">
@@ -207,7 +207,7 @@ export default function FormPreviewPage() {
                 </div>
 
                 <div>
-                  <p className="font-dm-sans text-xs text-gray-400 mb-1">Proposed A — adds nuance without softening</p>
+                  <p className="font-dm-sans text-xs text-gray-400 mb-1">Proposed A — names the per-class variability</p>
                   <div className="bg-white border border-gray-200 rounded-lg p-3">
                     <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
                       Registration Opens
@@ -219,13 +219,13 @@ export default function FormPreviewPage() {
                       readOnly
                     />
                     <p className="font-dm-sans text-xs text-gray-500 mt-1">
-                      Hours before class — YMCA usually opens 26 hrs ahead, confirm for your branch.
+                      Hours before class. Most are 26 — double-check the class page on the YMCA site if yours is different.
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <p className="font-dm-sans text-xs text-gray-400 mb-1">Proposed B — drops the default reference entirely</p>
+                  <p className="font-dm-sans text-xs text-gray-400 mb-1">Proposed B — shorter, same intent</p>
                   <div className="bg-white border border-gray-200 rounded-lg p-3">
                     <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
                       Registration Opens
@@ -237,7 +237,167 @@ export default function FormPreviewPage() {
                       readOnly
                     />
                     <p className="font-dm-sans text-xs text-gray-500 mt-1">
-                      Check your YMCA branch — typically 26 hrs before class.
+                      Hours before class. Usually 26 — verify on the YMCA class page to be safe.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Timezone hidden — ET indicator */}
+            <div>
+              <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-3">
+                Timezone field hidden — "Time" label carries the ET signal
+              </p>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="font-dm-sans text-xs text-gray-400 mb-1">Option A — label suffix + hint</p>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                      Time (Eastern)
+                    </label>
+                    <input
+                      type="text"
+                      defaultValue="04:15 PM"
+                      className="w-32 px-3 py-2 border border-gray-300 rounded text-sm"
+                      readOnly
+                    />
+                    <p className="font-dm-sans text-xs text-gray-500 mt-1">
+                      All YMCA WNC classes run in Eastern time, wherever you are.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="font-dm-sans text-xs text-gray-400 mb-1">Option B — hint only, standard label</p>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                      Time
+                    </label>
+                    <input
+                      type="text"
+                      defaultValue="04:15 PM"
+                      className="w-32 px-3 py-2 border border-gray-300 rounded text-sm"
+                      readOnly
+                    />
+                    <p className="font-dm-sans text-xs text-gray-500 mt-1">
+                      Eastern time — all YMCA WNC classes run ET regardless of where you are.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="font-dm-sans text-xs text-gray-400 mb-1">Option C — inline badge (visual marker)</p>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                      Time
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        defaultValue="04:15 PM"
+                        className="w-32 px-3 py-2 border border-gray-300 rounded text-sm"
+                        readOnly
+                      />
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 font-dm-sans">
+                        ET
+                      </span>
+                    </div>
+                    <p className="font-dm-sans text-xs text-gray-500 mt-1">
+                      All YMCA WNC classes are in Eastern time.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section headers */}
+            <div>
+              <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-3">
+                Light section headers — breaks the flat list into three groupings
+              </p>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-6">
+                <div>
+                  <h3 className="font-sora text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 pb-2 mb-3">
+                    What class
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                        Class Name
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue="BODYPUMP"
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                        readOnly
+                      />
+                    </div>
+                    <div>
+                      <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                        Branch
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue="Woodfin YMCA"
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-sora text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 pb-2 mb-3">
+                    When
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                        Day
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue="Monday"
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                        readOnly
+                      />
+                    </div>
+                    <div>
+                      <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                        Time (Eastern)
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue="04:15 PM"
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                        readOnly
+                      />
+                      <p className="font-dm-sans text-xs text-gray-500 mt-1">
+                        All YMCA WNC classes run in Eastern time, wherever you are.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-sora text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 pb-2 mb-3">
+                    Advanced
+                  </h3>
+                  <div>
+                    <label className="font-sora text-sm font-semibold text-gray-700 block mb-1">
+                      Registration Opens
+                    </label>
+                    <input
+                      type="number"
+                      defaultValue={26}
+                      className="w-20 px-3 py-2 border border-gray-300 rounded text-sm"
+                      readOnly
+                    />
+                    <p className="font-dm-sans text-xs text-gray-500 mt-1">
+                      Hours before class. Most are 26 — double-check the class page on the YMCA site if yours is different.
                     </p>
                   </div>
                 </div>
