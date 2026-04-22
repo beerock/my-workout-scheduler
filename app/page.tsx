@@ -76,16 +76,19 @@ export default async function Home() {
         {/* Hero Section */}
         <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           <div className="max-w-4xl mx-auto text-center">
-            {/* Hero badge — showcase voice (see docs/VOICE.md). Signals an
-                intentional product scope rather than generic SaaS positioning.
-                Owner picks between this and the alternatives surfaced at the
-                Sprint 1 ★ review gate. */}
+            {/* Hero badge — showcase voice (see docs/VOICE.md). "YMCA WNC"
+                abbrev used here instead of "YMCA of Western NC" so the pill
+                stays on one line at 320px (the long form widows "beta" onto
+                a second line inside the pill, which reads as accidental).
+                VOICE.md allows whichever compact form reads better in the
+                target layout; on a rounded-pill badge at mobile widths,
+                the shorter form always wins. */}
             <div
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 border border-primary-100 mb-6 sm:mb-8 opacity-0 animate-fade-in-up"
             >
-              <div className="w-2 h-2 rounded-full bg-success-500 animate-pulse" />
-              <span className="font-dm-sans text-sm text-primary-700">
-                Invite-only · YMCA of Western NC beta
+              <div className="w-2 h-2 rounded-full bg-success-500 animate-pulse" aria-hidden="true" />
+              <span className="font-dm-sans text-sm text-primary-700 whitespace-nowrap">
+                Invite-only · YMCA WNC beta
               </span>
             </div>
 
@@ -124,8 +127,13 @@ export default async function Home() {
                   Join the waitlist
                 </Button>
               </Link>
+              {/* Outline (not ghost) for the returning-user CTA — ghost has
+                  no border/background and disappears against the landing's
+                  light radial-gradient background. Outline gives a visible
+                  border that reads as "actionable" without competing with
+                  the primary CTA's solid fill. */}
               <Link href="/login">
-                <Button variant="ghost" size="lg" className="w-full sm:w-auto px-8">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto px-8">
                   I already have an account
                 </Button>
               </Link>

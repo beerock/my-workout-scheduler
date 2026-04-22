@@ -235,11 +235,25 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
     return 'from-gray-400/8'
   }
 
+  // A class is "actively skipping" only when the skip flag is set AND the
+  // target occurrence hasn't yet passed. Once skip_target_datetime is in
+  // the past, the skip no longer applies to any upcoming class — the UI
+  // must render it as a normal active class even if the DB flag is stale
+  // (the booking function clears the flag at runtime, not instantly).
+  // Matches the check in SkipButton + getStatusBadge so all skip-derived
+  // surfaces agree on "are we currently skipping?".
+  const isSkipCurrentlyActive = (classItem: RecurringClass): boolean =>
+    !!(
+      classItem.skip_next_occurrence &&
+      classItem.skip_target_datetime &&
+      new Date() < new Date(classItem.skip_target_datetime)
+    )
+
   // Get dot color for next booking indicator
   const getDotColor = (classItem: RecurringClass): string => {
     if (schedulePaused) return 'bg-amber-500'
     if (!classItem.active) return 'bg-gray-400'
-    if (classItem.skip_next_occurrence) return 'bg-amber-500'
+    if (isSkipCurrentlyActive(classItem)) return 'bg-amber-500'
     return 'bg-primary-500'
   }
 
@@ -330,7 +344,7 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
                   ? 'opacity-60'
                   : !classItem.active
                   ? 'opacity-75 bg-gray-50'
-                  : classItem.skip_next_occurrence
+                  : isSkipCurrentlyActive(classItem)
                   ? 'bg-amber-50/30'
                   : ''
               }`}
@@ -385,7 +399,7 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
                           ? 'Booking paused'
                           : !classItem.active
                           ? 'Class inactive'
-                          : classItem.skip_next_occurrence
+                          : isSkipCurrentlyActive(classItem)
                           ? 'Skipping next occurrence'
                           : `Booking window: ${classItem.booking_window_hours}h before class`
                         }
