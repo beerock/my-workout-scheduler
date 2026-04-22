@@ -1374,7 +1374,7 @@ export default function DesignSystemComponentsPage() {
               <div>
                 <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Without Tagline</h3>
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <Footer showTagline={false} />
+                  <Footer />
                 </div>
               </div>
             </div>
