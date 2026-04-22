@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Button, Input, Alert } from '@/components/ui'
 import AuthLayout from '@/components/AuthLayout'
 import { validateEmail } from '@/lib/validation'
+import { rewriteAuthError } from '@/lib/auth-error-utils'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -68,7 +69,7 @@ function LoginForm() {
     })
 
     if (error) {
-      setError(error.message)
+      setError(rewriteAuthError(error.message))
       setLoading(false)
 
       // Check if error is due to unverified email
@@ -99,7 +100,7 @@ function LoginForm() {
       })
 
       if (error) {
-        setError(error.message)
+        setError(rewriteAuthError(error.message))
       } else {
         setResendSuccess(true)
         setMessage('Verification email sent! Check your inbox.')

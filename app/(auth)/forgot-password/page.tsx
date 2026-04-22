@@ -7,6 +7,7 @@ import { getAuthCallbackUrl } from '@/lib/env-utils'
 import { Button, Input, Alert } from '@/components/ui'
 import AuthLayout from '@/components/AuthLayout'
 import { validateEmail } from '@/lib/validation'
+import { rewriteAuthError } from '@/lib/auth-error-utils'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -31,7 +32,7 @@ export default function ForgotPasswordPage() {
       })
 
       if (error) {
-        setError(error.message)
+        setError(rewriteAuthError(error.message))
       } else {
         setSubmitted(true)
         setCountdown(60) // 60 second cooldown for resend
@@ -54,7 +55,7 @@ export default function ForgotPasswordPage() {
       })
 
       if (error) {
-        setError(error.message)
+        setError(rewriteAuthError(error.message))
       } else {
         setCountdown(60)
       }
