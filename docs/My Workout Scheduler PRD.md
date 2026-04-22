@@ -1,8 +1,8 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.35
+**Version:** 2.36
 **Product Owner:** Brock Busby
-**Last Updated:** April 10, 2026
+**Last Updated:** April 22, 2026
 **Status:** Production - Deployed and Testing
 
 
@@ -168,6 +168,20 @@
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.36:** Sprint 1 — UX + Product Polish (April 2026)
+  - **Voice guide (`docs/VOICE.md`):** codified two registers (coach voice for logged-in surfaces, showcase voice for the landing + waitlist) plus a four-tier taxonomy for coach voice (Confirmed / Working on it / Need your help / FYI), a section-name mapping for every email card, canonical YMCA WNC naming rules, and FROM/reply policy. All 17 email templates rewritten to align.
+  - **Waitlist flow:** public `/signup` page replacing the "invite-only, contact us" dead-end. New `waitlist_signups` table (migration 016), admin review surface at `/admin/waitlist`, branded invite email via `supabase.auth.admin.generateLink({type:'invite'})` + Resend. `waitlist-invite` + `waitlist-confirmation` email templates added.
+  - **Onboarding + failure surface:** `NextClassCard` now has a coach-voice pending state ("On deck / Opens Tue 6:00 AM" pre-window, "Watching / Checking every 15 min" post-window retry) driven by a 7-day confirmed-attempt lookback that catches early-start bookings. New `ActionItemsCard` surfaces classes needing credentials or config fixes in Need-your-help tier; multi-item collapses to a compact list. Rendered above the banner so unresolved actions are the first thing a user sees.
+  - **RecurringClassForm polish:** inline `FirstBookingPreview` shows the next booking datetime as the user fills the form ("Class registration opens / Sun Apr 27 · 2:15 PM / We click Reserve the second it opens"). Edge-case "Booking now" variant for when the window is already open. Form split into "What class" + "When" sections, timezone field hidden (all classes are ET, label suffix communicates this), "Registration Opens" field shows "[26] hours before class" inline, success alert echoes the preview datetime, redirect timeout bumped to 3s so users can read it.
+  - **Landing redesign:** new headline "Auto-book your YMCA class the second it opens." (showcase voice, user-POV imperative), subtitle reframe ("Add your class once — we grab your spot the moment registration opens. No more alarms, no more waiting."), outcome-framed feature cards ("The 4:59 AM alarm, deleted" / "Set it once. Done." / "Gets in when others can't"), CTAs flipped to waitlist-primary + sign-in outline. `text-wrap: balance` on the H1 to avoid desktop widows. Eyebrow pill shortened to "YMCA WNC" at 320px with `whitespace-nowrap`.
+  - **Footer redesign:** removed the generic "Made for gym enthusiasts who value their time" tagline; replaced with two actionable facts (`help@beerock.com` + `brockbusby.com`) above the existing `© 2026 Beerock` signature. `showTagline` prop removed.
+  - **Admin preview surfaces:** `/admin/email-preview`, `/admin/dashboard-preview`, `/admin/form-preview`, `/admin/landing-preview`, `/admin/waitlist` — all gated via layout redirect + `assertAdmin()` server-action defense-in-depth. Pattern for eyeballing component variants during review without orchestrating live data conditions.
+  - **A11y + mobile 320px sweep:** `aria-hidden` on decorative SVGs + emojis, `flex-wrap` on the `NextClassCard` class-details row and `TimeInput` AM/PM toggle so narrow screens don't overflow. `GetStartedBanner` gradient hex swapped to `purple-500/600/700` tokens. Landing-page hex gradients swapped to `primary-*` tokens on the `/dashboard/schedule` "Add Class" button.
+  - **Combobox `searchable` mode:** new `searchable?: boolean` prop. When `false`, the component behaves as a fixed-list dropdown (no search icon, read-only input with CSS truncation, no fuzzy matching, no custom-entry option). Branch field swapped to this mode to fix "Hendersonville Family YMCA" truncation at 320px — native `<select>` text doesn't ellipsize reliably.
+  - **TimeInput mobile fix:** decorative clock icon hidden on mobile, tighter select + AM/PM button widths so the row fits inline on all realistic mobile viewports (375px+). `flex-wrap` remains as a graceful fallback.
+  - **Stale `Skipping next occurrence` label fix:** `ScheduleList` now gates the skip-state banner + dot + tinted-background on `skip_next_occurrence` AND `skip_target_datetime` being in the future (matches `SkipButton` + `getStatusBadge`). UI self-heals even if backend runtime skip-clear lags.
+  - **Auth rate-limit error rewrite:** `rewriteAuthError()` helper in `lib/auth-error-utils.ts` pattern-matches Supabase's built-in "For security purposes, you can only request this after N seconds." and reframes it as "For security purposes, you may submit again in N seconds." Preserves the countdown integer. Applied at `/forgot-password`, `/login`, `/verify-email`.
+  - **Dropped copy clichés:** `/dashboard` exclamation, `/forgot-password` banned "Important:" label, passive subtitles on `/dashboard/schedule/add` + `/dashboard/credentials`, flat-corporate `/dashboard/schedule` subtitle, `/login` + `/signup` "Request an invite" → aligned to the landing's "Join the waitlist" CTA.
 - **v2.35:** Branch Phone Numbers in Action Emails (April 2026)
   - New `YMCA_BRANCH_INFO` lookup in `lib/constants/ymca.ts` with phone + address for all 7 WNC branches
   - Branch phone threaded into 4 email templates as tappable `tel:` links: `booking_failure_technical` (both new variants), `booking_failure_critical` (class-cancelled only), `booking_failure_final`, `booking_no_registration`
