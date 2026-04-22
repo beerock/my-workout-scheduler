@@ -7,6 +7,7 @@ import {
   calculateNextOccurrence,
   formatDateInGymTimezone,
 } from '@/lib/date-utils'
+import { isSkipCurrentlyActive } from '@/lib/skip-utils'
 import type { RecurringClass } from '@/lib/database.types'
 import { Button, Badge } from '@/components/ui'
 import { useBookNowDialog } from '@/hooks/useBookNowDialog'
@@ -27,10 +28,11 @@ export default function SkipButton({ recurringClass, onUpdate, schedulePaused, v
     onComplete: onUpdate || (() => router.refresh()),
   })
 
-  const { skip_next_occurrence, skip_target_datetime, day_of_week, class_time, timezone, active } = recurringClass
+  const { skip_target_datetime, day_of_week, class_time, timezone, active } = recurringClass
 
-  // Determine if skip is active
-  const isSkipActive = skip_target_datetime && new Date() < new Date(skip_target_datetime)
+  // Single source of truth across SkipButton, ScheduleList banner, and
+  // getStatusBadge — see lib/skip-utils.ts for why both flag + datetime.
+  const isSkipActive = isSkipCurrentlyActive(recurringClass)
 
   // Determine if button should be disabled
   const isDisabled = schedulePaused || !active

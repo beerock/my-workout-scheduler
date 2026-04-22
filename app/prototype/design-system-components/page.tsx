@@ -1363,19 +1363,13 @@ export default function DesignSystemComponentsPage() {
           </div>
 
           <Card padding="lg">
-            <div className="space-y-8">
-              <div>
-                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">With Tagline (default)</h3>
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <Footer />
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Without Tagline</h3>
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <Footer />
-                </div>
+            <div>
+              <h3 className="font-sora text-lg font-semibold text-gray-900 mb-4">Standard footer</h3>
+              <p className="font-dm-sans text-sm text-gray-600 mb-4">
+                Two-row layout: actionable links (support + personal site) on top, copyright signature on bottom. Wraps cleanly at 320px via flex-wrap on the link row.
+              </p>
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <Footer />
               </div>
             </div>
           </Card>

@@ -250,6 +250,28 @@ Booking email templates have been touched piecemeal over time and have diverged 
 
 Nice-to-have features that aren't critical.
 
+### `reset-password` rewriteAuthError Coverage
+**Status:** Backlogged | **Priority:** Low
+
+`app/(auth)/reset-password/page.tsx` passes Supabase `updateUser` errors directly to `setError(error.message)` without running them through `rewriteAuthError()` (the helper added in v2.36 that rephrases Supabase's raw rate-limit message). In practice this is unreachable — reset-password requires a fresh magic-link session so the rate limiter effectively can't fire — but for coverage parity with `/forgot-password`, `/login`, and `/verify-email`, wrapping the error in `rewriteAuthError()` keeps the pattern consistent.
+
+**Requirements:**
+- Import `rewriteAuthError` from `@/lib/auth-error-utils`
+- Wrap the two `setError(error.message)` sites in the handler + catch block
+
+**Last Updated:** April 22, 2026
+
+---
+
+### Memoize `FirstBookingPreview` Computation
+**Status:** Backlogged | **Priority:** Low
+
+`computeFirstBookingInfo()` runs on every `RecurringClassForm` render (and the preview component itself re-runs it). The payload is tiny — four primitives in, one formatted string out — so real-world keystroke latency is negligible. But if form-interaction perf ever surfaces as a concern, wrap the call in `useMemo` keyed on `dayOfWeek + classTime + bookingWindowHours + timezone` to skip redundant date-math work.
+
+**Last Updated:** April 22, 2026
+
+---
+
 ### Tokenize Custom Card Shadows
 **Status:** Backlogged | **Priority:** Low
 
