@@ -106,7 +106,7 @@ export default async function Home() {
             >
               Auto-book your YMCA class the{' '}
               <span className="bg-gradient-to-r from-primary-600 to-success-500 bg-clip-text text-transparent">
-                second registration opens.
+                second it opens.
               </span>
             </h1>
 
