@@ -50,7 +50,7 @@ export default async function SchedulePage() {
   return (
     <EditorialLayout
       title="My Schedule"
-      subtitle="Manage your recurring class schedule and booking preferences"
+      subtitle="Your weekly classes. Add, edit, pause."
       actions={
         // Show inline pause control in header - only when classes exist AND not paused
         // (When paused, the content area banner provides the Resume action)
@@ -138,7 +138,7 @@ export default async function SchedulePage() {
           </div>
           <Link
             href="/dashboard/schedule/add"
-            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#1a6fff] to-[#0052e6] text-white font-dm-sans text-sm font-medium rounded-lg hover:-translate-y-0.5 transition-all opacity-0 animate-fade-in-up"
+            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-700 text-white font-dm-sans text-sm font-medium rounded-lg hover:-translate-y-0.5 transition-all opacity-0 animate-fade-in-up"
             style={{ animationDelay: '0.3s', boxShadow: '0 2px 8px rgba(26, 111, 255, 0.25)' }}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

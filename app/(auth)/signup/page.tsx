@@ -5,7 +5,7 @@ import { WaitlistForm } from '@/components/WaitlistForm'
 export default function SignupPage() {
   return (
     <AuthLayout
-      title="Request an invite"
+      title="Join the waitlist"
       subtitle="Currently invite-only. Drop your email and we'll reach out when a spot opens."
     >
       <WaitlistForm />

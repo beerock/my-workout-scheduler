@@ -41,7 +41,7 @@ export default async function DashboardPage() {
   return (
     <EditorialLayout
       title="Dashboard"
-      subtitle={`Welcome back! Your automated booking is ${isPaused ? 'paused' : 'active'}.`}
+      subtitle={`Welcome back. Your automated booking is ${isPaused ? 'paused' : 'active'}.`}
       actions={
         // Show inline pause control in header - only when classes exist AND not paused
         // (When paused, the content area banner provides the Resume action)

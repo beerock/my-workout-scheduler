@@ -208,7 +208,7 @@ function LoginForm() {
         <p className="mt-6 text-center font-dm-sans text-sm text-gray-600">
           Don't have an account?{' '}
           <Link href="/signup" className="text-primary-600 hover:text-primary-700 hover:underline font-medium">
-            Request an invite
+            Join the waitlist
           </Link>
         </p>
     </AuthLayout>

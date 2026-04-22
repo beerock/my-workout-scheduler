@@ -48,8 +48,8 @@ export default async function AddClassPage({ searchParams }: Props) {
     <EditorialLayout
       title={classToCopy ? 'Copy Class' : 'Add Class'}
       subtitle={classToCopy
-        ? 'Copy an existing class and modify as needed'
-        : 'Configure a recurring weekly class that will be automatically booked'}
+        ? 'Copy an existing class and tweak the details.'
+        : 'Tell us which class to watch. We book it every week the second registration opens.'}
     >
       <div className="max-w-2xl mx-auto">
         <Card className="opacity-0 animate-fade-in-up">
