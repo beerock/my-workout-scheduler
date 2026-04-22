@@ -73,6 +73,7 @@ export default async function SchedulePage() {
             branch={stats.nextBooking.branch}
             hoursUntil={stats.nextBooking.hoursUntil}
             bookingStatus={stats.nextBooking.bookingStatus}
+            bookingOpensAt={stats.nextBooking.bookingOpensAt}
           />
         </div>
       ) : null}

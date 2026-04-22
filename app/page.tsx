@@ -94,9 +94,14 @@ export default async function Home() {
 
             {/* Heading — showcase voice, user-POV imperative. Names the
                 gym network + the mechanism + the timing specifically, so
-                the line could only describe this product and no other. */}
+                the line could only describe this product and no other.
+                `text-balance` uses CSS text-wrap: balance to keep the
+                browser from leaving "opens." orphaned on a third line at
+                sm/lg breakpoints. Period at the end is deliberate —
+                signals craft on a portfolio-artifact landing, reads as
+                a complete declarative statement rather than a tagline. */}
             <h1
-              className="font-sora text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 opacity-0 animate-fade-in-up"
+              className="font-sora text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 opacity-0 animate-fade-in-up text-balance"
               style={{ animationDelay: '0.1s' }}
             >
               Auto-book your YMCA class the{' '}
