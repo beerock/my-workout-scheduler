@@ -163,7 +163,7 @@ Same as Sprint 1 (see `~/.claude/plans/frolicking-wishing-lighthouse.md` workflo
 
 ## Critical context inherited from Sprint 1
 
-- **Inngest must be pointing at production before Sprint 1.1 starts.** Sprint 1's PR #122 merge includes the required dashboard action (`Add App → Sync with Vercel` → Production). Verify this BEFORE starting P0 — if Inngest is still calling the old preview URL, Sprint 1.1 email work will land in nobody's inbox. Check the most recent Inngest dashboard run target.
+- **Inngest routes to the most recent Vercel deployment.** The moment Sprint 1.1 pushes its first commit to a feature branch, Inngest auto-swings away from production (where it landed after the Sprint 1 merge) and starts routing events to the preview deploy — meaning real users receive booking emails with `(Preview)` in the FROM name for the entire duration of the sprint. This is a known tech-debt item (see `docs/BACKLOG.md` → "Separate Inngest Apps per Environment") but isn't in Sprint 1.1 scope. Be aware: any P0 email copy work shipped to preview will reach real inboxes until Sprint 1.1 merges.
 - **VOICE.md is authoritative** — two registers (coach + showcase), four coach tiers, section-name mapping, naming rules ("YMCA of Western NC" / "YMCA WNC", never "Asheville YMCA" as org name), FROM/reply policy.
 - **Admin-only preview surfaces** at `/admin/email-preview`, `/admin/dashboard-preview`, `/admin/form-preview`, `/admin/landing-preview`, `/admin/waitlist`. All use the layout + `assertAdmin()` defense-in-depth pattern.
 - **Preview URL** for Sprint 1 branch: `https://my-workout-scheduler-git-feature-s-3feb2b-brock-busbys-projects.vercel.app/<path>`. New branch after merge will get a new preview URL.

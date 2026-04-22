@@ -45,6 +45,25 @@ Allow users to test their gym credentials before saving, ensuring they work with
 
 Important features for near-term after launch.
 
+### Separate Inngest Apps per Environment
+**Status:** Backlogged | **Priority:** High
+
+Inngest currently auto-syncs to the most recent Vercel deployment (preview OR production). Every preview commit on a feature branch redirects Inngest away from production, which means real users receive booking emails from the preview env — including the `(Preview)` suffix in `RESEND_FROM_NAME` that was observed during Sprint 1. Merging a feature branch swings Inngest back to production automatically, but the next feature-branch push swings it back to preview.
+
+Fix: configure Inngest to maintain TWO registered apps — one permanently pointed at production, one for preview — so booking events in production are always routed to production, and preview deploys serve only as an integration-testing surface with their own isolated event pipeline.
+
+**Requirements:**
+- Register production app with Vercel integration tied to production deploys only
+- Register preview app separately (may use env-scoped function registration)
+- Confirm production events never flow to preview and vice versa
+- Document the setup in `docs/INNGEST_SETUP.md`
+
+**Dependencies:** Understanding of Inngest's Vercel integration options (may require Inngest support contact)
+
+**Last Updated:** April 22, 2026
+
+---
+
 ### Invite Code Signup Gate
 **Status:** Backlogged | **Priority:** High
 
