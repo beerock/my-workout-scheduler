@@ -142,11 +142,17 @@ export const TimeInput: React.FC<TimeInputProps> = ({
 
       {/* Time picker row — flex-wrap so the AM/PM toggle drops to a
           second line at ~320px viewport widths where the hour + minute
-          + AM/PM combination can't all fit on one row. Desktop sees no
-          change; there's always room. */}
+          + AM/PM combination can't all fit on one row. At that size we
+          also hide the decorative clock icon (the label carries the
+          semantic meaning) to free up another ~28px, which is usually
+          enough to keep AM/PM inline. If wrapping still happens on the
+          narrowest viewports, the `justify-center` + `w-full` on the
+          AM/PM toggle keeps it visually anchored under the time inputs
+          instead of left-orphaned against the form edge. */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Clock icon */}
-        <div className="flex-shrink-0">
+        {/* Clock icon — hidden on narrow viewports to leave room for
+            the AM/PM toggle. */}
+        <div className="flex-shrink-0 hidden sm:block" aria-hidden="true">
           {ClockIcon}
         </div>
 
@@ -201,8 +207,12 @@ export const TimeInput: React.FC<TimeInputProps> = ({
           </div>
         </div>
 
-        {/* AM/PM toggle */}
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden ml-1">
+        {/* AM/PM toggle. `w-full sm:w-auto` + `justify-center sm:justify-start`
+            means: when the row wraps on narrow viewports, the toggle takes
+            full width and centers itself (so PM can't clip the right edge);
+            on wider viewports it sits inline next to the minute select. */}
+        <div className="flex w-full sm:w-auto justify-center sm:justify-start sm:ml-1">
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
           <button
             type="button"
             onClick={() => {
@@ -243,6 +253,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({
           >
             PM
           </button>
+          </div>
         </div>
       </div>
 

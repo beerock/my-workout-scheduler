@@ -100,6 +100,19 @@ When the 10-minute `waitForEvent` times out, the function schedules a retry with
 
 ## Post-MVP: Medium Priority
 
+### Stale "Skipping next occurrence" Label on My Schedule
+**Status:** Backlogged | **Priority:** Medium
+
+After a skipped class's start time has passed, the class card on `/dashboard/schedule` still displays "Skipping next occurrence" with the orange dot indicator, even though the backend state has correctly cleared the skip (the Skip Next button is back to its active primary state, ready to accept a new skip). Pure display/state mismatch — the skip logic is working, the label just isn't refreshing against current time.
+
+Likely cause: the label renders off `skip_until_date != null` rather than checking whether the skip date is still in the future. Fix is in the schedule list card component — compare `skip_until_date` against "now" in the gym's timezone before deciding whether to show the banner.
+
+**Repro:** Skip next occurrence on any class, wait until the class's scheduled start time passes, reload the My Schedule page.
+
+**Last Updated:** April 22, 2026
+
+---
+
 ### GitHub Timeout Handling
 **Status:** Planned | **Priority:** Medium
 

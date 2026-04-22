@@ -89,16 +89,17 @@ export default async function Home() {
               </span>
             </div>
 
-            {/* Heading */}
+            {/* Heading — showcase voice, user-POV imperative. Names the
+                gym network + the mechanism + the timing specifically, so
+                the line could only describe this product and no other. */}
             <h1
               className="font-sora text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 opacity-0 animate-fade-in-up"
               style={{ animationDelay: '0.1s' }}
             >
-              Never miss a{' '}
+              Auto-book your YMCA class the{' '}
               <span className="bg-gradient-to-r from-primary-600 to-success-500 bg-clip-text text-transparent">
-                popular class
-              </span>{' '}
-              again
+                second registration opens.
+              </span>
             </h1>
 
             {/* Subtitle */}
@@ -106,23 +107,26 @@ export default async function Home() {
               className="font-dm-sans text-lg sm:text-xl text-gray-600 mb-8 sm:mb-10 max-w-2xl mx-auto opacity-0 animate-fade-in-up"
               style={{ animationDelay: '0.2s' }}
             >
-              Set up your schedule once, and we'll automatically book your gym classes
-              the instant registration opens. No more alarms, no more waiting.
+              Add your class once — we grab your spot the moment registration
+              opens. No more alarms, no more waiting.
             </p>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons — waitlist-primary since 99% of landing visitors
+                aren't returning users. The header already carries a Sign In
+                link for the ones who are, and the ghost secondary here gives
+                returning users a second scan path into the same place. */}
             <div
               className="flex flex-col sm:flex-row gap-4 justify-center mb-12 sm:mb-16 opacity-0 animate-fade-in-up"
               style={{ animationDelay: '0.3s' }}
             >
-              <Link href="/login">
+              <Link href="/signup">
                 <Button variant="primary" size="lg" className="w-full sm:w-auto px-8">
-                  Sign In
+                  Join the waitlist
                 </Button>
               </Link>
-              <Link href="/signup">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto px-8">
-                  Request an Invite
+              <Link href="/login">
+                <Button variant="ghost" size="lg" className="w-full sm:w-auto px-8">
+                  I already have an account
                 </Button>
               </Link>
             </div>
@@ -132,39 +136,42 @@ export default async function Home() {
               className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 opacity-0 animate-fade-in-up"
               style={{ animationDelay: '0.4s' }}
             >
+              {/* Outcome-framed cards (task 6 variant F2). Titles describe
+                  what the reader gets, not what the product does — pairs
+                  with the user-POV imperative headline above. */}
               <Card variant="outlined" padding="md" className="text-left border-l-4 border-l-primary-500 hover:-translate-y-1 transition-all duration-300">
                 <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center mb-3">
-                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="font-sora font-bold text-gray-900 mb-1">Instant Booking</h3>
+                <h3 className="font-sora font-bold text-gray-900 mb-1">The 4:59 AM alarm, deleted</h3>
                 <p className="font-dm-sans text-sm text-gray-600">
-                  Books the moment registration opens, faster than humanly possible
+                  Booking fires the instant registration opens — faster than a human could.
                 </p>
               </Card>
 
               <Card variant="outlined" padding="md" className="text-left border-l-4 border-l-success-500 hover:-translate-y-1 transition-all duration-300">
                 <div className="w-10 h-10 rounded-lg bg-success-100 flex items-center justify-center mb-3">
-                  <svg className="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h3 className="font-sora font-bold text-gray-900 mb-1">Weekly Schedule</h3>
+                <h3 className="font-sora font-bold text-gray-900 mb-1">Set it once. Done.</h3>
                 <p className="font-dm-sans text-sm text-gray-600">
-                  Set your recurring classes once and forget about it
+                  Add a recurring class; it auto-books every week until you say stop.
                 </p>
               </Card>
 
               <Card variant="outlined" padding="md" className="text-left border-l-4 border-l-secondary-500 hover:-translate-y-1 transition-all duration-300">
                 <div className="w-10 h-10 rounded-lg bg-secondary-100 flex items-center justify-center mb-3">
-                  <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="font-sora font-bold text-gray-900 mb-1">Smart Retry</h3>
+                <h3 className="font-sora font-bold text-gray-900 mb-1">Gets in when others can't</h3>
                 <p className="font-dm-sans text-sm text-gray-600">
-                  If class is full, we keep trying until a spot opens up
+                  Full class? We retry every 15 minutes until a spot opens or class starts.
                 </p>
               </Card>
             </div>
