@@ -51,20 +51,33 @@ The card's Sprint 1 implementation works for the common case but has untested st
 - Does the card need a "dismiss this item for now" escape hatch when the user fixed the issue out-of-band and the card hasn't refreshed?
 - How does the card behave when the same class has multiple consecutive failures of different types?
 
+**Stale-skip-flag telemetry (deferred from PR #125 code review):** the hydration-safe mount-flag gating in `ScheduleList` + `SkipButton` permanently masks the case where `skip_next_occurrence=true` in the DB but the computed window has already elapsed (stale flag the backend cleanup job failed to clear). Pre-PR-125 this would flicker visibly; post-PR-125 it renders as not-skipping on both server AND client with no signal. Add a telemetry breadcrumb (e.g. `console.warn` or Sentry event) when `mounted && skip_next_occurrence && !isSkipCurrentlyActive(classItem)` — captures silent DB/compute drift that the UI would otherwise hide forever.
+
 **Not in scope:** redesigning the card structure or voice — the Sprint 1 shape is working. This is debugging state-machine edge cases and filling in missing interactions.
 
-### P3 — `NextClassCard` state-matrix verification (new)
-Sprint 1 + the two hotfix PRs (#123, #124) reworked the pending states substantially:
+### P3 — `NextClassCard` state-matrix verification + refactor (new)
+Sprint 1 + the three hotfix PRs (#123, #124, #125) reworked the pending states substantially:
 - "On deck — pre-window" (bookingOpensAt set)
 - "On deck — within-window, no active retry" (default pending)
 - "Watching — actively retrying class-full loop" (isRetrying=true)
 - "Booked" (confirmed)
 - "Waitlist" (waitlisted)
 
-Do a systematic walk through each state in both preview (`/admin/dashboard-preview`) and production data. Verify:
+**Verification:** systematic walk through each state in both preview (`/admin/dashboard-preview`) and production data. Verify:
 - Every state renders correctly at 320px, 375px, desktop
 - Transitions between states behave correctly (skip → unskip, post-window natural transition to next week's pre-window, class-full → retry → confirmed)
 - The `isRetrying` detection in `dashboard-stats.ts` correctly distinguishes class-full retries from other failed statuses (no false positives)
+
+**Refactor (deferred from PR #124/#125 code review):**
+- **Collapse three flat fields into a discriminated `pendingState` union** on `DashboardStats.nextBooking`. Current shape has `bookingStatus`, `bookingOpensAt`, and `isRetrying` as three orthogonal fields — a tagged union prevents invalid combinations (e.g. `isRetrying=true + bookingStatus='confirmed'`) from being constructed and makes NextClassCard's render chain a compile-time exhaustive switch. Suggested shape:
+  ```ts
+  pendingState:
+    | { kind: 'pre_window'; opensAt: string }
+    | { kind: 'retrying' }
+    | { kind: 'on_deck' }
+  ```
+  ~30-line refactor, worth doing before a 4th pending sub-state lands.
+- **Collapse the duplicated hydration-fix comment blocks** across `FirstBookingPreview`, `BookingHistory`, `ScheduleList`, `SkipButton`. Each currently re-derives the same "server/client wall-clock race → React #418 → mount-flag gating" reasoning. Replace with one-liners pointing at the CLAUDE.md "Time-dependent rendering requires a mount flag" gotcha so the rationale doesn't drift across four files.
 
 ---
 
