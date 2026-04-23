@@ -9,10 +9,15 @@ type NextClassCardProps = {
   branch: string
   hoursUntil: number
   bookingStatus?: 'confirmed' | 'waitlisted' | 'pending'
-  // Pre-formatted booking-open timestamp (e.g. "Sun 2:15 PM") in the gym's
-  // timezone. Only relevant to the pending state; null after the window has
-  // opened, or when the booking already landed.
+  // Pre-formatted booking-open timestamp (e.g. "Wed, Apr 30 · 5:00 AM") in
+  // the gym's timezone. Only set for pending + pre-window; null otherwise.
   bookingOpensAt?: string | null
+  // True only when the booking function is actively retrying a class-full
+  // loop (every 15 min until class starts). Unlocks the "Watching /
+  // Checking every 15 min" copy. Default pending state (no retry) shows
+  // the honest "On deck / in X hrs" countdown instead, because users can
+  // register / waitlist / cancel outside this system.
+  isRetrying?: boolean
   onViewSchedule?: () => void
 }
 
@@ -33,6 +38,7 @@ export default function NextClassCard({
   hoursUntil,
   bookingStatus = 'pending',
   bookingOpensAt = null,
+  isRetrying = false,
   onViewSchedule,
 }: NextClassCardProps) {
   // Format hours display with unit
@@ -194,33 +200,13 @@ export default function NextClassCard({
                 {countdown.value === 'Now' ? 'Starting now' : `in ${countdown.value} ${countdown.unit}`}
               </span>
             </>
-          ) : bookingOpensAt ? (
+          ) : isRetrying ? (
             <>
-              {/* Pending, pre-window: "On deck" label per owner review —
-                  "Watching" was slightly dishonest here since we're on a
-                  timer, not actively monitoring the YMCA site. Coach-voice
-                  Working-on-it tier, differentiates cleanly from the
-                  post-window "Watching" state below. The timestamp anchors
-                  the "when" on the actionable moment (booking opens)
-                  rather than class start. */}
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="font-sora text-base sm:text-lg font-bold text-primary-300 uppercase tracking-wide">
-                  On deck
-                </span>
-              </div>
-              <span className="font-dm-sans text-sm sm:text-base text-primary-200/80 font-medium">
-                Opens {bookingOpensAt}
-              </span>
-            </>
-          ) : (
-            <>
-              {/* Pending, window already open: the system is actively
-                  retrying. Same Working-on-it tier as the pre-window state
-                  but more honest ("checking every 15 min" is what is
-                  literally happening now, not a forecast). */}
+              {/* Pending + actively retrying the class-full loop. The ONE
+                  case where we legitimately know a retry is running (the
+                  booking function kicked it off after a 'failed, class full'
+                  attempt). Literal "every 15 min" is honest here — it's
+                  what the system is actually doing. */}
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -232,6 +218,33 @@ export default function NextClassCard({
               </div>
               <span className="font-dm-sans text-sm sm:text-base text-primary-200/80 font-medium">
                 Checking every 15 min
+              </span>
+            </>
+          ) : (
+            <>
+              {/* Pending, no retry loop — unified "On deck" state. Same
+                  label whether the booking window is pre-open OR within-
+                  window (just no retry in flight), because users can also
+                  register / waitlist / cancel via the YMCA app + website
+                  outside this system and we shouldn't assert state we
+                  don't own. Sub-text varies by what data we have:
+                    - bookingOpensAt set → pre-window, "Opens [date time]"
+                    - bookingOpensAt null → time-until-class (same countdown
+                      shape as confirmed/waitlisted). */}
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-sora text-base sm:text-lg font-bold text-primary-300 uppercase tracking-wide">
+                  On deck
+                </span>
+              </div>
+              <span className="font-dm-sans text-sm sm:text-base text-primary-200/80 font-medium">
+                {bookingOpensAt
+                  ? `Opens ${bookingOpensAt}`
+                  : countdown.value === 'Now'
+                    ? 'Starting now'
+                    : `in ${countdown.value} ${countdown.unit}`}
               </span>
             </>
           )}

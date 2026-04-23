@@ -129,7 +129,7 @@ export default function DashboardPreviewPage() {
 
             <div>
               <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
-                Pending, pre-window (booking opens at…)
+                On deck — pre-window (booking window hasn't opened yet)
               </p>
               <NextClassCard
                 dayTime="Wednesday 8:00 AM"
@@ -137,13 +137,13 @@ export default function DashboardPreviewPage() {
                 branch="Woodfin YMCA"
                 hoursUntil={40}
                 bookingStatus="pending"
-                bookingOpensAt="Tue 6:00 AM"
+                bookingOpensAt="Tue, Apr 29 · 6:00 AM"
               />
             </div>
 
             <div>
               <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
-                Pending, post-window retry (checking every 15 min)
+                On deck — within window, no active retry (default pending)
               </p>
               <NextClassCard
                 dayTime="Wednesday 8:00 AM"
@@ -152,6 +152,21 @@ export default function DashboardPreviewPage() {
                 hoursUntil={20}
                 bookingStatus="pending"
                 bookingOpensAt={null}
+              />
+            </div>
+
+            <div>
+              <p className="font-dm-sans text-xs uppercase tracking-wider text-gray-500 mb-2">
+                Watching — actively retrying the class-full loop (isRetrying=true)
+              </p>
+              <NextClassCard
+                dayTime="Wednesday 8:00 AM"
+                classType="BODYPUMP HEAVY"
+                branch="Woodfin YMCA"
+                hoursUntil={20}
+                bookingStatus="pending"
+                bookingOpensAt={null}
+                isRetrying
               />
             </div>
           </div>
