@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { setSkipNextOccurrence } from '@/app/actions/recurring-classes'
 import {
@@ -30,9 +30,16 @@ export default function SkipButton({ recurringClass, onUpdate, schedulePaused, v
 
   const { skip_target_datetime, day_of_week, class_time, timezone, active } = recurringClass
 
-  // Single source of truth across SkipButton, ScheduleList banner, and
-  // getStatusBadge — see lib/skip-utils.ts for why both flag + datetime.
-  const isSkipActive = isSkipCurrentlyActive(recurringClass)
+  // Gate the skip-currently-active check on client mount. `isSkipCurrentlyActive`
+  // calls `new Date()`, which can resolve to different ms on the server vs
+  // the client and produces React error #418 (hydration mismatch) at
+  // boundary conditions. Server always renders the not-skipping branch;
+  // the real check runs after the mount effect fires.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  const isSkipActive = mounted && isSkipCurrentlyActive(recurringClass)
 
   // Determine if button should be disabled
   const isDisabled = schedulePaused || !active
