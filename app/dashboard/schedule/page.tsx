@@ -12,6 +12,7 @@ import NextClassCard from '@/components/NextClassCard'
 import PauseBanner from '@/components/PauseBanner'
 import PausedActiveStatCard from '@/components/PausedActiveStatCard'
 import GetStartedBanner from '@/components/GetStartedBanner'
+import ActionItemsCard from '@/components/ActionItemsCard'
 import SuccessRateCard from '@/components/SuccessRateCard'
 import DashboardStatCard from '@/components/DashboardStatCard'
 import Link from 'next/link'
@@ -59,6 +60,13 @@ export default async function SchedulePage() {
         )
       }
     >
+      {/* Action items surface — Need-your-help tier, same pattern as /dashboard.
+          Rendered above the banner so unresolved actions are the first thing
+          a user sees when landing on the schedule page too. Hidden when empty. */}
+      {stats?.actionItems && stats.actionItems.length > 0 && (
+        <ActionItemsCard items={stats.actionItems} />
+      )}
+
       {/* Pause Banner OR Next Class Card OR Get Started Banner - mutually exclusive */}
       {/* Show GetStartedBanner when no classes, regardless of pause state */}
       {classes.length === 0 ? (
