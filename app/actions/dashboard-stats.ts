@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { startOfWeek, endOfWeek } from 'date-fns'
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
 import { calculateNextOccurrence, formatTime12Hour } from '@/lib/date-utils'
+import { isRetrying } from '@/lib/booking-error-utils'
 
 /**
  * An action-required item surfaced on the dashboard failure surface. Today
@@ -36,10 +37,14 @@ export type DashboardStats = {
     branch: string
     bookingStatus: 'confirmed' | 'waitlisted' | 'pending'
     // When the booking window opens for this specific occurrence, pre-formatted
-    // in the gym's timezone (e.g. "Sun 2:15 PM"). Only set when bookingStatus
-    // is 'pending' and the window hasn't opened yet; null otherwise (either
-    // already booked/waitlisted or window already open and retrying).
+    // in the gym's timezone (e.g. "Wed, Apr 30 · 5:00 AM"). Only set when the
+    // status is 'pending' and the window hasn't opened yet; null otherwise.
     bookingOpensAt: string | null
+    // True only when we know the booking function is actively retrying the
+    // "class full" loop (latest attempt status='failed' with 'full' keyword).
+    // NextClassCard uses this to decide between "On deck / in X hrs" (default
+    // pending) and "Watching / Checking every 15 min" (active retry).
+    isRetrying: boolean
   } | null
   // Empty array when no class needs user action. The dashboard renders the
   // ActionItemsCard only when this is non-empty.
@@ -177,6 +182,7 @@ export async function getDashboardStats(): Promise<{
               branch: cls.branch,
               bookingStatus: 'pending', // Default, may be updated below
               bookingOpensAt: null, // Default, set below for pre-window pending state
+              isRetrying: false, // Default, flipped below if latest attempt is a class-full retry
             }
           }
         } catch (e) {
@@ -207,23 +213,26 @@ export async function getDashboardStats(): Promise<{
           soonestOccurrence.getTime() - 7 * 24 * 60 * 60 * 1000
         const lookbackFloor = new Date(lookbackFloorMs).toISOString()
 
-        // Pull the most-recent attempt of ANY status so we can distinguish:
+        // Four pending sub-states the card needs to distinguish:
         //   - confirmed / waitlisted → the booking landed, show that result
-        //   - any other status (retrying, failed, pending) → retry loop is
-        //     still running (or exhausted); "Watching / Checking every 15 min"
-        //     is the closest correct label, so we leave the default pending
-        //     state and let NextClassCard render it
-        //   - NO attempt at all AND the window has already opened → the
-        //     occurrence was never picked up. Happens when a class is created
-        //     AFTER its booking window opens and the user declines the
-        //     BookNowDialog. Without this branch the card falsely reads
-        //     "Watching / Checking every 15 min" even though nothing is
-        //     actually running. Advance the card's target to NEXT week's
-        //     occurrence so it reflects the real next booking the system
-        //     will make.
+        //   - pre-window (booking window hasn't opened yet) → "On deck /
+        //     Opens Wed, Apr 30 · 5:00 AM"
+        //   - within window, actively retrying class-full loop → "Watching /
+        //     Checking every 15 min" (isRetrying=true, the ONE case where
+        //     we genuinely know a retry loop is running because we kicked it
+        //     off ourselves)
+        //   - within window, any other pending reality → "On deck / in X hrs"
+        //     (the default — we see a class coming up, we don't assert more
+        //     than we know; users can register via the YMCA app / website
+        //     outside this system)
+        //
+        // Date is always included in the pre-window format ("Wed, Apr 30 ·
+        // 5:00 AM") so users can't confuse this Wednesday with next
+        // Wednesday — matters whenever the next occurrence is 7+ days out
+        // (skipped class, or current window already passed).
         const { data: recentAttempts } = await supabase
           .from('booking_attempts')
-          .select('status')
+          .select('status, error_message')
           .eq('recurring_class_id', soonestClassId)
           .gte('attempt_timestamp', lookbackFloor)
           .order('attempt_timestamp', { ascending: false })
@@ -233,42 +242,28 @@ export async function getDashboardStats(): Promise<{
         const isConfirmedOrWaitlisted =
           latestAttempt?.status === 'confirmed' || latestAttempt?.status === 'waitlisted'
 
-        const winningClass = userClasses.find((c) => c.id === soonestClassId)
-        const tz = winningClass?.timezone ?? 'America/New_York'
-
         if (isConfirmedOrWaitlisted) {
           soonest.bookingStatus = latestAttempt.status as 'confirmed' | 'waitlisted'
         } else if (windowOpenMs > now.getTime()) {
-          // Pre-window — show "On deck / Opens [time]". Pre-format the timestamp
-          // in the class's own timezone so NextClassCard doesn't have to know
-          // about timezones.
+          const winningClass = userClasses.find((c) => c.id === soonestClassId)
+          const tz = winningClass?.timezone ?? 'America/New_York'
           soonest.bookingOpensAt = formatInTimeZone(
             new Date(windowOpenMs),
             tz,
-            'EEE h:mm a'
+            'EEE, MMM d · h:mm a'
           )
-        } else if (!latestAttempt) {
-          // Post-window and no attempt exists → this occurrence was missed
-          // (class created post-window, BookNowDialog declined, etc.).
-          // Advance to next week's occurrence; the card now correctly shows
-          // "On deck" for that instead of lying with "Watching".
-          const nextWeekOccurrence = new Date(
-            soonestOccurrence.getTime() + 7 * 24 * 60 * 60 * 1000
-          )
-          const nextWeekWindowOpenMs =
-            nextWeekOccurrence.getTime() - soonestBookingWindowHours * 60 * 60 * 1000
-          const hoursUntilNextWeek =
-            (nextWeekOccurrence.getTime() - now.getTime()) / (1000 * 60 * 60)
-
-          soonest.hoursUntil = Math.round(hoursUntilNextWeek)
-          soonest.bookingOpensAt = formatInTimeZone(
-            new Date(nextWeekWindowOpenMs),
-            tz,
-            'EEE h:mm a'
-          )
+        } else if (
+          latestAttempt &&
+          isRetrying(latestAttempt.status, latestAttempt.error_message)
+        ) {
+          // Within-window, class-full retry loop actively running — flip
+          // the flag so NextClassCard switches to "Watching / Checking
+          // every 15 min" copy.
+          soonest.isRetrying = true
         }
-        // else: post-window AND a retry/failed attempt exists → leave the
-        //       default pending state; NextClassCard renders "Watching".
+        // else: within booking window / post-window with no active retry
+        //       loop → leave defaults; NextClassCard renders "On deck /
+        //       in X hrs" based on hoursUntil.
       }
 
       nextBooking = soonest
