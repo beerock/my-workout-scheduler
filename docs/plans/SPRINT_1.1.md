@@ -22,6 +22,23 @@ Read these first, in this order:
 2. docs/VOICE.md (voice registers + tier taxonomy + section-name mapping)
 3. CLAUDE.md (Critical Gotchas, especially: Inngest routing, VOICE.md guardrails, admin-preview pattern, hydration mount-flag pattern)
 
+Secondary references (read only if SPRINT_1.1.md doesn't answer a scoping question):
+- ~/.claude/plans/frolicking-wishing-lighthouse.md — original 3-sprint audit. Sprint 1 task 6 (line 230 onward) scoped a holistic /frontend-design review that was NOT executed — Sprint 1.1 is that deferred review pass.
+- docs/plans/SPRINT_1.5.md — parallel follow-up sprint (credential testing, realtime retry, NextClassCard discriminated-union refactor, ActionItemsCard edge-case debugging). If you notice work that belongs there, punt don't absorb.
+
+Sprint 1 shipped and is live in production at https://myworkout.beerock.com. Summary of what exists for Sprint 1.1 to review:
+- docs/VOICE.md (two registers + four coach tiers + section-name map + FROM/reply policy)
+- 17 email templates rewritten to match VOICE.md; preview at /admin/email-preview
+- Waitlist flow (/signup + /admin/waitlist + branded invite email)
+- Dashboard failure surface (ActionItemsCard + NextClassCard unified pending states)
+- RecurringClassForm with inline FirstBookingPreview + section headers
+- Landing page redesign, footer rewrite, eyebrow badge
+- a11y + 320px mobile sweep, Combobox searchable={false} mode, TimeInput mobile fit
+- Admin preview surfaces: /admin/email-preview, /admin/dashboard-preview, /admin/form-preview, /admin/landing-preview, /admin/waitlist
+- Three post-merge hotfix PRs (#123, #124, #125) addressing production feedback
+
+What Sprint 1 (specifically task 6) did NOT do: invoke /frontend-design for a coherent written review across email voice, modal a11y, landing craft motion polish, and form→confirmation transition. THAT is the entire point of Sprint 1.1, and P0 (email voice coherence) is the first chunk.
+
 Then:
 - Confirm git state: `git status` should show main at the latest merged commit (Sprint 1 + hotfix PRs #123, #124, #125 all merged). If on a worktree, confirm you're not on main.
 - Create a worktree for this sprint: `git worktree add -b feature/sprint-1.1-design-review ../my-workout-scheduler-worktrees/sprint-1.1 main` then `npm install --prefix ../my-workout-scheduler-worktrees/sprint-1.1` and copy `.env.local` over.
@@ -60,13 +77,24 @@ Pause at P0 ★ review gate and report findings before proceeding. Begin by read
 
 ## Context
 
-Sprint 1 tasks 1–6 shipped. Task 6 did the landing variant work, the three explicit carryovers (Branch field Combobox, helper-text trim, shadow backlog), a findings triage across user-facing pages, and the footer redesign.
+Sprint 1 tasks 1–6 shipped and merged (PR #122 + hotfix PRs #123/#124/#125). Sprint 1 is live in production at https://myworkout.beerock.com.
 
-What task 6 **did not** do: invoke the `/frontend-design` skill for the holistic review pass the original plan scoped. Throughout task 6 the owner asked for the skill's input on individual decisions (headline phrasing, footer layout, feature-card framing) and got good feedback, but the plan's actual task 6 deliverable — a written review across email voice, landing craft, onboarding clarity, form microcopy, visual/brand consistency — never happened as one coherent pass.
+**What Sprint 1 delivered** (Sprint 1.1 reviews this work, doesn't redesign it):
+- `docs/VOICE.md` — two voice registers (coach + showcase), four coach-voice tiers, section-name pattern, canonical YMCA WNC naming, FROM/reply policy
+- 17 email templates rewritten to match VOICE.md; preview at `/admin/email-preview`
+- Waitlist flow: public `/signup` + `waitlist_signups` table + `/admin/waitlist` review + branded invite email
+- Dashboard failure surface: `ActionItemsCard` + `NextClassCard` with unified pending states (pre-window / within-window / actively-retrying)
+- `RecurringClassForm` with inline `FirstBookingPreview`, hidden timezone field, section headers
+- Landing page redesign (headline, feature cards, CTAs, eyebrow badge); footer rewrite
+- a11y + hex-token + 320px mobile sweep; `Combobox` `searchable={false}` mode; `TimeInput` mobile fit
+- Admin preview surfaces: `/admin/email-preview`, `/admin/dashboard-preview`, `/admin/form-preview`, `/admin/landing-preview`, `/admin/waitlist`
+- Post-merge hotfix PRs #123 (5 production issues), #124 (NextClassCard state unification), #125 (React #418 hydration fixes + /review-pr follow-ups)
 
-Sprint 1.1 is that review pass, scoped tight so it doesn't block Sprint 1 from merging.
+**What task 6 did NOT do, and why Sprint 1.1 exists:** the original plan (`~/.claude/plans/frolicking-wishing-lighthouse.md`, Sprint 1 task 6 at line 230 onward) scoped a single coherent `/frontend-design` review pass covering email voice coherence, modal a11y, landing craft motion polish, and form→confirmation transition. During task 6 the owner asked for the skill's input on individual decisions (headline phrasing, footer layout, feature-card framing) and got good feedback — but the holistic written review across all four axes never happened as one pass.
 
-**Sprint 1 PR #122 can and should merge before Sprint 1.1 begins.** Sprint 1.1 opens a fresh branch off the merged `main`.
+**Sprint 1.1 is that deferred review, priority-ordered into four P-chunks.** P0 (email voice coherence) is the first pickup of task 6's deferred work.
+
+**Related:** `docs/plans/SPRINT_1.5.md` is an independent parallel follow-up covering credential testing, realtime retry status, NextClassCard discriminated-union refactor, and ActionItemsCard edge-case debugging. If Sprint 1.1 work surfaces items from Sprint 1.5's scope, punt rather than absorb.
 
 ---
 
@@ -76,7 +104,7 @@ Sprint 1.1 is that review pass, scoped tight so it doesn't block Sprint 1 from m
 
 ### P0 — Email voice coherence review (all 17 templates)
 
-The owner explicitly called this out as the highest-priority deferred item. Task 2 rewrote 17 templates to match VOICE.md, but the skill has never reviewed them as a *set* — checking tier consistency, section-name coherence, the showcase→coach handoff on the waitlist-confirmation email, FROM/reply policy adherence, and any drift between templates.
+**This is the first pickup of task 6's deferred `/frontend-design` review pass.** Task 2 rewrote 17 templates to match VOICE.md, but the skill has never reviewed them as a *set* — checking tier consistency, section-name coherence, the showcase→coach handoff on the waitlist-confirmation email, FROM/reply policy adherence, and any drift between templates. The owner explicitly called this out as the highest-priority deferred item at Sprint 1 wrap-up.
 
 **Deliverables:**
 - Invoke `/frontend-design` with: `docs/VOICE.md`, `/admin/email-preview` URL, the 17 template file paths under `lib/email/templates/`, and the 4 coach-voice tiers + section-name mapping from VOICE.md.
