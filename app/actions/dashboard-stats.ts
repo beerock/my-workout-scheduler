@@ -230,13 +230,26 @@ export async function getDashboardStats(): Promise<{
         // 5:00 AM") so users can't confuse this Wednesday with next
         // Wednesday — matters whenever the next occurrence is 7+ days out
         // (skipped class, or current window already passed).
-        const { data: recentAttempts } = await supabase
+        // Surface the Supabase error explicitly rather than letting a null
+        // `recentAttempts` silently fall through to the default pending
+        // state. A confirmed booking whose attempt row we failed to read
+        // (RLS drift, column rename, transient connection error) would
+        // otherwise render as "On deck" — wrong in a way the user can't
+        // see or report.
+        const { data: recentAttempts, error: attemptsError } = await supabase
           .from('booking_attempts')
           .select('status, error_message')
           .eq('recurring_class_id', soonestClassId)
           .gte('attempt_timestamp', lookbackFloor)
           .order('attempt_timestamp', { ascending: false })
           .limit(1)
+
+        if (attemptsError) {
+          console.error(
+            '[dashboard-stats] booking_attempts query failed; falling back to default pending state:',
+            attemptsError
+          )
+        }
 
         const latestAttempt = recentAttempts?.[0]
         const isConfirmedOrWaitlisted =
@@ -254,11 +267,15 @@ export async function getDashboardStats(): Promise<{
           )
         } else if (
           latestAttempt &&
+          // Contract: `isRetrying(status, errorMessage)` from
+          // `lib/booking-error-utils.ts` — returns true when status='failed'
+          // with a "full" (non-waitlist) errorMessage, i.e. the Inngest
+          // retry loop is actively running every 15 min. If that helper's
+          // semantic narrows (e.g. gets renamed to `isClassFullRetry`), the
+          // NextClassCard "Watching / Checking every 15 min" copy ties to
+          // THIS specific signal — don't desync.
           isRetrying(latestAttempt.status, latestAttempt.error_message)
         ) {
-          // Within-window, class-full retry loop actively running — flip
-          // the flag so NextClassCard switches to "Watching / Checking
-          // every 15 min" copy.
           soonest.isRetrying = true
         }
         // else: within booking window / post-window with no active retry
