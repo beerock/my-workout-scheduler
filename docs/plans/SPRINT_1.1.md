@@ -1,10 +1,60 @@
 # Sprint 1.1 — Frontend-Design Review Polish
 
-**Last Updated:** April 22, 2026
+**Last Updated:** April 23, 2026
 
 **Status:** Planned
-**Parent:** Sprint 1 (PR #122, branch `feature/sprint-1-ux-polish`)
+**Parent:** Sprint 1 (merged via PR #122, hotfixes via PR #123 + #124 + #125)
 **Source plan:** `~/.claude/plans/frolicking-wishing-lighthouse.md` (Sprint 1 task 6)
+
+---
+
+## Resumption prompt (copy-paste after `/clear`)
+
+Paste the single block between the marker lines below into a freshly `/clear`'d session. Everything between `▶▶▶ PROMPT START ▶▶▶` and `◀◀◀ PROMPT END ◀◀◀` is the prompt body — do not include the marker lines themselves.
+
+```
+▶▶▶ PROMPT START ▶▶▶
+
+Start Sprint 1.1 — Frontend-Design Review Polish.
+
+Read these first, in this order:
+1. docs/plans/SPRINT_1.1.md (this plan — authoritative scope)
+2. docs/VOICE.md (voice registers + tier taxonomy + section-name mapping)
+3. CLAUDE.md (Critical Gotchas, especially: Inngest routing, VOICE.md guardrails, admin-preview pattern, hydration mount-flag pattern)
+
+Then:
+- Confirm git state: `git status` should show main at the latest merged commit (Sprint 1 + hotfix PRs #123, #124, #125 all merged). If on a worktree, confirm you're not on main.
+- Create a worktree for this sprint: `git worktree add -b feature/sprint-1.1-design-review ../my-workout-scheduler-worktrees/sprint-1.1 main` then `npm install --prefix ../my-workout-scheduler-worktrees/sprint-1.1` and copy `.env.local` over.
+- Run the pre-sprint baseline: `npm run test:booking-dry-run` as the admin account (brockbusby@gmail.com). Save the output for comparison at sprint close.
+
+Work plan (priority-ordered, ★ owner review gate at each chunk close):
+
+P0 — Email voice coherence review across all 17 templates.
+  Invoke the `/frontend-design` skill with: docs/VOICE.md, the deployed /admin/email-preview URL, and the 17 template file paths under lib/email/templates/. Ask for a written review covering tier consistency per template, section-name coherence, the showcase→coach handoff on waitlist-confirmation, FROM/reply policy adherence, and any drift between templates. Present findings; owner triages "fix now" vs BACKLOG at ★ gate. Estimate 2–3h.
+
+P1 — Modal a11y audit (4 modals: BookNowDialog, skip-clear modal in RecurringClassForm, deactivated-class modal in RecurringClassForm, delete-confirmation modal in ScheduleList). Audit each for role="dialog", aria-modal="true", focus trap, aria-labelledby, escape key closes, focus returns to trigger on close. Fix inline. Estimate 1–1.5h.
+
+P2 — Landing craft-polish (2-hour HARD CAP). Invoke /frontend-design on the deployed landing + waitlist pages. Review covers first-impression calibration, micro-interactions, entrance animation pacing, feature-card hover states, transition choreography. Owner picks top N fixes within the budget. Estimate 2h cap.
+
+P3 — Form → confirmation transition choreography on the waitlist. Current transition is an abrupt state swap; apply a choreographed transition (skill recommends). Keep it tasteful — showcase voice, restrained. Estimate 30–60min.
+
+Workflow rules (same as Sprint 1):
+- Follow the ★ owner review gate at each P-chunk close. Do NOT proceed to the next chunk without explicit owner greenlight.
+- Use the admin-preview-surface pattern (/admin/*-preview) for non-trivial variant decisions.
+- Walk the dev server at 320px for every UI change. Walk /admin/email-preview for every email edit.
+- Commit in small themed chunks with conventional-commit prefixes. Push after each verified chunk.
+- Inngest auto-syncs to the most recent Vercel deploy — feature-branch commits WILL redirect real users' booking-email FROM routing until merge. Known tech debt (BACKLOG: "Separate Inngest Apps per Environment"), not blocking but visible.
+
+Do NOT:
+- Start P1 before owner ★ on P0.
+- Change VOICE.md rules without explicit owner approval (the guide is authoritative — new copy conforms to it, not the other way around).
+- Touch booking-automation logic, Inngest routing, or any Sprint 2 items (see SPRINT_1.1.md "Out of scope").
+- Skip the pre-sprint booking-dry-run baseline.
+
+Pause at P0 ★ review gate and report findings before proceeding. Begin by reading the three docs above.
+
+◀◀◀ PROMPT END ◀◀◀
+```
 
 ---
 
