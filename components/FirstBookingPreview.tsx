@@ -23,6 +23,7 @@
  * Design decisions finalized in /admin/form-preview (task 4 owner review).
  */
 
+import { useEffect, useState } from 'react'
 import { calculateNextOccurrence } from '@/lib/date-utils'
 import { formatInTimeZone } from 'date-fns-tz'
 
@@ -76,7 +77,24 @@ export function computeFirstBookingInfo(inputs: Inputs): FirstBookingInfo | null
 }
 
 export default function FirstBookingPreview(inputs: Inputs) {
-  const info = computeFirstBookingInfo(inputs)
+  // Defer computation to a client-only effect so this component renders
+  // nothing during SSR. `computeFirstBookingInfo` reads `Date.now()` and
+  // `calculateNextOccurrence` calls `new Date()` internally — both are
+  // non-deterministic across the server→client hydration boundary and
+  // can produce different output milliseconds apart (e.g. if a booking
+  // window opens between server render and client mount, server picks
+  // the pre-window branch while client picks window-open). That mismatch
+  // surfaces as React error #418 in production.
+  //
+  // The tradeoff is a one-frame flash where the preview card doesn't
+  // exist before the effect fires. Acceptable for a form-building
+  // surface; no visible content disappears, just appears.
+  const [info, setInfo] = useState<FirstBookingInfo | null>(null)
+
+  useEffect(() => {
+    setInfo(computeFirstBookingInfo(inputs))
+  }, [inputs.dayOfWeek, inputs.classTime, inputs.bookingWindowHours, inputs.timezone])
+
   if (!info) return null
 
   if (info.kind === 'window-open') {
