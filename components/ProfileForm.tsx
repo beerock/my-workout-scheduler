@@ -262,7 +262,7 @@ export default function ProfileForm({ userEmail }: Props) {
           {emailError && (
             emailError === 'email_already_exists' ? (
               <Alert variant="warning">
-                This email is already associated with another account. Please choose a different email address.
+                That email is already tied to another account. Try a different one.
               </Alert>
             ) : (
               <Alert variant="error">{emailError}</Alert>
@@ -271,7 +271,7 @@ export default function ProfileForm({ userEmail }: Props) {
 
           {emailSuccess && (
             <Alert variant="success">
-              Confirmation email sent! Please check your inbox and confirm the new email address.
+              Confirmation email sent. Click the link to finish the change.
             </Alert>
           )}
 
@@ -429,7 +429,7 @@ export default function ProfileForm({ userEmail }: Props) {
           )}
 
           {passwordSuccess && (
-            <Alert variant="success">Password updated successfully!</Alert>
+            <Alert variant="success">Password updated — use the new one next time you sign in.</Alert>
           )}
 
           <Button type="submit" variant="primary" loading={passwordLoading}>

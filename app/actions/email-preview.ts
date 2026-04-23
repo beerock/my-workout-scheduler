@@ -2,12 +2,12 @@
 
 /**
  * Server action for generating email template previews.
- * Used by the email preview prototype page.
+ * Used by the admin email preview page.
  *
  * Admin-only: both server actions below call assertAdmin() first to prevent
  * template data from leaking to non-admin users. This is layer 2 of a
  * defense-in-depth setup - layer 1 is the layout.tsx at
- * app/prototype/email-preview/layout.tsx which silently redirects non-admins
+ * app/admin/email-preview/layout.tsx which silently redirects non-admins
  * before the page even renders.
  */
 
@@ -27,6 +27,8 @@ import { dailyDigestEmail } from '@/lib/email/templates/daily-digest'
 import { bookingAlreadyRegisteredEmail } from '@/lib/email/templates/booking-already-registered'
 import { bookingAlreadyWaitlistedEmail } from '@/lib/email/templates/booking-already-waitlisted'
 import { bookingNoRegistrationEmail } from '@/lib/email/templates/booking-no-registration'
+import { waitlistConfirmationEmail } from '@/lib/email/templates/waitlist-confirmation'
+import { waitlistInviteEmail } from '@/lib/email/templates/waitlist-invite'
 
 /**
  * Guard for admin-only access to email preview data.
@@ -61,6 +63,8 @@ export type EmailTemplateType =
   | 'bookingFailureFinal'
   | 'bookingNoRegistration'
   | 'dailyDigest'
+  | 'waitlistConfirmation'
+  | 'waitlistInvite'
 
 export type TemplateInfo = {
   name: string
@@ -434,6 +438,33 @@ export async function getEmailTemplatePreview(
       }
     }
 
+    case 'waitlistConfirmation': {
+      const result = waitlistConfirmationEmail({
+        email: 'new-signup@example.com',
+        siteUrl: 'https://myworkout.beerock.com',
+      })
+      return {
+        name: 'Waitlist Confirmation (showcase → coach voice hand-off)',
+        subject: result.subject,
+        severity: 'info',
+        html: result.html,
+      }
+    }
+
+    case 'waitlistInvite': {
+      const result = waitlistInviteEmail({
+        email: 'approved-invitee@example.com',
+        inviteUrl: 'https://myworkout.beerock.com/auth/callback?code=PREVIEW_PLACEHOLDER&next=%2Fdashboard',
+        siteUrl: 'https://myworkout.beerock.com',
+      })
+      return {
+        name: 'Waitlist Invite (branded, replaces Supabase default)',
+        subject: result.subject,
+        severity: 'info',
+        html: result.html,
+      }
+    }
+
     default:
       throw new Error(`Unknown template type: ${templateType}`)
   }
@@ -461,5 +492,7 @@ export async function getAllTemplateTypes(): Promise<
     { type: 'bookingFailureFinal', name: 'Retries Exhausted', severity: 'warning' },
     { type: 'bookingNoRegistration', name: 'No Auto-Registration', severity: 'info' },
     { type: 'dailyDigest', name: 'Daily Digest (post-MVP)', severity: 'info' },
+    { type: 'waitlistConfirmation', name: 'Waitlist Confirmation', severity: 'info' },
+    { type: 'waitlistInvite', name: 'Waitlist Invite (branded)', severity: 'info' },
   ]
 }

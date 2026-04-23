@@ -1,0 +1,106 @@
+# Sprint 1 — Continuation Prompt (task 6 / post-/clear)
+
+**For the next session after /clear.** This doc + `docs/VOICE.md` + `CLAUDE.md` are the handoff. PR #122 body is the public summary.
+
+## Where we are
+
+**Sprint 1 of 3** — UX + Product Polish. Branch `feature/sprint-1-ux-polish`. Worktree `../my-workout-scheduler-worktrees/sprint-1-ux-polish`. PR **#122** open against `main`.
+
+**Completed tasks 1–5 (merged into the feature branch, deployed to preview):**
+
+1. **Waitlist flow** — public `/signup`, waitlist_signups table (migration 016), admin review at `/admin/waitlist`, branded invite email via `supabase.auth.admin.generateLink({type:'invite'})` + Resend send path.
+2. **Voice consolidation** — `docs/VOICE.md` codifies two registers + four coach tiers + section-name pattern + FROM/reply policy + canonical YMCA WNC naming. All 15 email templates rewritten to match.
+3. **Onboarding + failure surface** — `NextClassCard` has a new pending state ("On deck / Opens Tue 6:00 AM" pre-window, "Watching / Checking every 15 min" post-window retry) driven by a 7-day confirmed-attempt lookback that catches early-start bookings. New `ActionItemsCard` surfaces classes needing credentials or config fixes; multi-item collapses to a compact list.
+4. **RecurringClassForm polish + inline preview** — new `FirstBookingPreview` renders "Class registration opens / Sun Apr 27 · 2:15 PM / We click Reserve the second it opens." Edge case "Booking now" variant for when window is already open. Form reorganized into "What class" + "When" sections. Timezone field hidden; Time label is "Time (Eastern)" with ET-only hint. "Registration Opens" field shows "[26] hours before class" inline. Success alert echoes the preview datetime. Redirect timeout bumped to 3s.
+5. **A11y + hex + mobile 320px sweep** — GetStartedBanner gradient swapped to `purple-500/600/700` tokens. Decorative SVGs + emojis `aria-hidden`. `NextClassCard` class details row uses `flex-wrap`. `TimeInput` row uses `flex-wrap` so AM/PM toggle drops below on narrow screens.
+
+**Admin preview surfaces built (same auth-gate pattern, all four):**
+- `/admin/email-preview` — all 15 email templates
+- `/admin/waitlist` — waitlist signups admin table
+- `/admin/dashboard-preview` — `ActionItemsCard` + `NextClassCard` variant states
+- `/admin/form-preview` — RecurringClassForm variant review (copy + visual + polish options)
+
+## Task 6 — what's left (this session's work)
+
+**Sprint plan says:** `/frontend-design review + landing polish (2h budget)`.
+
+### Explicit carryovers from task 5 review
+
+These were flagged during the task 5 preview walk but deferred to task 6 as holistic design calls:
+
+1. **Branch Select truncation at 320px** — "Hendersonville Family YMCA" gets cut off visually. Native `<select>` text doesn't truncate with ellipsis reliably. Recommended fix: swap the Branch field from the shared `Select` component to a custom dropdown (the `Combobox` component already does this for Class Name — reuse its pattern). This is a component-type decision, not pure CSS, hence task 6.
+
+2. **Copy noise in RecurringClassForm** — at 320px, four consecutive fields each with their own helper text below reads as a wall of gray. Owner question: "do we need all four hints?" Review whether some can compress to placeholder text, tooltips, or be removed. Fields involved:
+   - Class Name: "Search by name or browse the list"
+   - Time (Eastern): "All YMCA WNC classes run in Eastern time, wherever you are."
+   - Registration Opens: "Most are 26 — double-check the class page on the YMCA site if yours is different."
+   - (Class Name combobox already has a placeholder, so its hint may be redundant.)
+
+3. **Custom rgba shadows** (low priority) — NextClassCard dark-card shadow and GetStartedBanner purple-glow shadow don't match any existing `shadow-*` token. Left inline per the "no design system additions without permission" rule. Task 6 can decide whether to add named tokens (e.g. `shadow-card-dark`, `shadow-card-purple`) or leave them as-is.
+
+### Original task 6 scope
+
+- Run the `/frontend-design` skill with fresh eyes on **every user-facing page in the codebase**. At the start of the review, enumerate all `page.tsx` files under `app/` (e.g. `Glob` for `app/**/page.tsx`) and build a checklist. Don't skip a page just because it wasn't modified in Sprint 1 — a design review is holistic, not incremental. Expected inventory includes (but isn't limited to): `/` (landing), `/signup`, `/login`, `/auth/*`, `/dashboard`, `/dashboard/schedule`, `/dashboard/schedule/add`, `/dashboard/schedule/edit/[id]`, `/dashboard/schedule/history`, `/dashboard/credentials`, `/dashboard/account`, and the four `/admin/*` surfaces.
+- **Exclude `/prototype/*`** — per `CLAUDE.md`, the design-system-components and scheduler-v2 prototype pages are frozen artifacts (case-study preservation). Do NOT touch them.
+- Landing-page craft-showcase polish — the landing is also a portfolio artifact for prospective clients. The voice register there is "showcase" (not coach). VOICE.md has the guardrails.
+- Holistic typography + hierarchy + spacing pass; not incremental edits.
+
+## Critical infrastructure fact discovered mid-sprint
+
+**Inngest is pointed at the feature-branch Vercel preview**, not production. This means real booking emails to real user inboxes have been going through Sprint 1 code since the first preview deploy. The "(Preview)" suffix in the FROM name is the tell — `RESEND_FROM_NAME` env var on Preview is set to "My Workout Scheduler (Preview)". Confirmed by the user receiving a "Got you in — BODYPUMP HEAVY on Wednesday" email this week (new copy, not pre-sprint). This is not a task 6 item but the next session needs to know it exists — PR #122 merge implications are different than we thought, and post-Sprint-1 cleanup should redirect Inngest to production.
+
+## Guardrails that keep tripping
+
+- **Zero first-person "I / I'm / I'll"** in coach-voice surfaces. Re-check any new copy.
+- **Never "Asheville YMCA"** as org shorthand. Product supports "YMCA of Western North Carolina" (WNC); Asheville is one branch.
+- **Section-name mapping is authoritative.** Confirmed = "Before you go". Working on it = "What's happening". Need your help = "What to do". FYI = optional "Worth knowing".
+- **Never "reply to this email"** in any template. `noreply@beerock.com` is load-bearing; support routes to `help@beerock.com`.
+- **Never hardcode "26 hours before class"** in user copy (only in backend/test fixtures). It's a per-class value (`booking_window_hours` column). See `feedback_no_hardcoded_booking_window.md`.
+- **Admin-only gate pattern** — all four `/admin/*` routes use layout redirect + `assertAdmin()` in server actions. Don't collapse to one layer.
+
+## Task 6 status (this session)
+
+**Shipped (ready for ★ review):**
+- Carryover 1 — Branch field swapped from `Select` to `Combobox` in `searchable={false}` mode. Added `searchable?: boolean` prop to `Combobox` (no-fork, one flag). Verified at 320px: text fits when it can, ellipsizes cleanly via `truncate` when a narrower container forces it. The original "cut off" behavior was a native `<select>` rendering quirk; the custom-dropdown input resolves it.
+- Carryover 2 — Dropped redundant hints on the RecurringClassForm. Class Name hint ("Search by name or browse the list") duplicated the placeholder; Time hint ("All YMCA WNC classes run in Eastern time…") duplicated the "(Eastern)" label suffix. Registration Opens hint stays — class-specific, load-bearing.
+- Carryover 3 — Custom rgba shadows (NextClassCard, GetStartedBanner) NOT tokenized. Two single-use surfaces don't earn named tokens. Logged as a Low-priority backlog entry so a future third user would trigger the extraction.
+
+**Staged for owner pick (not applied):**
+- Landing variants — new admin surface at `/admin/landing-preview`. Four headline variants, four subtitle variants, three feature-card framings, four CTA variants. Real landing at `/` is untouched. Owner picks, then wire the pick into `app/page.tsx`.
+
+**Deferred for owner triage (findings pass across the other user-facing pages):**
+
+Ranked rough-to-polish — each is a copy or small-markup call, not a redesign.
+
+1. **`/dashboard` subtitle — drop the exclamation.** `Welcome back! Your automated booking is paused/active.` is an FYI-tier line and VOICE.md says zero exclamation marks on FYI. "Welcome back." reads more in-register.
+2. **`/forgot-password` success state uses literal "Important:".** Violates VOICE.md § FYI ("'Important:', 'Please note:', 'Attention:' — all cut"). The warning box can lead with the content directly ("Check spam or the Promotions tab. The link expires in an hour.").
+3. **`/dashboard/schedule/add` subtitle is passive-voice corporate-speak.** `Configure a recurring weekly class that will be automatically booked` — coach-voice would be "Tell us which class to watch. We book it every week the second registration opens."
+4. **`/dashboard/credentials` subtitle is passive.** `Store your gym login securely. Your password is encrypted before being stored.` — "We encrypt your password before it hits the database" keeps the security signal without the passive construction.
+5. **`/dashboard/schedule` subtitle is flat corporate.** `Manage your recurring class schedule and booking preferences` → "Your weekly classes. Add, edit, pause."
+6. **`/dashboard/schedule` "Add Class" button uses hardcoded hex gradient** (`#1a6fff` → `#0052e6`) instead of Tailwind primary tokens. Minor design-system drift.
+7. **Footer tagline is cliché.** `Made for gym enthusiasts who value their time` is the exact kind of motivational-poster line VOICE.md bans. "Auto-booked YMCA WNC classes, since 2026" or similar product-neutral line would fit the showcase register.
+8. **`/login` and `/signup` "Request an invite" copy should follow whichever landing CTA direction the owner picks.** If landing uses "Join the waitlist", align these surfaces so the framing is consistent across the entry flow.
+
+Everything above is safe to ship during the wrap-up commit — pure copy plus one gradient-token swap, no component surgery. Owner to triage "fix now" vs. "Sprint 2."
+
+## After task 6 — Sprint 1 wrap-up
+
+Before closing out Sprint 1, follow the CLAUDE.md "Documentation Update Triggers" table + run `/doc-sync` (global skill). Specific docs likely to need updating based on what shipped in tasks 1–5:
+
+- **`docs/COMPONENT_LIBRARY.md`** — new components: `ActionItemsCard`, `FirstBookingPreview`, `WaitlistForm`, `WaitlistAdminTable`. Modified: `NextClassCard` (new pending states + aria), `GetStartedBanner` (token swap + aria), `RecurringClassForm` (sections + inline preview + hidden timezone), `TimeInput` (flex-wrap).
+- **`docs/DESIGN_SYSTEM.md`** — if task 6 adds any new `shadow-*` tokens for the custom card shadows, document them here.
+- **`docs/BACKLOG.md`** — Post-MVP items discovered during Sprint 1: (1) redirect Inngest from preview to production app URL (see `project_inngest_preview_emails.md`), (2) possibly tokenize the custom rgba shadows if task 6 decides not to during the sprint, (3) any task 6 findings deferred as post-MVP.
+- **`docs/My Workout Scheduler PRD.md`** — add Sprint 1 version entry under the version history section (v2.36 or similar — sprint introduced VOICE.md, waitlist flow, dashboard failure surface, inline form preview, admin preview surfaces).
+- **`README.md`** — tech stack unchanged; may want to add a one-liner about the voice register split + the admin preview surfaces.
+- **`CLAUDE.md`** — bump the "Current Version" line. Add a new Critical Gotcha about Inngest-points-at-preview. Update the doc triggers table if any new patterns emerged.
+- **"Last Updated" stamps** on every doc touched.
+
+Then: update PR #122 body to mark all six tasks complete, walk all review surfaces one final time, and hand off to owner for final ★ sign-off before merge.
+
+## How to resume
+
+1. Read this file + `docs/VOICE.md` + `CLAUDE.md`.
+2. `git -C ../my-workout-scheduler-worktrees/sprint-1-ux-polish status` should show a clean tree on `feature/sprint-1-ux-polish`.
+3. Preview URL is stable: `https://my-workout-scheduler-git-feature-s-3feb2b-brock-busbys-projects.vercel.app/<path>`. Admin account required for `/admin/*` surfaces.
+4. Pick up task 6. Owner expects a design pass, not just copy edits. Invoke `/frontend-design` if available. Offer variants for non-trivial choices (same pattern as tasks 3 and 4 — synthetic `/admin/*-preview` pages let the owner eyeball options before code ships).
+5. ★ owner review gate at each meaningful chunk.

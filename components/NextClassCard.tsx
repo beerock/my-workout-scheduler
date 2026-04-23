@@ -9,6 +9,10 @@ type NextClassCardProps = {
   branch: string
   hoursUntil: number
   bookingStatus?: 'confirmed' | 'waitlisted' | 'pending'
+  // Pre-formatted booking-open timestamp (e.g. "Sun 2:15 PM") in the gym's
+  // timezone. Only relevant to the pending state; null after the window has
+  // opened, or when the booking already landed.
+  bookingOpensAt?: string | null
   onViewSchedule?: () => void
 }
 
@@ -28,6 +32,7 @@ export default function NextClassCard({
   branch,
   hoursUntil,
   bookingStatus = 'pending',
+  bookingOpensAt = null,
   onViewSchedule,
 }: NextClassCardProps) {
   // Format hours display with unit
@@ -111,9 +116,10 @@ export default function NextClassCard({
 
       {/* Left Content */}
       <div className="relative flex-1 min-w-0">
-        {/* Label with pulsing indicator */}
+        {/* Label with pulsing indicator — dot is decorative only, the
+            "Next Class" label carries the semantic meaning. */}
         <div className="flex items-center gap-2.5 mb-2">
-          <div className="relative">
+          <div className="relative" aria-hidden="true">
             <div className="w-2 h-2 rounded-full bg-success-400" />
             <div className="absolute inset-0 w-2 h-2 rounded-full bg-success-400 animate-ping opacity-75" />
           </div>
@@ -127,20 +133,30 @@ export default function NextClassCard({
           {dayTime}
         </h3>
 
-        {/* Class details */}
-        <p className="font-dm-sans text-sm sm:text-[15px] text-slate-300/90 mt-1.5 flex items-center gap-2">
-          <span className="text-lg sm:text-xl leading-none">{getCategoryEmoji(classType)}</span>
+        {/* Class details — flex-wrap so long class names or branch names
+            (Hendersonville YMCA is the longest branch) don't overflow
+            the card at 320px viewport width. */}
+        <p className="font-dm-sans text-sm sm:text-[15px] text-slate-300/90 mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <span className="text-lg sm:text-xl leading-none" aria-hidden="true">{getCategoryEmoji(classType)}</span>
           <span>{classType}</span>
-          <span className="text-slate-500">•</span>
+          <span className="text-slate-500" aria-hidden="true">•</span>
           <span className="text-slate-400">{branch}</span>
         </p>
       </div>
 
       {/* Right: Status & Countdown Module */}
       <div className="relative w-full sm:w-auto flex items-center">
-        {/* Status Display - bold, readable, full-width on mobile */}
+        {/* Status Display - bold, readable, full-width on mobile.
+            Confirmed/waitlisted use row-on-mobile (short "in X hrs"
+            subtitle fits inline). Pending subtitles are longer
+            ("Opens Tue 6:00 AM", "Checking every 15 min") and would
+            wrap awkwardly on narrow screens, so they always stack. */}
         <div
-          className={`relative flex items-center justify-center gap-2 sm:flex-col sm:gap-1 w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl ${
+          className={`relative flex items-center justify-center w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl ${
+            bookingStatus === 'pending'
+              ? 'flex-col gap-1'
+              : 'gap-2 sm:flex-col sm:gap-1'
+          } ${
             bookingStatus === 'confirmed'
               ? 'bg-success-500/20 ring-1 ring-success-400/40'
               : bookingStatus === 'waitlisted'
@@ -152,7 +168,7 @@ export default function NextClassCard({
             <>
               {/* Confirmed: Circled checkmark + BOOKED (consistent with SuccessRateCard) */}
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="font-sora text-base sm:text-lg font-bold text-success-400 uppercase tracking-wide">
@@ -168,7 +184,7 @@ export default function NextClassCard({
             <>
               {/* Waitlisted: Hourglass + WAITLIST */}
               <div className="flex items-center gap-2">
-                <span className="text-lg sm:text-xl">⏳</span>
+                <span className="text-lg sm:text-xl" aria-hidden="true">⏳</span>
                 <span className="font-sora text-base sm:text-lg font-bold text-warning-400 uppercase tracking-wide">
                   Waitlist
                 </span>
@@ -178,26 +194,44 @@ export default function NextClassCard({
                 {countdown.value === 'Now' ? 'Starting now' : `in ${countdown.value} ${countdown.unit}`}
               </span>
             </>
-          ) : (
+          ) : bookingOpensAt ? (
             <>
-              {/* Pending: Confident primary - blue accent, clean hierarchy */}
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-sora text-2xl sm:text-4xl font-bold text-white leading-none tracking-tight">
-                  {countdown.value}
-                </span>
-                {countdown.unit && (
-                  <span className="font-dm-sans text-sm sm:text-base text-primary-300 uppercase font-semibold">
-                    {countdown.unit}
-                  </span>
-                )}
-                {/* Mobile only - inline with countdown */}
-                <span className="font-dm-sans text-sm text-white/50 sm:hidden">
-                  until class
+              {/* Pending, pre-window: "On deck" label per owner review —
+                  "Watching" was slightly dishonest here since we're on a
+                  timer, not actively monitoring the YMCA site. Coach-voice
+                  Working-on-it tier, differentiates cleanly from the
+                  post-window "Watching" state below. The timestamp anchors
+                  the "when" on the actionable moment (booking opens)
+                  rather than class start. */}
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-sora text-base sm:text-lg font-bold text-primary-300 uppercase tracking-wide">
+                  On deck
                 </span>
               </div>
-              {/* Desktop only - below countdown */}
-              <span className="hidden sm:inline font-dm-sans text-base text-white/50">
-                until class
+              <span className="font-dm-sans text-sm sm:text-base text-primary-200/80 font-medium">
+                Opens {bookingOpensAt}
+              </span>
+            </>
+          ) : (
+            <>
+              {/* Pending, window already open: the system is actively
+                  retrying. Same Working-on-it tier as the pre-window state
+                  but more honest ("checking every 15 min" is what is
+                  literally happening now, not a forecast). */}
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span className="font-sora text-base sm:text-lg font-bold text-primary-300 uppercase tracking-wide">
+                  Watching
+                </span>
+              </div>
+              <span className="font-dm-sans text-sm sm:text-base text-primary-200/80 font-medium">
+                Checking every 15 min
               </span>
             </>
           )}

@@ -7,6 +7,7 @@ import { getAuthCallbackUrl } from '@/lib/env-utils'
 import { Button, Input, Alert } from '@/components/ui'
 import AuthLayout from '@/components/AuthLayout'
 import { validateEmail } from '@/lib/validation'
+import { rewriteAuthError } from '@/lib/auth-error-utils'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -31,7 +32,7 @@ export default function ForgotPasswordPage() {
       })
 
       if (error) {
-        setError(error.message)
+        setError(rewriteAuthError(error.message))
       } else {
         setSubmitted(true)
         setCountdown(60) // 60 second cooldown for resend
@@ -54,7 +55,7 @@ export default function ForgotPasswordPage() {
       })
 
       if (error) {
-        setError(error.message)
+        setError(rewriteAuthError(error.message))
       } else {
         setCountdown(60)
       }
@@ -97,13 +98,17 @@ export default function ForgotPasswordPage() {
           you'll receive a password reset link shortly.
         </p>
 
-        {/* Important Instructions */}
+        {/* Instructions card — drops the old "Important:" prefix (banned
+            per VOICE.md FYI tier) but keeps bullets on each item so the
+            warning icon reads as a heads-up for the list, not a marker
+            for just the first line. Same bullet pattern as /verify-email. */}
         <div className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6">
           <div className="flex items-start">
             <svg
               className="w-5 h-5 text-warning-600 mt-0.5 mr-2 flex-shrink-0"
               fill="currentColor"
               viewBox="0 0 20 20"
+              aria-hidden="true"
             >
               <path
                 fillRule="evenodd"
@@ -111,14 +116,20 @@ export default function ForgotPasswordPage() {
                 clipRule="evenodd"
               />
             </svg>
-            <div className="flex-1">
-              <p className="font-dm-sans font-medium text-warning-900 mb-2">Important:</p>
-              <ul className="font-dm-sans text-sm text-warning-800 space-y-1">
-                <li>• Check your spam or junk folder</li>
-                <li>• Check your Promotions or Updates tab (Gmail)</li>
-                <li>• The link expires in 1 hour</li>
-              </ul>
-            </div>
+            <ul className="flex-1 font-dm-sans text-sm text-warning-800 space-y-1">
+              <li className="flex items-start gap-2">
+                <span className="text-warning-500 mt-0.5" aria-hidden="true">•</span>
+                <span>Check your spam or junk folder</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-warning-500 mt-0.5" aria-hidden="true">•</span>
+                <span>Gmail users: check the Promotions or Updates tab</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-warning-500 mt-0.5" aria-hidden="true">•</span>
+                <span>The link expires in 1 hour</span>
+              </li>
+            </ul>
           </div>
         </div>
 

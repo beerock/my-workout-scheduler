@@ -46,7 +46,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
   return (
     <EditorialLayout
       title="Account"
-      subtitle="Manage your notifications and security settings"
+      subtitle="Your notifications, email, and password."
     >
       <Suspense fallback={null}>
         <EmailVerificationNotification />
@@ -56,15 +56,15 @@ export default async function AccountPage({ searchParams }: PageProps) {
         {/* Unsubscribe Info Alert - shown when arriving from email unsubscribe link */}
         {showUnsubscribeInfo && (
           <Alert variant="info" className="mb-6">
-            <strong>Manage your email preferences below.</strong> You can disable specific notification types or turn off all emails entirely.
+            You landed here from an email unsubscribe link. Dial in exactly which emails you want — or turn them all off.
           </Alert>
         )}
 
         {/* Notification Preferences - Primary focus */}
         <Card className="opacity-0 animate-fade-in-up">
-          <h3 className="font-sora text-lg font-bold text-gray-900 mb-2">Email Notifications</h3>
+          <h3 className="font-sora text-lg font-bold text-gray-900 mb-2">Emails</h3>
           <p className="font-dm-sans text-sm text-gray-600 mb-6">
-            Control when and how you receive booking notifications
+            Pick what lands in your inbox.
           </p>
           <NotificationPreferencesForm initialPreferences={notificationPreferences} />
         </Card>
@@ -76,7 +76,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
         <Card className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           <h3 className="font-sora text-lg font-bold text-gray-900 mb-2">Security</h3>
           <p className="font-dm-sans text-sm text-gray-600 mb-6">
-            Update your email address or password
+            Change your email or password.
           </p>
           <ProfileForm userEmail={user.email} />
         </Card>

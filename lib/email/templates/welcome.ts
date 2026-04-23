@@ -14,19 +14,19 @@ export type WelcomeEmailProps = {
 };
 
 export function welcomeEmail(props: WelcomeEmailProps): { subject: string; html: string } {
-  const subject = `🎉 Welcome! Two steps to automate your gym bookings`;
+  const subject = `You're in — two quick steps to your first auto-booked class`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.primary}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      🎉 Welcome to My Workout Scheduler!
+      Welcome in.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      We'll automatically book your recurring classes the instant registration opens—so you can focus on showing up, not refreshing pages.
+      From here out, your recurring YMCA classes auto-book the instant registration opens — so you can focus on showing up, not setting 4:59 AM alarms.
     </p>
 
     <h3 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.h3}; font-weight: 600;">
-      Get Started in 2 Steps
+      Two steps to get going
     </h3>
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.md}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.primary};">
@@ -36,10 +36,10 @@ export function welcomeEmail(props: WelcomeEmailProps): { subject: string; html:
             Step 1
           </p>
           <p style="margin: 0 0 ${emailDesign.spacing.xs}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-            Add Your Gym Credentials
+            Save your gym login
           </p>
           <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-            We need your gym login to book classes on your behalf. Your credentials are encrypted and never shared.
+            We need your YMCA login to reserve classes on your behalf. Credentials are encrypted end-to-end — nobody on our end ever sees the plain password.
           </p>
         </td>
       </tr>
@@ -52,30 +52,30 @@ export function welcomeEmail(props: WelcomeEmailProps): { subject: string; html:
             Step 2
           </p>
           <p style="margin: 0 0 ${emailDesign.spacing.xs}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-            Add Your First Class
+            Add your first class
           </p>
           <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-            Tell us which class you want (day, time, location) and we'll handle the rest—automatically, every week.
+            Day, time, branch, class type. The form shows you exactly when the first booking will fire before you save — no guessing.
           </p>
         </td>
       </tr>
     </table>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6; padding: ${emailDesign.spacing.md}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius};">
-      💡 Takes about 2 minutes. Your first booking could happen as soon as tomorrow.
+      About two minutes start to finish. Your first class could book as early as tomorrow.
     </p>
 
     <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      Questions? Just reply to this email.
+      Questions? Email <a href="mailto:help@beerock.com" style="color: ${emailDesign.colors.primary}; text-decoration: underline;">help@beerock.com</a> — a real human reads every one.
     </p>
   `;
 
   const html = baseEmailTemplate({
-    title: 'Welcome to My Workout Scheduler',
-    preheader: "Let's get your first class scheduled automatically.",
+    title: 'Welcome in — get your first class on the schedule',
+    preheader: "Two quick steps. First auto-booked class could land as early as tomorrow.",
     body,
     severity: 'info',
-    ctaText: 'Get Started',
+    ctaText: 'Get started',
     ctaLink: props.credentialsUrl,
     showUnsubscribe: false, // Welcome emails cannot be unsubscribed
     dashboardUrl: props.dashboardUrl,

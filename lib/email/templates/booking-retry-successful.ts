@@ -1,8 +1,8 @@
 /**
  * Booking Retry Successful Email Template
  *
- * Sent when a previously full class becomes available and we successfully book it.
- * This is a special celebration email - "We got you in!"
+ * Sent when a previously full class becomes available and we successfully book
+ * it. Coach-voice Confirmed tier — warm, specific, no hype. See docs/VOICE.md.
  */
 
 import { baseEmailTemplate } from './_base-template';
@@ -22,15 +22,15 @@ export type BookingRetrySuccessfulEmailProps = {
 };
 
 export function bookingRetrySuccessfulEmail(props: BookingRetrySuccessfulEmailProps): { subject: string; html: string } {
-  const subject = `🎉 We got you in! ${props.className} on ${props.dayOfWeek}`;
+  const subject = `A spot opened up — ${props.className} on ${props.dayOfWeek}`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.success}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      🎉 Great news - we got you in!
+      A spot opened up. You're in.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      The class was full earlier, but a spot opened up and we grabbed it for you. You're all set!
+      The class was packed earlier. Watching paid off — someone dropped, we grabbed your seat.
     </p>
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.success};">
@@ -48,30 +48,26 @@ export function bookingRetrySuccessfulEmail(props: BookingRetrySuccessfulEmailPr
       </tr>
     </table>
 
-    <p style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: #fef3c7; border-radius: ${emailDesign.borderRadius}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      💡 <strong>Pro tip:</strong> We kept trying every 15 minutes and snagged this spot when it opened up. That's what we're here for!
-    </p>
-
     <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      <strong>What's next:</strong>
+      <strong>Before you go:</strong>
     </p>
     <ul style="margin: 0 0 ${emailDesign.spacing.lg}; padding-left: ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      <li style="margin-bottom: ${emailDesign.spacing.sm};">Show up ready to workout</li>
+      <li style="margin-bottom: ${emailDesign.spacing.sm};">Show up a few minutes early</li>
       <li style="margin-bottom: ${emailDesign.spacing.sm};">Bring water and a towel</li>
-      <li>Enjoy your class!</li>
+      <li>If your plans change, cancel through the YMCA so the spot opens up for someone else</li>
     </ul>
 
     <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      <em>Confirmed at ${props.bookingTimestamp} after ${props.retryCount} ${props.retryCount === 1 ? 'retry' : 'retries'}</em>
+      <em>Booked at ${props.bookingTimestamp} · took ${props.retryCount} ${props.retryCount === 1 ? 'check' : 'checks'} to land</em>
     </p>
   `;
 
   const html = baseEmailTemplate({
-    title: `We got you in! ${props.className}`,
-    preheader: `A spot opened up for ${props.className} on ${props.dayOfWeek} and we booked it!`,
+    title: `A spot opened up — ${props.className}`,
+    preheader: `Watching paid off — ${props.className} on ${props.dayOfWeek} is booked.`,
     body,
     severity: 'success',
-    ctaText: 'View My Schedule',
+    ctaText: 'View schedule',
     ctaLink: props.scheduleUrl,
     showUnsubscribe: true, // Success emails can be unsubscribed
     dashboardUrl: props.dashboardUrl,
