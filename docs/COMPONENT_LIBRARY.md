@@ -2643,16 +2643,18 @@ interface NextClassCardProps {
   branch: string           // e.g., "Woodfin YMCA"
   hoursUntil: number       // Hours until class starts
   bookingStatus?: 'confirmed' | 'waitlisted' | 'pending'  // Default: 'pending'
-  bookingOpensAt?: string | null  // v2.36: pre-formatted opens-at timestamp for pending pre-window state
+  bookingOpensAt?: string | null  // Pre-formatted opens-at timestamp for pending pre-window state (e.g. "Wed, Apr 30 · 5:00 AM")
+  isRetrying?: boolean     // v2.37: true only when the class-full retry loop is actively running — unlocks "Watching / Checking every 15 min" copy
   onViewSchedule?: () => void  // Callback for "View" link (desktop only)
 }
 ```
 
-> **v2.36 pending-state split.** `bookingStatus='pending'` now renders two coach-voice Working-on-it variants depending on whether `bookingOpensAt` is provided:
-> - **Pre-window** (`bookingOpensAt` is a string): shows **"On deck / Opens Tue 6:00 AM"** — the booking window hasn't opened yet; the system is waiting to fire.
-> - **Post-window retry** (`bookingOpensAt` is null/undefined): shows **"Watching / Checking every 15 min"** — the window is open and the retry loop is actively running.
+> **v2.37 unified pending-state model.** Three distinct sub-states when `bookingStatus='pending'`:
+> - **Pre-window** (`bookingOpensAt` set): shows **"On deck / Opens Wed, Apr 30 · 5:00 AM"** — booking window hasn't opened yet.
+> - **Actively retrying** (`isRetrying=true`): shows **"Watching / Checking every 15 min"** — class-full retry loop is running. The ONE case where we genuinely know a retry is live because the booking function kicked it off itself. Signal detected server-side via `isRetrying(status, errorMessage)` in `lib/booking-error-utils.ts`.
+> - **Default pending** (neither of the above): shows **"On deck / in X hrs"** — we see a class coming up, we don't assert more than we know. Reason: users can register / waitlist / cancel via the YMCA app or website outside this system, so the UI must only claim state we directly own.
 >
-> Both `/dashboard` and `/dashboard/schedule` must pass `bookingOpensAt` or the card defaults to the post-window retry copy for pending classes that haven't actually hit their window yet. Computed server-side via `getDashboardStats` from a 7-day confirmed-attempt lookback.
+> Both `/dashboard` and `/dashboard/schedule` pass `bookingOpensAt` AND `isRetrying` through from `getDashboardStats`. Forgetting to pass either prop falls through safely to the default "On deck / in X hrs" state (the honest fallback, not a failure mode).
 
 ### Usage
 

@@ -58,7 +58,15 @@ export function computeFirstBookingInfo(inputs: Inputs): FirstBookingInfo | null
   let nextOccurrence: Date
   try {
     nextOccurrence = calculateNextOccurrence(dayOfWeek, normalizedTime, timezone)
-  } catch {
+  } catch (err) {
+    // Log so an invalid IANA timezone / malformed input surfaces in Vercel
+    // logs. Returning null still hides the preview card — acceptable UX
+    // (the form itself rejects bad input on submit) — but a silent catch
+    // with no log made this path invisible when it fires.
+    console.error(
+      '[FirstBookingPreview] calculateNextOccurrence threw; preview hidden:',
+      { dayOfWeek, classTime: normalizedTime, timezone, err }
+    )
     return null
   }
 
