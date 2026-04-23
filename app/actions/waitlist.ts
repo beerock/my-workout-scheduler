@@ -75,6 +75,12 @@ export async function submitWaitlist(
   // Fire-and-log the confirmation email. We do NOT fail the overall submit
   // if the email send fails - the row is already saved, so the user is on the
   // waitlist either way. Log the failure for admin follow-up.
+  //
+  // Logging matches the admin-waitlist invite pattern: serialize the FULL
+  // Resend error so Vercel log truncation doesn't hide the statusCode /
+  // name / message. Common silent-failure mode: fromEmail falling back to
+  // `onboarding@resend.dev` (Resend sandbox restriction — only delivers to
+  // verified addresses) when RESEND_FROM_EMAIL isn't set on this deployment.
   try {
     const resendKey = process.env.RESEND_API_KEY
     if (!resendKey) {
@@ -87,7 +93,7 @@ export async function submitWaitlist(
         siteUrl: getSiteUrl(),
       })
 
-      const { error: emailError } = await resend.emails.send({
+      const { data: sendData, error: emailError } = await resend.emails.send({
         from: `${fromName} <${fromEmail}>`,
         to: email,
         subject,
@@ -95,11 +101,29 @@ export async function submitWaitlist(
       })
 
       if (emailError) {
-        console.error('[waitlist] Confirmation email failed:', emailError)
+        console.error(
+          '[waitlist] confirmation email send failed:',
+          JSON.stringify(
+            {
+              emailError,
+              fromEmail,
+              fromName,
+              to: email,
+              hasResendKey: !!resendKey,
+              resendKeyLength: resendKey.length,
+            },
+            null,
+            2
+          )
+        )
+      } else {
+        console.log(
+          `[waitlist] confirmation email sent to ${email} (resend id: ${sendData?.id ?? 'unknown'}, from: ${fromEmail})`
+        )
       }
     }
   } catch (err) {
-    console.error('[waitlist] Confirmation email threw:', err)
+    console.error('[waitlist] confirmation email threw:', err)
   }
 
   return { success: true, alreadyOnList: false }
