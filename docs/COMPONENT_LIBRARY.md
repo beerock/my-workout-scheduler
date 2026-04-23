@@ -4,8 +4,8 @@
 
 This document provides complete API documentation, usage examples, and best practices for all reusable UI components in the My Workout Scheduler design system.
 
-**Version:** 2.28
-**Last Updated:** January 11, 2026
+**Version:** 2.36
+**Last Updated:** April 22, 2026
 **Location:** `components/ui/`
 
 ---
@@ -1453,7 +1453,32 @@ interface ComboboxProps {
   customLabel?: string        // Default: "Add custom class"
   filterFn?: (query: string, options: ComboboxOption[]) => ComboboxOption[]
   className?: string
+  searchable?: boolean         // Default: true
 }
+```
+
+### `searchable={false}` — fixed-list dropdown mode (added v2.36)
+
+Use for short, fixed option lists (e.g. 7 YMCA branches) where typing-to-filter is noise and long labels need CSS truncation rather than horizontal overflow. Native `<select>` text doesn't ellipsize reliably at narrow viewports; this mode swaps to a custom read-only dropdown that does.
+
+When `searchable={false}`:
+- No search icon, `pl-4` left padding (instead of `pl-11`)
+- Input is `readOnly` with `cursor-pointer` + `truncate`
+- Click opens the full option list (no query filter)
+- No custom-entry option (gated even if `allowCustom={true}`)
+- No fuzzy auto-resolve on blur
+
+```tsx
+<Combobox
+  label="Branch"
+  name="branch"
+  value={formData.branch}
+  onChange={(val) => setFormData(prev => ({ ...prev, branch: val }))}
+  options={branchOptions}
+  placeholder="Select a branch"
+  searchable={false}
+  required
+/>
 ```
 
 ### Usage
@@ -2530,17 +2555,16 @@ import { Header } from '@/components/ui'
 
 **File:** `components/ui/Footer.tsx`
 
-**Purpose:** Standard footer component with copyright and tagline for all pages.
+**Purpose:** Standard two-row footer for all pages — actionable support + personal-site links on top, copyright signature on bottom.
 
 **When to use:**
-- ✅ All front-end pages (dashboard, auth, landing, prototypes)
-- ✅ Any page requiring copyright notice
+- ✅ All front-end pages (dashboard, auth, landing, admin)
+- ✅ Any page requiring the product's canonical footer
 
 ### API
 
 ```typescript
 interface FooterProps {
-  showTagline?: boolean  // Default: true
   className?: string
   style?: React.CSSProperties
 }
@@ -2548,33 +2572,28 @@ interface FooterProps {
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| showTagline | `boolean` | `true` | Show tagline text below copyright |
 | className | `string` | `''` | Additional CSS classes |
 | style | `CSSProperties` | - | Inline styles (useful for animations) |
 
+> **v2.36 breaking change:** the `showTagline` prop was removed along with the generic "Made for gym enthusiasts who value their time" tagline. The footer is now factual (support + attribution), not positioning — factual footers serve both voice registers (showcase + coach) without feeling off in either. See `docs/VOICE.md` for the voice rationale.
+
 ### Content
 
-**With tagline (default):**
 ```
-Made for gym enthusiasts who value their time
-© 2026 Beerock (links to beerock.com)
+help@beerock.com · brockbusby.com           <- actionable row (text-sm gray-500)
+© 2026 Beerock                               <- signature row (text-xs gray-400)
 ```
 
-**Without tagline:**
-```
-© 2026 Beerock (links to beerock.com)
-```
+- **Row 1 — actionable facts.** Mailto link to `help@beerock.com` (the monitored inbox per VOICE.md) and external link to `brockbusby.com` (the owner's fractional site). Middot separator. Both links wrap via `flex-wrap` at very narrow viewports.
+- **Row 2 — closing signature.** Unchanged from earlier versions — copyright text with a subtle `beerock.com` link on "Beerock".
 
 ### Code Examples
 
 ```tsx
 import { Footer } from '@/components/ui'
 
-// Default footer with tagline
+// Standard usage
 <Footer />
-
-// Without tagline
-<Footer showTagline={false} />
 
 // With animation (e.g., in AuthLayout)
 <Footer
@@ -2624,9 +2643,16 @@ interface NextClassCardProps {
   branch: string           // e.g., "Woodfin YMCA"
   hoursUntil: number       // Hours until class starts
   bookingStatus?: 'confirmed' | 'waitlisted' | 'pending'  // Default: 'pending'
+  bookingOpensAt?: string | null  // v2.36: pre-formatted opens-at timestamp for pending pre-window state
   onViewSchedule?: () => void  // Callback for "View" link (desktop only)
 }
 ```
+
+> **v2.36 pending-state split.** `bookingStatus='pending'` now renders two coach-voice Working-on-it variants depending on whether `bookingOpensAt` is provided:
+> - **Pre-window** (`bookingOpensAt` is a string): shows **"On deck / Opens Tue 6:00 AM"** — the booking window hasn't opened yet; the system is waiting to fire.
+> - **Post-window retry** (`bookingOpensAt` is null/undefined): shows **"Watching / Checking every 15 min"** — the window is open and the retry loop is actively running.
+>
+> Both `/dashboard` and `/dashboard/schedule` must pass `bookingOpensAt` or the card defaults to the post-window retry copy for pending classes that haven't actually hit their window yet. Computed server-side via `getDashboardStats` from a 7-day confirmed-attempt lookback.
 
 ### Usage
 

@@ -24,52 +24,57 @@ export type BookingFailureConfigEmailProps = {
 };
 
 export function bookingFailureConfigEmail(props: BookingFailureConfigEmailProps): { subject: string; html: string } {
-  const subject = `⚠️ Configuration Issue: ${props.className} booking failed`;
+  const subject = `Couldn't find ${props.className} on the schedule`;
+  const scheduleUrl = `${props.dashboardUrl}/schedule`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.warning}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      ⚠️ Configuration Issue
+      Couldn't find your class on the schedule.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      We couldn't find or book your class. This might be a simple settings issue that you can fix.
+      ${escapeHtml(props.errorMessage)} Usually a settings thing — class renamed, rescheduled, or moved branches — and easy to fix.
     </p>
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.warning};">
       <tr>
         <td style="padding: ${emailDesign.spacing.md};">
           <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-            ${props.className}
+            ${escapeHtml(props.className)}
           </p>
           <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-            📅 ${props.date}<br>
-            🕐 ${props.time}<br>
-            📍 ${props.branchName}
+            📅 ${escapeHtml(props.date)}<br>
+            🕐 ${escapeHtml(props.time)}<br>
+            📍 ${escapeHtml(props.branchName)}
           </p>
         </td>
       </tr>
     </table>
 
-    <div style="margin: 0 0 ${emailDesign.spacing.lg}; padding: ${emailDesign.spacing.md}; background-color: #fef3c7; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.warning};">
-      <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; font-weight: 600;">
-        What went wrong:
-      </p>
-      <div style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-        ${escapeHtml(props.errorMessage)}
-      </div>
-    </div>
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.warning};">
+      <tr>
+        <td style="padding: ${emailDesign.spacing.md};">
+          <p style="margin: 0 0 ${emailDesign.spacing.sm}; color: ${emailDesign.colors.warning}; font-size: ${emailDesign.fontSize.small}; font-weight: 600;">
+            What to do
+          </p>
+          <p style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
+            Open your <a href="${scheduleUrl}" style="color: ${emailDesign.colors.primary}; text-decoration: underline; font-weight: 600;">class settings</a> and check that the name, time, and branch match what's on the YMCA site. Update anything that drifted — booking picks up next week.
+          </p>
+        </td>
+      </tr>
+    </table>
 
-    <p style="margin: 0; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      <strong>Need help?</strong> Email us at <a href="mailto:help@beerock.com" style="color: ${emailDesign.colors.primary}; text-decoration: none;">help@beerock.com</a> and we'll assist you.
+    <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
+      Stuck? Email <a href="mailto:help@beerock.com" style="color: ${emailDesign.colors.primary}; text-decoration: none;">help@beerock.com</a> and we'll take a look.
     </p>
   `;
 
   const html = baseEmailTemplate({
-    title: `Configuration Issue: ${props.className}`,
-    preheader: `We couldn't book ${props.className} on ${props.dayOfWeek} - please check your settings`,
+    title: `Couldn't find ${props.className}`,
+    preheader: `${props.className} on ${props.dayOfWeek} didn't match the YMCA schedule. Quick settings check unblocks it.`,
     body,
     severity: 'warning',
-    ctaText: 'Update Class Settings',
+    ctaText: 'Update class settings',
     ctaLink: `${props.dashboardUrl}/schedule`,
     showUnsubscribe: false, // Failure emails CANNOT be unsubscribed
     dashboardUrl: props.dashboardUrl,

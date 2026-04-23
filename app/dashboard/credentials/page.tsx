@@ -25,7 +25,7 @@ export default async function CredentialsPage() {
   return (
     <EditorialLayout
       title="Gym Credentials"
-      subtitle="Store your gym login securely. Your password is encrypted before being stored."
+      subtitle="Save your gym login so we can book on your behalf. We encrypt your password before it hits the database."
     >
       <div className="max-w-2xl mx-auto">
         {/* Security Notice */}

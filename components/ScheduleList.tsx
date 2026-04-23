@@ -8,6 +8,7 @@ import {
   toggleRecurringClassActive,
 } from '@/app/actions/recurring-classes'
 import { getDayName, formatTime12Hour, formatDateInGymTimezone } from '@/lib/date-utils'
+import { isSkipCurrentlyActive } from '@/lib/skip-utils'
 import SkipButton from './SkipButton'
 import BookNowDialog from './BookNowDialog'
 import { useBookNowDialog } from '@/hooks/useBookNowDialog'
@@ -239,7 +240,7 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
   const getDotColor = (classItem: RecurringClass): string => {
     if (schedulePaused) return 'bg-amber-500'
     if (!classItem.active) return 'bg-gray-400'
-    if (classItem.skip_next_occurrence) return 'bg-amber-500'
+    if (isSkipCurrentlyActive(classItem)) return 'bg-amber-500'
     return 'bg-primary-500'
   }
 
@@ -251,7 +252,7 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
     if (!classItem.active) {
       return { variant: 'inactive', label: 'Inactive' }
     }
-    if (classItem.skip_target_datetime && new Date() < new Date(classItem.skip_target_datetime)) {
+    if (isSkipCurrentlyActive(classItem) && classItem.skip_target_datetime) {
       return { variant: 'skipped', label: `Skipping ${formatDateInGymTimezone(new Date(classItem.skip_target_datetime), classItem.timezone, 'short')}` }
     }
     // Could show "Active" or nothing for active classes
@@ -330,7 +331,7 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
                   ? 'opacity-60'
                   : !classItem.active
                   ? 'opacity-75 bg-gray-50'
-                  : classItem.skip_next_occurrence
+                  : isSkipCurrentlyActive(classItem)
                   ? 'bg-amber-50/30'
                   : ''
               }`}
@@ -385,7 +386,7 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
                           ? 'Booking paused'
                           : !classItem.active
                           ? 'Class inactive'
-                          : classItem.skip_next_occurrence
+                          : isSkipCurrentlyActive(classItem)
                           ? 'Skipping next occurrence'
                           : `Booking window: ${classItem.booking_window_hours}h before class`
                         }

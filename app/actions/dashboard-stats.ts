@@ -2,8 +2,27 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { startOfWeek, endOfWeek } from 'date-fns'
-import { toZonedTime } from 'date-fns-tz'
+import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
 import { calculateNextOccurrence, formatTime12Hour } from '@/lib/date-utils'
+
+/**
+ * An action-required item surfaced on the dashboard failure surface. Today
+ * covers two categories with clean in-app actions: credentials problems
+ * (update gym login) and config drift (class name/branch/time don't match
+ * the YMCA schedule). Technical/retrying failures are NOT surfaced here —
+ * the system is handling those autonomously.
+ */
+export type DashboardActionItem = {
+  classId: string
+  className: string
+  dayTime: string // "Monday 4:15 PM"
+  branch: string
+  category: 'credentials' | 'config'
+  // Voice per docs/VOICE.md Need-your-help tier — single sentence, active verb.
+  message: string
+  ctaText: string
+  ctaHref: string
+}
 
 export type DashboardStats = {
   activeClasses: number
@@ -16,7 +35,15 @@ export type DashboardStats = {
     hoursUntil: number
     branch: string
     bookingStatus: 'confirmed' | 'waitlisted' | 'pending'
+    // When the booking window opens for this specific occurrence, pre-formatted
+    // in the gym's timezone (e.g. "Sun 2:15 PM"). Only set when bookingStatus
+    // is 'pending' and the window hasn't opened yet; null otherwise (either
+    // already booked/waitlisted or window already open and retrying).
+    bookingOpensAt: string | null
   } | null
+  // Empty array when no class needs user action. The dashboard renders the
+  // ActionItemsCard only when this is non-empty.
+  actionItems: DashboardActionItem[]
 }
 
 export async function getDashboardStats(): Promise<{
@@ -37,7 +64,7 @@ export async function getDashboardStats(): Promise<{
       // 1. Get active recurring classes (also gives us active count)
       supabase
         .from('recurring_classes')
-        .select('id, class_type, day_of_week, class_time, timezone, branch, skip_next_occurrence')
+        .select('id, class_type, day_of_week, class_time, timezone, branch, skip_next_occurrence, booking_window_hours')
         .eq('user_id', user.id)
         .eq('active', true),
       // 2. All booking attempts for success rate calculation
@@ -115,6 +142,7 @@ export async function getDashboardStats(): Promise<{
       let soonestTime = Infinity
       let soonestClassId: string | null = null
       let soonestOccurrence: Date | null = null
+      let soonestBookingWindowHours = 26 // Per-class override set below when picking the winner
 
       for (const cls of userClasses) {
         try {
@@ -135,6 +163,7 @@ export async function getDashboardStats(): Promise<{
             soonestTime = hoursUntil
             soonestClassId = cls.id
             soonestOccurrence = nextOccurrence
+            soonestBookingWindowHours = cls.booking_window_hours
 
             const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
             const dayName = dayNames[cls.day_of_week]
@@ -146,7 +175,8 @@ export async function getDashboardStats(): Promise<{
               dayTime: `${dayName} ${timeStr}`,
               hoursUntil: Math.round(hoursUntil),
               branch: cls.branch,
-              bookingStatus: 'pending' // Default, will be updated below
+              bookingStatus: 'pending', // Default, may be updated below
+              bookingOpensAt: null, // Default, set below for pre-window pending state
             }
           }
         } catch (e) {
@@ -154,18 +184,34 @@ export async function getDashboardStats(): Promise<{
         }
       }
 
-      // Query booking status for the soonest class
-      // Only look for bookings made AFTER the booking window opened for this specific occurrence
-      // (booking window typically opens 26 hours before class)
+      // Query booking status for the soonest class.
+      //
+      // Lookback window: we used to filter on attempts >= (occurrence - booking_window_hours),
+      // but that computed floor misses:
+      //   1. Early-start optimization attempts (scheduler fires ~90s before the window opens,
+      //      so attempt_timestamp can be slightly before the floor).
+      //   2. Classes where the stored booking_window_hours is shorter than the real YMCA window
+      //      (attempt fires at the real earlier moment, slips outside the computed floor).
+      //   3. Clock drift between scheduler and DB insert.
+      // All three manifested as a confirmed class rendering the "Watching / Checking every 15 min"
+      // fallback on the dashboard, which was obviously wrong.
+      //
+      // Fix: use (occurrence - 7 days) as the floor. For a WEEKLY recurring class, the only
+      // confirmed attempt that can exist for *this specific upcoming occurrence* is one made
+      // within the last 7 days (last week's occurrence was already consumed). Simpler and
+      // more forgiving than trying to precisely model the booking window.
       if (soonest && soonestClassId && soonestOccurrence) {
-        // Calculate when booking window opened for this occurrence (26 hours before class)
-        const bookingWindowOpen = new Date(soonestOccurrence.getTime() - 26 * 60 * 60 * 1000).toISOString()
+        const windowOpenMs =
+          soonestOccurrence.getTime() - soonestBookingWindowHours * 60 * 60 * 1000
+        const lookbackFloorMs =
+          soonestOccurrence.getTime() - 7 * 24 * 60 * 60 * 1000
+        const lookbackFloor = new Date(lookbackFloorMs).toISOString()
 
         const { data: bookingAttempt } = await supabase
           .from('booking_attempts')
           .select('status')
           .eq('recurring_class_id', soonestClassId)
-          .gte('attempt_timestamp', bookingWindowOpen)
+          .gte('attempt_timestamp', lookbackFloor)
           .in('status', ['confirmed', 'waitlisted'])
           .order('attempt_timestamp', { ascending: false })
           .limit(1)
@@ -173,10 +219,122 @@ export async function getDashboardStats(): Promise<{
 
         if (bookingAttempt) {
           soonest.bookingStatus = bookingAttempt.status as 'confirmed' | 'waitlisted'
+        } else if (windowOpenMs > now.getTime()) {
+          // Still pre-window for this class — pre-format "Sun 2:15 PM" in the
+          // class's own timezone so the card doesn't have to know about
+          // timezones. The class.timezone of the winning class governs this
+          // rendering (users can have classes at different branches, but the
+          // one we show is this specific class's).
+          const winningClass = userClasses.find((c) => c.id === soonestClassId)
+          const tz = winningClass?.timezone ?? 'America/New_York'
+          soonest.bookingOpensAt = formatInTimeZone(
+            new Date(windowOpenMs),
+            tz,
+            'EEE h:mm a'
+          )
         }
       }
 
       nextBooking = soonest
+    }
+
+    // 6. Build the action-items list for the dashboard failure surface.
+    // Per-class: look at the MOST RECENT non-skipped attempt. If it's a
+    // credentials problem or config drift, surface an action item. Technical
+    // and class-full/retrying failures are NOT surfaced here — the system is
+    // already handling those autonomously and showing them as "Needs your
+    // help" would mislead the user.
+    const actionItems: DashboardActionItem[] = []
+    if (userClasses && userClasses.length > 0 && classIds.length > 0) {
+      // Fetch the most recent attempt per class AND the user's credential
+      // update timestamp in parallel. The credential timestamp gates stale
+      // credentials action-items: if a user re-saved their gym login AFTER
+      // the failed attempt, assume it's now fixed and suppress the card
+      // rather than showing "your login stopped working" until the next
+      // booking run proves it.
+      const [recentAttemptsRes, credentialsRes] = await Promise.all([
+        supabase
+          .from('booking_attempts')
+          .select('recurring_class_id, status, error_message, attempt_timestamp')
+          .in('recurring_class_id', classIds)
+          .neq('status', 'skipped')
+          .order('attempt_timestamp', { ascending: false }),
+        supabase
+          .from('gym_credentials')
+          .select('updated_at')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+      ])
+
+      const recentAttempts = recentAttemptsRes.data
+      const credentialsUpdatedAt = credentialsRes.data?.updated_at
+        ? new Date(credentialsRes.data.updated_at).getTime()
+        : null
+
+      const seen = new Set<string>()
+      // Overloaded "login" / "credentials" also appear in config errors
+      // (e.g. "password changed for login foo@bar"), so we keep the broad
+      // match here — the categorizeFailure split happens downstream via
+      // lib/booking-error-utils.ts. Keep these in sync with the email
+      // routing keyword list per CLAUDE.md.
+      const credentialsKeywords = ['login', 'password', 'credentials', 'sign in', 'authentication']
+      const configKeywords = [
+        'not found',
+        'class disappeared',
+        'branch selection failed',
+        'branch mismatch',
+        'wrong class',
+        'class name',
+      ]
+
+      for (const attempt of recentAttempts ?? []) {
+        if (seen.has(attempt.recurring_class_id)) continue
+        seen.add(attempt.recurring_class_id)
+
+        if (attempt.status !== 'failed' || !attempt.error_message) continue
+        const msg = attempt.error_message.toLowerCase()
+
+        const cls = userClasses.find((c) => c.id === attempt.recurring_class_id)
+        if (!cls) continue
+
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        const dayTime = `${dayNames[cls.day_of_week]} ${formatTime12Hour(cls.class_time)}`
+
+        if (credentialsKeywords.some((kw) => msg.includes(kw))) {
+          // Suppress stale credentials items: if the user re-saved their
+          // gym credentials AFTER this attempt failed, assume the fix is
+          // in place and don't nag them about an attempt that predates it.
+          // Next booking run will produce a fresh signal either way.
+          const attemptMs = new Date(attempt.attempt_timestamp).getTime()
+          if (credentialsUpdatedAt !== null && credentialsUpdatedAt > attemptMs) continue
+
+          actionItems.push({
+            classId: cls.id,
+            className: cls.class_type,
+            dayTime,
+            branch: cls.branch,
+            category: 'credentials',
+            message: 'Your gym login stopped working. Update your credentials — booking picks up at your next class.',
+            ctaText: 'Update credentials',
+            ctaHref: '/dashboard/credentials',
+          })
+        } else if (configKeywords.some((kw) => msg.includes(kw))) {
+          actionItems.push({
+            classId: cls.id,
+            className: cls.class_type,
+            dayTime,
+            branch: cls.branch,
+            category: 'config',
+            message: "Couldn't find this class on the YMCA schedule. It may have been renamed, rescheduled, or moved branches.",
+            ctaText: 'Edit class',
+            // Deep link to the specific class when we can. The ActionItemsCard
+            // only uses this single-item href when items.length === 1; the
+            // multi-item case falls back to /dashboard/schedule so the user
+            // can pick which one to edit.
+            ctaHref: `/dashboard/schedule/edit/${cls.id}`,
+          })
+        }
+      }
     }
 
     return {
@@ -186,7 +344,8 @@ export async function getDashboardStats(): Promise<{
         successRate,
         totalBookingAttempts,
         bookingsThisWeek,
-        nextBooking
+        nextBooking,
+        actionItems,
       }
     }
   } catch (error) {

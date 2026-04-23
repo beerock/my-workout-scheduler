@@ -6,6 +6,7 @@ import PauseBanner from '@/components/PauseBanner'
 import PausedActiveStatCard from '@/components/PausedActiveStatCard'
 import EmailVerificationNotification from '@/components/EmailVerificationNotification'
 import GetStartedBanner from '@/components/GetStartedBanner'
+import ActionItemsCard from '@/components/ActionItemsCard'
 import SuccessRateCard from '@/components/SuccessRateCard'
 import { getUserSettings } from '@/app/actions/user-settings'
 import { getDashboardStats } from '@/app/actions/dashboard-stats'
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
   return (
     <EditorialLayout
       title="Dashboard"
-      subtitle={`Welcome back! Your automated booking is ${isPaused ? 'paused' : 'active'}.`}
+      subtitle={`Welcome back. Your automated booking is ${isPaused ? 'paused' : 'active'}.`}
       actions={
         // Show inline pause control in header - only when classes exist AND not paused
         // (When paused, the content area banner provides the Resume action)
@@ -52,6 +53,13 @@ export default async function DashboardPage() {
       <Suspense fallback={null}>
         <EmailVerificationNotification />
       </Suspense>
+
+      {/* Action items surface — Need-your-help tier, rendered above the
+          top banner so it's the first thing a user sees when something
+          actually needs their attention. Hidden when the list is empty. */}
+      {stats?.actionItems && stats.actionItems.length > 0 && (
+        <ActionItemsCard items={stats.actionItems} />
+      )}
 
       {/* Pause Banner OR Next Class Card OR Get Started Banner - mutually exclusive */}
       {/* Show GetStartedBanner when no classes, regardless of pause state */}
@@ -67,6 +75,7 @@ export default async function DashboardPage() {
             branch={stats.nextBooking.branch}
             hoursUntil={stats.nextBooking.hoursUntil}
             bookingStatus={stats.nextBooking.bookingStatus}
+            bookingOpensAt={stats.nextBooking.bookingOpensAt}
           />
         </div>
       ) : null}

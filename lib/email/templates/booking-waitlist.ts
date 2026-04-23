@@ -21,15 +21,15 @@ export type BookingWaitlistEmailProps = {
 };
 
 export function bookingWaitlistEmail(props: BookingWaitlistEmailProps): { subject: string; html: string } {
-  const subject = `⏳ Waitlisted: ${props.className} on ${props.dayOfWeek}`;
+  const subject = `On the waitlist for ${props.className} on ${props.dayOfWeek}`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.warning}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      ⏳ You're on the waitlist
+      On the waitlist.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      The class was full, but we added you to the waitlist. If a spot opens up, you'll be automatically confirmed.
+      Class was packed — your name went on the waitlist. If someone drops before class starts, the YMCA moves you up automatically and a confirmation email follows.
     </p>
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; margin: 0 0 ${emailDesign.spacing.lg}; background-color: ${emailDesign.colors.backgroundAlt}; border-radius: ${emailDesign.borderRadius}; border-left: 4px solid ${emailDesign.colors.warning};">
@@ -48,25 +48,26 @@ export function bookingWaitlistEmail(props: BookingWaitlistEmailProps): { subjec
     </table>
 
     <p style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      <strong>What happens next:</strong>
+      <strong>Before you go:</strong>
     </p>
     <ul style="margin: 0 0 ${emailDesign.spacing.lg}; padding-left: ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      <li style="margin-bottom: ${emailDesign.spacing.sm};">If someone cancels, you'll move up the list</li>
-      <li style="margin-bottom: ${emailDesign.spacing.sm};">You'll get a confirmation email if you get in</li>
-      <li>Plan as if you're attending, but check your email closer to class time</li>
+      <li style="margin-bottom: ${emailDesign.spacing.sm};">Plan as if you're going — waitlists clear more often than you'd think</li>
+      <li style="margin-bottom: ${emailDesign.spacing.sm};">Arrive 5–10 minutes early so the YMCA desk can check you in if a spot opens at the door</li>
+      <li style="margin-bottom: ${emailDesign.spacing.sm};">Watch your email closer to class time for the confirmation</li>
+      <li>Nothing else needed on your end</li>
     </ul>
 
     <p style="margin: 0; color: ${emailDesign.colors.neutralLight}; font-size: ${emailDesign.fontSize.small}; line-height: 1.5;">
-      <em>Waitlisted at ${props.bookingTimestamp}</em>
+      <em>Added to waitlist at ${props.bookingTimestamp}</em>
     </p>
   `;
 
   const html = baseEmailTemplate({
-    title: `Waitlisted: ${props.className}`,
-    preheader: `You're on the waitlist for ${props.className} on ${props.dayOfWeek}`,
+    title: `On the waitlist — ${props.className}`,
+    preheader: `On the waitlist for ${props.className} on ${props.dayOfWeek}.`,
     body,
     severity: 'warning',
-    ctaText: 'View My Schedule',
+    ctaText: 'View schedule',
     ctaLink: props.scheduleUrl,
     showUnsubscribe: true, // Success-like emails can be unsubscribed
     dashboardUrl: props.dashboardUrl,

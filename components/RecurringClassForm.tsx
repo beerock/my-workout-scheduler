@@ -3,13 +3,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import { saveRecurringClass, type RecurringClassFormData } from '@/app/actions/recurring-classes'
 import { useRouter } from 'next/navigation'
-import { COMMON_TIMEZONES, formatDateInGymTimezone } from '@/lib/date-utils'
+import { formatDateInGymTimezone } from '@/lib/date-utils'
 import type { RecurringClass } from '@/lib/database.types'
 import { Button, Modal, Input, Select, Alert, TimeInput, Combobox } from '@/components/ui'
 import BookNowDialog from '@/components/BookNowDialog'
+import FirstBookingPreview, { computeFirstBookingInfo } from '@/components/FirstBookingPreview'
 import type { ClassToBook } from '@/hooks/useBookNowDialog'
 import { YMCA_BRANCHES, YMCA_MASTER_CLASSES, fuzzyMatchClasses } from '@/lib/constants/ymca'
 import type { ComboboxOption } from '@/components/ui'
+
+// All active YMCA WNC classes run in Eastern time. The form hides the
+// timezone field and locks this value so users don't have to think about
+// timezones — the Time field's "Eastern" suffix communicates the zone.
+const GYM_TIMEZONE = 'America/New_York'
 
 // Module-level constants (derived from static data, never change)
 const classOptions: ComboboxOption[] = YMCA_MASTER_CLASSES.map(c => ({
@@ -75,7 +81,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
     class_type: initialClass?.class_type || '',
     branch: initialClass?.branch || defaultBranch || '',
     booking_window_hours: initialClass?.booking_window_hours ?? 26,
-    timezone: initialClass?.timezone || 'America/New_York',
+    timezone: initialClass?.timezone || GYM_TIMEZONE,
   })
 
   const getClassToBookForDialog = (): ClassToBook | null => {
@@ -99,7 +105,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
         class_type: initialClass.class_type,
         branch: initialClass.branch,
         booking_window_hours: initialClass.booking_window_hours,
-        timezone: initialClass.timezone,
+        timezone: initialClass.timezone || GYM_TIMEZONE,
       })
     }
   }, [initialClass])
@@ -190,7 +196,10 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
           setSavedClassDetails(result.classDetails || null)
           setShowBookNowDialog(true)
         } else {
-          // Booking window not open - delay redirect so user sees success state
+          // Booking window not open - delay redirect so user sees success state.
+          // Bumped from 1500ms → 3000ms because the success alert now carries
+          // a specific datetime ("First booking fires Sun Apr 27 · 2:15 PM")
+          // that users want a moment to register before the redirect fires.
           setTimeout(() => {
             if (onSuccess) {
               onSuccess()
@@ -198,7 +207,7 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
               router.push('/dashboard/schedule')
               router.refresh()
             }
-          }, 1500) // 1.5 second delay to show success button
+          }, 3000)
         }
 
       } else {
@@ -403,92 +412,145 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
     }))
   }
 
-  // Convert timezone list to Select options format
-  const timezoneOptions = COMMON_TIMEZONES.map(tz => ({
-    value: tz.value,
-    label: tz.label,
-  }))
-
   // Fuzzy filter for Combobox - memoized to avoid invalidating Combobox internals
   const filterClasses = useCallback((_query: string, _options: ComboboxOption[]): ComboboxOption[] => {
     return fuzzyMatchClasses(_query).map(m => ({ value: m.display, label: m.display }))
   }, [])
 
+  // Compute the first-booking preview info from current form values.
+  // Used both for the inline preview card AND for the success alert so
+  // the confirmation message matches what the user saw before saving.
+  const firstBookingInfo = computeFirstBookingInfo({
+    dayOfWeek: formData.day_of_week,
+    classTime: formData.class_time,
+    bookingWindowHours: formData.booking_window_hours,
+    timezone: formData.timezone,
+  })
+
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Group 1: Class Identity (WHAT & WHERE) */}
-        <Combobox
-          key={`class_type-${formKey}`}
-          label="Class Name"
-          name="class_type"
-          value={formData.class_type}
-          onChange={(value, custom) => {
-            setFormData(prev => ({ ...prev, class_type: value }))
-            setIsCustomClass(custom)
-          }}
-          options={classOptions}
-          filterFn={filterClasses}
-          placeholder="Search classes..."
-          hint="Search by name or browse the list"
-          allowCustom
-          customLabel="Add custom class"
-          required
-        />
+        {/* Section 1 — What class (identity fields) */}
+        <div className="space-y-4">
+          <h3 className="font-sora text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 pb-2">
+            What class
+          </h3>
 
-        <Select
-          key={`branch-${formKey}`}
-          label="Branch"
-          name="branch"
-          value={formData.branch}
-          onChange={handleChange}
-          options={branchOptions}
-          placeholder="Select a branch"
-          required
-        />
+          <Combobox
+            key={`class_type-${formKey}`}
+            label="Class Name"
+            name="class_type"
+            value={formData.class_type}
+            onChange={(value, custom) => {
+              setFormData(prev => ({ ...prev, class_type: value }))
+              setIsCustomClass(custom)
+            }}
+            options={classOptions}
+            filterFn={filterClasses}
+            placeholder="Search classes..."
+            allowCustom
+            customLabel="Add custom class"
+            required
+          />
 
-        {/* Group 2: Schedule (WHEN) */}
-        <Select
-          key={`day_of_week-${formKey}`}
-          label="Day"
-          name="day_of_week"
-          value={formData.day_of_week.toString()}
-          onChange={handleChange}
-          options={DAYS_OF_WEEK}
-        />
+          {/* Branch uses the Combobox in fixed-list mode (searchable={false})
+              so long branch names ("Hendersonville Family YMCA") truncate
+              gracefully at 320px instead of overflowing. Native <select> text
+              doesn't ellipsize reliably; the Combobox's custom dropdown does. */}
+          <Combobox
+            key={`branch-${formKey}`}
+            label="Branch"
+            name="branch"
+            value={formData.branch}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, branch: value }))
+            }
+            options={branchOptions}
+            placeholder="Select a branch"
+            searchable={false}
+            required
+          />
+        </div>
 
-        <TimeInput
-          key={`class_time-${formKey}`}
-          label="Time"
-          name="class_time"
-          value={formData.class_time}
-          onChange={(value) => setFormData(prev => ({ ...prev, class_time: value }))}
-          required
-        />
+        {/* Section 2 — When (schedule + booking window, all time-related).
+            Timezone Select is intentionally NOT rendered — all YMCA WNC
+            classes run in Eastern time and the Time field's "(Eastern)"
+            suffix communicates this. The timezone value stays in formData
+            at GYM_TIMEZONE. */}
+        <div className="space-y-4">
+          <h3 className="font-sora text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 pb-2">
+            When
+          </h3>
 
-        <Select
-          key={`timezone-${formKey}`}
-          label="Timezone"
-          name="timezone"
-          value={formData.timezone}
-          onChange={handleChange}
-          options={timezoneOptions}
-          hint="Where the gym is located"
-        />
+          <Select
+            key={`day_of_week-${formKey}`}
+            label="Day"
+            name="day_of_week"
+            value={formData.day_of_week.toString()}
+            onChange={handleChange}
+            options={DAYS_OF_WEEK}
+          />
 
-        {/* Group 3: System Settings */}
-        <Input
-          key={`booking_window_hours-${formKey}`}
-          label="Registration Opens"
-          name="booking_window_hours"
-          type="number"
-          min={1}
-          max={168}
-          value={formData.booking_window_hours}
-          onChange={handleChange}
-          required
-          hint="Hours before class (default: 26)"
-        />
+          <TimeInput
+            key={`class_time-${formKey}`}
+            label="Time (Eastern)"
+            name="class_time"
+            value={formData.class_time}
+            onChange={(value) => setFormData(prev => ({ ...prev, class_time: value }))}
+            required
+          />
+
+          {/* Custom-rendered field because the "hours before class" unit
+              reads much better inline next to the value than buried in a
+              hint below. Matches the visual system of the shared Input
+              component (focus ring, border states, label + hint typography)
+              but tightens the input width and surfaces the unit. */}
+          <div>
+            <label
+              htmlFor="booking_window_hours"
+              className="block font-dm-sans text-sm font-medium text-gray-700 mb-2"
+            >
+              Registration Opens
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                key={`booking_window_hours-${formKey}`}
+                id="booking_window_hours"
+                name="booking_window_hours"
+                type="number"
+                min={1}
+                max={168}
+                value={formData.booking_window_hours}
+                onChange={handleChange}
+                required
+                className="w-24 px-4 py-3 font-dm-sans text-gray-900 bg-white border border-gray-200 rounded-lg focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all duration-200"
+                aria-describedby="booking_window_hours-hint"
+              />
+              <span className="font-dm-sans text-sm text-gray-700">
+                hours before class
+              </span>
+            </div>
+            <p
+              id="booking_window_hours-hint"
+              className="mt-2 font-dm-sans text-sm text-gray-500"
+            >
+              Most are 26 — double-check the class page on the YMCA site if yours is different.
+            </p>
+          </div>
+        </div>
+
+        {/* Inline first-booking preview. Renders null until required
+            fields are valid (class_type + branch + day + time + window).
+            Extra gate here skips the preview while class_type/branch are
+            empty since they're required for saving but not for the math. */}
+        {formData.class_type && formData.branch && (
+          <FirstBookingPreview
+            dayOfWeek={formData.day_of_week}
+            classTime={formData.class_time}
+            bookingWindowHours={formData.booking_window_hours}
+            timezone={formData.timezone}
+          />
+        )}
 
         {error && (
           <Alert variant="error">{error}</Alert>
@@ -497,8 +559,10 @@ export default function RecurringClassForm({ initialClass, isCopy = false, defau
         {success && (
           <Alert variant="success">
             {savedIsCustomClass
-              ? "Saved! We'll review your custom class name."
-              : 'Class saved successfully!'}
+              ? "Saved — we'll verify your custom class name against the YMCA schedule and let you know if anything needs tweaking."
+              : firstBookingInfo?.kind === 'pre-window'
+                ? `Saved. First booking fires ${firstBookingInfo.formatted}.`
+                : 'Saved. The next registration window starts booking automatically.'}
           </Alert>
         )}
 

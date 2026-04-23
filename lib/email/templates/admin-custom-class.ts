@@ -30,15 +30,15 @@ export function adminCustomClassEmail(props: AdminCustomClassEmailProps): { subj
   const dayName = DAY_NAMES[props.dayOfWeek] || `Day ${props.dayOfWeek}`;
 
   // Use unescaped className in subject (plain text, not HTML)
-  const subject = `New custom class name: ${props.className}`;
+  const subject = `New custom class name — ${props.className}`;
 
   const body = `
     <h2 style="margin: 0 0 ${emailDesign.spacing.md}; color: ${emailDesign.colors.primary}; font-size: ${emailDesign.fontSize.h2}; font-weight: 600;">
-      Custom Class Name Submitted
+      New custom class name submitted.
     </h2>
 
     <p style="margin: 0 0 ${emailDesign.spacing.lg}; color: ${emailDesign.colors.neutral}; font-size: ${emailDesign.fontSize.body}; line-height: 1.6;">
-      A user added a class name that is not in the official YMCA master list. You may want to verify this against the YMCA schedule and add it to the list if valid.
+      A user added a class name that's not in the master list. Worth verifying against the YMCA schedule — if it's legit, add it to <code style="font-family: ${emailDesign.fonts.mono}; font-size: ${emailDesign.fontSize.tiny}; background: ${emailDesign.colors.backgroundAlt}; padding: 2px 4px; border-radius: 3px;">lib/constants/ymca.ts</code>.
     </p>
 
     <!-- Class Details -->

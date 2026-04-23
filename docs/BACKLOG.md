@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** April 11, 2026
+**Last Updated:** April 21, 2026
 
 ---
 
@@ -44,6 +44,25 @@ Allow users to test their gym credentials before saving, ensuring they work with
 ## Post-MVP: High Priority
 
 Important features for near-term after launch.
+
+### Separate Inngest Apps per Environment
+**Status:** Backlogged | **Priority:** High
+
+Inngest currently auto-syncs to the most recent Vercel deployment (preview OR production). Every preview commit on a feature branch redirects Inngest away from production, which means real users receive booking emails from the preview env — including the `(Preview)` suffix in `RESEND_FROM_NAME` that was observed during Sprint 1. Merging a feature branch swings Inngest back to production automatically, but the next feature-branch push swings it back to preview.
+
+Fix: configure Inngest to maintain TWO registered apps — one permanently pointed at production, one for preview — so booking events in production are always routed to production, and preview deploys serve only as an integration-testing surface with their own isolated event pipeline.
+
+**Requirements:**
+- Register production app with Vercel integration tied to production deploys only
+- Register preview app separately (may use env-scoped function registration)
+- Confirm production events never flow to preview and vice versa
+- Document the setup in `docs/INNGEST_SETUP.md`
+
+**Dependencies:** Understanding of Inngest's Vercel integration options (may require Inngest support contact)
+
+**Last Updated:** April 22, 2026
+
+---
 
 ### Invite Code Signup Gate
 **Status:** Backlogged | **Priority:** High
@@ -230,6 +249,41 @@ Booking email templates have been touched piecemeal over time and have diverged 
 ## Post-MVP: Low Priority
 
 Nice-to-have features that aren't critical.
+
+### `reset-password` rewriteAuthError Coverage
+**Status:** Backlogged | **Priority:** Low
+
+`app/(auth)/reset-password/page.tsx` passes Supabase `updateUser` errors directly to `setError(error.message)` without running them through `rewriteAuthError()` (the helper added in v2.36 that rephrases Supabase's raw rate-limit message). In practice this is unreachable — reset-password requires a fresh magic-link session so the rate limiter effectively can't fire — but for coverage parity with `/forgot-password`, `/login`, and `/verify-email`, wrapping the error in `rewriteAuthError()` keeps the pattern consistent.
+
+**Requirements:**
+- Import `rewriteAuthError` from `@/lib/auth-error-utils`
+- Wrap the two `setError(error.message)` sites in the handler + catch block
+
+**Last Updated:** April 22, 2026
+
+---
+
+### Memoize `FirstBookingPreview` Computation
+**Status:** Backlogged | **Priority:** Low
+
+`computeFirstBookingInfo()` runs on every `RecurringClassForm` render (and the preview component itself re-runs it). The payload is tiny — four primitives in, one formatted string out — so real-world keystroke latency is negligible. But if form-interaction perf ever surfaces as a concern, wrap the call in `useMemo` keyed on `dayOfWeek + classTime + bookingWindowHours + timezone` to skip redundant date-math work.
+
+**Last Updated:** April 22, 2026
+
+---
+
+### Tokenize Custom Card Shadows
+**Status:** Backlogged | **Priority:** Low
+
+Two cards use inline `boxShadow` with custom rgba values because no existing `shadow-*` token matches. Single-use, so tokenizing now would be premature abstraction — revisit if a third surface needs the same treatment.
+
+**Components:**
+- `NextClassCard` dark-gradient depth shadow (`0 4px 16px rgba(0,0,0,0.2), 0 8px 32px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)`)
+- `GetStartedBanner` purple-glow shadow (`0 4px 24px rgba(139,92,246,0.25), 0 8px 32px rgba(124,58,237,0.15)`)
+
+**Last Updated:** April 21, 2026
+
+---
 
 ### Code Cleanup Sprint
 **Status:** Backlogged | **Priority:** Low

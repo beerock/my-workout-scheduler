@@ -206,7 +206,7 @@ export default function GymCredentialsForm({ initialCredentials }: Props) {
       )}
 
       {success && (
-        <Alert variant="success">Credentials saved successfully!</Alert>
+        <Alert variant="success">Credentials saved — booking picks up from the next class.</Alert>
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

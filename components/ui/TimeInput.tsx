@@ -140,10 +140,20 @@ export const TimeInput: React.FC<TimeInputProps> = ({
         />
       )}
 
-      {/* Time picker row */}
-      <div className="flex items-center gap-2">
-        {/* Clock icon */}
-        <div className="flex-shrink-0">
+      {/* Time picker row. Stays on one line at all realistic mobile
+          viewports (≥ 360px). The decorative clock icon is hidden below sm
+          since the `Time (Eastern)` label carries the semantic meaning —
+          this frees ~28px. Selects use a tighter `w-[60px]` + reduced
+          right padding on mobile, and the AM/PM buttons tighten their
+          horizontal padding below sm so the whole row fits inside a 240px
+          form interior (320px viewport minus page + card padding). At the
+          very narrowest edge (< ~300px after padding), `flex-wrap` lets
+          AM/PM drop to a second line as a graceful fallback — but in
+          practice nobody hits that. */}
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        {/* Clock icon — hidden on narrow viewports to leave room for
+            the AM/PM toggle. */}
+        <div className="flex-shrink-0 hidden sm:block" aria-hidden="true">
           {ClockIcon}
         </div>
 
@@ -159,14 +169,14 @@ export const TimeInput: React.FC<TimeInputProps> = ({
             disabled={disabled}
             required={required}
             aria-label="Hour"
-            className={`${baseSelectStyles} ${stateStyles} w-[72px] pr-8 text-center`}
+            className={`${baseSelectStyles} ${stateStyles} w-[60px] sm:w-[72px] pr-6 sm:pr-8 text-center`}
           >
             <option value="" disabled>--</option>
             {hours.map((h) => (
               <option key={h} value={h}>{h}</option>
             ))}
           </select>
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+          <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
             {DropdownArrow}
           </div>
         </div>
@@ -186,20 +196,21 @@ export const TimeInput: React.FC<TimeInputProps> = ({
             disabled={disabled}
             required={required}
             aria-label="Minute"
-            className={`${baseSelectStyles} ${stateStyles} w-[72px] pr-8 text-center`}
+            className={`${baseSelectStyles} ${stateStyles} w-[60px] sm:w-[72px] pr-6 sm:pr-8 text-center`}
           >
             <option value="" disabled>--</option>
             {minutes.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+          <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
             {DropdownArrow}
           </div>
         </div>
 
-        {/* AM/PM toggle */}
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden ml-1">
+        {/* AM/PM toggle. Tightened padding on mobile so it sits inline
+            with the time selects at 320px. */}
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden ml-0.5 sm:ml-1">
           <button
             type="button"
             onClick={() => {
@@ -208,7 +219,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({
             }}
             disabled={disabled}
             className={`
-              px-3 py-2.5 font-dm-sans text-sm font-medium transition-all duration-200
+              px-2.5 sm:px-3 py-2.5 font-dm-sans text-sm font-medium transition-all duration-200
               ${period === 'AM'
                 ? 'bg-primary-500 text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -228,7 +239,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({
             }}
             disabled={disabled}
             className={`
-              px-3 py-2.5 font-dm-sans text-sm font-medium transition-all duration-200 border-l border-gray-200
+              px-2.5 sm:px-3 py-2.5 font-dm-sans text-sm font-medium transition-all duration-200 border-l border-gray-200
               ${period === 'PM'
                 ? 'bg-primary-500 text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50'

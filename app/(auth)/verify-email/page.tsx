@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Button, Card } from '@/components/ui'
 import AuthLayout from '@/components/AuthLayout'
+import { rewriteAuthError } from '@/lib/auth-error-utils'
 
 function VerifyEmailContent() {
   const [email, setEmail] = useState<string>('')
@@ -47,7 +48,7 @@ function VerifyEmailContent() {
       })
 
       if (error) {
-        setResendError(error.message)
+        setResendError(rewriteAuthError(error.message))
       } else {
         setResendSuccess(true)
         setCountdown(60) // 60 second cooldown
