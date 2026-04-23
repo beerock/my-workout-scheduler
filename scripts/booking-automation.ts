@@ -9,6 +9,27 @@ import * as path from 'path'
 // Detect production environment (GitHub Actions)
 const IS_PRODUCTION = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
 
+/**
+ * Format HH:MM or HH:MM:SS 24-hour time to user-friendly 12-hour format.
+ *
+ * Used only for building user-facing error messages that surface in failure
+ * emails — `Class "X" at 19:55:00 not found` is confusing; `at 7:55 PM` isn't.
+ * Kept inline here (not imported from `lib/date-utils`) because this script
+ * runs under GitHub Actions via tsx without the Next.js `@/*` path-alias
+ * resolution.
+ */
+function formatClassTime12Hour(time: string): string {
+  if (!time || typeof time !== 'string' || !time.includes(':')) return time
+  const [hStr, mStr] = time.split(':')
+  const h24 = Number(hStr)
+  const m = Number(mStr)
+  if (isNaN(h24) || isNaN(m)) return time
+  const period = h24 >= 12 ? 'PM' : 'AM'
+  let h12 = h24 % 12
+  if (h12 === 0) h12 = 12
+  return `${h12}:${m.toString().padStart(2, '0')} ${period}`
+}
+
 // =============================================================================
 // YMCA Constants (MVP: Single gym - YMCA of Western North Carolina)
 // =============================================================================
@@ -448,7 +469,7 @@ async function findClassOnYMCA(
     if (!result.found) {
       return {
         found: false,
-        errorMessage: `Class "${classType}" at ${classTime} not found on YMCA schedule.`,
+        errorMessage: `Class "${classType}" at ${formatClassTime12Hour(classTime)} not found on YMCA schedule.`,
       }
     }
 
@@ -967,7 +988,7 @@ async function bookClassYMCAHybrid(
         branchUsed: branch,
         errorMessage:
           searchResult.errorMessage ||
-          `Class "${classType}" at ${classTime} not found on YMCA schedule.\n\nWhy this happens:\n• Class name doesn't match exactly (check for typos)\n• Wrong time, day, or branch selected\n• Gym no longer offers this class\n\nWhat to do:\n1. Go to your gym's website and find the exact class listing\n2. Update your class settings to match EXACTLY`,
+          `Class "${classType}" at ${formatClassTime12Hour(classTime)} not found on YMCA schedule.\n\nWhy this happens:\n• Class name doesn't match exactly (check for typos)\n• Wrong time, day, or branch selected\n• Gym no longer offers this class\n\nWhat to do:\n1. Go to your gym's website and find the exact class listing\n2. Update your class settings to match EXACTLY`,
         screenshotPath,
       }
     }

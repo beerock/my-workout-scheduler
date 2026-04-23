@@ -70,8 +70,6 @@ export default function ActionItemsCard({ items, animationDelay = '0.25s' }: Pro
                     <span className="font-medium text-gray-800">{item.className}</span>
                     {' · '}
                     {item.dayTime} · {item.branch}
-                    {' — '}
-                    <span className="text-gray-500">{item.ctaText.toLowerCase()}</span>
                   </li>
                 ))}
               </ul>

@@ -207,32 +207,68 @@ export async function getDashboardStats(): Promise<{
           soonestOccurrence.getTime() - 7 * 24 * 60 * 60 * 1000
         const lookbackFloor = new Date(lookbackFloorMs).toISOString()
 
-        const { data: bookingAttempt } = await supabase
+        // Pull the most-recent attempt of ANY status so we can distinguish:
+        //   - confirmed / waitlisted → the booking landed, show that result
+        //   - any other status (retrying, failed, pending) → retry loop is
+        //     still running (or exhausted); "Watching / Checking every 15 min"
+        //     is the closest correct label, so we leave the default pending
+        //     state and let NextClassCard render it
+        //   - NO attempt at all AND the window has already opened → the
+        //     occurrence was never picked up. Happens when a class is created
+        //     AFTER its booking window opens and the user declines the
+        //     BookNowDialog. Without this branch the card falsely reads
+        //     "Watching / Checking every 15 min" even though nothing is
+        //     actually running. Advance the card's target to NEXT week's
+        //     occurrence so it reflects the real next booking the system
+        //     will make.
+        const { data: recentAttempts } = await supabase
           .from('booking_attempts')
           .select('status')
           .eq('recurring_class_id', soonestClassId)
           .gte('attempt_timestamp', lookbackFloor)
-          .in('status', ['confirmed', 'waitlisted'])
           .order('attempt_timestamp', { ascending: false })
           .limit(1)
-          .single()
 
-        if (bookingAttempt) {
-          soonest.bookingStatus = bookingAttempt.status as 'confirmed' | 'waitlisted'
+        const latestAttempt = recentAttempts?.[0]
+        const isConfirmedOrWaitlisted =
+          latestAttempt?.status === 'confirmed' || latestAttempt?.status === 'waitlisted'
+
+        const winningClass = userClasses.find((c) => c.id === soonestClassId)
+        const tz = winningClass?.timezone ?? 'America/New_York'
+
+        if (isConfirmedOrWaitlisted) {
+          soonest.bookingStatus = latestAttempt.status as 'confirmed' | 'waitlisted'
         } else if (windowOpenMs > now.getTime()) {
-          // Still pre-window for this class — pre-format "Sun 2:15 PM" in the
-          // class's own timezone so the card doesn't have to know about
-          // timezones. The class.timezone of the winning class governs this
-          // rendering (users can have classes at different branches, but the
-          // one we show is this specific class's).
-          const winningClass = userClasses.find((c) => c.id === soonestClassId)
-          const tz = winningClass?.timezone ?? 'America/New_York'
+          // Pre-window — show "On deck / Opens [time]". Pre-format the timestamp
+          // in the class's own timezone so NextClassCard doesn't have to know
+          // about timezones.
           soonest.bookingOpensAt = formatInTimeZone(
             new Date(windowOpenMs),
             tz,
             'EEE h:mm a'
           )
+        } else if (!latestAttempt) {
+          // Post-window and no attempt exists → this occurrence was missed
+          // (class created post-window, BookNowDialog declined, etc.).
+          // Advance to next week's occurrence; the card now correctly shows
+          // "On deck" for that instead of lying with "Watching".
+          const nextWeekOccurrence = new Date(
+            soonestOccurrence.getTime() + 7 * 24 * 60 * 60 * 1000
+          )
+          const nextWeekWindowOpenMs =
+            nextWeekOccurrence.getTime() - soonestBookingWindowHours * 60 * 60 * 1000
+          const hoursUntilNextWeek =
+            (nextWeekOccurrence.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+          soonest.hoursUntil = Math.round(hoursUntilNextWeek)
+          soonest.bookingOpensAt = formatInTimeZone(
+            new Date(nextWeekWindowOpenMs),
+            tz,
+            'EEE h:mm a'
+          )
         }
+        // else: post-window AND a retry/failed attempt exists → leave the
+        //       default pending state; NextClassCard renders "Watching".
       }
 
       nextBooking = soonest
