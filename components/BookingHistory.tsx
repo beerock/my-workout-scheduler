@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui'
 import BookingHistoryCard from './BookingHistoryCard'
 import { format } from 'date-fns'
@@ -64,6 +65,16 @@ export default function BookingHistory({
   isLoadingMore,
   onLoadMore,
 }: Props) {
+  // Compute "today" client-side only. `format(new Date(), ...)` reads the
+  // current wall clock, which differs between the Vercel UTC server and
+  // the user's local zone whenever the UTC and local dates straddle
+  // midnight. Without this guard the "Today" label flips between server
+  // and client and trips React error #418 (hydration mismatch).
+  const [todayKey, setTodayKey] = useState<string | null>(null)
+  useEffect(() => {
+    setTodayKey(format(new Date(), 'yyyy-MM-dd'))
+  }, [])
+
   // Group history by date
   const groupedHistory = history.reduce((groups, item) => {
     const date = format(new Date(item.created_at), 'yyyy-MM-dd')
@@ -145,7 +156,10 @@ export default function BookingHistory({
       {sortedDates.map((date) => {
         const items = groupedHistory[date]
         const dateObj = new Date(date)
-        const isToday = format(new Date(), 'yyyy-MM-dd') === date
+        // Never flag "Today" on initial SSR — the server's date may
+        // differ from the client's across the UTC→local boundary.
+        // todayKey is populated in the mount effect above.
+        const isToday = todayKey !== null && todayKey === date
         const dateLabel = isToday ? 'Today' : format(dateObj, 'EEEE, MMM d')
 
         return (

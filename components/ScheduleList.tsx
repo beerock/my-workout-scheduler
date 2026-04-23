@@ -237,10 +237,16 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
   }
 
   // Get dot color for next booking indicator
+  // `isSkipCurrentlyActive` reads `new Date()`, so its result can differ
+  // between server render and client hydration (React error #418). Gate
+  // every call on `isMounted` so SSR always renders the not-skipping
+  // branch; the real check runs after the mount effect fires. Tradeoff:
+  // a skipped class briefly flashes without its amber dot / "Skipping"
+  // badge on first paint.
   const getDotColor = (classItem: RecurringClass): string => {
     if (schedulePaused) return 'bg-amber-500'
     if (!classItem.active) return 'bg-gray-400'
-    if (isSkipCurrentlyActive(classItem)) return 'bg-amber-500'
+    if (isMounted && isSkipCurrentlyActive(classItem)) return 'bg-amber-500'
     return 'bg-primary-500'
   }
 
@@ -252,7 +258,7 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
     if (!classItem.active) {
       return { variant: 'inactive', label: 'Inactive' }
     }
-    if (isSkipCurrentlyActive(classItem) && classItem.skip_target_datetime) {
+    if (isMounted && isSkipCurrentlyActive(classItem) && classItem.skip_target_datetime) {
       return { variant: 'skipped', label: `Skipping ${formatDateInGymTimezone(new Date(classItem.skip_target_datetime), classItem.timezone, 'short')}` }
     }
     // Could show "Active" or nothing for active classes
@@ -331,7 +337,7 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
                   ? 'opacity-60'
                   : !classItem.active
                   ? 'opacity-75 bg-gray-50'
-                  : isSkipCurrentlyActive(classItem)
+                  : isMounted && isSkipCurrentlyActive(classItem)
                   ? 'bg-amber-50/30'
                   : ''
               }`}
@@ -386,7 +392,7 @@ export default function ScheduleList({ classes, schedulePaused = false, onUpdate
                           ? 'Booking paused'
                           : !classItem.active
                           ? 'Class inactive'
-                          : isSkipCurrentlyActive(classItem)
+                          : isMounted && isSkipCurrentlyActive(classItem)
                           ? 'Skipping next occurrence'
                           : `Booking window: ${classItem.booking_window_hours}h before class`
                         }
