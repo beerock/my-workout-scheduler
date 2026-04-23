@@ -36,7 +36,7 @@
     "@vercel/speed-insights": "^2.0.0",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
-    "inngest": "^3.48.1",
+    "inngest": "^3.54.0",
     "next": "^16.1.1",
     "puppeteer": "^24.34.0",
     "react": "^19.2.3",
