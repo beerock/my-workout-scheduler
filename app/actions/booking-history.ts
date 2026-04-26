@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { subDays } from 'date-fns'
-import { computeTargetClassDate } from '@/lib/date-utils'
 
 // Only show completed booking statuses (hide pending/skipped)
 export type BookingStatus = 'confirmed' | 'waitlisted' | 'failed' | 'no_registration'
@@ -212,28 +211,20 @@ export async function getBookingHistory(
       }
     })
 
-    // Collapse all attempts for the same class occurrence into one entry.
-    // Items arrive newest-first; the first item seen per key = most recent attempt (shown on card).
-    // Each subsequent item seen = older attempt → its created_at becomes firstAttemptAt.
+    // Collapse repeated attempts for the same class on the same calendar day.
+    // This gives one card per (class, day) — e.g. Thursday's BODYPUMP retries
+    // collapse to one card, Friday's collapse to a separate card.
+    // Items arrive newest-first; the first item seen per key = most recent attempt.
+    // Each successive item is older → its created_at becomes firstAttemptAt.
     const occurrenceMap = new Map<string, typeof enriched[0]>()
     const occurrenceCounts = new Map<string, number>()
     const firstAttemptMap = new Map<string, string>() // key → oldest created_at
 
     for (const item of enriched) {
-      let targetDate: string
-      try {
-        targetDate = computeTargetClassDate(
-          item.attempt_timestamp,
-          item.booking_window_hours,
-          item.day_of_week,
-          item.class_time,
-          item.timezone
-        )
-      } catch (e) {
-        console.error('[booking-history] computeTargetClassDate failed', { id: item.id }, e)
-        targetDate = item.attempt_timestamp.slice(0, 10)
-      }
-      const key = `${item.recurring_class_id}::${targetDate}`
+      // Use UTC date of the attempt — late-night ET attempts could cross UTC midnight,
+      // but booking windows open in morning ET so this is safe in practice.
+      const dayKey = item.created_at.slice(0, 10)
+      const key = `${item.recurring_class_id}::${dayKey}`
 
       if (!occurrenceMap.has(key)) {
         occurrenceMap.set(key, item)
@@ -241,7 +232,6 @@ export async function getBookingHistory(
         firstAttemptMap.set(key, item.created_at)
       } else {
         occurrenceCounts.set(key, (occurrenceCounts.get(key) ?? 1) + 1)
-        // Each successive item is older (newest-first order) → update first attempt
         firstAttemptMap.set(key, item.created_at)
       }
     }
