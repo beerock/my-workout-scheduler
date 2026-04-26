@@ -162,6 +162,7 @@ export default function BookingHistory({
         const isToday = todayKey !== null && todayKey === date
         const dateLabel = isToday ? 'Today' : format(dateObj, 'EEEE, MMM d')
 
+        const totalAttempts = items.reduce((sum, item) => sum + item.attemptCount, 0)
         return (
           <section key={date} className="w-full">
             {/* Date header */}
@@ -170,7 +171,7 @@ export default function BookingHistory({
                 {dateLabel}
               </h3>
               <Badge variant="default" size="sm" diagonal={false}>
-                {items.reduce((sum, item) => sum + item.attemptCount, 0)} {items.reduce((sum, item) => sum + item.attemptCount, 0) === 1 ? 'attempt' : 'attempts'}
+                {totalAttempts} {totalAttempts === 1 ? 'attempt' : 'attempts'}
               </Badge>
             </div>
 

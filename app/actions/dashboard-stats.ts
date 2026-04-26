@@ -97,13 +97,6 @@ export async function getDashboardStats(): Promise<{
     if (attemptsResult.error) {
       console.error('Error fetching booking attempts:', attemptsResult.error)
     } else if (attemptsResult.data && attemptsResult.data.length > 0) {
-      const isClassFull = (attempt: { status: string; error_message: string | null }) => {
-        if (attempt.status !== 'failed') return false
-        if (!attempt.error_message) return false
-        const msg = attempt.error_message.toLowerCase()
-        return msg.includes('full') && !msg.includes('waitlist')
-      }
-
       // Build a metadata map from active classes for target-date computation.
       // Attempts for inactive/deleted classes won't be deduped (counted individually),
       // which matches the pre-existing behavior for those edge cases.
@@ -149,7 +142,7 @@ export async function getDashboardStats(): Promise<{
 
       // Count deduplicated class occurrences (one outcome per class slot)
       const occurrences = Array.from(occurrenceMap.values())
-      const countableOccurrences = occurrences.filter(o => !isClassFull(o))
+      const countableOccurrences = occurrences.filter(o => !isRetrying(o.status, o.error_message))
       totalBookingAttempts = countableOccurrences.length
 
       const successful = countableOccurrences.filter(
