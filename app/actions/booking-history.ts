@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { subDays } from 'date-fns'
+import { computeTargetClassDate } from '@/lib/date-utils'
 
 // Only show completed booking statuses (hide pending/skipped)
 export type BookingStatus = 'confirmed' | 'waitlisted' | 'failed' | 'no_registration'
@@ -19,7 +20,10 @@ export type BookingHistoryItem = {
   day_of_week: number
   class_time: string
   branch: string
+  timezone: string
   booking_window_hours: number
+  // Number of raw attempts collapsed into this entry (>1 means retries were deduped)
+  attemptCount: number
 }
 
 export type StatusCounts = {
@@ -73,7 +77,7 @@ export async function getBookingHistory(
     // Get recurring class IDs for this user (including inactive for history)
     const { data: userClasses, error: classesError } = await supabase
       .from('recurring_classes')
-      .select('id, class_type, day_of_week, class_time, branch, booking_window_hours')
+      .select('id, class_type, day_of_week, class_time, branch, timezone, booking_window_hours')
       .eq('user_id', user.id)
 
     if (classesError) {
@@ -231,7 +235,7 @@ export async function getBookingHistory(
     const classMap = new Map(userClasses.map(c => [c.id, c]))
 
     // Join the data
-    const history: BookingHistoryItem[] = filteredAttempts.map(attempt => {
+    const enriched = filteredAttempts.map(attempt => {
       const classDetails = classMap.get(attempt.recurring_class_id)
       return {
         id: attempt.id,
@@ -245,9 +249,44 @@ export async function getBookingHistory(
         day_of_week: classDetails?.day_of_week || 0,
         class_time: classDetails?.class_time || '',
         branch: classDetails?.branch || '',
+        timezone: classDetails?.timezone || 'America/New_York',
         booking_window_hours: classDetails?.booking_window_hours || 26,
+        attemptCount: 1,
       }
     })
+
+    // Collapse repeated attempts for the same class occurrence (e.g. class-full retry loops).
+    // Items arrive newest-first; the first one seen for each key is the most recent attempt.
+    const occurrenceMap = new Map<string, BookingHistoryItem>()
+    const occurrenceCounts = new Map<string, number>()
+
+    for (const item of enriched) {
+      let targetDate: string
+      try {
+        targetDate = computeTargetClassDate(
+          item.attempt_timestamp,
+          item.booking_window_hours,
+          item.day_of_week,
+          item.class_time,
+          item.timezone
+        )
+      } catch (e) {
+        console.error('[booking-history] computeTargetClassDate failed', { id: item.id }, e)
+        targetDate = item.attempt_timestamp.slice(0, 10)
+      }
+      const key = `${item.recurring_class_id}::${targetDate}`
+      if (!occurrenceMap.has(key)) {
+        occurrenceMap.set(key, item)
+        occurrenceCounts.set(key, 1)
+      } else {
+        occurrenceCounts.set(key, (occurrenceCounts.get(key) ?? 1) + 1)
+      }
+    }
+
+    const history: BookingHistoryItem[] = Array.from(occurrenceMap.entries()).map(([key, item]) => ({
+      ...item,
+      attemptCount: occurrenceCounts.get(key) ?? 1,
+    }))
 
     return { success: true, history, totalCount: filterTotalCount, statusCounts }
   } catch (error) {

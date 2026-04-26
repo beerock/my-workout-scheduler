@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { startOfWeek, endOfWeek } from 'date-fns'
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
-import { calculateNextOccurrence, formatTime12Hour } from '@/lib/date-utils'
+import { calculateNextOccurrence, computeTargetClassDate, formatTime12Hour } from '@/lib/date-utils'
 import { isRetrying } from '@/lib/booking-error-utils'
 
 /**
@@ -75,7 +75,7 @@ export async function getDashboardStats(): Promise<{
       // 2. All booking attempts for success rate calculation
       supabase
         .from('booking_attempts')
-        .select('status, error_message, recurring_classes!inner(user_id)')
+        .select('status, error_message, recurring_class_id, attempt_timestamp, recurring_classes!inner(user_id)')
         .eq('recurring_classes.user_id', user.id)
         .neq('status', 'pending')
         .neq('status', 'skipped'),
@@ -104,11 +104,56 @@ export async function getDashboardStats(): Promise<{
         return msg.includes('full') && !msg.includes('waitlist')
       }
 
-      const countableAttempts = attemptsResult.data.filter(a => !isClassFull(a))
-      totalBookingAttempts = countableAttempts.length
+      // Build a metadata map from active classes for target-date computation.
+      // Attempts for inactive/deleted classes won't be deduped (counted individually),
+      // which matches the pre-existing behavior for those edge cases.
+      const classMetaMap = new Map(
+        (userClasses ?? []).map(c => [c.id, c])
+      )
 
-      const successful = countableAttempts.filter(
-        a => a.status === 'confirmed' || a.status === 'waitlisted'
+      // Deduplicate by class occurrence: collapse all retry attempts for the same
+      // (recurring_class_id, target class date) into one entry keeping the best status.
+      const STATUS_RANK: Record<string, number> = { confirmed: 4, waitlisted: 3, no_registration: 2, failed: 1 }
+      type OccurrenceBest = { status: string; error_message: string | null }
+      const occurrenceMap = new Map<string, OccurrenceBest>()
+
+      for (const attempt of attemptsResult.data) {
+        const classMeta = classMetaMap.get(attempt.recurring_class_id)
+        let key: string
+        if (classMeta) {
+          try {
+            const targetDate = computeTargetClassDate(
+              attempt.attempt_timestamp,
+              classMeta.booking_window_hours,
+              classMeta.day_of_week,
+              classMeta.class_time,
+              classMeta.timezone
+            )
+            key = `${attempt.recurring_class_id}::${targetDate}`
+          } catch (e) {
+            console.error('[dashboard-stats] computeTargetClassDate failed', { recurring_class_id: attempt.recurring_class_id }, e)
+            key = `${attempt.recurring_class_id}::${attempt.attempt_timestamp.slice(0, 10)}`
+          }
+        } else {
+          // Inactive/unknown class — use raw date as key (no cross-day dedup)
+          key = `${attempt.recurring_class_id}::${attempt.attempt_timestamp.slice(0, 10)}`
+        }
+
+        const existing = occurrenceMap.get(key)
+        const currentRank = STATUS_RANK[attempt.status] ?? 0
+        const existingRank = existing ? (STATUS_RANK[existing.status] ?? 0) : 0
+        if (!existing || currentRank > existingRank) {
+          occurrenceMap.set(key, { status: attempt.status, error_message: attempt.error_message })
+        }
+      }
+
+      // Count deduplicated class occurrences (one outcome per class slot)
+      const occurrences = Array.from(occurrenceMap.values())
+      const countableOccurrences = occurrences.filter(o => !isClassFull(o))
+      totalBookingAttempts = countableOccurrences.length
+
+      const successful = countableOccurrences.filter(
+        o => o.status === 'confirmed' || o.status === 'waitlisted'
       ).length
       successRate = totalBookingAttempts > 0
         ? Math.round((successful / totalBookingAttempts) * 100)

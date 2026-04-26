@@ -14,6 +14,7 @@ type Props = {
   item: BookingHistoryItem
   compact?: boolean // true for RecentBookings, false for full history
   animationDelay?: string
+  attemptCount?: number
 }
 
 // Status badge configuration (includes derived 'retrying' status for class full)
@@ -94,7 +95,7 @@ const variantColors = {
  * Displays booking attempt with status, class info, and time.
  * For failed bookings, shows expandable error details with category and "Contact Us" link.
  */
-export default function BookingHistoryCard({ item, compact = false, animationDelay = '0s' }: Props) {
+export default function BookingHistoryCard({ item, compact = false, animationDelay = '0s', attemptCount }: Props) {
   const [expanded, setExpanded] = useState(false)
 
   // Check if this failed booking is a "class full" situation (informational, not an error)
@@ -176,6 +177,11 @@ export default function BookingHistoryCard({ item, compact = false, animationDel
           <div className="text-xs text-gray-400 font-dm-sans">
             {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
           </div>
+          {(attemptCount ?? item.attemptCount) > 1 && (
+            <div className="text-xs text-gray-400 font-dm-sans mt-0.5">
+              {attemptCount ?? item.attemptCount} attempts
+            </div>
+          )}
         </div>
       </div>
 
