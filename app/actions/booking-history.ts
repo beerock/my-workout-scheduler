@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { subDays } from 'date-fns'
+import { categorizeFailure } from '@/lib/booking-error-utils'
 
 // Only show completed booking statuses (hide pending/skipped)
 export type BookingStatus = 'confirmed' | 'waitlisted' | 'failed' | 'no_registration'
@@ -216,29 +217,41 @@ export async function getBookingHistory(
     // collapse to one card, Friday's collapse to a separate card.
     // Items arrive newest-first; the first item seen per key = most recent attempt.
     // Each successive item is older → its created_at becomes firstAttemptAt.
+    // error_message is set to the most critical error across all attempts in the group.
+    const CATEGORY_PRIORITY: Record<string, number> = { critical: 3, config: 2, technical: 1, retrying: 0 }
     const occurrenceMap = new Map<string, typeof enriched[0]>()
     const occurrenceCounts = new Map<string, number>()
-    const firstAttemptMap = new Map<string, string>() // key → oldest created_at
+    const firstAttemptMap = new Map<string, string>()   // key → oldest created_at
+    const criticalErrorMap = new Map<string, string | null>() // key → most critical error_message
+    const criticalPriorityMap = new Map<string, number>()     // key → priority of stored error
 
     for (const item of enriched) {
       // Use UTC date of the attempt — late-night ET attempts could cross UTC midnight,
       // but booking windows open in morning ET so this is safe in practice.
       const dayKey = item.created_at.slice(0, 10)
       const key = `${item.recurring_class_id}::${dayKey}`
+      const itemPriority = CATEGORY_PRIORITY[categorizeFailure(item.error_message).category] ?? 0
 
       if (!occurrenceMap.has(key)) {
         occurrenceMap.set(key, item)
         occurrenceCounts.set(key, 1)
         firstAttemptMap.set(key, item.created_at)
+        criticalErrorMap.set(key, item.error_message)
+        criticalPriorityMap.set(key, itemPriority)
       } else {
         occurrenceCounts.set(key, (occurrenceCounts.get(key) ?? 1) + 1)
         firstAttemptMap.set(key, item.created_at)
+        if (itemPriority > (criticalPriorityMap.get(key) ?? 0)) {
+          criticalErrorMap.set(key, item.error_message)
+          criticalPriorityMap.set(key, itemPriority)
+        }
       }
     }
 
     // Build full deduplicated list, then paginate
     const allDeduped: BookingHistoryItem[] = Array.from(occurrenceMap.entries()).map(([key, item]) => ({
       ...item,
+      error_message: criticalErrorMap.get(key) ?? item.error_message,
       attemptCount: occurrenceCounts.get(key) ?? 1,
       firstAttemptAt: firstAttemptMap.get(key) ?? item.created_at,
     }))
