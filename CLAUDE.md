@@ -8,7 +8,7 @@
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version:** v2.36 - Sprint 1 UX + Product Polish (see PRD for full version history)
+**Current Version:** v2.37 - Booking History Dedup + Multi-Category Error Expansion (see PRD for full version history)
 
 ---
 
@@ -247,4 +247,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: April 22, 2026 (v2.36)*
+*Last Updated: April 26, 2026 (v2.37)*

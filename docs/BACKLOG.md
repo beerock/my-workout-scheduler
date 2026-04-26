@@ -632,6 +632,13 @@ Ready-made prompt for diagnosing GitHub Actions failures.
 
 Brief summaries of completed work. See PRD version history for full details.
 
+### Booking History Dedup + Multi-Category Error Expansion ✅
+**Completed:** April 26, 2026 (v2.37)
+
+Repeated attempts for the same class on the same calendar day collapse into one history card (first→last time range, attempt count). Success rate deduplicates by class occurrence via `computeTargetClassDate` so 50 retries count as one outcome. Expanded error section shows all unique failure categories by priority (critical → config → technical → retrying), each with its own icon, attempt count, and error messages; collapsed toggle shows only the top-priority label.
+
+---
+
 ### No Auto-Registration Detection ✅
 **Completed:** April 8, 2026
 

@@ -101,6 +101,60 @@ export function calculateNextOccurrence(
 }
 
 /**
+ * Find the next occurrence of a class on/after a given anchor date.
+ * Returns YYYY-MM-DD in the gym's timezone.
+ */
+function getNextClassOccurrenceFrom(
+  from: Date,
+  dayOfWeek: number,
+  classTime: string,
+  timezone: string
+): string {
+  const fromInGymTz = toZonedTime(from, timezone)
+  const fromDay = fromInGymTz.getDay()
+  const [classHour, classMinute] = classTime.split(':').map(Number)
+
+  let daysUntil = dayOfWeek - fromDay
+
+  if (daysUntil < 0) {
+    daysUntil += 7
+  } else if (daysUntil === 0) {
+    const fromMinutes = fromInGymTz.getHours() * 60 + fromInGymTz.getMinutes()
+    const classMinutes = classHour * 60 + classMinute
+    if (fromMinutes > classMinutes) {
+      daysUntil = 7
+    }
+  }
+
+  const targetDate = new Date(fromInGymTz)
+  targetDate.setDate(fromInGymTz.getDate() + daysUntil)
+
+  const year = targetDate.getFullYear()
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0')
+  const day = String(targetDate.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Compute the target class date (YYYY-MM-DD) that a booking attempt was made for.
+ * Works by shifting back half the booking window to find an anchor before the
+ * booking window opened, then finding the next class occurrence from that anchor.
+ *
+ * This correctly groups all retry attempts (class-full loops, misfired jobs) that
+ * belong to the same class occurrence into a single canonical date key.
+ */
+export function computeTargetClassDate(
+  attemptTimestamp: string | Date,
+  bookingWindowHours: number,
+  dayOfWeek: number,
+  classTime: string,
+  timezone: string
+): string {
+  const lookFromMs = new Date(attemptTimestamp).getTime() - (bookingWindowHours / 2) * 60 * 60 * 1000
+  return getNextClassOccurrenceFrom(new Date(lookFromMs), dayOfWeek, classTime, timezone)
+}
+
+/**
  * Format a datetime in the gym's timezone for display
  * Used by UI to show skip dates in the correct timezone
  *

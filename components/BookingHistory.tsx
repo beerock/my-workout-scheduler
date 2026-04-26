@@ -170,7 +170,7 @@ export default function BookingHistory({
                 {dateLabel}
               </h3>
               <Badge variant="default" size="sm" diagonal={false}>
-                {items.length} {items.length === 1 ? 'attempt' : 'attempts'}
+                {items.reduce((sum, item) => sum + item.attemptCount, 0)} {items.reduce((sum, item) => sum + item.attemptCount, 0) === 1 ? 'attempt' : 'attempts'}
               </Badge>
             </div>
 
