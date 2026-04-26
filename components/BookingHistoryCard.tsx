@@ -168,7 +168,7 @@ export default function BookingHistoryCard({ item, compact = false, animationDel
         {/* Time info - fixed width */}
         <div className="text-right flex-shrink-0">
           {item.attemptCount > 1 && !compact ? (
-            // Multi-attempt: show time range (first → last) and attempt count
+            // Full history: show time range (first → last) and attempt count
             <>
               <div className="text-sm text-gray-500 font-dm-sans">
                 {format(new Date(item.firstAttemptAt), 'h:mm a')}
@@ -183,7 +183,7 @@ export default function BookingHistoryCard({ item, compact = false, animationDel
               </div>
             </>
           ) : (
-            // Single attempt or compact view: show time as usual
+            // Single attempt or compact view: show date/time as usual
             <>
               <div className="text-sm text-gray-500 font-dm-sans">
                 {compact
@@ -194,6 +194,11 @@ export default function BookingHistoryCard({ item, compact = false, animationDel
               <div className="text-xs text-gray-400 font-dm-sans">
                 {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
               </div>
+              {item.attemptCount > 1 && (
+                <div className="text-xs text-gray-400 font-dm-sans mt-0.5">
+                  {item.attemptCount} attempts
+                </div>
+              )}
             </>
           )}
         </div>
