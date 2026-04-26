@@ -2,7 +2,7 @@
 
 **Version:** 2.36
 **Product Owner:** Brock Busby
-**Last Updated:** April 22, 2026
+**Last Updated:** April 26, 2026
 **Status:** Production - Deployed and Testing
 
 
@@ -168,6 +168,11 @@
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.37:** Booking History Dedup + Multi-Category Error Expansion (April 2026)
+  - **History dedup:** Repeated booking attempts for the same class on the same calendar day collapse into one card. Card shows first→last attempt time range and attempt count. 50 retries for a single class no longer flood the history list.
+  - **Success rate fix:** `computeTargetClassDate` groups all attempts for the same class occurrence (even across days) into one data point; best-outcome-wins logic picks confirmed > waitlisted > no_registration > failed. 50 retries for a Saturday class now count as 1 attempt in the success rate, not 50.
+  - **Multi-category error expansion:** When a collapsed card has attempts spanning multiple failure categories, the expanded section renders each group (Action Required / Class Issue / Temporary Issue / Class Full) in priority order with its own icon, per-group attempt count, and unique error messages. The collapsed toggle shows only the highest-priority label.
+  - **Attempt count on compact cards:** Recent Bookings card on the Schedule page also shows "N attempts" when retries were collapsed.
 - **v2.36:** Sprint 1 — UX + Product Polish (April 2026)
   - **Voice guide (`docs/VOICE.md`):** codified two registers (coach voice for logged-in surfaces, showcase voice for the landing + waitlist) plus a four-tier taxonomy for coach voice (Confirmed / Working on it / Need your help / FYI), a section-name mapping for every email card, canonical YMCA WNC naming rules, and FROM/reply policy. All 17 email templates rewritten to align.
   - **Waitlist flow:** public `/signup` page replacing the "invite-only, contact us" dead-end. New `waitlist_signups` table (migration 016), admin review surface at `/admin/waitlist`, branded invite email via `supabase.auth.admin.generateLink({type:'invite'})` + Resend. `waitlist-invite` + `waitlist-confirmation` email templates added.
