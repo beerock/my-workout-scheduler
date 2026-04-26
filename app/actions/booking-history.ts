@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { subDays } from 'date-fns'
-import { categorizeFailure } from '@/lib/booking-error-utils'
+import { categorizeFailure, isRetrying, getRetryingCategoryInfo, type FailureCategory } from '@/lib/booking-error-utils'
 
 // Only show completed booking statuses (hide pending/skipped)
 export type BookingStatus = 'confirmed' | 'waitlisted' | 'failed' | 'no_registration'
@@ -25,6 +25,8 @@ export type BookingHistoryItem = {
   booking_window_hours: number
   // Number of raw attempts collapsed into this entry (>1 means retries were deduped)
   attemptCount: number
+  // Per-category error breakdown for expanded view (sorted by priority: critical → config → technical → retrying)
+  errorGroups: ErrorGroup[]
 }
 
 export type StatusCounts = {
@@ -34,6 +36,15 @@ export type StatusCounts = {
   classFull: number  // "Class full" errors (derived from failed)
   failed: number     // Actual failures (failed minus class full)
   noRegistration: number // Classes without online registration
+}
+
+export type ErrorGroup = {
+  category: FailureCategory
+  label: string
+  variant: 'danger' | 'warning' | 'info' | 'primary'
+  icon: 'alert-triangle' | 'settings' | 'refresh-cw'
+  messages: string[]  // unique error messages in this category
+  count: number       // total attempts with this category
 }
 
 export type BookingHistoryResult = {
@@ -219,18 +230,26 @@ export async function getBookingHistory(
     // Each successive item is older → its created_at becomes firstAttemptAt.
     // error_message is set to the most critical error across all attempts in the group.
     const CATEGORY_PRIORITY: Record<string, number> = { critical: 3, config: 2, technical: 1, retrying: 0 }
+    const ERROR_PRIORITY_ORDER: FailureCategory[] = ['critical', 'config', 'technical', 'retrying']
     const occurrenceMap = new Map<string, typeof enriched[0]>()
     const occurrenceCounts = new Map<string, number>()
     const firstAttemptMap = new Map<string, string>()   // key → oldest created_at
     const criticalErrorMap = new Map<string, string | null>() // key → most critical error_message
     const criticalPriorityMap = new Map<string, number>()     // key → priority of stored error
+    const errorGroupsData = new Map<string, Map<FailureCategory, {
+      label: string; variant: 'danger' | 'warning' | 'info' | 'primary'
+      icon: 'alert-triangle' | 'settings' | 'refresh-cw'; messages: Set<string>; count: number
+    }>>()
 
     for (const item of enriched) {
       // Use UTC date of the attempt — late-night ET attempts could cross UTC midnight,
       // but booking windows open in morning ET so this is safe in practice.
       const dayKey = item.created_at.slice(0, 10)
       const key = `${item.recurring_class_id}::${dayKey}`
-      const itemPriority = CATEGORY_PRIORITY[categorizeFailure(item.error_message).category] ?? 0
+      const itemCatInfo = item.status === 'failed'
+        ? (isRetrying(item.status, item.error_message) ? getRetryingCategoryInfo() : categorizeFailure(item.error_message))
+        : null
+      const itemPriority = itemCatInfo ? (CATEGORY_PRIORITY[itemCatInfo.category] ?? 0) : 0
 
       if (!occurrenceMap.has(key)) {
         occurrenceMap.set(key, item)
@@ -246,15 +265,39 @@ export async function getBookingHistory(
           criticalPriorityMap.set(key, itemPriority)
         }
       }
+
+      // Track per-category error groups (failed attempts only)
+      if (item.status === 'failed' && itemCatInfo) {
+        if (!errorGroupsData.has(key)) errorGroupsData.set(key, new Map())
+        const keyGroups = errorGroupsData.get(key)!
+        if (!keyGroups.has(itemCatInfo.category)) {
+          keyGroups.set(itemCatInfo.category, { label: itemCatInfo.label, variant: itemCatInfo.variant, icon: itemCatInfo.icon, messages: new Set(), count: 0 })
+        }
+        const g = keyGroups.get(itemCatInfo.category)!
+        if (item.error_message) g.messages.add(item.error_message)
+        g.count++
+      }
     }
 
     // Build full deduplicated list, then paginate
-    const allDeduped: BookingHistoryItem[] = Array.from(occurrenceMap.entries()).map(([key, item]) => ({
-      ...item,
-      error_message: criticalErrorMap.get(key) ?? item.error_message,
-      attemptCount: occurrenceCounts.get(key) ?? 1,
-      firstAttemptAt: firstAttemptMap.get(key) ?? item.created_at,
-    }))
+    const allDeduped: BookingHistoryItem[] = Array.from(occurrenceMap.entries()).map(([key, item]) => {
+      const keyGroups = errorGroupsData.get(key)
+      const errorGroups: ErrorGroup[] = keyGroups
+        ? ERROR_PRIORITY_ORDER
+            .filter(cat => keyGroups.has(cat))
+            .map(cat => {
+              const g = keyGroups.get(cat)!
+              return { category: cat, label: g.label, variant: g.variant, icon: g.icon, messages: Array.from(g.messages), count: g.count }
+            })
+        : []
+      return {
+        ...item,
+        error_message: criticalErrorMap.get(key) ?? item.error_message,
+        attemptCount: occurrenceCounts.get(key) ?? 1,
+        firstAttemptAt: firstAttemptMap.get(key) ?? item.created_at,
+        errorGroups,
+      }
+    })
 
     const history = allDeduped.slice(offset, offset + limit)
 

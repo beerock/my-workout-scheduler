@@ -256,12 +256,36 @@ export default function BookingHistoryCard({ item, compact = false, animationDel
             }`}
           >
             <div className="overflow-hidden">
-              {/* Full error message */}
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-600 font-dm-sans whitespace-pre-line break-words">
-                  {item.error_message}
-                </p>
-              </div>
+              {/* Error details — grouped by category when multiple categories present */}
+              {item.errorGroups && item.errorGroups.length > 1 ? (
+                <div className="space-y-2">
+                  {item.errorGroups.map(group => {
+                    const GroupIcon = iconComponents[group.icon]
+                    return (
+                      <div key={group.category} className="p-3 bg-gray-50 rounded-lg">
+                        <div className={`flex items-center gap-1.5 mb-1.5 ${variantColors[group.variant]}`}>
+                          {GroupIcon && <GroupIcon className="w-3.5 h-3.5 flex-shrink-0" />}
+                          <span className="text-xs font-medium">{group.label}</span>
+                          {group.count > 1 && (
+                            <span className="text-xs text-gray-400 ml-auto">· {group.count} attempts</span>
+                          )}
+                        </div>
+                        {group.messages.map((msg, i) => (
+                          <p key={i} className="text-xs text-gray-600 font-dm-sans whitespace-pre-line break-words">
+                            {msg}
+                          </p>
+                        ))}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 font-dm-sans whitespace-pre-line break-words">
+                    {item.error_message}
+                  </p>
+                </div>
+              )}
 
               {/* Contact support link */}
               {mailtoLink && (
