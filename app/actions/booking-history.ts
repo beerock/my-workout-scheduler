@@ -13,7 +13,8 @@ export type BookingHistoryItem = {
   status: BookingStatus
   branch_used: string | null
   error_message: string | null
-  created_at: string
+  created_at: string        // most recent attempt time (used for date grouping + display)
+  firstAttemptAt: string    // oldest attempt time in the group (= created_at when attemptCount === 1)
   attempt_timestamp: string
   // Joined from recurring_classes
   class_type: string
@@ -38,8 +39,8 @@ export type StatusCounts = {
 export type BookingHistoryResult = {
   success: boolean
   history?: BookingHistoryItem[]
-  totalCount?: number // Total matching records for pagination
-  statusCounts?: StatusCounts // Total counts by status for filter pills
+  totalCount?: number // Total deduplicated records for pagination
+  statusCounts?: StatusCounts // Total counts by status for filter pills (raw attempt counts)
   error?: string
 }
 
@@ -50,15 +51,14 @@ const VISIBLE_STATUSES: BookingStatus[] = ['confirmed', 'waitlisted', 'failed', 
 export type FilterOption = 'all' | BookingStatus | 'retrying'
 
 /**
- * Get booking history for the current user
- * Returns completed booking attempts (confirmed, waitlisted, failed) within the specified time window.
- * Supports pagination via limit/offset for "Load More" functionality.
- * Supports filtering by status for per-filter fetching.
+ * Get booking history for the current user.
+ * Fetches all matching attempts, deduplicates by class occurrence (collapsing retry
+ * loops into one card), then paginates the deduplicated result.
  *
  * @param days - Number of days to look back (default: 30)
- * @param limit - Maximum number of records to return (default: 20)
- * @param offset - Number of records to skip for pagination (default: 0)
- * @param statusFilter - Optional status filter ('all', 'confirmed', 'waitlisted', 'retrying', 'failed')
+ * @param limit - Maximum number of deduplicated records to return (default: 20)
+ * @param offset - Number of deduplicated records to skip for pagination (default: 0)
+ * @param statusFilter - Optional status filter
  */
 export async function getBookingHistory(
   days: number = 30,
@@ -98,34 +98,44 @@ export async function getBookingHistory(
       return msg.includes('full') && !msg.includes('waitlist')
     }
 
-    // Get counts by status for filter pills (run in parallel)
-    // We need all failed items to separate "class full" from actual failures
-    const [confirmedResult, waitlistedResult, failedResult, noRegistrationResult] = await Promise.all([
-      supabase
-        .from('booking_attempts')
-        .select('id', { count: 'exact', head: true })
-        .in('recurring_class_id', classIds)
-        .gte('created_at', sinceDate)
-        .eq('status', 'confirmed'),
-      supabase
-        .from('booking_attempts')
-        .select('id', { count: 'exact', head: true })
-        .in('recurring_class_id', classIds)
-        .gte('created_at', sinceDate)
-        .eq('status', 'waitlisted'),
-      supabase
-        .from('booking_attempts')
-        .select('id, error_message')
-        .in('recurring_class_id', classIds)
-        .gte('created_at', sinceDate)
-        .eq('status', 'failed'),
-      supabase
-        .from('booking_attempts')
-        .select('id', { count: 'exact', head: true })
-        .in('recurring_class_id', classIds)
-        .gte('created_at', sinceDate)
-        .eq('status', 'no_registration'),
-    ])
+    // Get counts by status for filter pills (run in parallel with main query)
+    // These are raw attempt counts — intentionally not deduped so the pills
+    // reflect true attempt volume. Only totalCount (for pagination) is deduped.
+    const [confirmedResult, waitlistedResult, failedResult, noRegistrationResult, allAttemptsResult] =
+      await Promise.all([
+        supabase
+          .from('booking_attempts')
+          .select('id', { count: 'exact', head: true })
+          .in('recurring_class_id', classIds)
+          .gte('created_at', sinceDate)
+          .eq('status', 'confirmed'),
+        supabase
+          .from('booking_attempts')
+          .select('id', { count: 'exact', head: true })
+          .in('recurring_class_id', classIds)
+          .gte('created_at', sinceDate)
+          .eq('status', 'waitlisted'),
+        supabase
+          .from('booking_attempts')
+          .select('id, error_message')
+          .in('recurring_class_id', classIds)
+          .gte('created_at', sinceDate)
+          .eq('status', 'failed'),
+        supabase
+          .from('booking_attempts')
+          .select('id', { count: 'exact', head: true })
+          .in('recurring_class_id', classIds)
+          .gte('created_at', sinceDate)
+          .eq('status', 'no_registration'),
+        // Fetch all visible attempts for this filter window (no limit — MVP dataset is tiny)
+        supabase
+          .from('booking_attempts')
+          .select('id, recurring_class_id, status, branch_used, error_message, created_at, attempt_timestamp')
+          .in('recurring_class_id', classIds)
+          .gte('created_at', sinceDate)
+          .in('status', VISIBLE_STATUSES)
+          .order('created_at', { ascending: false }),
+      ])
 
     // Calculate class full vs actual failed counts
     const allFailedItems = failedResult.data || []
@@ -144,50 +154,14 @@ export async function getBookingHistory(
       noRegistration: noRegistrationCount,
     }
 
-    // Determine the total count for the current filter
-    let filterTotalCount: number
-    switch (statusFilter) {
-      case 'confirmed':
-        filterTotalCount = statusCounts.confirmed
-        break
-      case 'waitlisted':
-        filterTotalCount = statusCounts.waitlisted
-        break
-      case 'retrying':
-        filterTotalCount = statusCounts.classFull
-        break
-      case 'failed':
-        filterTotalCount = statusCounts.failed
-        break
-      case 'no_registration':
-        filterTotalCount = statusCounts.noRegistration
-        break
-      default:
-        filterTotalCount = statusCounts.all
+    if (allAttemptsResult.error) {
+      console.error('Error fetching booking attempts:', allAttemptsResult.error)
+      return { success: false, error: 'Failed to fetch booking history' }
     }
 
-    // Build the main query based on status filter
-    let attemptsQuery = supabase
-      .from('booking_attempts')
-      .select('id, recurring_class_id, status, branch_used, error_message, created_at, attempt_timestamp')
-      .in('recurring_class_id', classIds)
-      .gte('created_at', sinceDate)
+    const allAttempts = allAttemptsResult.data || []
 
-    // Apply status filter
-    if (statusFilter === 'all') {
-      attemptsQuery = attemptsQuery.in('status', VISIBLE_STATUSES)
-    } else if (statusFilter === 'confirmed' || statusFilter === 'waitlisted' || statusFilter === 'no_registration') {
-      attemptsQuery = attemptsQuery.eq('status', statusFilter)
-    } else if (statusFilter === 'retrying') {
-      // "Class full" errors - failed status with 'full' in error message (but not 'waitlist')
-      attemptsQuery = attemptsQuery
-        .eq('status', 'failed')
-        .ilike('error_message', '%full%')
-        .not('error_message', 'ilike', '%waitlist%')
-    }
-
-    // For 'failed' filter, we need special handling because Supabase doesn't easily support
-    // NOT ILIKE with OR for NULL values. We'll fetch failed items and filter client-side.
+    // Apply client-side status filter
     type AttemptRow = {
       id: string
       recurring_class_id: string
@@ -197,44 +171,26 @@ export async function getBookingHistory(
       created_at: string
       attempt_timestamp: string
     }
-    let filteredAttempts: AttemptRow[] = []
 
-    if (statusFilter === 'failed') {
-      // Fetch all failed items (up to a reasonable limit) and filter client-side
-      const { data: failedAttempts, error: failedError } = await supabase
-        .from('booking_attempts')
-        .select('id, recurring_class_id, status, branch_used, error_message, created_at, attempt_timestamp')
-        .in('recurring_class_id', classIds)
-        .gte('created_at', sinceDate)
-        .eq('status', 'failed')
-        .order('created_at', { ascending: false })
-
-      if (failedError) {
-        console.error('Error fetching failed attempts:', failedError)
-        return { success: false, error: 'Failed to fetch booking history' }
-      }
-
-      // Filter out "class full" errors, then apply pagination
-      const actualFailures = (failedAttempts || []).filter(a => !isClassFullError(a.error_message))
-      filteredAttempts = actualFailures.slice(offset, offset + limit)
+    let filteredAttempts: AttemptRow[]
+    if (statusFilter === 'all') {
+      filteredAttempts = allAttempts
+    } else if (statusFilter === 'retrying') {
+      filteredAttempts = allAttempts.filter(
+        a => a.status === 'failed' && isClassFullError(a.error_message)
+      )
+    } else if (statusFilter === 'failed') {
+      filteredAttempts = allAttempts.filter(
+        a => a.status === 'failed' && !isClassFullError(a.error_message)
+      )
     } else {
-      // Apply ordering and pagination for other filters
-      const { data: attempts, error: attemptsError } = await attemptsQuery
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1)
-
-      if (attemptsError) {
-        console.error('Error fetching booking attempts:', attemptsError)
-        return { success: false, error: 'Failed to fetch booking history' }
-      }
-
-      filteredAttempts = attempts || []
+      filteredAttempts = allAttempts.filter(a => a.status === statusFilter)
     }
 
-    // Create a map for class details
+    // Build class metadata lookup
     const classMap = new Map(userClasses.map(c => [c.id, c]))
 
-    // Join the data
+    // Enrich with class data
     const enriched = filteredAttempts.map(attempt => {
       const classDetails = classMap.get(attempt.recurring_class_id)
       return {
@@ -244,6 +200,7 @@ export async function getBookingHistory(
         branch_used: attempt.branch_used,
         error_message: attempt.error_message,
         created_at: attempt.created_at,
+        firstAttemptAt: attempt.created_at,
         attempt_timestamp: attempt.attempt_timestamp,
         class_type: classDetails?.class_type || 'Unknown',
         day_of_week: classDetails?.day_of_week || 0,
@@ -255,10 +212,12 @@ export async function getBookingHistory(
       }
     })
 
-    // Collapse repeated attempts for the same class occurrence (e.g. class-full retry loops).
-    // Items arrive newest-first; the first one seen for each key is the most recent attempt.
-    const occurrenceMap = new Map<string, BookingHistoryItem>()
+    // Collapse all attempts for the same class occurrence into one entry.
+    // Items arrive newest-first; the first item seen per key = most recent attempt (shown on card).
+    // Each subsequent item seen = older attempt → its created_at becomes firstAttemptAt.
+    const occurrenceMap = new Map<string, typeof enriched[0]>()
     const occurrenceCounts = new Map<string, number>()
+    const firstAttemptMap = new Map<string, string>() // key → oldest created_at
 
     for (const item of enriched) {
       let targetDate: string
@@ -275,20 +234,33 @@ export async function getBookingHistory(
         targetDate = item.attempt_timestamp.slice(0, 10)
       }
       const key = `${item.recurring_class_id}::${targetDate}`
+
       if (!occurrenceMap.has(key)) {
         occurrenceMap.set(key, item)
         occurrenceCounts.set(key, 1)
+        firstAttemptMap.set(key, item.created_at)
       } else {
         occurrenceCounts.set(key, (occurrenceCounts.get(key) ?? 1) + 1)
+        // Each successive item is older (newest-first order) → update first attempt
+        firstAttemptMap.set(key, item.created_at)
       }
     }
 
-    const history: BookingHistoryItem[] = Array.from(occurrenceMap.entries()).map(([key, item]) => ({
+    // Build full deduplicated list, then paginate
+    const allDeduped: BookingHistoryItem[] = Array.from(occurrenceMap.entries()).map(([key, item]) => ({
       ...item,
       attemptCount: occurrenceCounts.get(key) ?? 1,
+      firstAttemptAt: firstAttemptMap.get(key) ?? item.created_at,
     }))
 
-    return { success: true, history, totalCount: filterTotalCount, statusCounts }
+    const history = allDeduped.slice(offset, offset + limit)
+
+    return {
+      success: true,
+      history,
+      totalCount: allDeduped.length, // deduped count drives "Load More"
+      statusCounts,
+    }
   } catch (error) {
     console.error('Error in getBookingHistory:', error)
     return { success: false, error: 'An unexpected error occurred' }

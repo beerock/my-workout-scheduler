@@ -14,7 +14,6 @@ type Props = {
   item: BookingHistoryItem
   compact?: boolean // true for RecentBookings, false for full history
   animationDelay?: string
-  attemptCount?: number
 }
 
 // Status badge configuration (includes derived 'retrying' status for class full)
@@ -95,7 +94,7 @@ const variantColors = {
  * Displays booking attempt with status, class info, and time.
  * For failed bookings, shows expandable error details with category and "Contact Us" link.
  */
-export default function BookingHistoryCard({ item, compact = false, animationDelay = '0s', attemptCount }: Props) {
+export default function BookingHistoryCard({ item, compact = false, animationDelay = '0s' }: Props) {
   const [expanded, setExpanded] = useState(false)
 
   // Check if this failed booking is a "class full" situation (informational, not an error)
@@ -168,19 +167,34 @@ export default function BookingHistoryCard({ item, compact = false, animationDel
 
         {/* Time info - fixed width */}
         <div className="text-right flex-shrink-0">
-          <div className="text-sm text-gray-500 font-dm-sans">
-            {compact
-              ? format(new Date(item.created_at), 'MMM d')
-              : format(new Date(item.created_at), 'h:mm a')
-            }
-          </div>
-          <div className="text-xs text-gray-400 font-dm-sans">
-            {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
-          </div>
-          {(attemptCount ?? item.attemptCount) > 1 && (
-            <div className="text-xs text-gray-400 font-dm-sans mt-0.5">
-              {attemptCount ?? item.attemptCount} attempts
-            </div>
+          {item.attemptCount > 1 && !compact ? (
+            // Multi-attempt: show time range (first → last) and attempt count
+            <>
+              <div className="text-sm text-gray-500 font-dm-sans">
+                {format(new Date(item.firstAttemptAt), 'h:mm a')}
+                {' – '}
+                {format(new Date(item.created_at), 'h:mm a')}
+              </div>
+              <div className="text-xs text-gray-400 font-dm-sans">
+                {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+              </div>
+              <div className="text-xs text-gray-400 font-dm-sans mt-0.5">
+                {item.attemptCount} attempts
+              </div>
+            </>
+          ) : (
+            // Single attempt or compact view: show time as usual
+            <>
+              <div className="text-sm text-gray-500 font-dm-sans">
+                {compact
+                  ? format(new Date(item.created_at), 'MMM d')
+                  : format(new Date(item.created_at), 'h:mm a')
+                }
+              </div>
+              <div className="text-xs text-gray-400 font-dm-sans">
+                {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+              </div>
+            </>
           )}
         </div>
       </div>
