@@ -487,6 +487,8 @@ export async function toggleRecurringClassActive(
 
     // If DEACTIVATING (active = false), check for skip and prompt user
     let updateData: { active: boolean; skip_next_occurrence?: boolean; skip_target_datetime?: string | null } = { active }
+    // Hoisted so the deactivate cancel-event block below can compute classDate.
+    let deactivateClassFields: { day_of_week: number; class_time: string; timezone: string } | null = null
 
     if (active === false) {
       // Fetch current class with all fields needed
@@ -520,6 +522,14 @@ export async function toggleRecurringClassActive(
         updateData.skip_target_datetime = null
         console.log('[toggleRecurringClassActive] Clearing skip on deactivate (user confirmed)')
       }
+
+      if (existingClass) {
+        deactivateClassFields = {
+          day_of_week: existingClass.day_of_week,
+          class_time: existingClass.class_time,
+          timezone: existingClass.timezone,
+        }
+      }
     }
 
     const { error } = await supabase
@@ -532,6 +542,27 @@ export async function toggleRecurringClassActive(
       return {
         success: false,
         error: `Failed to update class: ${error.message}`,
+      }
+    }
+
+    // Deactivate cancel event: stale queued events would otherwise fire days later when
+    // their ts arrives. Runtime guard in bookClassFunction is the canonical defense, but
+    // cancelling avoids unnecessary Inngest runs, GH Actions invocations, and noisy rows.
+    if (active === false && deactivateClassFields) {
+      try {
+        const classDate = calculateNextClassDate(
+          deactivateClassFields.day_of_week,
+          deactivateClassFields.class_time,
+          deactivateClassFields.timezone
+        )
+        await inngest.send({
+          name: 'booking/cancel',
+          data: { classId: id, classDate },
+        })
+        console.log(`[toggleRecurringClassActive] Sent cancel event for class ${id} on ${classDate}`)
+      } catch (cancelError) {
+        // Log but don't fail - the class is still successfully deactivated
+        console.error('[toggleRecurringClassActive] Failed to send cancel event:', cancelError)
       }
     }
 
