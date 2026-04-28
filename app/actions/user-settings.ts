@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { calculateBookingWindowOpen, scheduleBooking } from '@/lib/inngest/scheduler'
+import { calculateBookingWindowOpen, calculateNextClassDate, scheduleBooking } from '@/lib/inngest/scheduler'
 import { inngest } from '@/lib/inngest/client'
 
 export type UserSettingsResult = {
@@ -151,6 +151,49 @@ export async function updateSchedulePaused(
           success: false,
           error: `Failed to create settings: ${error.message}`,
         }
+      }
+    }
+
+    // If PAUSING, cancel any pending booking/attempt events for the user's active
+    // classes so stale queued events don't fire days later. Runtime guard via
+    // getClassById (returns null when paused) is the canonical defense, but
+    // cancelling avoids unnecessary Inngest runs and noisy "Class not found" logs.
+    if (paused === true) {
+      const { data: activeClasses, error: activeError } = await supabase
+        .from('recurring_classes')
+        .select('id, day_of_week, class_time, timezone')
+        .eq('user_id', user.id)
+        .eq('active', true)
+
+      if (activeError) {
+        console.error(
+          `[updateSchedulePaused] Failed to fetch active classes for cancel-on-pause:`,
+          activeError
+        )
+      } else if (activeClasses && activeClasses.length > 0) {
+        let cancelledCount = 0
+        for (const classItem of activeClasses) {
+          try {
+            const classDate = calculateNextClassDate(
+              classItem.day_of_week,
+              classItem.class_time,
+              classItem.timezone
+            )
+            await inngest.send({
+              name: 'booking/cancel',
+              data: { classId: classItem.id, classDate },
+            })
+            cancelledCount++
+          } catch (cancelError) {
+            console.error(
+              `[updateSchedulePaused] Failed to send cancel event for class ${classItem.id}:`,
+              cancelError
+            )
+          }
+        }
+        console.log(
+          `[updateSchedulePaused] Sent cancel events for ${cancelledCount}/${activeClasses.length} active classes`
+        )
       }
     }
 
