@@ -103,12 +103,6 @@ export async function getBookingHistory(
     const classIds = userClasses.map(c => c.id)
     const sinceDate = subDays(new Date(), days).toISOString()
 
-    // Helper to check if error message indicates "class full"
-    const isClassFullError = (errorMessage: string | null) => {
-      const msg = (errorMessage || '').toLowerCase()
-      return msg.includes('full') && !msg.includes('waitlist')
-    }
-
     // Get counts by status for filter pills (run in parallel with main query)
     // These are raw attempt counts — intentionally not deduped so the pills
     // reflect true attempt volume. Only totalCount (for pagination) is deduped.
@@ -150,7 +144,7 @@ export async function getBookingHistory(
 
     // Calculate class full vs actual failed counts
     const allFailedItems = failedResult.data || []
-    const classFullCount = allFailedItems.filter(item => isClassFullError(item.error_message)).length
+    const classFullCount = allFailedItems.filter(item => isRetrying('failed', item.error_message)).length
     const actualFailedCount = allFailedItems.length - classFullCount
 
     const noRegistrationCount = noRegistrationResult.count ?? 0
@@ -187,12 +181,10 @@ export async function getBookingHistory(
     if (statusFilter === 'all') {
       filteredAttempts = allAttempts
     } else if (statusFilter === 'retrying') {
-      filteredAttempts = allAttempts.filter(
-        a => a.status === 'failed' && isClassFullError(a.error_message)
-      )
+      filteredAttempts = allAttempts.filter(a => isRetrying(a.status, a.error_message))
     } else if (statusFilter === 'failed') {
       filteredAttempts = allAttempts.filter(
-        a => a.status === 'failed' && !isClassFullError(a.error_message)
+        a => a.status === 'failed' && !isRetrying(a.status, a.error_message)
       )
     } else {
       filteredAttempts = allAttempts.filter(a => a.status === statusFilter)
@@ -223,78 +215,66 @@ export async function getBookingHistory(
       }
     })
 
-    // Collapse repeated attempts for the same class on the same calendar day.
-    // This gives one card per (class, day) — e.g. Thursday's BODYPUMP retries
-    // collapse to one card, Friday's collapse to a separate card.
-    // Items arrive newest-first; the first item seen per key = most recent attempt.
-    // Each successive item is older → its created_at becomes firstAttemptAt.
-    // error_message is set to the most critical error across all attempts in the group.
-    const CATEGORY_PRIORITY: Record<string, number> = { critical: 3, config: 2, technical: 1, retrying: 0 }
+    // Collapse repeated attempts for the same class on the same calendar day into one entry.
+    // Items arrive newest-first; first seen = most recent attempt, last seen = firstAttemptAt.
+    const CATEGORY_PRIORITY: Record<FailureCategory, number> = { critical: 3, config: 2, technical: 1, retrying: 0 }
     const ERROR_PRIORITY_ORDER: FailureCategory[] = ['critical', 'config', 'technical', 'retrying']
-    const occurrenceMap = new Map<string, typeof enriched[0]>()
-    const occurrenceCounts = new Map<string, number>()
-    const firstAttemptMap = new Map<string, string>()   // key → oldest created_at
-    const criticalErrorMap = new Map<string, string | null>() // key → most critical error_message
-    const criticalPriorityMap = new Map<string, number>()     // key → priority of stored error
-    const errorGroupsData = new Map<string, Map<FailureCategory, {
+    type CategoryGroupData = {
       label: string; variant: 'danger' | 'warning' | 'info' | 'primary'
       icon: 'alert-triangle' | 'settings' | 'refresh-cw'; messages: Set<string>; count: number
-    }>>()
+    }
+    type DedupeEntry = {
+      item: typeof enriched[0]; count: number; firstAttemptAt: string
+      criticalError: string | null; criticalPriority: number
+      groups: Map<FailureCategory, CategoryGroupData>
+    }
+    const dedupeMap = new Map<string, DedupeEntry>()
 
     for (const item of enriched) {
       // Use UTC date of the attempt — late-night ET attempts could cross UTC midnight,
       // but booking windows open in morning ET so this is safe in practice.
-      const dayKey = item.created_at.slice(0, 10)
-      const key = `${item.recurring_class_id}::${dayKey}`
+      const key = `${item.recurring_class_id}::${item.created_at.slice(0, 10)}`
       const itemCatInfo = item.status === 'failed'
         ? (isRetrying(item.status, item.error_message) ? getRetryingCategoryInfo() : categorizeFailure(item.error_message))
         : null
-      const itemPriority = itemCatInfo ? (CATEGORY_PRIORITY[itemCatInfo.category] ?? 0) : 0
+      const itemPriority = itemCatInfo ? CATEGORY_PRIORITY[itemCatInfo.category] : 0
 
-      if (!occurrenceMap.has(key)) {
-        occurrenceMap.set(key, item)
-        occurrenceCounts.set(key, 1)
-        firstAttemptMap.set(key, item.created_at)
-        criticalErrorMap.set(key, item.error_message)
-        criticalPriorityMap.set(key, itemPriority)
+      const entry = dedupeMap.get(key)
+      if (!entry) {
+        dedupeMap.set(key, { item, count: 1, firstAttemptAt: item.created_at, criticalError: item.error_message, criticalPriority: itemPriority, groups: new Map() })
       } else {
-        occurrenceCounts.set(key, (occurrenceCounts.get(key) ?? 1) + 1)
-        firstAttemptMap.set(key, item.created_at)
-        if (itemPriority > (criticalPriorityMap.get(key) ?? 0)) {
-          criticalErrorMap.set(key, item.error_message)
-          criticalPriorityMap.set(key, itemPriority)
+        entry.count++
+        entry.firstAttemptAt = item.created_at
+        if (itemPriority > entry.criticalPriority) {
+          entry.criticalError = item.error_message
+          entry.criticalPriority = itemPriority
         }
       }
 
-      // Track per-category error groups (failed attempts only)
-      if (item.status === 'failed' && itemCatInfo) {
-        if (!errorGroupsData.has(key)) errorGroupsData.set(key, new Map())
-        const keyGroups = errorGroupsData.get(key)!
-        if (!keyGroups.has(itemCatInfo.category)) {
-          keyGroups.set(itemCatInfo.category, { label: itemCatInfo.label, variant: itemCatInfo.variant, icon: itemCatInfo.icon, messages: new Set(), count: 0 })
+      if (itemCatInfo) {
+        const groups = dedupeMap.get(key)!.groups
+        if (!groups.has(itemCatInfo.category)) {
+          groups.set(itemCatInfo.category, { label: itemCatInfo.label, variant: itemCatInfo.variant, icon: itemCatInfo.icon, messages: new Set(), count: 0 })
         }
-        const g = keyGroups.get(itemCatInfo.category)!
+        const g = groups.get(itemCatInfo.category)!
         if (item.error_message) g.messages.add(item.error_message)
         g.count++
       }
     }
 
     // Build full deduplicated list, then paginate
-    const allDeduped: BookingHistoryItem[] = Array.from(occurrenceMap.entries()).map(([key, item]) => {
-      const keyGroups = errorGroupsData.get(key)
-      const errorGroups: ErrorGroup[] = keyGroups
-        ? ERROR_PRIORITY_ORDER
-            .filter(cat => keyGroups.has(cat))
-            .map(cat => {
-              const g = keyGroups.get(cat)!
-              return { category: cat, label: g.label, variant: g.variant, icon: g.icon, messages: Array.from(g.messages), count: g.count }
-            })
-        : []
+    const allDeduped: BookingHistoryItem[] = Array.from(dedupeMap.values()).map(({ item, count, firstAttemptAt, criticalError, groups }) => {
+      const errorGroups: ErrorGroup[] = ERROR_PRIORITY_ORDER
+        .filter(cat => groups.has(cat))
+        .map(cat => {
+          const g = groups.get(cat)!
+          return { category: cat, label: g.label, variant: g.variant, icon: g.icon, messages: Array.from(g.messages), count: g.count }
+        })
       return {
         ...item,
-        error_message: criticalErrorMap.get(key) ?? item.error_message,
-        attemptCount: occurrenceCounts.get(key) ?? 1,
-        firstAttemptAt: firstAttemptMap.get(key) ?? item.created_at,
+        error_message: criticalError ?? item.error_message,
+        attemptCount: count,
+        firstAttemptAt,
         errorGroups,
       }
     })
