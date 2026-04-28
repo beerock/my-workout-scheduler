@@ -89,6 +89,19 @@ export const bookClassFunction = inngest.createFunction(
     );
     console.log(`[Inngest] Skip flag: ${classData.skip_next_occurrence}, Skip target: ${classData.skip_target_datetime}`);
 
+    // Runtime guard: events queued before deactivate still fire (toggle off doesn't cancel).
+    if (classData.active === false) {
+      console.log(
+        `[Inngest] Class "${className}" (${classId}) is inactive - aborting booking`
+      );
+      return {
+        classId,
+        className,
+        status: 'inactive',
+        message: 'Class is inactive - skipping booking',
+      };
+    }
+
     // Clear skip_target_datetime from previous week (cleanup stale data)
     // This happens at the NEXT occurrence after the skipped one
     // UI already shows badge only when current_time < skip_target_datetime
