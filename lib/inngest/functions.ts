@@ -102,38 +102,6 @@ export const bookClassFunction = inngest.createFunction(
       };
     }
 
-    // Runtime guard: events queued before pause still fire (pause-all doesn't cancel).
-    const userSettings = await step.run('check-user-paused', async () => {
-      const supabase = createServiceRoleClient();
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('schedule_paused')
-        .eq('user_id', classData.user_id)
-        .maybeSingle();
-
-      if (error) {
-        // Fail open on read errors — RLS drift shouldn't block real bookings.
-        console.error(
-          `[Inngest] [bookClassFunction] user_settings query failed for user ${classData.user_id}:`,
-          error
-        );
-        return null;
-      }
-      return data;
-    });
-
-    if (userSettings?.schedule_paused === true) {
-      console.log(
-        `[Inngest] User ${classData.user_id} is paused - aborting booking for "${className}"`
-      );
-      return {
-        classId,
-        className,
-        status: 'paused',
-        message: 'User schedule is paused - skipping booking',
-      };
-    }
-
     // Clear skip_target_datetime from previous week (cleanup stale data)
     // This happens at the NEXT occurrence after the skipped one
     // UI already shows badge only when current_time < skip_target_datetime
