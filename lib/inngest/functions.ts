@@ -426,6 +426,8 @@ export const bookClassFunction = inngest.createFunction(
 
         // Check if this is a retry success (was previously full, now confirmed)
         const isRetrySuccess = attemptNumber > 1 && status === 'confirmed';
+        // Check if a retry landed a waitlist spot (was previously full, now waitlisted)
+        const isRetryWaitlisted = attemptNumber > 1 && status === 'waitlisted';
 
         // First attempt time for "class full" emails - format in gym timezone
         const now = new Date();
@@ -445,6 +447,7 @@ export const bookClassFunction = inngest.createFunction(
           branchName: classData.branch,
           alreadyBooked: alreadyBooked || false,
           isRetrySuccess,
+          isRetryWaitlisted,
           retryCount: attemptNumber,
           firstAttemptTime: firstAttemptTimeFormatted,
           classStartTime: classStartTimeFormatted,

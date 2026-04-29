@@ -28,6 +28,7 @@ export type SendEmailParams = {
     | 'booking_already_registered'
     | 'booking_already_waitlisted'
     | 'booking_retry_successful'
+    | 'booking_retry_waitlisted'
     | 'booking_failure_critical'
     | 'booking_failure_config'
     | 'booking_failure_technical'
