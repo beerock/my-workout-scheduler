@@ -154,10 +154,7 @@ export async function updateSchedulePaused(
       }
     }
 
-    // If PAUSING, cancel any pending booking/attempt events for the user's active
-    // classes so stale queued events don't fire days later. Runtime guard via
-    // getClassById (returns null when paused) is the canonical defense, but
-    // cancelling avoids unnecessary Inngest runs and noisy "Class not found" logs.
+    // Cancel queued events; getClassById's pause check is the canonical guard, this just avoids wasted Inngest runs.
     if (paused === true) {
       const { data: activeClasses, error: activeError } = await supabase
         .from('recurring_classes')
@@ -211,11 +208,18 @@ export async function updateSchedulePaused(
         // Non-critical - continue with unpause operation
       }
 
-      const { data: activeClasses } = await supabase
+      const { data: activeClasses, error: unpauseClassesError } = await supabase
         .from('recurring_classes')
         .select('id, class_type, day_of_week, class_time, booking_window_hours, timezone, branch')
         .eq('user_id', user.id)
         .eq('active', true)
+
+      if (unpauseClassesError) {
+        console.error(
+          `[updateSchedulePaused] Failed to fetch active classes for unpause reschedule:`,
+          unpauseClassesError
+        )
+      }
 
       if (activeClasses && activeClasses.length > 0) {
         const classesWithOpenWindows = []
