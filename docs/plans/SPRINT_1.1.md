@@ -1,6 +1,6 @@
 # Sprint 1.1 — Frontend-Design Review Polish
 
-**Last Updated:** April 23, 2026
+**Last Updated:** April 29, 2026
 
 **Status:** Planned
 **Parent:** Sprint 1 (merged via PR #122, hotfixes via PR #123 + #124 + #125)
@@ -28,7 +28,7 @@ Secondary references (read only if SPRINT_1.1.md doesn't answer a scoping questi
 
 Sprint 1 shipped and is live in production at https://myworkout.beerock.com. Summary of what exists for Sprint 1.1 to review:
 - docs/VOICE.md (two registers + four coach tiers + section-name map + FROM/reply policy)
-- 17 email templates rewritten to match VOICE.md; preview at /admin/email-preview
+- 18 email templates; preview at /admin/email-preview (17 from Sprint 1 rewritten to match VOICE.md; post-Sprint-1 additions: `booking_retry_waitlisted` — sent when a retry loop lands a waitlist spot — and a CTA label + URL fix on `booking-failure-retrying`)
 - Waitlist flow (/signup + /admin/waitlist + branded invite email)
 - Dashboard failure surface (ActionItemsCard + NextClassCard unified pending states)
 - RecurringClassForm with inline FirstBookingPreview + section headers
@@ -46,14 +46,16 @@ Then:
 
 Work plan (priority-ordered, ★ owner review gate at each chunk close):
 
-P0 — Email voice coherence review across all 17 templates.
-  Invoke the `/frontend-design` skill with: docs/VOICE.md, the deployed /admin/email-preview URL, and the 17 template file paths under lib/email/templates/. Ask for a written review covering tier consistency per template, section-name coherence, the showcase→coach handoff on waitlist-confirmation, FROM/reply policy adherence, and any drift between templates. Present findings; owner triages "fix now" vs BACKLOG at ★ gate. Estimate 2–3h.
+P0 — Email voice coherence review across all 18 templates.
+  Invoke the `/frontend-design` skill with: docs/VOICE.md, the deployed /admin/email-preview URL, and the 18 template file paths under lib/email/templates/. Ask for a written review covering tier consistency per template, section-name coherence, the showcase→coach handoff on waitlist-confirmation, FROM/reply policy adherence, and any drift between templates. Present findings; owner triages "fix now" vs BACKLOG at ★ gate. Estimate 2–3h.
 
 P1 — Modal a11y audit (4 modals: BookNowDialog, skip-clear modal in RecurringClassForm, deactivated-class modal in RecurringClassForm, delete-confirmation modal in ScheduleList). Audit each for role="dialog", aria-modal="true", focus trap, aria-labelledby, escape key closes, focus returns to trigger on close. Fix inline. Estimate 1–1.5h.
 
 P2 — Landing craft-polish (2-hour HARD CAP). Invoke /frontend-design on the deployed landing + waitlist pages. Review covers first-impression calibration, micro-interactions, entrance animation pacing, feature-card hover states, transition choreography. Owner picks top N fixes within the budget. Estimate 2h cap.
 
 P3 — Form → confirmation transition choreography on the waitlist. Current transition is an abrupt state swap; apply a choreographed transition (skill recommends). Keep it tasteful — showcase voice, restrained. Estimate 30–60min.
+
+P4 — Skip-during-booking-window modal copy review. New modal added by the skip-bug fix; invoke /frontend-design with docs/VOICE.md to confirm tier assignment and copy quality. Estimate 30min.
 
 Workflow rules (same as Sprint 1):
 - Follow the ★ owner review gate at each P-chunk close. Do NOT proceed to the next chunk without explicit owner greenlight.
@@ -81,7 +83,7 @@ Sprint 1 tasks 1–6 shipped and merged (PR #122 + hotfix PRs #123/#124/#125). S
 
 **What Sprint 1 delivered** (Sprint 1.1 reviews this work, doesn't redesign it):
 - `docs/VOICE.md` — two voice registers (coach + showcase), four coach-voice tiers, section-name pattern, canonical YMCA WNC naming, FROM/reply policy
-- 17 email templates rewritten to match VOICE.md; preview at `/admin/email-preview`
+- 17 email templates rewritten to match VOICE.md; preview at `/admin/email-preview` (18 total as of post-Sprint-1: `booking_retry_waitlisted` added + CTA fix on `booking-failure-retrying`)
 - Waitlist flow: public `/signup` + `waitlist_signups` table + `/admin/waitlist` review + branded invite email
 - Dashboard failure surface: `ActionItemsCard` + `NextClassCard` with unified pending states (pre-window / within-window / actively-retrying)
 - `RecurringClassForm` with inline `FirstBookingPreview`, hidden timezone field, section headers
@@ -102,12 +104,12 @@ Sprint 1 tasks 1–6 shipped and merged (PR #122 + hotfix PRs #123/#124/#125). S
 
 **In scope** — four priority-ordered chunks. Each invokes `/frontend-design` with explicit context, receives a written review, and the owner triages findings into "fix now" vs "BACKLOG" at a ★ review gate.
 
-### P0 — Email voice coherence review (all 17 templates)
+### P0 — Email voice coherence review (all 18 templates)
 
-**This is the first pickup of task 6's deferred `/frontend-design` review pass.** Task 2 rewrote 17 templates to match VOICE.md, but the skill has never reviewed them as a *set* — checking tier consistency, section-name coherence, the showcase→coach handoff on the waitlist-confirmation email, FROM/reply policy adherence, and any drift between templates. The owner explicitly called this out as the highest-priority deferred item at Sprint 1 wrap-up.
+**This is the first pickup of task 6's deferred `/frontend-design` review pass.** Task 2 rewrote 17 templates to match VOICE.md; a post-Sprint-1 18th template (`booking_retry_waitlisted`) was added along with a CTA fix to `booking-failure-retrying`. The skill has never reviewed them as a *set* — checking tier consistency, section-name coherence, the showcase→coach handoff on the waitlist-confirmation email, FROM/reply policy adherence, and any drift between templates. The owner explicitly called this out as the highest-priority deferred item at Sprint 1 wrap-up.
 
 **Deliverables:**
-- Invoke `/frontend-design` with: `docs/VOICE.md`, `/admin/email-preview` URL, the 17 template file paths under `lib/email/templates/`, and the 4 coach-voice tiers + section-name mapping from VOICE.md.
+- Invoke `/frontend-design` with: `docs/VOICE.md`, `/admin/email-preview` URL, the 18 template file paths under `lib/email/templates/`, and the 4 coach-voice tiers + section-name mapping from VOICE.md.
 - Receive written review covering:
   - Voice tier consistency per template (is each template in the tier VOICE.md assigns it?)
   - Section-name coherence (are "Before you go" / "What's happening" / "What to do" / "Worth knowing" used as VOICE.md maps them?)
@@ -118,7 +120,7 @@ Sprint 1 tasks 1–6 shipped and merged (PR #122 + hotfix PRs #123/#124/#125). S
 
 **Estimate:** 2–3 hours depending on volume of findings.
 
-**Acceptance:** Every one of the 17 templates passes the VOICE.md tier+section matrix, or the exception is documented with reasoning.
+**Acceptance:** Every one of the 18 templates passes the VOICE.md tier+section matrix, or the exception is documented with reasoning.
 
 ---
 
@@ -180,6 +182,28 @@ A smaller craft moment that fits inside or immediately after the P2 budget. The 
 **Estimate:** 30–60 min.
 
 **Acceptance:** Submitting the waitlist form transitions smoothly to the confirmation state. Feels deliberate, not broken.
+
+---
+
+### P4 — Skip-during-booking-window modal copy review
+
+A new "skip next week instead?" modal was added as part of the skip-bug fix (see `~/.claude/plans/i-found-a-bug-composed-kazoo.md`). The dialog copy was drafted against VOICE.md but has not had a full `/frontend-design` skill review pass.
+
+**Context:**
+- Modal (`SkipButton.tsx`) fires when user clicks "Skip Next" after the booking window is already open
+- Title: `"Booking Window Open"`
+- Body: "Booking's already underway for this week's **[class]** — can't skip it. Skip **[Thu, May 7]** instead?"
+- Buttons: `"Skip May 7"` (primary) / `"Not now"` (ghost)
+
+**Deliverables:**
+- Invoke `/frontend-design` with `docs/VOICE.md` and the modal copy above.
+- Confirm tier assignment (FYI — no user action required for the current week; optional action for next week).
+- Verify copy passes VOICE.md hard rules: no first-person, active verb, no exclamation, no corporate-speak.
+- Suggest any refinements; owner triages at ★ gate.
+
+**Estimate:** 30 min.
+
+**Acceptance:** Modal copy passes VOICE.md checklist; skill has no material objections or objections are addressed.
 
 ---
 
