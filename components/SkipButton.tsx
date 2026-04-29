@@ -9,9 +9,9 @@ import {
 } from '@/lib/date-utils'
 import { isSkipCurrentlyActive } from '@/lib/skip-utils'
 import type { RecurringClass } from '@/lib/database.types'
-import { Button, Badge } from '@/components/ui'
+import { Button, Badge, Modal } from '@/components/ui'
 import { useBookNowDialog } from '@/hooks/useBookNowDialog'
-import BookNowDialog from './BookNowDialog'
+import BookNowDialog, { formatClassDisplay } from './BookNowDialog'
 
 type Props = {
   recurringClass: RecurringClass
@@ -23,6 +23,8 @@ type Props = {
 export default function SkipButton({ recurringClass, onUpdate, schedulePaused, variant = 'default' }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [showSkipNextWeekDialog, setShowSkipNextWeekDialog] = useState(false)
+  const [nextWeekDatetime, setNextWeekDatetime] = useState<string | null>(null)
 
   const bookNow = useBookNowDialog({
     onComplete: onUpdate || (() => router.refresh()),
@@ -54,9 +56,33 @@ export default function SkipButton({ recurringClass, onUpdate, schedulePaused, v
     setLoading(true)
     try {
       const nextOccurrenceDate = calculateNextOccurrence(day_of_week, class_time, timezone)
-
       const result = await setSkipNextOccurrence(recurringClass.id, nextOccurrenceDate.toISOString())
 
+      if (result.success) {
+        if (result.bookingWindowAlreadyOpen && result.nextWeekDatetime) {
+          setNextWeekDatetime(result.nextWeekDatetime)
+          setShowSkipNextWeekDialog(true)
+        } else if (onUpdate) {
+          onUpdate()
+        } else {
+          router.refresh()
+        }
+      } else {
+        alert(`Failed to set skip: ${result.error}`)
+      }
+    } catch (error) {
+      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleConfirmSkipNextWeek = async () => {
+    if (!nextWeekDatetime) return
+    setLoading(true)
+    setShowSkipNextWeekDialog(false)
+    try {
+      const result = await setSkipNextOccurrence(recurringClass.id, nextWeekDatetime)
       if (result.success) {
         if (onUpdate) {
           onUpdate()
@@ -70,6 +96,7 @@ export default function SkipButton({ recurringClass, onUpdate, schedulePaused, v
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
+      setNextWeekDatetime(null)
     }
   }
 
@@ -207,6 +234,11 @@ export default function SkipButton({ recurringClass, onUpdate, schedulePaused, v
     )
   }
 
+  const nextWeekDate = nextWeekDatetime ? new Date(nextWeekDatetime) : null
+  const nextWeekLabel = nextWeekDate
+    ? formatDateInGymTimezone(nextWeekDate, timezone, 'short')
+    : ''
+
   return (
     <>
       {isSkipActive ? renderUnskipButton() : renderSkipButton()}
@@ -218,6 +250,29 @@ export default function SkipButton({ recurringClass, onUpdate, schedulePaused, v
         onBookNow={bookNow.handleBookNow}
         onSkip={bookNow.handleSkipBooking}
       />
+
+      <Modal
+        isOpen={showSkipNextWeekDialog}
+        onClose={() => { setShowSkipNextWeekDialog(false); setNextWeekDatetime(null) }}
+        title="Booking Window Open"
+        size="md"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { setShowSkipNextWeekDialog(false); setNextWeekDatetime(null) }}>
+              Not now
+            </Button>
+            <Button variant="primary" onClick={handleConfirmSkipNextWeek} loading={loading}>
+              Skip {nextWeekLabel}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-700">
+          Booking&apos;s already underway for this week&apos;s{' '}
+          <strong>{formatClassDisplay(recurringClass)}</strong> — can&apos;t skip it.
+          Skip <strong>{nextWeekLabel}</strong> instead?
+        </p>
+      </Modal>
     </>
   )
 }
