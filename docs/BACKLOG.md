@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** April 28, 2026
+**Last Updated:** April 29, 2026
 
 ---
 
@@ -157,9 +157,22 @@ Retry trigger uses `errorMessage?.toLowerCase().includes('full')` which is fragi
 ### Replace window.alert() with Inline Alerts
 **Status:** Backlogged | **Priority:** Medium
 
-10 instances of `window.alert()` in SkipButton and ScheduleList for error feedback. Replace with inline `<Alert variant="error">` components, consistent with the rest of the app.
+12 instances of `window.alert()` in SkipButton (6) and ScheduleList (6) for error feedback. Replace with inline `<Alert variant="error">` components, consistent with the rest of the app.
 
-**Last Updated:** April 6, 2026
+**Last Updated:** April 29, 2026
+
+---
+
+### Supabase Error Destructure Gaps
+**Status:** Backlogged | **Priority:** Medium
+
+Three Supabase queries in `app/actions/recurring-classes.ts` (lines 571, 715) and `lib/inngest/functions.ts` (lines 377, 568) drop the `error` field from destructuring. On query failure, callers silently fall through with `null` data — no breadcrumb in logs. Per CLAUDE.md rule, all Supabase queries must destructure `{ data, error }` and log errors with a `[module-name]` prefix.
+
+**Requirements:**
+- Destructure `error` on all four queries
+- Log with `console.error('[module]', error)` before any fallback
+
+**Last Updated:** April 29, 2026
 
 ---
 

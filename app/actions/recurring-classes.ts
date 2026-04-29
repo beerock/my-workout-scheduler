@@ -649,12 +649,17 @@ export async function setSkipNextOccurrence(
     // If so, the booking function has already fired and won't consume this flag —
     // return the next week's datetime so the client can offer "skip next week instead?"
     if (skipTargetDatetime !== null) {
-      const { data: classForCheck } = await supabase
+      const { data: classForCheck, error: classCheckError } = await supabase
         .from('recurring_classes')
         .select('day_of_week, class_time, booking_window_hours, timezone, active')
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
+
+      if (classCheckError) {
+        console.error(`[setSkipNextOccurrence] Failed to fetch class for booking window check:`, classCheckError)
+        return { success: false, error: 'Failed to validate skip timing' }
+      }
 
       if (classForCheck && classForCheck.active) {
         const bookingTime = calculateBookingWindowOpen(

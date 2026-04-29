@@ -132,10 +132,10 @@ export const bookClassFunction = inngest.createFunction(
         ? new Date(classData.skip_target_datetime)
         : null
 
-      // Stale/orphaned flag: skip_target_datetime is in the past, meaning the flag
-      // was set after the booking window had already opened for that occurrence and
-      // was never consumed. Clear both fields and fall through to booking.
-      if (skipTargetDate !== null && skipTargetDate < new Date()) {
+      // Stale/orphaned flag: skip_target_datetime is in the past (or missing), meaning
+      // the flag was set after the booking window had already opened for that occurrence
+      // and was never consumed. Clear both fields and fall through to booking.
+      if (skipTargetDate === null || skipTargetDate < new Date()) {
         await step.run('clear-stale-skip-flag', async () => {
           const supabase = createServiceRoleClient();
           const { error } = await supabase
