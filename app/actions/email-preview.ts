@@ -16,6 +16,7 @@ import { getAdminUserIds } from '@/lib/env-utils'
 import { bookingSuccessEmail } from '@/lib/email/templates/booking-success'
 import { bookingWaitlistEmail } from '@/lib/email/templates/booking-waitlist'
 import { bookingRetrySuccessfulEmail } from '@/lib/email/templates/booking-retry-successful'
+import { bookingRetryWaitlistedEmail } from '@/lib/email/templates/booking-retry-waitlisted'
 import { bookingFailureCriticalEmail } from '@/lib/email/templates/booking-failure-critical'
 import { bookingFailureConfigEmail } from '@/lib/email/templates/booking-failure-config'
 import { bookingFailureTechnicalEmail } from '@/lib/email/templates/booking-failure-technical'
@@ -54,6 +55,7 @@ export type EmailTemplateType =
   | 'bookingAlreadyRegistered'
   | 'bookingAlreadyWaitlisted'
   | 'bookingRetrySuccessful'
+  | 'bookingRetryWaitlisted'
   | 'bookingFailureCritical'
   | 'bookingFailureCriticalClassCancelled'
   | 'bookingFailureConfig'
@@ -210,6 +212,27 @@ export async function getEmailTemplatePreview(
         name: 'Retry Successful (class was full)',
         subject: result.subject,
         severity: 'success',
+        html: result.html,
+      }
+    }
+
+    case 'bookingRetryWaitlisted': {
+      const result = bookingRetryWaitlistedEmail({
+        className: 'Yoga',
+        dayOfWeek: 'Wednesday',
+        date: 'January 15, 2026',
+        time: '5:30 PM',
+        branchName: 'Downtown YMCA',
+        bookingTimestamp: 'Jan 14, 2026, 3:30 PM',
+        retryCount: 4,
+        dashboardUrl: sampleUrls.dashboardUrl,
+        scheduleUrl: sampleUrls.scheduleUrl,
+        settingsUrl: sampleUrls.settingsUrl,
+      })
+      return {
+        name: 'Retry Waitlisted (class was full, waitlist opened)',
+        subject: result.subject,
+        severity: 'warning',
         html: result.html,
       }
     }
@@ -483,6 +506,7 @@ export async function getAllTemplateTypes(): Promise<
     { type: 'bookingAlreadyRegistered', name: 'Already Registered', severity: 'success' },
     { type: 'bookingAlreadyWaitlisted', name: 'Already Waitlisted', severity: 'success' },
     { type: 'bookingRetrySuccessful', name: 'Retry Successful', severity: 'success' },
+    { type: 'bookingRetryWaitlisted', name: 'Retry Waitlisted', severity: 'warning' },
     { type: 'bookingFailureCritical', name: 'Failure - Critical (login)', severity: 'error' },
     { type: 'bookingFailureCriticalClassCancelled', name: 'Failure - Critical (class cancelled)', severity: 'error' },
     { type: 'bookingFailureConfig', name: 'Failure - Configuration', severity: 'warning' },
