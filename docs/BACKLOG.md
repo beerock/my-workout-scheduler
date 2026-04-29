@@ -2,7 +2,7 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** April 21, 2026
+**Last Updated:** April 28, 2026
 
 ---
 
@@ -309,9 +309,9 @@ Combined cleanup items from multiple audits (April 2026):
 ### Email Template XSS Hardening
 **Status:** Backlogged | **Priority:** Low
 
-6 booking email templates interpolate `className` and `branchName` as raw HTML without `escapeHtml()`. Low risk for closed system with 3 trusted users and curated class dropdown. Modern email clients strip scripts.
+7 booking email templates (all success-side: success, waitlist, retry-successful, retry-waitlisted, already-registered, already-waitlisted, no-registration) interpolate `className` and `branchName` as raw HTML without `escapeHtml()`. Failure-side templates already escape. Low risk for closed system with 3 trusted users and curated class dropdown. Modern email clients strip scripts.
 
-**Last Updated:** April 6, 2026
+**Last Updated:** April 28, 2026
 
 ---
 
