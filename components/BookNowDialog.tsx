@@ -35,7 +35,7 @@ export default function BookNowDialog({
     <Modal
       isOpen={isOpen && !!classToBook}
       onClose={onSkip}
-      title="Booking Window Already Open!"
+      title="Booking Window Open"
       size="md"
       footer={
         <>

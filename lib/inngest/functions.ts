@@ -128,43 +128,65 @@ export const bookClassFunction = inngest.createFunction(
 
     // Check if we should skip this booking (simple boolean flag check)
     if (classData.skip_next_occurrence === true) {
-      console.log(`[Inngest] ⏭️  Skip flag is TRUE - skipping booking for "${className}"`);
+      const skipTargetDate = classData.skip_target_datetime
+        ? new Date(classData.skip_target_datetime)
+        : null
 
-      const attemptId = await step.run('create-skip-attempt', async () => {
-        return await createBookingAttempt(
-          classData.id,
-          'skipped',
-          null,
-          `Skipped: User set skip_next_occurrence flag`
-        );
-      });
+      // Stale/orphaned flag: skip_target_datetime is in the past (or missing), meaning
+      // the flag was set after the booking window had already opened for that occurrence
+      // and was never consumed. Clear both fields and fall through to booking.
+      if (skipTargetDate === null || skipTargetDate < new Date()) {
+        await step.run('clear-stale-skip-flag', async () => {
+          const supabase = createServiceRoleClient();
+          const { error } = await supabase
+            .from('recurring_classes')
+            .update({ skip_next_occurrence: false, skip_target_datetime: null })
+            .eq('id', classData.id);
+          if (error) throw new Error(`Failed to clear stale skip: ${error.message}`);
+          console.log(`[Inngest] ✅ Cleared stale skip flag (target was in the past)`);
+          return { success: true };
+        });
+        // Fall through to booking below
+      } else {
+        // Valid skip — consume it
+        console.log(`[Inngest] ⏭️  Skip flag is TRUE - skipping booking for "${className}"`);
 
-      // Clear the skip flag (so next week books normally)
-      await step.run('clear-skip-flag', async () => {
-        const supabase = createServiceRoleClient();
-        const { error } = await supabase
-          .from('recurring_classes')
-          .update({ skip_next_occurrence: false })
-          .eq('id', classData.id);
+        const attemptId = await step.run('create-skip-attempt', async () => {
+          return await createBookingAttempt(
+            classData.id,
+            'skipped',
+            null,
+            `Skipped: User set skip_next_occurrence flag`
+          );
+        });
 
-        if (error) {
-          console.error(`[Inngest] ❌ Failed to clear skip_next_occurrence flag:`, error);
-          throw new Error(`Failed to clear skip flag: ${error.message}`);
-        }
+        // Clear the skip flag (so next week books normally)
+        await step.run('clear-skip-flag', async () => {
+          const supabase = createServiceRoleClient();
+          const { error } = await supabase
+            .from('recurring_classes')
+            .update({ skip_next_occurrence: false })
+            .eq('id', classData.id);
 
-        console.log(`[Inngest] ✅ Cleared skip_next_occurrence flag for next week`);
-        return { success: true };
-      });
+          if (error) {
+            console.error(`[Inngest] ❌ Failed to clear skip_next_occurrence flag:`, error);
+            throw new Error(`Failed to clear skip flag: ${error.message}`);
+          }
 
-      // Keep skip_target_datetime (UI still needs it until class time passes)
-      console.log(`[Inngest] Kept skip_target_datetime for UI display`);
+          console.log(`[Inngest] ✅ Cleared skip_next_occurrence flag for next week`);
+          return { success: true };
+        });
 
-      return {
-        status: 'skipped',
-        attemptId,
-        reason: 'user_requested_skip',
-        message: 'Skipped based on user skip flag'
-      };
+        // Keep skip_target_datetime (UI still needs it until class time passes)
+        console.log(`[Inngest] Kept skip_target_datetime for UI display`);
+
+        return {
+          status: 'skipped',
+          attemptId,
+          reason: 'user_requested_skip',
+          message: 'Skipped based on user skip flag'
+        };
+      }
     }
 
     // Check for duplicate runs - if another booking attempt is already in progress, exit
