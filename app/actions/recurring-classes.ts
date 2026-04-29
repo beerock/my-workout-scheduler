@@ -663,7 +663,15 @@ export async function setSkipNextOccurrence(
           classForCheck.booking_window_hours || 26,
           classForCheck.timezone || 'America/New_York'
         )
-        if (bookingTime.getTime() <= Date.now()) {
+        const windowIsOpen = bookingTime.getTime() <= Date.now()
+        const bookingWindowHours = classForCheck.booking_window_hours || 26
+        // If skipTargetDatetime is beyond the current booking window period, the user
+        // is intentionally targeting a future occurrence (e.g. confirmed "skip next week"
+        // after being shown the dialog). Allow the write.
+        const targetIsForFutureOccurrence =
+          new Date(skipTargetDatetime).getTime() > Date.now() + bookingWindowHours * 60 * 60 * 1000
+
+        if (windowIsOpen && !targetIsForFutureOccurrence) {
           const nextWeekDatetime = new Date(
             new Date(skipTargetDatetime).getTime() + 7 * 24 * 60 * 60 * 1000
           )
