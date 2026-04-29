@@ -545,9 +545,7 @@ export async function toggleRecurringClassActive(
       }
     }
 
-    // Deactivate cancel event: stale queued events would otherwise fire days later when
-    // their ts arrives. Runtime guard in bookClassFunction is the canonical defense, but
-    // cancelling avoids unnecessary Inngest runs, GH Actions invocations, and noisy rows.
+    // Cancel queued event; bookClassFunction's active guard is canonical, this just avoids wasted runs.
     if (active === false && deactivateClassFields) {
       try {
         const classDate = calculateNextClassDate(
