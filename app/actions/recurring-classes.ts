@@ -26,6 +26,7 @@ export type RecurringClassResult = {
   skipDate?: string | null
   deactivatedWarning?: boolean  // Signal that class is deactivated and needs user choice
   isCustomClassName?: boolean   // Signal to show custom class toast
+  nextWeekDatetime?: string     // ISO string for next week's occurrence when booking window already open on skip SET
   classDetails?: {
     class_type: string
     day_of_week: number
@@ -641,6 +642,38 @@ export async function setSkipNextOccurrence(
       return {
         success: false,
         error: 'Not authenticated',
+      }
+    }
+
+    // When SETTING a skip, check if the booking window is already open.
+    // If so, the booking function has already fired and won't consume this flag —
+    // return the next week's datetime so the client can offer "skip next week instead?"
+    if (skipTargetDatetime !== null) {
+      const { data: classForCheck } = await supabase
+        .from('recurring_classes')
+        .select('day_of_week, class_time, booking_window_hours, timezone, active')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single()
+
+      if (classForCheck && classForCheck.active) {
+        const bookingTime = calculateBookingWindowOpen(
+          classForCheck.day_of_week,
+          classForCheck.class_time,
+          classForCheck.booking_window_hours || 26,
+          classForCheck.timezone || 'America/New_York'
+        )
+        if (bookingTime.getTime() <= Date.now()) {
+          const nextWeekDatetime = new Date(
+            new Date(skipTargetDatetime).getTime() + 7 * 24 * 60 * 60 * 1000
+          )
+          console.log(`[Skip] Booking window already open for class ${id}, offering next week`)
+          return {
+            success: true,
+            bookingWindowAlreadyOpen: true,
+            nextWeekDatetime: nextWeekDatetime.toISOString(),
+          }
+        }
       }
     }
 
