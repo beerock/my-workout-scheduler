@@ -93,8 +93,8 @@ export function bookingFailureRetryingEmail(props: BookingFailureRetryingEmailPr
     preheader: `${props.className} is packed. Watching every 15 minutes until ${props.classStartTime}.`,
     body,
     severity: 'info', // Blue informational color
-    ctaText: 'View retry status',
-    ctaLink: props.dashboardUrl,
+    ctaText: 'View schedule',
+    ctaLink: props.scheduleUrl,
     showUnsubscribe: true, // Users CAN disable retry notifications
     dashboardUrl: props.dashboardUrl,
     settingsUrl: props.settingsUrl,

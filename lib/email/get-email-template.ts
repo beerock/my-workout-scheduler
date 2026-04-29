@@ -18,6 +18,10 @@ import {
   type BookingRetrySuccessfulEmailProps,
 } from './templates/booking-retry-successful';
 import {
+  bookingRetryWaitlistedEmail,
+  type BookingRetryWaitlistedEmailProps,
+} from './templates/booking-retry-waitlisted';
+import {
   bookingFailureCriticalEmail,
   type BookingFailureCriticalEmailProps,
 } from './templates/booking-failure-critical';
@@ -61,6 +65,7 @@ export type BookingEmailData = {
   errorMessage?: string; // Required if status === 'failed'
   alreadyBooked?: boolean; // True if user was already registered/waitlisted (no new action taken)
   isRetrySuccess?: boolean; // True if this was a successful retry after class was full
+  isRetryWaitlisted?: boolean; // True if a retry landed a waitlist spot (class still full but waitlist opened)
   isRetryExhausted?: boolean; // True if all retries failed and class time arrived
   retryCount?: number; // Number of retries (for success or exhausted scenarios)
   bookingTimestamp: string; // When booking was made
@@ -81,6 +86,7 @@ export type EmailTemplate = {
     | 'booking_already_registered'
     | 'booking_already_waitlisted'
     | 'booking_retry_successful'
+    | 'booking_retry_waitlisted'
     | 'booking_failure_critical'
     | 'booking_failure_config'
     | 'booking_failure_technical'
@@ -267,6 +273,29 @@ export function getEmailTemplate(data: BookingEmailData): EmailTemplate {
     const { subject, html } = bookingSuccessEmail(emailData);
     return {
       notificationType: 'booking_success',
+      subject,
+      html,
+    };
+  }
+
+  // Waitlisted via retry (class was full, retry landed a waitlist spot)
+  if (data.status === 'waitlisted' && data.isRetryWaitlisted) {
+    const emailData: BookingRetryWaitlistedEmailProps = {
+      className: data.className,
+      dayOfWeek: data.dayOfWeek,
+      date: data.date,
+      time: data.time,
+      branchName: data.branchName,
+      bookingTimestamp: data.bookingTimestamp,
+      retryCount: data.retryCount || 1,
+      dashboardUrl: data.dashboardUrl,
+      scheduleUrl: data.scheduleUrl,
+      settingsUrl: data.settingsUrl,
+    };
+
+    const { subject, html } = bookingRetryWaitlistedEmail(emailData);
+    return {
+      notificationType: 'booking_retry_waitlisted',
       subject,
       html,
     };
