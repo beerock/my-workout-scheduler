@@ -60,6 +60,7 @@ supabase/         → Migrations and RLS policies
 - **Date/time:** Always use `lib/date-utils.ts`. Use `calculateBookingWindowOpen` from `lib/inngest/scheduler.ts` for booking window calculations
 - **date-fns `format()` on Vercel:** `format()` uses server timezone (UTC on Vercel), not the gym's timezone. Always use `formatInTimeZone()` from `date-fns-tz` for date strings. Same applies to `startOfWeek`/`endOfWeek` -- pass `toZonedTime()` result.
 - **`getClassById` (database-helpers.ts):** Does NOT filter on `active` -- Inngest functions need access to deactivated classes for skip cleanup. Don't re-add an active filter.
+- **`getClassById` returns `null` for paused users:** when `user_settings.schedule_paused = true`, `getClassById` short-circuits at `scripts/database-helpers.ts:683-685` and `bookClassFunction` bails on `if (!classData)` with `error: 'Class not found'`. Functionally correct (no booking), operationally misleading -- paused-user run logs read identically to a deletion. Deferred refactor: move pause check explicit into `bookClassFunction` so it returns `status: 'paused'`.
 - **Encryption:** AES-256-GCM for gym passwords, key in `ENCRYPTION_KEY` env var (never sent to database)
 - **Inngest sync:** Auto-syncs on Vercel deploy (configured via Inngest dashboard). No manual sync needed.
 - **Inngest endpoint update:** To change the app's endpoint URL (e.g. after domain migration), use **Add App → Sync with Vercel** — there is no edit button on existing apps
