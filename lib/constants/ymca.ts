@@ -171,6 +171,7 @@ export const YMCA_MASTER_CLASSES: MasterClass[] = [
   'Step & Pump',
   'Strength and Balance',
   'Strength Fusion',
+  'Strength Fusion Heavy',
   'Tai Chi',
   'Tai Chi 101',
   'Tai Chi -Advanced',
