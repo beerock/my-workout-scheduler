@@ -80,7 +80,7 @@ supabase/         → Migrations and RLS policies
 - **Dead code:** TypeScript type-checks unreachable code (after early returns). Remove dead code entirely rather than leaving it below a return — Vercel builds will fail on type errors even in unreachable paths.
 - **Inngest auth:** SDK auto-validates `INNGEST_SIGNING_KEY` — no explicit check needed in route handler
 - **Inngest `ts` field:** Setting `ts` on `inngest.send()` delays event delivery until that timestamp. Dashboard "Duration" includes queue wait time, not just execution time.
-- **Testing:** Always use admin account (YOUR_ADMIN_EMAIL, uid: `YOUR_ADMIN_USER_ID`) for booking tests. Never use other users' classes or credentials.
+- **Testing:** Always use the admin account (set `ADMIN_USER_IDS` env var) for booking tests. Never use other users' classes or credentials.
 - **GH Actions inputs:** Never use `${{ inputs.* }}` directly in `run:` commands (shell injection risk). Assign to `env:` block first, reference as `$ENV_VAR` in shell.
 - **`gh pr edit` / `gh issue edit` with long bodies:** heredocs containing backticks trip bash's parser (`unexpected EOF`) — write the body to a tmpfile (e.g. `/tmp/pr-body.md`) and pass via `gh pr edit <N> -F <path>` instead of inline heredoc. Same applies to any `gh` command taking multi-paragraph body text.
 - **Puppeteer `waitUntil`:** Use `domcontentloaded` for refresh loops checking text presence/absence. Use `networkidle2` for navigation where JS-rendered content is needed. `completeGroupExProBooking` has its own `waitForFunction` for buttons.
