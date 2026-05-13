@@ -81,9 +81,9 @@ nul
 #   document that forks must set their own project ref, or switch to an env var.
 .mcp.json
 #
-# docs/TESTING_BOOKINGS.md — contains admin account email (YOUR_ADMIN_EMAIL)
-#   and UUID (a02ef692-...) used for booking tests. To re-include: replace both
-#   with generic placeholders like YOUR_ADMIN_EMAIL and YOUR_ADMIN_USER_ID.
+# docs/TESTING_BOOKINGS.md — contains admin account email and UUID used for
+#   booking tests. To re-include: replace both with generic placeholders like
+#   YOUR_ADMIN_EMAIL and YOUR_ADMIN_USER_ID.
 docs/TESTING_BOOKINGS.md
 #
 # docs/plans/SPRINT_1.1.md and SPRINT_1.5.md — internal sprint planning docs
