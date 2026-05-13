@@ -42,7 +42,7 @@ components/ui/    → Design system components (18 components)
 scripts/          → Puppeteer automation
 supabase/         → Migrations and RLS policies
 .claude/          → Hooks, agents, and skills
-.mcp.json         → MCP server configs (Supabase)
+.mcp.json         → MCP server configs (Supabase) — gitignored (local-only; contains project ref)
 ```
 
 ### Claude Code Customizations
@@ -94,7 +94,7 @@ supabase/         → Migrations and RLS policies
 - **Email template XSS:** `_base-template.ts` renders `preheader` as raw HTML. Always pass `escapeHtml()` output for any user-provided content in preheader, subject, or body. The `body` prop is also raw HTML - templates must escape user content before interpolating. **Convention split:** failure-side templates escape, success-side (success/waitlist/retry-*/already-*/no-registration) don't — match the side you're mirroring. Sweep tracked in backlog as "Email Template XSS Hardening".
 - **New email templates checklist:** Template file + `get-email-template.ts` (import, type, routing) + `send-notification.ts` (type union) + `email-preview.ts` (import, type, switch case, registry) + migration for `notification_log` CHECK constraint.
 - **notification_log CHECK constraint:** Adding new email notification types requires a Supabase migration to update the `notification_log_notification_type_check` constraint. Without this, email logging will fail at runtime. See migration 014 for the pattern (drop + recreate).
-- **Apply migrations via `mcp__supabase__apply_migration` MCP tool** (configured in `.mcp.json`), not `supabase db push`. The numbered SQL file in `supabase/migrations/` is the record; the MCP call hits the live DB. Additive changes (CHECK expansion, new columns) are safe to apply on the feature branch ahead of merge — old code keeps working since old values stay valid.
+- **Apply migrations via `mcp__supabase__apply_migration` MCP tool** (`.mcp.json` is local-only/gitignored — Supabase MCP still works in this session), not `supabase db push`. The numbered SQL file in `supabase/migrations/` is the record; the MCP call hits the live DB. Additive changes (CHECK expansion, new columns) are safe to apply on the feature branch ahead of merge — old code keeps working since old values stay valid.
 - **Toast vs Alert:** `useToast()` / `Toast` component is unverified in production — use inline `<Alert>` for form feedback instead.
 - **Time-dependent rendering requires a mount flag** (React error #418): client components that call `new Date()`, `Date.now()`, or `format(new Date(), ...)` during render will fail hydration because server and client read different wall-clock values. Pattern: `const [mounted, setMounted] = useState(false); useEffect(() => setMounted(true), [])` then gate the time-dependent output on `mounted && ...`. SSR renders the safe branch, client re-renders after mount. Applied in `FirstBookingPreview`, `BookingHistory`, `ScheduleList`, `SkipButton` — use the same pattern on any new time-sensitive surface.
 - **Never `catch { return null }` without logging:** a bare catch that swallows to a fallback makes the UX silently degrade (no preview, no data, missing state) with no breadcrumb in logs. Always `console.error` with enough context (inputs, operation name) to debug from logs alone — a bad IANA timezone, malformed DB data, or library version drift will otherwise be invisible until a user reports it.
