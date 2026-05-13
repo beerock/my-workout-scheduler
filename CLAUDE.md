@@ -56,6 +56,7 @@ supabase/         → Migrations and RLS policies
 
 ## Critical Gotchas
 
+- **Repo is public:** https://github.com/beerock/my-workout-scheduler — review commits for PII before pushing. `docs/TESTING_BOOKINGS.md`, `docs/plans/SPRINT_1.1.md`, `docs/plans/SPRINT_1.5.md` are gitignored (contain admin email/UUID).
 - **Signups disabled:** Invite-only private beta. Disabled at 3 layers: signup page UI, `signupWithTurnstile` server action, and Supabase dashboard (Authentication > Sign In / Providers > Email). Re-enable all three when adding invite codes.
 - **Date/time:** Always use `lib/date-utils.ts`. Use `calculateBookingWindowOpen` from `lib/inngest/scheduler.ts` for booking window calculations
 - **date-fns `format()` on Vercel:** `format()` uses server timezone (UTC on Vercel), not the gym's timezone. Always use `formatInTimeZone()` from `date-fns-tz` for date strings. Same applies to `startOfWeek`/`endOfWeek` -- pass `toZonedTime()` result.
