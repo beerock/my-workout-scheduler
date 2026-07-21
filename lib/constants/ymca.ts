@@ -159,6 +159,7 @@ export const YMCA_MASTER_CLASSES: MasterClass[] = [
   'Pilates',
   'PIYO Live',
   'Power Yoga',
+  'Qigong',
   'Racquetball',
   'Restorative Yoga',
   'Rise and Shine',
