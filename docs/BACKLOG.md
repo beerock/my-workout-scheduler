@@ -2,13 +2,15 @@
 
 This document tracks features and improvements organized by priority and status.
 
-**Last Updated:** April 29, 2026
+**MVP Status:** v1.0 released January 8, 2026 with email notification system complete. All sections below are post-MVP work.
+
+**Last Updated:** April 28, 2026
 
 ---
 
-## Pre-MVP Required
+## Post-MVP: High Priority (Deferred from MVP)
 
-Items that MUST be completed before MVP launch.
+High-priority items that were initially planned for MVP but deferred to post-launch.
 
 ### Credential Testing on Credentials Page
 **Status:** Backlogged | **Priority:** High

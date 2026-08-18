@@ -1,10 +1,32 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Version:** 2.36
+**Current Version:** 2.37
+**MVP v1.0 Release:** January 8, 2026 (Email Notification System Complete)
 **Product Owner:** Brock Busby
-**Last Updated:** April 26, 2026
-**Status:** Production - Deployed and Testing
+**Last Updated:** April 28, 2026
+**Status:** Production - Invite-Only Beta (3 Users)
 
+
+## MVP v1.0 Release Summary (January 8, 2026)
+
+The web application reached minimum viable product status with the completion of the email notification system (PR #84). This release includes all core features for automated gym class reservations:
+
+**Core Features:**
+- Email notifications for booking outcomes (success, waitlist, retry success, critical failures)
+- Comprehensive failure categorization (critical, configuration, technical)
+- User notification preferences (immediate, daily digest, critical-only, off)
+- Multi-use templates supporting different booking scenarios and states
+- Admin preferences and testing toggles for development
+
+**Architecture:**
+- Inngest event-driven scheduling (replaces GitHub Actions cron)
+- Puppeteer automation with early-start optimization (fires 90s early, books within 2-4s of window)
+- RLS-protected database with encryption (AES-256-GCM gym passwords)
+- Production deployment on Vercel with free-tier Inngest/GitHub Actions
+
+**Invite-Only Beta:** 3 users, no public launch planned. Feature development continues post-MVP.
+
+---
 
 **Recent Updates:**
 - ✅ Completed Days 1-2: Next.js setup, Supabase auth, login/signup pages

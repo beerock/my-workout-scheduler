@@ -10,6 +10,8 @@
 
 **Current Version:** v2.37 - Booking History Dedup + Multi-Category Error Expansion (see PRD for full version history)
 
+**MVP v1.0 Release:** January 8, 2026 — Email notification system complete, invite-only beta with 3 users
+
 ---
 
 ## Key Documentation
