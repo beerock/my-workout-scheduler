@@ -1,6 +1,6 @@
 # Booking Automation System
 
-**Last Updated:** November 26, 2026 (v2.38 - GroupExPro schedule feed + Daxko booking)
+**Last Updated:** November 27, 2026 (v2.39 - single booking_attempts row per run)
 
 This document describes the automated booking system that uses Inngest event-driven scheduling and GitHub Actions to book workout classes at the YMCA of WNC: the class is looked up in GroupExPro's public schedule feed, then Puppeteer logs in and reserves through Daxko.
 
@@ -111,7 +111,8 @@ The system prevents duplicate booking attempts for the same class occurrence:
 2. **Early-Start Trigger** (Inngest, ~90s before booking window)
    - Inngest fires the event, which triggers `bookClassFunction`
    - Function validates class is still active, not paused, not skipped
-   - Triggers GitHub Actions workflow via `workflow_dispatch` with `class_id` and `expected_booking_time`
+   - Creates the run's single `booking_attempts` row (`pending`)
+   - Triggers GitHub Actions workflow via `workflow_dispatch` with `class_id`, `expected_booking_time` and `attempt_id`. If `main`'s workflow doesn't accept `attempt_id` (GitHub 422), it retries without it and the script creates its own row
 
 3. **Puppeteer Automation** (GitHub Actions)
    - **Step 1:** Calculate the target date in gym timezone
@@ -120,11 +121,12 @@ The system prevents duplicate booking attempts for the same class occurrence:
    - **Step 5:** Open the sign-up URL -> redirects to Daxko login (email, then password) -> Daxko ChooseMembers page
    - **Step 5.5:** `waitForBookingWindow()` - if arrived early, sleep until 2s before window, then refresh every 2s until the "Reservation Window ... will open" notice disappears (up to 15 attempts)
    - **Step 6:** `completeDaxkoBooking()` - select the member, click "Reserve"
+   - Update the `attempt_id` row with the result (creates a row only if no `attempt_id` was passed, e.g. manual runs)
    - Send result event back to Inngest
 
 4. **Result Handling** (Inngest)
-   - Receives `booking/result` event from GitHub Actions
-   - Updates `booking_attempts` table
+   - Receives `booking/result` event from GitHub Actions (the row is already updated by the script; Inngest only marks it failed on a 10-minute timeout)
+   - Email `notification_log` rows link to the attempt ID from the result event
    - Sends email notification (success, failure, retry, or no-registration info)
    - If class is full: schedules retry in 15 minutes
    - If no registration: sends friendly info email, no retry

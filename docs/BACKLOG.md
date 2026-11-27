@@ -4,7 +4,7 @@ This document tracks features and improvements organized by priority and status.
 
 **MVP Status:** v1.0 released January 8, 2026 with email notification system complete. All sections below are post-MVP work.
 
-**Last Updated:** November 26, 2026
+**Last Updated:** November 27, 2026
 
 ---
 
@@ -70,20 +70,6 @@ The GroupExPro feed's sign-up link carries the exact time registration opens (`s
 - Read `start-info` when scheduling the next booking event
 - Fall back to `booking_window_hours` when the feed has no `start-info`
 - Show the real open time in `FirstBookingPreview` / `NextClassCard`
-
-**Last Updated:** November 26, 2026
-
----
-
-### Clean Up Stuck Pending Booking Attempts
-**Status:** Backlogged | **Priority:** High
-
-176 `booking_attempts` rows have sat in `pending` since Oct 13, 2026 and never got a final status. Find why the result never came back (GitHub Actions timeout, lost `booking/result` event) and resolve or expire the stale rows.
-
-**Requirements:**
-- Identify the code path that leaves attempts pending
-- Mark old pending rows as failed/expired with a clear reason
-- Make sure history and success-rate stats ignore them
 
 **Last Updated:** November 26, 2026
 
@@ -232,14 +218,14 @@ Inngest `check-duplicate-runs` step queries for pending booking attempts before 
 ### Duplicate Check Window & Re-Trigger UX
 **Status:** Backlogged | **Priority:** Medium
 
-The `check-duplicate-runs` step blocks new booking attempts if a `pending` attempt exists for the same class within the last 5 minutes. This is overly conservative -- GitHub Actions runs typically complete in 60-90 seconds. If a user triggers a booking, realizes they selected the wrong day/time, edits the class, and retries, they may have to wait several minutes with no feedback.
+The `check-duplicate-runs` step blocks new booking attempts if any non-skipped attempt exists for the same class within the last 5 minutes (since v2.39; before that an orphaned `pending` row had the same effect). This is overly conservative -- GitHub Actions runs typically complete in 60-90 seconds. If a user triggers a booking, realizes they selected the wrong day/time, edits the class, and retries, they may have to wait several minutes with no feedback.
 
 **Requirements:**
 - Evaluate reducing the 5-minute window (e.g., 2 minutes)
 - Consider cancel-and-replace: when user edits + retriggers, cancel the pending attempt before sending a new one
 - Add UI feedback ("Booking in progress...") on the class card so users understand why retry is blocked
 
-**Last Updated:** April 8, 2026
+**Last Updated:** November 27, 2026
 
 ---
 
@@ -688,6 +674,11 @@ Ready-made prompt for diagnosing GitHub Actions failures.
 ## Completed (Summary)
 
 Brief summaries of completed work. See PRD version history for full details.
+
+### Single Booking Attempt Record ✅
+**Completed:** November 27, 2026 (v2.39)
+
+The stuck `pending` rows were duplicates: Inngest and the GitHub Actions script each created a row per booking, and only the script's got a result. Inngest now passes its row to the workflow as `attempt_id` and the script updates it. Migration 018 moves email links onto the real rows and deletes the 800+ orphans.
 
 ### YMCA Site Redesign Fix (Schedule Feed + Daxko) ✅
 **Completed:** November 26, 2026 (v2.38)

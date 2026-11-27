@@ -1,9 +1,9 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Current Version:** 2.38
+**Current Version:** 2.39
 **MVP v1.0 Release:** January 8, 2026 (Email Notification System Complete)
 **Product Owner:** Brock Busby
-**Last Updated:** November 26, 2026
+**Last Updated:** November 27, 2026
 **Status:** Production - Invite-Only Beta (3 Users)
 
 
@@ -75,7 +75,7 @@ The web application reached minimum viable product status with the completion of
   - Priority-based status determination (reserved > cancelled > not reservable > full > available)
   - Smart retry logic: only retries for temporary failures (class full)
 - ✅ **COMPLETED: Duplicate Booking Prevention (v2.7)**
-  - Duplicate run detection (checks for pending attempts within 5 minutes)
+  - Duplicate run detection (5-minute per-class lockout: any non-skipped attempt in the last 5 minutes; v2.39)
   - Idempotency keys for retry events (format: `book-retry-{classId}-{date}-{attempt}-{random8}`) - random suffix for security
   - Prevents race conditions when retries trigger simultaneously
   - Inngest-level deduplication (same event ID = single execution)
@@ -190,6 +190,11 @@ The web application reached minimum viable product status with the completion of
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.39:** Single Booking Attempt Record (November 2026)
+  - **Why:** Every booking wrote two `booking_attempts` rows. Inngest's row stayed `pending` forever and booking emails were logged against it, while the GitHub Actions script's row held the real result.
+  - **Fix:** Inngest passes its row to the workflow as `attempt_id`; the script updates that row. If `main`'s workflow doesn't accept the input yet (GitHub 422), Inngest retries without it. Emails link to the attempt ID in the `booking/result` event.
+  - **Lockout kept:** the duplicate-run check now counts any non-skipped attempt in the last 5 minutes. It used to count only `pending` rows, and the orphan held that lock for the full 5 minutes; the single row now finishes in about a minute.
+  - **Cleanup:** Migration 018 moves `notification_log` links onto the real rows and deletes the 800+ orphaned `pending` rows.
 - **v2.38:** YMCA Site Redesign Fix - Schedule Feed + Daxko Booking (November 2026)
   - **Why:** Every booking failed from Nov 3, 2026 ("not found on YMCA schedule"). The YMCA moved ymcawnc.org's schedule into an iframe that loads GroupExPro's schedule feed, and moved class sign-up back to Daxko.
   - **Class lookup:** `findClassInGroupExFeed()` reads GroupExPro's public JSON schedule feed (no browser) by branch location ID, date, start time and class name. The feed only stops a run for cancelled classes (`CANCELED:` title) and classes with no online sign-up; full/waitlist are always read from the live Daxko page because the feed can lag.

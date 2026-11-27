@@ -1,7 +1,7 @@
 # My Workout Scheduler
 
-**Version:** 2.38 | **Status:** Production (Invite-Only MVP)
-**MVP v1.0 Released:** January 8, 2026 | **Current Date:** November 26, 2026
+**Version:** 2.39 | **Status:** Production (Invite-Only MVP)
+**MVP v1.0 Released:** January 8, 2026 | **Current Date:** November 27, 2026
 
 My Workout Scheduler automates gym class reservations using Puppeteer to book classes the instant registration opens (e.g., 26 hours before class time). Set it and forget it—no more waking up early or racing to book popular classes.
 

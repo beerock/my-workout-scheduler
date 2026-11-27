@@ -12,6 +12,10 @@ on:
         description: 'Epoch ms when booking window opens (for early-start optimization)'
         required: false
         type: string
+      attempt_id:
+        description: 'booking_attempts row created by Inngest (script updates it instead of creating a new one)'
+        required: false
+        type: string
 
 jobs:
   book-classes:
@@ -53,6 +57,7 @@ jobs:
           INNGEST_EVENT_KEY: ${{ secrets.INNGEST_EVENT_KEY }}
           EXPECTED_BOOKING_TIME: ${{ inputs.expected_booking_time }}
           CLASS_ID: ${{ inputs.class_id }}
+          ATTEMPT_ID: ${{ inputs.attempt_id }}
         run: npx tsx scripts/test-single-booking.ts "$CLASS_ID"
 
       - name: Run booking automation (all classes)
