@@ -1,9 +1,9 @@
 # My Workout Scheduler \- Product Requirements Document
 
-**Current Version:** 2.37
+**Current Version:** 2.38
 **MVP v1.0 Release:** January 8, 2026 (Email Notification System Complete)
 **Product Owner:** Brock Busby
-**Last Updated:** April 28, 2026
+**Last Updated:** November 26, 2026
 **Status:** Production - Invite-Only Beta (3 Users)
 
 
@@ -190,6 +190,12 @@ The web application reached minimum viable product status with the completion of
   - Filter pills: Server-side status counts for accurate totals (All, Booked, Waitlisted, Retrying, Failed)
   - Visual refinements: Improved Load More button and summary footer visibility
   - Success rate fix: Active retries excluded from failure count
+- **v2.38:** YMCA Site Redesign Fix - Schedule Feed + Daxko Booking (November 2026)
+  - **Why:** Every booking failed from Nov 3, 2026 ("not found on YMCA schedule"). The YMCA moved ymcawnc.org's schedule into an iframe that loads GroupExPro's schedule feed, and moved class sign-up back to Daxko.
+  - **Class lookup:** `findClassInGroupExFeed()` reads GroupExPro's public JSON schedule feed (no browser) by branch location ID, date, start time and class name. The feed only stops a run for cancelled classes (`CANCELED:` title) and classes with no online sign-up; full/waitlist are always read from the live Daxko page because the feed can lag.
+  - **Login + booking:** sign-up URL -> Daxko 2-step login -> Daxko ChooseMembers page -> select member -> Reserve (restored and updated from the pre-March 2026 Daxko flow). Early-start waits on Daxko's "Reservation Window ... will open" notice.
+  - **Unchanged:** booking statuses, error text and email routing ("full" retry trigger, cancelled, "YMCA's booking system" marker).
+  - `scripts/test-class-state-detection.ts` is now a read-only CLI for checking how a class looks in the feed.
 - **v2.37:** Booking History Dedup + Multi-Category Error Expansion (April 2026)
   - **History dedup:** Repeated booking attempts for the same class on the same calendar day collapse into one card. Card shows first→last attempt time range and attempt count. 50 retries for a single class no longer flood the history list.
   - **Success rate fix:** `computeTargetClassDate` groups all attempts for the same class occurrence (even across days) into one data point; best-outcome-wins logic picks confirmed > waitlisted > no_registration > failed. 50 retries for a Saturday class now count as 1 attempt in the success rate, not 50.
@@ -970,38 +976,36 @@ When modifying Inngest function configurations (especially `cancelOn` patterns, 
 
 ---
 
-## Appendix A: YMCA Booking Flow (GroupExPro Platform)
+## Appendix A: YMCA Booking Flow (Schedule Feed + Daxko)
 
-**Flow:** YMCA schedule (public) -> Register link -> GroupExPro login -> Class details -> Booking
+**Flow:** GroupExPro schedule feed (public JSON) -> sign-up URL -> Daxko login -> Daxko ChooseMembers page -> Reserve
 
 **Automated Booking Steps:**
 
-1. Navigate to YMCA schedule page with date + branch filters
-2. Find target class by name (fuzzy match) and time
-3. Click "Register" link on class row -> redirects to GroupExPro
-4. Login to GroupExPro with username/password
-5. Land on class details page
-6. If booking window not yet open: "not yet available for sign-up" error shown
-7. Wait for booking window (early-start: refresh every 2s)
-8. Check action buttons:
-   - "Reserve a Spot" -> Click to book -> Status: `'confirmed'`
-   - "Join the Waitlist" -> Click to join waitlist -> Status: `'waitlisted'`
-   - "Cancel Reservation" -> Already booked, stop -> Status: `'confirmed'`
-   - "Cancel Waitlist" -> Already on waitlist, stop -> Status: `'waitlisted'`
-9. Ensure checkbox is checked next to member name
-10. Click action button -> Booking confirmed
+1. Fetch the GroupExPro schedule feed for the branch (location ID) around the target date
+2. Match the class by date, start time and name; get its sign-up URL
+3. Stop if the title starts with "CANCELED:" (cancelled) or there is no sign-up link (no online registration)
+4. Open the sign-up URL -> redirects to Daxko login
+5. Daxko 2-step login: email -> password
+6. Land on the Daxko ChooseMembers page for the class
+7. If the booking window isn't open yet ("The Reservation Window ... will open on ..."), wait (early-start: refresh every 2s)
+8. Read the page:
+   - Member already reserved -> stop -> Status: `'confirmed'`
+   - Member already on waitlist -> stop -> Status: `'waitlisted'`
+   - "Slots are fully booked" (member checkbox disabled) -> Status: `'failed'` + "full" -> retry every 15 min
+9. Select the member checkbox (matched by login email) and click "Reserve" (same button when joining a waitlist)
+10. Confirmation: "reservation is complete" -> `'confirmed'`, "you are in waitlist" -> `'waitlisted'`
 
 **Automation Considerations:**
 
-- YMCA schedule is public (no login required for class discovery)
-- GroupExPro handles authentication separately
-- Early-start optimization allows arriving before booking window opens
-- Checkbox next to member name is usually pre-checked but must be verified
-- Must handle dynamic JavaScript-rendered content (buttons may load after redirect)
+- The feed is public (no login for class discovery) and is the same data the ymcawnc.org schedule embed shows
+- The feed's spots/waitlist text is informational only; the live Daxko page decides
+- Early-start optimization allows arriving before the booking window opens
+- Household accounts list several members; pick the one whose email matches the login
 
 **Guardrails:**
 
-- Never proceed if "Cancel Reservation" showing (already booked)
+- Never click Reserve if the member is already reserved or waitlisted
 - Halt on login failure or unexpected page
 - Wait for booking window if arrived early (don't click before window opens)
 - Log all actions and take screenshots for debugging

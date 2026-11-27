@@ -8,7 +8,7 @@
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version:** v2.37 - Booking History Dedup + Multi-Category Error Expansion (see PRD for full version history)
+**Current Version:** v2.38 - YMCA Site Redesign Fix: Schedule Feed + Daxko Booking (see PRD for full version history)
 
 **MVP v1.0 Release:** January 8, 2026 — Email notification system complete, invite-only beta with 3 users
 
@@ -74,7 +74,9 @@ supabase/         → Migrations and RLS policies
 - **Always destructure `{ data, error }` on Supabase queries:** dropping `error` (e.g. `const { data } = await supabase...`) silently hides RLS drift, column renames, and connection failures — the caller falls through to an empty-data branch with no diagnostic. Log with a `[source-module]` prefix before any fallback so the failure surfaces in Vercel runtime logs. (`admin-waitlist.ts` is the reference pattern; `dashboard-stats.ts` was fixed in PR #125.)
 - **Inngest events:** Delete, deactivate (`toggleRecurringClassActive(false)`), and pause-all (`updateSchedulePaused(true)`) all send `booking/cancel` events to clean up queued runs that haven't fired yet. Runtime guards (`!classData.active` in `bookClassFunction`, pause check in `getClassById`) are defense-in-depth — they catch any stale event that slips through (e.g. queued via re-activation, or pre-existing the cancel-on-deactivate fix). NEVER add cancellation only — the runtime check stays load-bearing because cancel events match on `classId + classDate` and any timing edge case can leave a stale event queued.
 - **Skip/pause interaction:** Pause and skip are fully independent. Pausing does NOT touch skip fields. Skips persist across pause/unpause and are only cleared by the user or consumed by the booking function at runtime. Deactivate (`toggleRecurringClassActive`) always clears both skip fields with user confirmation dialog.
-- **Booking flow:** YMCA schedule -> GroupExPro login (direct auth, no Daxko) -> GroupExPro class details -> Reserve a Spot / Join the Waitlist. Daxko is no longer in the flow. Early-start optimization fires 90s early and waits on class details page.
+- **Booking flow (Nov 2026):** GroupExPro schedule feed (`findClassInGroupExFeed`, plain fetch, no browser) -> sign-up URL -> Daxko 2-step login (`performDaxkoLogin`) -> Daxko ChooseMembers page -> select member -> Reserve (`completeDaxkoBooking`). Early-start fires 90s early and waits on the ChooseMembers page for the "Reservation Window ... will open" notice to disappear. The YMCA has flip-flopped (Daxko until Mar 2026, GroupExPro login Mar-Nov 2026, Daxko again) - if bookings suddenly all fail, check where the sign-up URL lands in a real browser (the redirect is client-side JS, so `curl` shows a different page).
+- **Feed never decides full/waitlist:** `findClassInGroupExFeed` only short-circuits on `cancelled` (`CANCELED:` title prefix) and `no_registration` (no sign-up link). Everything else logs in and lets the live Daxko page decide - the feed's spots/waitlist text can lag. Don't add a feed-based "full" early return. Conversely, keep the two feed early-stops: Daxko's ChooseMembers page shows a `CANCELED:` class as normal and bookable (cancellation only surfaces as an error after clicking Reserve), and classes with no Sign Up button (paid programs, Pickle Ball, Open Gym) return "An error has occured" on Daxko (verified Nov 2026).
+- **GroupExPro feed location IDs** (`GROUPEX_LOCATION_IDS` in `scripts/booking-automation.ts`) must stay keyed by the exact `YMCA_BRANCHES` names. Check a class from the CLI: `npx tsx scripts/test-class-state-detection.ts <YYYY-MM-DD> <HH:MM> "<Branch>" "<Class>"`.
 - **Supabase URL Configuration path:** Authentication → URL Configuration (NOT Settings → Add Ons → Custom Domain, which is a paid feature)
 - **VERCEL_URL vs custom domain:** `VERCEL_URL` is always a Vercel-generated hostname (e.g. `*.vercel.app`), never a custom domain — custom domain only comes through `NEXT_PUBLIC_SITE_URL`
 - **User deletion:** Inngest events NOT canceled on user delete (fail gracefully, acceptable for MVP)
@@ -253,4 +255,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: April 28, 2026 (v2.37)*
+*Last Updated: November 26, 2026 (v2.38)*

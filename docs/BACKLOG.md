@@ -4,7 +4,7 @@ This document tracks features and improvements organized by priority and status.
 
 **MVP Status:** v1.0 released January 8, 2026 with email notification system complete. All sections below are post-MVP work.
 
-**Last Updated:** April 28, 2026
+**Last Updated:** November 26, 2026
 
 ---
 
@@ -46,6 +46,48 @@ Allow users to test their gym credentials before saving, ensuring they work with
 ## Post-MVP: High Priority
 
 Important features for near-term after launch.
+
+### YMCA Site Change Early Warning
+**Status:** Backlogged | **Priority:** High
+
+The Nov 2026 YMCA redesign broke every booking for three weeks before anyone noticed, because each failure looked like an ordinary "class not found." Alert the admin when the GroupExPro schedule feed returns zero rows for a branch/date, or when every attempt in a day fails at the same step.
+
+**Requirements:**
+- Admin email when the feed returns 0 rows or invalid JSON for a branch
+- Admin email when all attempts in a 24h window fail with the same error category
+- One alert per incident (dedup), not one per attempt
+
+**Last Updated:** November 26, 2026
+
+---
+
+### Use Feed Window Time for Booking Window
+**Status:** Backlogged | **Priority:** High
+
+The GroupExPro feed's sign-up link carries the exact time registration opens (`start-info`, e.g. "11/27/2026 at 6:15am"). Using it would replace the per-class `booking_window_hours` guess and remove "sign-ups not open yet" failures caused by a wrong setting.
+
+**Requirements:**
+- Read `start-info` when scheduling the next booking event
+- Fall back to `booking_window_hours` when the feed has no `start-info`
+- Show the real open time in `FirstBookingPreview` / `NextClassCard`
+
+**Last Updated:** November 26, 2026
+
+---
+
+### Clean Up Stuck Pending Booking Attempts
+**Status:** Backlogged | **Priority:** High
+
+176 `booking_attempts` rows have sat in `pending` since Oct 13, 2026 and never got a final status. Find why the result never came back (GitHub Actions timeout, lost `booking/result` event) and resolve or expire the stale rows.
+
+**Requirements:**
+- Identify the code path that leaves attempts pending
+- Mark old pending rows as failed/expired with a clear reason
+- Make sure history and success-rate stats ignore them
+
+**Last Updated:** November 26, 2026
+
+---
 
 ### Separate Inngest Apps per Environment
 **Status:** Backlogged | **Priority:** High
@@ -326,7 +368,7 @@ Combined cleanup items from multiple audits (April 2026):
 
 7 booking email templates (all success-side: success, waitlist, retry-successful, retry-waitlisted, already-registered, already-waitlisted, no-registration) interpolate `className` and `branchName` as raw HTML without `escapeHtml()`. Failure-side templates already escape. Low risk for closed system with 3 trusted users and curated class dropdown. Modern email clients strip scripts.
 
-**Last Updated:** April 28, 2026
+**Last Updated:** November 26, 2026
 
 ---
 
@@ -646,6 +688,13 @@ Ready-made prompt for diagnosing GitHub Actions failures.
 ## Completed (Summary)
 
 Brief summaries of completed work. See PRD version history for full details.
+
+### YMCA Site Redesign Fix (Schedule Feed + Daxko) ✅
+**Completed:** November 26, 2026 (v2.38)
+
+All bookings failed from Nov 3, 2026 after the YMCA redesign. Class lookup now reads GroupExPro's public schedule feed (no browser, exact name match), and login/booking moved back to Daxko (2-step login → ChooseMembers → Reserve). The feed only stops a run for cancelled or no-registration classes. Full/waitlist always come from the live Daxko page.
+
+---
 
 ### Booking History Dedup + Multi-Category Error Expansion ✅
 **Completed:** April 26, 2026 (v2.37)
