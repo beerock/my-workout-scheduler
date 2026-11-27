@@ -8,7 +8,7 @@
 
 **MVP Scope:** 5 users, 2-5 classes per user, 100% free tier services
 
-**Current Version:** v2.38 - YMCA Site Redesign Fix: Schedule Feed + Daxko Booking (see PRD for full version history)
+**Current Version:** v2.39 - Single Booking Attempt Record (see PRD for full version history)
 
 **MVP v1.0 Release:** January 8, 2026 — Email notification system complete, invite-only beta with 3 users
 
@@ -75,6 +75,7 @@ supabase/         → Migrations and RLS policies
 - **Inngest events:** Delete, deactivate (`toggleRecurringClassActive(false)`), and pause-all (`updateSchedulePaused(true)`) all send `booking/cancel` events to clean up queued runs that haven't fired yet. Runtime guards (`!classData.active` in `bookClassFunction`, pause check in `getClassById`) are defense-in-depth — they catch any stale event that slips through (e.g. queued via re-activation, or pre-existing the cancel-on-deactivate fix). NEVER add cancellation only — the runtime check stays load-bearing because cancel events match on `classId + classDate` and any timing edge case can leave a stale event queued.
 - **Skip/pause interaction:** Pause and skip are fully independent. Pausing does NOT touch skip fields. Skips persist across pause/unpause and are only cleared by the user or consumed by the booking function at runtime. Deactivate (`toggleRecurringClassActive`) always clears both skip fields with user confirmation dialog.
 - **Booking flow (Nov 2026):** GroupExPro schedule feed (`findClassInGroupExFeed`, plain fetch, no browser) -> sign-up URL -> Daxko 2-step login (`performDaxkoLogin`) -> Daxko ChooseMembers page -> select member -> Reserve (`completeDaxkoBooking`). Early-start fires 90s early and waits on the ChooseMembers page for the "Reservation Window ... will open" notice to disappear. The YMCA has flip-flopped (Daxko until Mar 2026, GroupExPro login Mar-Nov 2026, Daxko again) - if bookings suddenly all fail, check where the sign-up URL lands in a real browser (the redirect is client-side JS, so `curl` shows a different page).
+- **One `booking_attempts` row per run:** `bookClassFunction` creates the row and passes it to the workflow as the `attempt_id` input; `test-single-booking.ts` updates that row (creates one only for manual runs without `--attempt-id`/`ATTEMPT_ID`). The dispatch retries without `attempt_id` on a GitHub 422, because the workflow always runs from `main` and a preview deploy can be ahead of it. Don't add a second `createBookingAttempt` in the script path - that's what left 800+ orphaned `pending` rows before v2.39.
 - **Feed never decides full/waitlist:** `findClassInGroupExFeed` only short-circuits on `cancelled` (`CANCELED:` title prefix) and `no_registration` (no sign-up link). Everything else logs in and lets the live Daxko page decide - the feed's spots/waitlist text can lag. Don't add a feed-based "full" early return. Conversely, keep the two feed early-stops: Daxko's ChooseMembers page shows a `CANCELED:` class as normal and bookable (cancellation only surfaces as an error after clicking Reserve), and classes with no Sign Up button (paid programs, Pickle Ball, Open Gym) return "An error has occured" on Daxko (verified Nov 2026).
 - **GroupExPro feed location IDs** (`GROUPEX_LOCATION_IDS` in `scripts/booking-automation.ts`) must stay keyed by the exact `YMCA_BRANCHES` names. Check a class from the CLI: `npx tsx scripts/test-class-state-detection.ts <YYYY-MM-DD> <HH:MM> "<Branch>" "<Class>"`.
 - **Supabase URL Configuration path:** Authentication → URL Configuration (NOT Settings → Add Ons → Custom Domain, which is a paid feature)
@@ -255,4 +256,4 @@ See `.env.example` for full template.
 
 ---
 
-*Last Updated: November 26, 2026 (v2.38)*
+*Last Updated: November 27, 2026 (v2.39)*

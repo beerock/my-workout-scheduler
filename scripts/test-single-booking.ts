@@ -6,6 +6,11 @@
  *   npx tsx scripts/test-single-booking.ts <class-id>
  *   npx tsx scripts/test-single-booking.ts <class-id> --dry-run
  *   npx tsx scripts/test-single-booking.ts <class-id> --headless=false
+ *   npx tsx scripts/test-single-booking.ts <class-id> --attempt-id=<uuid>
+ *
+ * Attempt record: if an attempt ID is provided (--attempt-id or ATTEMPT_ID env,
+ * set by the GitHub Actions workflow from Inngest), that row is updated.
+ * Otherwise a new booking_attempts row is created.
  */
 
 import * as dotenv from 'dotenv'
@@ -38,6 +43,8 @@ const classId = args.find(arg => !arg.startsWith('--'))
 const isDryRun = args.includes('--dry-run')
 const headlessArg = args.find(arg => arg.startsWith('--headless='))
 const headless = headlessArg ? headlessArg.split('=')[1] !== 'false' : true
+const attemptIdFlag = args.find(arg => arg.startsWith('--attempt-id='))
+const attemptIdArg = attemptIdFlag ? attemptIdFlag.split('=')[1] : undefined
 
 if (!classId) {
   console.error('❌ Error: Class ID is required')
@@ -171,14 +178,38 @@ async function testSingleBooking() {
       return
     }
 
-    // Create booking attempt record
-    log.debug('📝 Creating booking attempt record...')
-    try {
-      attemptId = await createBookingAttempt(classId!, 'pending', classData.branch)
-      log.debug(`✅ Created attempt record: ${attemptId}\n`)
-    } catch (error) {
-      log.error('❌ Failed to create attempt record:', error)
-      process.exit(1)
+    // Use the attempt record Inngest already created (passed via the workflow's
+    // attempt_id input) so each booking has exactly one booking_attempts row.
+    // Manual runs without one create their own record as before.
+    const providedAttemptId = attemptIdArg || process.env.ATTEMPT_ID || undefined
+    if (providedAttemptId) {
+      const { data: existingAttempt, error: attemptError } = await supabase
+        .from('booking_attempts')
+        .select('id, recurring_class_id')
+        .eq('id', providedAttemptId)
+        .maybeSingle() as { data: { id: string, recurring_class_id: string } | null, error: any }
+
+      if (attemptError) {
+        log.error('[test-single-booking] Failed to look up provided attempt record:', attemptError.message)
+      }
+
+      if (existingAttempt && existingAttempt.recurring_class_id === classId) {
+        attemptId = existingAttempt.id
+        log.success(`📝 Using existing attempt record: ${attemptId}`)
+      } else {
+        log.error(`⚠️  Provided attempt ID ${providedAttemptId} not found for this class - creating a new record`)
+      }
+    }
+
+    if (!attemptId) {
+      log.debug('📝 Creating booking attempt record...')
+      try {
+        attemptId = await createBookingAttempt(classId!, 'pending', classData.branch)
+        log.debug(`✅ Created attempt record: ${attemptId}\n`)
+      } catch (error) {
+        log.error('❌ Failed to create attempt record:', error)
+        process.exit(1)
+      }
     }
 
     // Modify booking function to use non-headless if requested

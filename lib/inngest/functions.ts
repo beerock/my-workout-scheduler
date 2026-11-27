@@ -262,25 +262,43 @@ export const bookClassFunction = inngest.createFunction(
         const { token } = await auth({ type: 'installation' });
 
         // Trigger the workflow using GitHub API
-        const response = await fetch(
-          `https://api.github.com/repos/${owner}/${repo}/actions/workflows/booking-automation.yml/dispatches`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/vnd.github+json',
-              'X-GitHub-Api-Version': '2022-11-28',
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              ref: 'main',
-              inputs: {
-                class_id: classId,
-                expected_booking_time: expectedBookingTime ? String(expectedBookingTime) : '',
+        const dispatch = (inputs: Record<string, string>) =>
+          fetch(
+            `https://api.github.com/repos/${owner}/${repo}/actions/workflows/booking-automation.yml/dispatches`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'Content-Type': 'application/json',
               },
-            }),
+              body: JSON.stringify({ ref: 'main', inputs }),
+            }
+          );
+
+        const baseInputs = {
+          class_id: classId,
+          expected_booking_time: expectedBookingTime ? String(expectedBookingTime) : '',
+        };
+
+        // Pass our attempt row so the workflow updates it instead of creating
+        // a second one (single booking_attempts row per run).
+        let response = await dispatch({ ...baseInputs, attempt_id: attemptId });
+
+        // The workflow always runs from main. If main's workflow file doesn't
+        // declare attempt_id yet (e.g. this code is live on a preview deploy
+        // before merge), GitHub rejects the unknown input with a 422. Retry
+        // without it so booking still happens (the script then creates its own row).
+        if (response.status === 422) {
+          const errorText = await response.text();
+          if (errorText.includes('attempt_id')) {
+            console.warn(`[Inngest] Workflow on main does not accept attempt_id yet - retrying dispatch without it`);
+            response = await dispatch(baseInputs);
+          } else {
+            throw new Error(`GitHub API error (422): ${errorText}`);
           }
-        );
+        }
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -426,6 +444,11 @@ export const bookClassFunction = inngest.createFunction(
     }
 
     const { status, errorMessage, alreadyBooked } = bookingResult.data;
+    // The row that holds the real result. Normally this is our own attemptId
+    // (passed to the workflow); it differs only if the dispatch fell back to
+    // running without attempt_id and the script created its own row.
+    const resultAttemptId: string =
+      typeof bookingResult.data.attemptId === 'string' ? bookingResult.data.attemptId : attemptId;
     console.log(`[Inngest] Booking result: ${status}`);
     if (errorMessage) {
       console.log(`[Inngest] Error message: ${errorMessage}`);
@@ -457,7 +480,7 @@ export const bookClassFunction = inngest.createFunction(
 
         await sendBookingNotification({
           userId: classData.user_id,
-          bookingAttemptId: attemptId,
+          bookingAttemptId: resultAttemptId,
           recurringClassId: classId,
           classDate: classDateISO,
           status: status as 'confirmed' | 'waitlisted' | 'failed' | 'skipped' | 'no_registration',
@@ -584,7 +607,7 @@ export const bookClassFunction = inngest.createFunction(
 
             await sendBookingNotification({
               userId: classData.user_id,
-              bookingAttemptId: attemptId,
+              bookingAttemptId: resultAttemptId,
               recurringClassId: classId,
               classDate: classDateISO,
               status: 'failed',
