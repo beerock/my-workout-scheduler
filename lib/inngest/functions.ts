@@ -289,15 +289,13 @@ export const bookClassFunction = inngest.createFunction(
         // The workflow always runs from main. If main's workflow file doesn't
         // declare attempt_id yet (e.g. this code is live on a preview deploy
         // before merge), GitHub rejects the unknown input with a 422. Retry
-        // without it so booking still happens (the script then creates its own row).
+        // without it on any 422 (don't depend on GitHub's error wording) so
+        // booking still happens - the script then creates its own row. If the
+        // retry also fails, the !response.ok check below throws as before.
         if (response.status === 422) {
           const errorText = await response.text();
-          if (errorText.includes('attempt_id')) {
-            console.warn(`[Inngest] Workflow on main does not accept attempt_id yet - retrying dispatch without it`);
-            response = await dispatch(baseInputs);
-          } else {
-            throw new Error(`GitHub API error (422): ${errorText}`);
-          }
+          console.warn(`[Inngest] Dispatch with attempt_id rejected (422: ${errorText}) - retrying without it`);
+          response = await dispatch(baseInputs);
         }
 
         if (!response.ok) {
@@ -330,13 +328,60 @@ export const bookClassFunction = inngest.createFunction(
     if (!bookingResult) {
       console.log(`[Inngest] ⚠️  Timeout waiting for booking result for "${className}"`);
 
-      // Update attempt status to failed with timeout message
-      await step.run('update-attempt-timeout', async () => {
-        await updateBookingAttempt(attemptId, {
-          status: 'failed',
-          error_message: 'Timeout waiting for GitHub Actions result',
-        });
+      // Mark the attempt failed - but only if it's still pending. The script
+      // writes its result to this same row, so if the result event was lost or
+      // late, the row may already hold the real status (e.g. 'confirmed').
+      // Never overwrite that, and don't retry a class that's already handled.
+      const timeoutUpdate = await step.run('update-attempt-timeout', async () => {
+        const supabase = createServiceRoleClient();
+        const { data: updatedRows, error } = await supabase
+          .from('booking_attempts')
+          // @ts-ignore - Supabase client type inference issue (same as updateBookingAttempt)
+          .update({
+            status: 'failed',
+            error_message: 'Timeout waiting for GitHub Actions result',
+          })
+          .eq('id', attemptId)
+          .eq('status', 'pending')
+          .select('id');
+
+        if (error) {
+          console.error('[Inngest] Failed to mark attempt as timed out:', error);
+          throw new Error(`Failed to update booking attempt: ${error.message}`);
+        }
+
+        if (updatedRows && updatedRows.length > 0) {
+          return { markedFailed: true, existingStatus: null as string | null };
+        }
+
+        const { data: existing, error: readError } = await supabase
+          .from('booking_attempts')
+          .select('status')
+          .eq('id', attemptId)
+          .maybeSingle();
+
+        if (readError) {
+          console.error('[Inngest] Failed to read attempt after timeout:', readError);
+        }
+
+        return {
+          markedFailed: false,
+          existingStatus: (existing as { status: string } | null)?.status ?? null,
+        };
       });
+
+      if (!timeoutUpdate.markedFailed) {
+        console.warn(
+          `[Inngest] Result event never arrived, but attempt ${attemptId} already has status "${timeoutUpdate.existingStatus}" - leaving it and not retrying`
+        );
+        return {
+          classId,
+          className: classData.class_type,
+          attemptId,
+          status: 'result_event_missing',
+          message: `No booking/result event; attempt row already final (${timeoutUpdate.existingStatus})`,
+        };
+      }
 
       // Check if we should retry (use fixed class date, not recalculated)
       const timeoutClassStartTime = getFixedClassStartTime(
