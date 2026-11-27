@@ -77,11 +77,16 @@ export function categorizeFailure(errorMessage: string | null): FailureCategoryI
 
   // Critical - user must take action (matches email system)
   const criticalKeywords = [
+    // Keep identical across get-email-template.ts, booking-error-utils.ts and
+    // send-booking-notification.ts (see CLAUDE.md "criticalKeywords triplicate").
     'login failed',
     'class cancelled',
     'class is cancelled',
+    'class has been cancelled',
+    'class has been canceled',
     'time conflict',
     'already have a class',
+    'already have another class',
     'password',
     'credentials',
   ]

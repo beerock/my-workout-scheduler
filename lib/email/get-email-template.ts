@@ -129,6 +129,8 @@ function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'retry
   // NOTE: Keep this in sync with isClassCancelledError() above - both should
   // cover the same set of cancellation phrases.
   const criticalKeywords = [
+    // Keep identical across get-email-template.ts, booking-error-utils.ts and
+    // send-booking-notification.ts (see CLAUDE.md "criticalKeywords triplicate").
     'login failed',
     'class cancelled',
     'class is cancelled',
@@ -136,6 +138,7 @@ function categorizeFailure(errorMessage: string): 'critical' | 'config' | 'retry
     'class has been canceled',
     'time conflict',
     'already have a class',
+    'already have another class',
     'password',
     'credentials',
   ];
