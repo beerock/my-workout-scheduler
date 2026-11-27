@@ -218,12 +218,13 @@ Inngest `check-duplicate-runs` step queries for pending booking attempts before 
 ### Duplicate Check Window & Re-Trigger UX
 **Status:** Backlogged | **Priority:** Medium
 
-The `check-duplicate-runs` step blocks new booking attempts if any non-skipped attempt exists for the same class within the last 5 minutes (since v2.39; before that an orphaned `pending` row had the same effect). This is overly conservative -- GitHub Actions runs typically complete in 60-90 seconds. If a user triggers a booking, realizes they selected the wrong day/time, edits the class, and retries, they may have to wait several minutes with no feedback.
+The `check-duplicate-runs` 5-minute per-class lockout is the only server-side brake on Book Now -> cancel -> Book Now spam, but it fails silently. `/api/trigger-booking` reports success while the Inngest run exits as a duplicate, so a user who edits a class and retries within 5 minutes sees nothing happen. Cancel also stops only the Inngest run, not a GitHub Actions booking already dispatched.
 
 **Requirements:**
-- Evaluate reducing the 5-minute window (e.g., 2 minutes)
-- Consider cancel-and-replace: when user edits + retriggers, cancel the pending attempt before sending a new one
-- Add UI feedback ("Booking in progress...") on the class card so users understand why retry is blocked
+- Check the lockout in `/api/trigger-booking` before sending the event and return a clear "booking in progress, try again in X min" response
+- Show that state in the Book Now dialog and on the class card
+- Make cancel stop an in-flight booking (script re-checks the class is active before Reserve, or cancel the workflow run)
+- Keep the 5-minute lockout unless an equivalent rate limit replaces it
 
 **Last Updated:** November 27, 2026
 

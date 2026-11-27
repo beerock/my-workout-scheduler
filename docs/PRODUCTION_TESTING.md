@@ -1,7 +1,7 @@
 # Production Testing Guide
 
-**Last Updated:** November 17, 2025
-**Version:** 2.7
+**Last Updated:** November 27, 2026
+**Version:** 2.39
 **Related PRs:** #14 (Class Full Detection), #15 (Duplicate Prevention)
 
 This document provides a comprehensive testing plan for validating the automated class booking system in production, with focus on recent improvements to class status detection and duplicate prevention.
@@ -184,13 +184,13 @@ This guide ensures all scenarios are properly validated in production.
 
 **Where to Check:**
 - Inngest Dashboard → Second run should show `duplicate` status
-- Supabase → `booking_attempts` → Should only have ONE pending attempt per class
-- Check duplicate detection logs: "Found X recent pending attempt(s)"
+- Supabase → `booking_attempts` → Should only have ONE attempt row for the first run (no row for the duplicate)
+- Check duplicate detection logs: "Found X attempt(s) for this class in the last 5 minutes - duplicate run lockout"
 
 **Success Criteria:**
 - Second run returns status: `duplicate`
 - Second run logs: "Exiting to avoid duplicate booking"
-- Database has only ONE pending attempt
+- Database has only ONE attempt row for the class in that 5-minute window
 
 ---
 
@@ -392,7 +392,7 @@ The system now detects 6 different class states:
 ### Issue: Duplicate detection not working
 
 **Check:**
-- Database for pending attempts within 5 minutes
+- Database for any non-skipped attempt for the class within 5 minutes (the lockout counts every status, not just pending)
 - Supabase connection working
 - Query returning correct results
 

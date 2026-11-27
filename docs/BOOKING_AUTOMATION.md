@@ -82,6 +82,10 @@ If `next_skip_date` equals today:
 
 The system prevents duplicate booking attempts for the same class occurrence:
 
+**5-minute lockout (Inngest `check-duplicate-runs`):**
+- A new run for a class exits as `duplicate` if any non-skipped attempt for that class started in the last 5 minutes, whatever its status
+- This is the server-side brake on Book Now -> cancel -> Book Now spam; class-full (15 min) and timeout (25+ min) retries fall outside the window
+
 **How it works:**
 - Before attempting to book, the system checks `booking_attempts` for successful bookings (status = `'confirmed'` or `'waitlisted'`)
 - For each successful booking, it calculates which class occurrence it was for based on the `attempt_timestamp` and booking window
