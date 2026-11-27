@@ -58,6 +58,13 @@ const GROUPEX_LOCATION_IDS: Record<string, string> = {
   'Woodfin YMCA': '471',
 }
 
+/**
+ * Daxko ChooseMembers notice shown before registration opens:
+ * "The Reservation Window for Active Members will open on 29th November 3:15 PM".
+ * Test against visible text (innerText), lowercased.
+ */
+const RESERVATION_WINDOW_CLOSED_PATTERN = /reservation window[\s\S]{0,80}will open/
+
 /** Sign-up URL shape from the feed (it redirects to Daxko login, then the class page) */
 const GROUPEX_RESERVATION_URL_PATTERN =
   /^https:\/\/(?:www\.)?groupexpro\.com\/gxp\/reservations\/schedule\/index\/\d+\/\d{1,2}\/\d{1,2}\/\d{4}\/?$/i
@@ -244,7 +251,11 @@ async function fetchGroupExRows(locationId: string, targetDate: string): Promise
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
-      const body = (await response.json()) as { aaData?: unknown }
+      // format=jsonp currently returns bare JSON; strip a callback(...) wrapper
+      // defensively in case GroupExPro starts adding one.
+      const raw = (await response.text()).trim()
+      const json = raw.startsWith('{') ? raw : raw.slice(raw.indexOf('(') + 1, raw.lastIndexOf(')'))
+      const body = JSON.parse(json) as { aaData?: unknown }
       if (!Array.isArray(body.aaData)) {
         throw new Error('Response has no aaData array')
       }
@@ -371,20 +382,31 @@ export async function findClassInGroupExFeed(
  *
  * @returns Success with the ChooseMembers URL, or failure with error
  */
+type DaxkoLoginResult = {
+  success: boolean
+  classDetailsUrl?: string
+  error?: string
+  errorKind?: 'credentials' | 'site'
+}
+
 export async function performDaxkoLogin(
   page: Page,
   registerUrl: string,
   username: string,
   password: string
-): Promise<{ success: boolean; classDetailsUrl?: string; error?: string }> {
+): Promise<DaxkoLoginResult> {
+  // 'site' = the YMCA pages didn't look as expected (redirect, missing fields,
+  // timeouts). Kept apart from 'credentials' so a site change doesn't send
+  // every user a "check your password" email.
+  const siteError = (error: string): DaxkoLoginResult => ({ success: false, errorKind: 'site', error })
   try {
     try {
       const parsed = new URL(registerUrl)
       if (parsed.hostname !== 'www.groupexpro.com' && parsed.hostname !== 'groupexpro.com') {
-        return { success: false, error: `Registration URL is not on groupexpro.com: ${parsed.hostname}` }
+        return siteError(`Registration URL is not on groupexpro.com: ${parsed.hostname}`)
       }
     } catch {
-      return { success: false, error: `Invalid registration URL: ${registerUrl}` }
+      return siteError(`Invalid registration URL: ${registerUrl}`)
     }
 
     // STEP 1: Open the sign-up URL and wait for the redirect to Daxko
@@ -394,7 +416,7 @@ export async function performDaxkoLogin(
     if (!page.url().includes('operations.daxko.com')) {
       await page
         .waitForFunction(() => location.hostname === 'operations.daxko.com', { timeout: 15000 })
-        .catch(() => {})
+        .catch(error => console.error('[daxko-login] Timed out waiting for redirect to Daxko:', error))
     }
 
     // Fallback: older GroupExPro page with a Login button that forwards to Daxko
@@ -412,7 +434,7 @@ export async function performDaxkoLogin(
     console.log(`   Login page: ${page.url().split('?')[0]}`)
     if (!page.url().includes('operations.daxko.com')) {
       await takeScreenshot(page, '03-redirect-failed')
-      return { success: false, error: `Expected redirect to the YMCA (Daxko) login page, but got: ${page.url().split('?')[0]}` }
+      return siteError(`Expected redirect to the YMCA (Daxko) login page, but got: ${page.url().split('?')[0]}`)
     }
     await takeScreenshot(page, '03a-daxko-login')
 
@@ -427,16 +449,17 @@ export async function performDaxkoLogin(
     await page.waitForSelector('input#user_name, input[name="user_name"], input[type="email"]', { timeout: 10000 })
     const emailField = await page.$('input#user_name, input[name="user_name"], input[type="email"]')
     if (!emailField) {
-      return { success: false, error: 'Could not find email field on Daxko login page' }
+      return siteError('Could not find email field on Daxko login page')
     }
     await emailField.type(username, { delay: 50 })
 
     const submitButton = await page.$('#submit_button, button[type="submit"], input[type="submit"]')
     if (!submitButton) {
-      return { success: false, error: 'Could not find Submit button on Daxko login page' }
+      return siteError('Could not find Submit button on Daxko login page')
     }
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 20000 }).catch(() => {}),
+      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 20000 })
+        .catch(error => console.error('[daxko-login] No navigation after email step:', error)),
       submitButton.click(),
     ])
 
@@ -448,15 +471,15 @@ export async function performDaxkoLogin(
       await takeScreenshot(page, '03b-no-password-field')
       const content = (await page.content()).toLowerCase()
       if (content.includes('no account') || content.includes("couldn't find") || content.includes('could not find') || content.includes('not found')) {
-        return { success: false, error: 'Login failed: No YMCA account found for this email.' }
+        return { success: false, errorKind: 'credentials', error: 'No YMCA account found for this email.' }
       }
-      return { success: false, error: 'Could not find password field on Daxko login page' }
+      return siteError('Could not find password field on Daxko login page')
     }
     await takeScreenshot(page, '03b-daxko-password')
 
     const passwordField = await page.$('input[type="password"]')
     if (!passwordField) {
-      return { success: false, error: 'Could not find password field on Daxko login page' }
+      return siteError('Could not find password field on Daxko login page')
     }
     await passwordField.type(password, { delay: 50 })
 
@@ -468,11 +491,12 @@ export async function performDaxkoLogin(
 
     const loginButton = await page.$('#submit_button, button[type="submit"], input[type="submit"]')
     if (!loginButton) {
-      return { success: false, error: 'Could not find Login button on Daxko password page' }
+      return siteError('Could not find Login button on Daxko password page')
     }
     console.log('   Clicking Login...')
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }).catch(() => {}),
+      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 })
+        .catch(error => console.error('[daxko-login] No navigation after password step:', error)),
       loginButton.click(),
     ])
 
@@ -490,14 +514,14 @@ export async function performDaxkoLogin(
       const pwField = await page.$('input[type="password"]')
       if (pwField) await pwField.evaluate(el => { (el as HTMLInputElement).value = '' })
       await takeScreenshot(page, '03-login-failed')
-      return { success: false, error: 'Login failed: Email or password is incorrect.' }
+      return { success: false, errorKind: 'credentials', error: 'Email or password is incorrect.' }
     }
 
     await takeScreenshot(page, '03-unexpected')
-    return { success: false, error: `Unexpected page after login. URL: ${finalUrl.split('?')[0]}` }
+    return siteError(`Unexpected page after login. URL: ${finalUrl.split('?')[0]}`)
   } catch (error) {
     await takeScreenshot(page, '03-error')
-    return { success: false, error: error instanceof Error ? error.message : 'Login error' }
+    return siteError(error instanceof Error ? error.message : 'Login error')
   }
 }
 
@@ -551,7 +575,9 @@ async function completeDaxkoBooking(
       console.log('⚠️  Timed out waiting for Reserve button / member list, proceeding anyway...')
     }
 
-    const pageContentLower = (await page.content()).toLowerCase()
+    // Visible text only (not raw HTML): hidden modals / message templates in the
+    // page source must not trigger cancelled / full / window checks.
+    const pageContentLower = (await page.evaluate(() => document.body.innerText)).toLowerCase()
 
     if (pageContentLower.includes('class has been cancelled') || pageContentLower.includes('class has been canceled')) {
       return { status: 'failed', errorMessage: CANCELLED_MESSAGE, selectedBranch: branchUsed }
@@ -573,9 +599,19 @@ async function completeDaxkoBooking(
     console.log(`   Members on page: ${members.length}`)
 
     let memberIndex = members.findIndex(m => m.email && m.email === username.toLowerCase())
-    if (memberIndex === -1 && members.length > 0) {
-      console.log('   No member matched the login email - using the first member')
+    if (memberIndex === -1 && members.length === 1) {
+      console.log('   Login email not on the member row - single member, using it')
       memberIndex = 0
+    }
+    if (memberIndex === -1 && members.length > 1) {
+      // Never guess on a household account: we could book (or report as booked) someone else
+      console.error(`[daxko-booking] ${members.length} members listed, none match the login email`)
+      return {
+        status: 'failed',
+        errorMessage:
+          "Your YMCA membership lists several family members, and none of them matched your sign-in email, so we didn't book anyone.\n\nWhat to do: Book this class manually, and make sure your email on the YMCA account matches the one saved in My Workout Scheduler.",
+        selectedBranch: branchUsed,
+      }
     }
     const member = memberIndex >= 0 ? members[memberIndex] : null
 
@@ -593,7 +629,7 @@ async function completeDaxkoBooking(
       pageContentLower.includes('accepting spot in waitlist') ||
       pageContentLower.includes('reservation spots are full') ||
       pageContentLower.includes('can join waitlist')
-    const windowNotOpen = /reservation window[^<]*will open/.test(pageContentLower)
+    const windowNotOpen = RESERVATION_WINDOW_CLOSED_PATTERN.test(pageContentLower)
     // Only claim "full" when the page says so (drives retries + "Retrying" badge)
     const pageSaysFull =
       pageContentLower.includes('fully booked') ||
@@ -628,7 +664,10 @@ async function completeDaxkoBooking(
       }
       const notice = await page
         .$eval('#reservation_details', el => (el.textContent || '').replace(/\s+/g, ' ').trim())
-        .catch(() => '')
+        .catch(error => {
+          console.error('[daxko-booking] Could not read #reservation_details:', error)
+          return ''
+        })
       // Notice text stays in the log only: page wording in errorMessage could
       // accidentally match email-routing keywords (e.g. "full" -> retry loop).
       console.log(`⚠️  Member selection disabled for an unrecognized reason. Page notice: "${notice}"`)
@@ -673,7 +712,8 @@ async function completeDaxkoBooking(
 
     console.log('Clicking Reserve...')
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {}),
+      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 })
+        .catch(error => console.log('   No navigation after Reserve (errors render in place):', error instanceof Error ? error.message : error)),
       reserveButton.click(),
     ])
     await new Promise(resolve => setTimeout(resolve, 2000))
@@ -681,10 +721,14 @@ async function completeDaxkoBooking(
 
     // STEP 5: Read the result
     const finalUrl = page.url()
-    const finalContent = (await page.content()).toLowerCase()
+    const finalContent = (await page.evaluate(() => document.body.innerText)).toLowerCase()
     const submitError = await page
       .$eval('#submit_error_message', el => ((el as HTMLElement).offsetParent !== null ? el.textContent || '' : ''))
-      .catch(() => '')
+      .catch(error => {
+        // Confirmation page has no #submit_error_message - expected after success
+        console.log('   No #submit_error_message on result page:', error instanceof Error ? error.message : error)
+        return ''
+      })
     if (submitError.trim()) {
       console.log(`   Daxko error message: ${submitError.trim()}`)
     }
@@ -728,8 +772,19 @@ async function completeDaxkoBooking(
     }
 
     if (submitError.trim()) {
-      if (/full|no (spots|capacity)|capacity reached/.test(submitError.toLowerCase())) {
+      const submitErrorLower = submitError.toLowerCase()
+      // Whole-word "full" only: a bare substring also matches "successfully" / "fully"
+      if (/\bfull\b|fully booked|no (spots|capacity)|capacity reached/.test(submitErrorLower)) {
         return { status: 'failed', errorMessage: FULL_MESSAGE, selectedBranch: branchUsed }
+      }
+      // Our checkbox click didn't register - our bug, not the YMCA's
+      if (/select/.test(submitErrorLower) && /member/.test(submitErrorLower)) {
+        return {
+          status: 'failed',
+          errorMessage:
+            "We couldn't select you on the YMCA booking page, so the reservation didn't go through.\n\nWhat to do: Try booking manually through the YMCA website or app.",
+          selectedBranch: branchUsed,
+        }
       }
       return { status: 'failed', errorMessage: SYSTEM_ERROR_MESSAGE, selectedBranch: branchUsed }
     }
@@ -793,10 +848,8 @@ async function waitForBookingWindow(
     await page.reload({ waitUntil: 'domcontentloaded' })
 
     // Check if the "Reservation Window ... will open" notice is gone
-    const stillBlocked = await page.evaluate(() => {
-      const text = document.body.innerText.toLowerCase()
-      return /reservation window[\s\S]{0,80}will open/.test(text)
-    })
+    const pageText = (await page.evaluate(() => document.body.innerText)).toLowerCase()
+    const stillBlocked = RESERVATION_WINDOW_CLOSED_PATTERN.test(pageText)
 
     if (!stillBlocked) {
       console.log(`   Booking window is open after ${i} refresh(es)`)
@@ -913,10 +966,22 @@ async function bookClassYMCAHybrid(
 
     if (!loginResult.success) {
       screenshotPath = await takeScreenshot(page, '03-daxko-login-failed')
+      if (loginResult.errorKind === 'credentials') {
+        return {
+          status: 'failed',
+          branchUsed: branch,
+          errorMessage: `Login failed: ${loginResult.error}\n\nWhat to do: Try logging into your gym website manually. If successful, update your credentials in Dashboard → Gym Credentials. If you can't log in, reset your password on the gym website first.`,
+          screenshotPath,
+        }
+      }
+      // Site problem, not the user's credentials. Details stay in the log:
+      // words like "password" in them would route to the critical email.
+      console.error(`[daxko-login] Sign-in flow failed (site): ${loginResult.error}`)
       return {
         status: 'failed',
         branchUsed: branch,
-        errorMessage: `Login failed: ${loginResult.error}\n\nWhat to do: Try logging into your gym website manually. If successful, update your credentials in Dashboard → Gym Credentials. If you can't log in, reset your password on the gym website first.`,
+        errorMessage:
+          "The YMCA website's sign-in step didn't work as expected, so this class couldn't be booked. This usually means the YMCA changed their website.\n\nWhat to do: Try booking manually through the YMCA website or app.",
         screenshotPath,
       }
     }

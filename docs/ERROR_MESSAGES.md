@@ -804,3 +804,29 @@ Couldn't load the YMCA class schedule (<reason>). This is usually temporary on t
 **Routing:** Not in `criticalKeywords` - it's transient, not a user setup problem, so it gets the generic technical failure email. If this shows up for every class at once, the feed URL or response shape has probably changed.
 
 **Category:** 🟢 No Action (if temporary)
+
+---
+
+### 18. YMCA Sign-in Step Changed (Site Problem)
+
+**Current (Technical):**
+```
+The YMCA website's sign-in step didn't work as expected, so this class couldn't be booked. This usually means the YMCA changed their website.
+```
+
+**When:** `performDaxkoLogin` returned `errorKind: 'site'` - the sign-up URL didn't redirect to Daxko, a login field/button was missing, or the page after login was unexpected. Only real credential problems (`errorKind: 'credentials'`: bad email/password, no account) keep the "Login failed: ..." wording that routes to the critical email. Details are logged with a `[daxko-login]` prefix, not put in the message, so words like "password" can't trigger critical routing.
+
+**Category:** 🟡 Action Recommended (book manually; if every user sees it, the YMCA site changed)
+
+---
+
+### 19. Household Member Not Identified
+
+**Current (Technical):**
+```
+Your YMCA membership lists several family members, and none of them matched your sign-in email, so we didn't book anyone.
+```
+
+**When:** The Daxko ChooseMembers page lists more than one member and none has a `data-email-id` matching the saved login email. The automation never guesses on household accounts.
+
+**Category:** 🔴 Action Required (fix the email on the YMCA account or in My Workout Scheduler)
