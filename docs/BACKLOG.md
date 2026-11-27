@@ -678,7 +678,7 @@ Brief summaries of completed work. See PRD version history for full details.
 ### Single Booking Attempt Record ✅
 **Completed:** November 27, 2026 (v2.39)
 
-The stuck `pending` rows were duplicates: Inngest and the GitHub Actions script each created a row per booking, and only the script's got a result. Inngest now passes its row to the workflow as `attempt_id` and the script updates it. Migration 018 moves email links onto the real rows and deletes the 823 orphans.
+The stuck `pending` rows were duplicates: Inngest and the GitHub Actions script each created a row per booking, and only the script's got a result. Inngest now passes its row to the workflow as `attempt_id` and the script updates it. Migration 018 moves email links onto the real rows and deletes the 800+ orphans.
 
 ### YMCA Site Redesign Fix (Schedule Feed + Daxko) ✅
 **Completed:** November 26, 2026 (v2.38)
