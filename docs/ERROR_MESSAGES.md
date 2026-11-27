@@ -1,6 +1,6 @@
 # Error Messages Guide
 
-**Last Updated:** April 10, 2026 (v2.35)
+**Last Updated:** November 26, 2026 (v2.38)
 
 This document provides user-friendly error messages for all booking failure scenarios, categorized by the action users need to take.
 
@@ -28,6 +28,7 @@ This document provides user-friendly error messages for all booking failure scen
 | No RESERVE button on description | Verify class allows online booking |
 | Booking result unclear | Manually check gym website |
 | Unexpected error | Check error details, may need to report |
+| Schedule feed unavailable | Nothing - temporary YMCA-side issue, next run retries |
 
 ### 🔴 Action Required (Fix Something)
 
@@ -46,8 +47,9 @@ This document provides user-friendly error messages for all booking failure scen
 
 **Current (Technical):**
 ```
-No "Reserve a Spot" or "Join the Waitlist" button found on class details page.
-(After early-start wait-and-refresh exhausted 15 attempts)
+The YMCA hasn't opened sign-ups for this class yet, so it couldn't be booked.
+(Daxko ChooseMembers page still shows "The Reservation Window ... will open on ..."
+after the early-start wait-and-refresh exhausted 15 attempts)
 ```
 
 **Improved (User-Friendly):**
@@ -787,3 +789,44 @@ When testing new error messages:
 ---
 
 **Questions or suggestions?** Open an issue on GitHub!
+
+---
+
+### 17. Schedule Feed Unavailable
+
+**Current (Technical):**
+```
+Couldn't load the YMCA class schedule (<reason>). This is usually temporary on the YMCA's side.
+```
+
+**When:** The GroupExPro schedule feed (`groupexpro.com/schedule/embed/json_schedule.php`) timed out, returned non-200, or returned invalid JSON on both attempts (one retry).
+
+**Routing:** Not in `criticalKeywords` - it's transient, not a user setup problem, so it gets the generic technical failure email. If this shows up for every class at once, the feed URL or response shape has probably changed.
+
+**Category:** 🟢 No Action (if temporary)
+
+---
+
+### 18. YMCA Sign-in Step Changed (Site Problem)
+
+**Current (Technical):**
+```
+The YMCA website's sign-in step didn't work as expected, so this class couldn't be booked. This usually means the YMCA changed their website.
+```
+
+**When:** `performDaxkoLogin` returned `errorKind: 'site'` - the sign-up URL didn't redirect to Daxko, a login field/button was missing, or the page after login was unexpected. Only real credential problems (`errorKind: 'credentials'`: bad email/password, no account) keep the "Login failed: ..." wording that routes to the critical email. Details are logged with a `[daxko-login]` prefix, not put in the message, so words like "password" can't trigger critical routing.
+
+**Category:** 🟡 Action Recommended (book manually; if every user sees it, the YMCA site changed)
+
+---
+
+### 19. Household Member Not Identified
+
+**Current (Technical):**
+```
+Your YMCA membership lists several family members, and none of them matched your sign-in email, so we didn't book anyone.
+```
+
+**When:** The Daxko ChooseMembers page lists more than one member and none has a `data-email-id` matching the saved login email. The automation never guesses on household accounts.
+
+**Category:** 🔴 Action Required (fix the email on the YMCA account or in My Workout Scheduler)

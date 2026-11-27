@@ -1,5 +1,9 @@
 # YMCA Main Site Booking Flow (GroupExPro → Daxko)
 
+**Last Updated:** November 26, 2026 (v2.38)
+
+> **Current flow (November 2026):** class lookup no longer scrapes ymcawnc.org/schedules. The redesigned site renders its schedule in an iframe from GroupExPro's public JSON feed, and the automation reads that feed directly. Sign-up is back on Daxko (GroupExPro sign-up URL -> Daxko 2-step login -> ChooseMembers -> Reserve). See `docs/BOOKING_AUTOMATION.md` "Booking Flow Details (Feed + Daxko)" for the live reference. The schedule-page selectors and pagination notes below describe the pre-November 2026 site and are kept for history.
+
 ## Overview
 
 The YMCA main site (ymcawnc.org) uses a **hybrid booking system**:

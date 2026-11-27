@@ -1,14 +1,16 @@
 # Booking Automation System
 
-This document describes the automated booking system that uses Inngest event-driven scheduling and GitHub Actions with Puppeteer to book workout classes via YMCA/GroupExPro.
+**Last Updated:** November 26, 2026 (v2.38 - GroupExPro schedule feed + Daxko booking)
+
+This document describes the automated booking system that uses Inngest event-driven scheduling and GitHub Actions to book workout classes at the YMCA of WNC: the class is looked up in GroupExPro's public schedule feed, then Puppeteer logs in and reserves through Daxko.
 
 ## Overview
 
 The automation system:
 1. Daily scheduler (Inngest cron) calculates booking window times for all active classes
 2. Inngest fires events 90s before each booking window opens (early-start optimization)
-3. GitHub Actions runs Puppeteer to navigate YMCA schedule, login to GroupExPro, and land on class details page
-4. Puppeteer waits for the exact booking window moment, refreshes, and clicks "Reserve a Spot"
+3. GitHub Actions looks the class up in the GroupExPro schedule feed (plain HTTP, no browser), then Puppeteer opens its sign-up URL, logs in through Daxko, and lands on the Daxko class page (ChooseMembers)
+4. Puppeteer waits for the exact booking window moment, refreshes, selects the member, and clicks "Reserve"
 5. Records all attempts in the `booking_attempts` table and sends email notifications
 
 ## Architecture
@@ -32,9 +34,10 @@ The automation system:
    - Sets up Node.js environment and runs Puppeteer automation
 
 4. **Puppeteer Booking Script** (`scripts/booking-automation.ts`)
-   - YMCA schedule navigation -> GroupExPro login -> class details page
+   - `findClassInGroupExFeed()`: finds the class in the GroupExPro JSON feed, returns its sign-up URL (exported; `scripts/test-class-state-detection.ts` is a CLI wrapper)
+   - `performDaxkoLogin()`: sign-up URL -> Daxko 2-step login -> Daxko ChooseMembers page
    - `waitForBookingWindow()`: Early-start wait-and-refresh (sleeps until 2s before window, refreshes every 2s)
-   - `completeGroupExProBooking()`: Clicks "Reserve a Spot" or "Join the Waitlist"
+   - `completeDaxkoBooking()`: selects the member checkbox and clicks "Reserve" (same button for reserve and waitlist)
    - Takes screenshots at key steps for debugging
 
 5. **Database Helpers** (`scripts/database-helpers.ts`)
@@ -111,13 +114,12 @@ The system prevents duplicate booking attempts for the same class occurrence:
    - Triggers GitHub Actions workflow via `workflow_dispatch` with `class_id` and `expected_booking_time`
 
 3. **Puppeteer Automation** (GitHub Actions)
-   - **Step 1:** Navigate to YMCA schedule with date + branch filter
-   - **Step 2:** Find target class on schedule by name and time
-   - **Step 3:** Check class state (available, full, cancelled, no registration)
-   - **Step 4:** Click Register link -> redirects to GroupExPro login
-   - **Step 5:** Login to GroupExPro with encrypted credentials
-   - **Step 5.5:** `waitForBookingWindow()` - if arrived early, sleep until 2s before window, then refresh every 2s until "not yet available" text disappears (up to 15 attempts)
-   - **Step 6:** `completeGroupExProBooking()` - click "Reserve a Spot" or "Join the Waitlist"
+   - **Step 1:** Calculate the target date in gym timezone
+   - **Step 2:** Find the class in the GroupExPro schedule feed by branch, date, start time and name
+   - **Step 4:** Stop early only if the feed says cancelled or no online registration. Full / waitlist are never decided from the feed (it can lag) - the live Daxko page decides
+   - **Step 5:** Open the sign-up URL -> redirects to Daxko login (email, then password) -> Daxko ChooseMembers page
+   - **Step 5.5:** `waitForBookingWindow()` - if arrived early, sleep until 2s before window, then refresh every 2s until the "Reservation Window ... will open" notice disappears (up to 15 attempts)
+   - **Step 6:** `completeDaxkoBooking()` - select the member, click "Reserve"
    - Send result event back to Inngest
 
 4. **Result Handling** (Inngest)
@@ -134,41 +136,42 @@ The system prevents duplicate booking attempts for the same class occurrence:
    - `'skipped'`: Skipped due to skip settings
    - `'no_registration'`: Class doesn't offer online registration (info email sent)
 
-## YMCA/GroupExPro Booking Flow Details
+## Booking Flow Details (Feed + Daxko)
 
-The booking uses a hybrid flow: YMCA schedule for class discovery, GroupExPro for authentication and booking.
+History: Daxko login/booking until March 2026, GroupExPro's own login March-November 2026, then Daxko again after the YMCA's November 2026 site redesign. The redesign also moved the ymcawnc.org schedule into an iframe that loads the GroupExPro feed, which broke DOM scraping.
 
-### Step 1: YMCA Schedule -> Register Link
-- Navigate to YMCA schedule page with date and branch filters
-- Find target class by name (fuzzy match) and time
-- Click the "Register" link on the class row
-- **Result:** Redirects to GroupExPro login page
+### Step 1: GroupExPro Schedule Feed -> Sign-up URL
+- `GET https://groupexpro.com/schedule/embed/json_schedule.php?schedule=&instructor_id=true&format=jsonp&a=89&location=<id>&start=<unix>&end=<unix>` - public JSON (`aaData` rows), no auth, no browser
+- Location IDs: Asheville 470, Black Mountain 3316, Corpening Memorial 473, Ferguson Family 2858, Hendersonville Family 472, Reuter Family 461, Woodfin 471 (`GROUPEX_LOCATION_IDS`)
+- Row columns: `[0]` "Friday, November 27, 2026", `[1]` "6:00am-6:55am", `[2]` title (`CANCELED:` prefix = cancelled), `[9]` sign-up HTML
+- Sign-up link `a.signUpGXP`: `href` = `https://groupexpro.com/gxp/reservations/schedule/index/<classId>/<M>/<D>/<YYYY>`, plus informational `textmsg` / `data-details` / `start-info` (logged only). Present even before the window opens
+- No sign-up link -> `no_registration`. Every row still has a Description link (`a.descGXP`, `data-path` = same sign-up URL), but Daxko returns "An error has occured" for these classes, so the feed is the source of truth
+- `CANCELED:` title -> `cancelled`. Decided from the feed on purpose: Daxko's ChooseMembers page shows cancelled classes as normal and bookable (verified Nov 2026)
 
-### Step 2: GroupExPro Login -> Class Details
-- Login form with username/password
-- After login, redirected to class details page
-- **Key insight:** You can reach this page BEFORE the booking window opens
+### Step 2: Daxko Login -> ChooseMembers
+- The sign-up URL redirects (client-side JS) to `operations.daxko.com/online/4032/Security/login.mvc/find_account`
+- 2-step login: `#user_name` + SUBMIT, then password + Login ("Keep me logged in" left unchecked)
+- Lands on `operations.daxko.com/online/4032/GXP/ChooseMembers.mvc?class_id=...`. Reachable before the booking window opens
 
 ### Step 3: Early-Start Wait (if applicable)
-- If `expectedBookingTime` is in the future, the page shows: "This class is not yet available for sign-up"
-- `waitForBookingWindow()` sleeps until 2s before the window, then refreshes every 2s
-- Once the "not yet available" text disappears, the page shows action buttons
+- Before the window: "The Reservation Window for Active Members will open on ..." notice, member checkbox and Reserve disabled
+- `waitForBookingWindow()` sleeps until 2s before the window, then refreshes every 2s until the notice disappears
 
-### Step 4: Class Details -> Booking
-The class details page shows:
-- Class information (name, date, time, location)
-- Checkbox next to member name (usually pre-checked)
-- **"Reserve a Spot"** button (if spots available)
-- **"Join the Waitlist"** button (if class is full but waitlist available)
-- **"Cancel Reservation"** / **"Cancel Waitlist"** (if already booked)
+### Step 4: ChooseMembers -> Booking
+- `input.member_checkbox` per household member (`data-email-id`, `data-is-reserved`, `data-mem-waitlist-status`); the one matching the login email is selected
+- `button#reservation_button` "Reserve" - same label when joining a waitlist ("Accepting Spot in WaitList")
+- Confirmation page text: "Awesome! ... Now that reservation is complete" / "Now that you are in waitlist"
 
-**Required actions:**
-1. ✅ Ensure checkbox is checked next to member name
-2. ✅ Click "Reserve a Spot" or "Join the Waitlist"
-
-**Already booked detection:**
-- "Cancel Reservation" text -> already confirmed
-- "Cancel Waitlist" text -> already on waitlist
+**Page states:**
+| Page shows | Result |
+|---|---|
+| `data-is-reserved="True"` | `confirmed` (alreadyBooked) |
+| `data-mem-waitlist-status="True"` | `waitlisted` (alreadyBooked) |
+| "Reservation Window ... will open" | `failed` - sign-ups not open yet |
+| "Oh no! You missed it, Slots are fully booked." (checkbox disabled) | `failed` + "full" -> 15-min retries |
+| Reserve clicked -> "reservation is complete" | `confirmed` |
+| Reserve clicked -> "you are in waitlist" | `waitlisted` |
+| `#submit_error_message` shown | conflict / cancelled / full / "YMCA's booking system" error |
 
 ## Error Handling
 
@@ -198,7 +201,11 @@ The class details page shows:
 
 ### Class Full (No Waitlist)
 - Status: `'failed'`
-- Error message: "Class is full and no waitlist option available"
+- Error message contains "full" -> Inngest retries every 15 minutes until class start
+
+### Schedule Feed Unavailable
+- Status: `'failed'`
+- Error message: "Couldn't load the YMCA class schedule (...)" after one retry. Transient; not a user setup problem
 
 ### Timeout Errors
 - Status: `'failed'`
@@ -208,9 +215,9 @@ The class details page shows:
 ## Screenshots
 
 Screenshots are automatically taken at key points:
-- `01-ymca-schedule`: After navigating to YMCA schedule
-- `02-class-found`: After finding class on schedule
-- `03-groupexpro-login-failed`: If GroupExPro login fails
+- `03a-daxko-login` / `03b-daxko-password`: Daxko login steps
+- `03-daxko-login-failed`: If Daxko login fails
+- `04-daxko-choosemembers`: After landing on the class page
 - `04-after-wait`: After early-start wait-and-refresh completes
 - `05-booking-result`: After booking attempt
 - `99-error`: On unexpected errors
@@ -264,11 +271,11 @@ browser = await puppeteer.launch({
 
 ### How It Works
 1. Inngest fires the booking event **90 seconds before** the booking window opens
-2. GitHub Actions starts, Puppeteer navigates to YMCA schedule, finds class, clicks Register
-3. GroupExPro login completes, landing on class details page
-4. If arrived before booking window: page shows "not yet available for sign-up" error
+2. GitHub Actions starts, the class is found in the schedule feed, Puppeteer opens its sign-up URL
+3. Daxko login completes, landing on the ChooseMembers page
+4. If arrived before booking window: page shows "The Reservation Window ... will open on ..."
 5. `waitForBookingWindow()` sleeps until 2s before window, then refreshes every 2s
-6. Once booking window opens (text disappears), clicks "Reserve a Spot"
+6. Once booking window opens (notice disappears), selects the member and clicks "Reserve"
 
 ### Timing
 - **Before early-start:** ~57s median delay (25s GH Actions overhead + 32.5s Puppeteer navigation)
@@ -280,20 +287,8 @@ browser = await puppeteer.launch({
 | GH Actions outlier (2.5+ min cold start) | Booking window already passed, skips wait, proceeds normally |
 | Server clock drift | 15 refreshes over 30s covers up to 30s drift |
 | Login fails | Fails before wait step - no time wasted |
-| Already booked at same time | Detected on class details page |
-| 15 refreshes exhausted | Proceeds anyway, `completeGroupExProBooking` handles gracefully |
-
-## GroupExPro Platform
-
-### Target Flow
-- YMCA schedule page (public) -> Register link -> GroupExPro login -> Class details -> Booking
-- GroupExPro handles authentication and booking separately from the YMCA schedule
-
-### Button States
-- **"Reserve a Spot"**: Available -> Click to book -> Status: `'confirmed'`
-- **"Join the Waitlist"**: Full but waitlist available -> Click -> Status: `'waitlisted'`
-- **"Cancel Reservation"**: Already booked -> No action -> Status: `'confirmed'`
-- **"Cancel Waitlist"**: Already on waitlist -> No action -> Status: `'waitlisted'`
+| Already booked at same time | Detected after clicking Reserve (`#submit_error_message`) |
+| 15 refreshes exhausted | Proceeds anyway, `completeDaxkoBooking` reports "sign-ups not open yet" |
 
 ## Security Considerations
 

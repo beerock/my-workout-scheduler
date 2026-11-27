@@ -1,5 +1,5 @@
 /**
- * Puppeteer script to automate class bookings via YMCA/GroupExPro
+ * Class booking automation: GroupExPro schedule feed lookup + Puppeteer for Daxko login/booking
  * Handles login, branch selection, class finding, and booking
  */
 
@@ -35,11 +35,39 @@ function formatClassTime12Hour(time: string): string {
 // =============================================================================
 
 /**
- * YMCA schedule base URL - all bookings go through this entry point
- * The hybrid flow navigates here, finds the class, then redirects through
- * GroupExPro login for final booking
+ * GroupExPro public schedule feed - the same JSON the ymcawnc.org schedule
+ * embed (iframe.ymcawnc-gx-schedule) loads. Replaced DOM scraping of
+ * ymcawnc.org/schedules after the Nov 2026 site redesign.
  */
-const YMCA_SCHEDULE_BASE_URL = 'https://www.ymcawnc.org/schedules'
+const GROUPEX_FEED_URL = 'https://groupexpro.com/schedule/embed/json_schedule.php'
+const GROUPEX_ACCOUNT = '89'
+const GROUPEX_FEED_TIMEOUT_MS = 20000
+
+/**
+ * GroupExPro location IDs for YMCA of WNC branches. Keys must match
+ * YMCA_BRANCHES in lib/constants/ymca.ts (inlined: scripts/ can't use @/*).
+ * Source: LOCATION_ID_BY_NAME in the ymcawnc.org schedule embed.
+ */
+const GROUPEX_LOCATION_IDS: Record<string, string> = {
+  'Asheville YMCA': '470',
+  'Black Mountain YMCA': '3316',
+  'Corpening Memorial YMCA': '473',
+  'Ferguson Family YMCA': '2858',
+  'Hendersonville Family YMCA': '472',
+  'Reuter Family YMCA': '461',
+  'Woodfin YMCA': '471',
+}
+
+/**
+ * Daxko ChooseMembers notice shown before registration opens:
+ * "The Reservation Window for Active Members will open on 29th November 3:15 PM".
+ * Test against visible text (innerText), lowercased.
+ */
+const RESERVATION_WINDOW_CLOSED_PATTERN = /reservation window[\s\S]{0,80}will open/
+
+/** Sign-up URL shape from the feed (it redirects to Daxko login, then the class page) */
+const GROUPEX_RESERVATION_URL_PATTERN =
+  /^https:\/\/(?:www\.)?groupexpro\.com\/gxp\/reservations\/schedule\/index\/\d+\/\d{1,2}\/\d{1,2}\/\d{4}\/?$/i
 
 /**
  * YMCA timezone - used for date calculations in schedule URLs
@@ -128,491 +156,398 @@ function calculateTargetDateYYYYMMDD(
 }
 
 /**
- * Navigate to YMCA schedule page with date and location filters
- *
- * URL format: https://www.ymcawnc.org/schedules?date=YYYY-MM-DD&locations=Branch%20Name
- *
- * Benefits of URL-based filtering:
- * - Page loads pre-filtered (no checkbox interaction needed)
- * - Faster than clicking filters + waiting for reload
- * - Reduces ambiguity when searching for class by name/time
- *
- * @param page Puppeteer page instance
- * @param targetDate YYYY-MM-DD format date string
- * @param branch YMCA branch name (e.g., "Ferguson Family YMCA")
- * @returns Success/failure result with error message
- */
-async function navigateToYMCASchedule(
-  page: Page,
-  targetDate: string,
-  branch: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Construct URL with date and location filters
-    // URL-encode the branch name (spaces → %20)
-    const encodedBranch = encodeURIComponent(branch)
-    const scheduleUrl = `${YMCA_SCHEDULE_BASE_URL}?date=${targetDate}&locations=${encodedBranch}`
-
-    console.log(`📅 Navigating to YMCA schedule: ${scheduleUrl}`)
-    await page.goto(scheduleUrl, { waitUntil: 'networkidle2' })
-
-    // Wait for class cards to load
-    // YMCA site uses various containers for class listings
-    const classCardSelectors = [
-      '[class*="class"]',
-      '[class*="schedule"]',
-      '[class*="event"]',
-      '.card',
-      'article',
-    ]
-
-    let foundClassCards = false
-    for (const selector of classCardSelectors) {
-      try {
-        await page.waitForSelector(selector, { timeout: 5000 })
-        const count = await page.$$eval(selector, els => els.length)
-        if (count > 0) {
-          console.log(`✅ Found ${count} elements with selector: ${selector}`)
-          foundClassCards = true
-          break
-        }
-      } catch {
-        continue
-      }
-    }
-
-    if (!foundClassCards) {
-      console.log('⚠️ Could not find class cards with standard selectors, proceeding anyway...')
-    }
-
-    // Additional wait for dynamic content
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
-    console.log(`✅ Successfully navigated to YMCA schedule for ${targetDate} at ${branch}`)
-    return { success: true }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to navigate to YMCA schedule',
-    }
-  }
-}
-
-/**
  * Result type for YMCA class search
+ *
+ * The feed only decides `cancelled` (title prefixed "CANCELED:") and
+ * `no_registration` (no sign-up link). Everything else is `available` with a
+ * register URL - full/waitlist state is read from the live Daxko class
+ * page after login, because the feed can lag behind it.
  */
-type YMCAClassSearchResult = {
+export type YMCAClassSearchResult = {
   found: boolean
-  status?: 'available' | 'waitlist' | 'full' | 'cancelled' | 'no_registration'
+  status?: 'available' | 'cancelled' | 'no_registration'
   registerUrl?: string
   errorMessage?: string
 }
 
 /**
- * Find a class on the YMCA schedule page and extract its status
- *
- * Detection order:
- * 1. Find class by matching name/time/location
- * 2. Check if class name starts with "CANCELED: " → STOP (do NOT click CTA)
- * 3. Check CTA state: Register / Waitlist Only / Full / No CTA
- *
- * @param page Puppeteer page instance
- * @param classType Class name to search for (e.g., "BODYPUMP")
- * @param classTime Class time in HH:MM format (e.g., "15:00")
- * @param branch Branch name for additional matching
- * @returns Search result with status and register URL
+ * Decode the handful of HTML entities GroupExPro emits, and strip tags.
+ * Tags are stripped again after decoding because some attributes carry
+ * entity-escaped markup (e.g. data-details="&lt;span class=...&gt;0 of 1 open&lt;/span&gt;").
  */
-async function findClassOnYMCA(
-  page: Page,
+function stripHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Read one attribute from an HTML tag string (attribute names are case-insensitive) */
+function readAttr(tag: string, name: string): string {
+  const match = new RegExp(`\\s${name}="([^"]*)"`, 'i').exec(tag)
+  return match ? stripHtml(match[1]) : ''
+}
+
+const MONTH_NAMES = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
+]
+
+/** "Friday, November 27, 2026" -> "2026-11-27" (null if unparseable) */
+function feedDateToYYYYMMDD(value: string): string | null {
+  const match = /([a-z]+)\s+(\d{1,2}),\s*(\d{4})/i.exec(value)
+  if (!match) return null
+  const monthIndex = MONTH_NAMES.indexOf(match[1].toLowerCase())
+  if (monthIndex === -1) return null
+  return `${match[3]}-${String(monthIndex + 1).padStart(2, '0')}-${match[2].padStart(2, '0')}`
+}
+
+/** "15:00" -> "3:00pm" (feed time format, no space) */
+function toFeedTime(classTime: string): string {
+  const [hours, minutes] = classTime.split(':').map(Number)
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12
+  const ampm = hours >= 12 ? 'pm' : 'am'
+  return `${hour12}:${String(minutes).padStart(2, '0')}${ampm}`
+}
+
+function normalizeClassName(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
+
+const CANCELLED_TITLE_PATTERN = /^cancel+ed\s*[:\-]?\s*/i
+
+/**
+ * Fetch the raw schedule rows for one branch around the target date.
+ *
+ * Queries target date +/- 1 day (UTC-noon anchored) so no timezone math is
+ * needed to hit the right window; rows are filtered by their own date column.
+ * One retry on network error / timeout / non-200.
+ */
+async function fetchGroupExRows(locationId: string, targetDate: string): Promise<unknown[][]> {
+  const [year, month, day] = targetDate.split('-').map(Number)
+  const noonUtcSeconds = Date.UTC(year, month - 1, day, 12) / 1000
+  const params = new URLSearchParams({
+    schedule: '',
+    instructor_id: 'true',
+    format: 'jsonp',
+    a: GROUPEX_ACCOUNT,
+    location: locationId,
+    start: String(noonUtcSeconds - 86400),
+    end: String(noonUtcSeconds + 86400),
+  })
+  const url = `${GROUPEX_FEED_URL}?${params.toString()}`
+
+  let lastError: unknown
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(GROUPEX_FEED_TIMEOUT_MS) })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      // format=jsonp currently returns bare JSON; strip a callback(...) wrapper
+      // defensively in case GroupExPro starts adding one.
+      const raw = (await response.text()).trim()
+      const json = raw.startsWith('{') ? raw : raw.slice(raw.indexOf('(') + 1, raw.lastIndexOf(')'))
+      const body = JSON.parse(json) as { aaData?: unknown }
+      if (!Array.isArray(body.aaData)) {
+        throw new Error('Response has no aaData array')
+      }
+      return body.aaData.filter((row): row is unknown[] => Array.isArray(row))
+    } catch (error) {
+      lastError = error
+      console.error(`[groupex-feed] Attempt ${attempt}/2 failed for location ${locationId} (${targetDate}):`, error)
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Schedule feed request failed')
+}
+
+/**
+ * Find a class in the GroupExPro schedule feed and get its sign-up URL.
+ *
+ * Row columns (verified Nov 2026): [0] "Friday, November 27, 2026",
+ * [1] "6:00am-6:55am", [2] title, [9] description + sign-up HTML.
+ *
+ * @param targetDate YYYY-MM-DD in gym timezone
+ * @param classType Class name (e.g. "BODYPUMP")
+ * @param classTime HH:MM 24-hour
+ * @param branch Branch name from YMCA_BRANCHES
+ */
+export async function findClassInGroupExFeed(
+  targetDate: string,
   classType: string,
   classTime: string,
   branch: string
 ): Promise<YMCAClassSearchResult> {
+  const notFoundMessage = `Class "${classType}" at ${formatClassTime12Hour(classTime)} not found on YMCA schedule.`
+
+  const locationId = GROUPEX_LOCATION_IDS[branch]
+  if (!locationId) {
+    console.error(`[groupex-feed] Unknown branch "${branch}" - no GroupExPro location ID`)
+    return { found: false, errorMessage: notFoundMessage }
+  }
+
+  const targetTime = toFeedTime(classTime)
+  console.log(`🔍 Searching feed: ${classType} at ${targetTime} on ${targetDate} (${branch}, location ${locationId})`)
+
+  let rows: unknown[][]
   try {
-    console.log(`🔍 Searching for class: ${classType} at ${classTime} (${branch})`)
-
-    // Convert time to 12-hour format for matching
-    const [hours, minutes] = classTime.split(':').map(Number)
-    const hour12 = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours)
-    const ampm = hours >= 12 ? 'pm' : 'am'
-    const targetTime12 = `${hour12}:${minutes.toString().padStart(2, '0')}${ampm}`
-    const targetTime12WithSpace = `${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`
-
-    console.log(`   Looking for time: ${targetTime12} or ${targetTime12WithSpace}`)
-
-    // Function to search current page content
-    const searchPage = async (): Promise<YMCAClassSearchResult> => {
-      // Get all page content to search
-      const pageContent = await page.content()
-      const pageContentLower = pageContent.toLowerCase()
-
-      // Try to find the class by evaluating the DOM
-      const classInfo = await page.evaluate((params) => {
-        const { classType, targetTime12, targetTime12WithSpace, branch } = params
-        const classTypeLower = classType.toLowerCase()
-
-        // Find all potential class containers
-        // YMCA uses .schedules-data__row for each individual class card
-        // (.schedules-data is the parent container with ALL classes - don't use it)
-        const containersList = document.querySelectorAll(
-          '.schedules-data__row, .class-card, .event-card, .schedule-item, .card, div[data-class], div[data-event]'
-        )
-        const containers = Array.from(containersList)
-
-        for (const container of containers) {
-          const text = container.textContent?.toLowerCase() || ''
-          const html = container.outerHTML.toLowerCase()
-
-          // Check for class name match (fuzzy)
-          const matchesClass = text.includes(classTypeLower) ||
-            // Handle variations
-            text.includes(classTypeLower.replace(/\s+/g, ''))
-
-          // Check for time match using word boundaries to prevent "12:00pm" matching "2:00pm"
-          // Use regex with \b word boundary - time strings only contain safe chars (digits, colon, letters)
-          const time1 = targetTime12.toLowerCase()
-          const time2 = targetTime12WithSpace.toLowerCase()
-          const time3 = targetTime12.replace(':', '').toLowerCase()
-          const matchesTime =
-            new RegExp('\\b' + time1 + '\\b').test(text) ||
-            new RegExp('\\b' + time2 + '\\b').test(text) ||
-            new RegExp('\\b' + time3 + '\\b').test(text)
-
-          if (matchesClass && matchesTime) {
-            // Found the class! Now check status
-
-            // CRITICAL: Check for "CANCELED" + class name (fuzzy match)
-            // YMCA staff manually type cancellations, so format varies:
-            // "CANCELED: Cycle", "CANCELED Cycle", "CANCELED - Cycle", "Cancelled: Cycle"
-            // Use regex to match "cancel" followed by optional punctuation then class name
-            const cancelPattern = new RegExp(
-              `cancel[led]*[:\\s\\-]*${classTypeLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
-              'i'
-            )
-            const isCancelled = cancelPattern.test(text)
-
-            // Find CTA/Register link - look for btn-primary (YMCA style) or any groupexpro link
-            const registerLink = container.querySelector('a.btn-primary[href*="groupexpro"], a.btn[href*="groupexpro"], a[href*="groupexpro.com/gxp/reservations"]')
-            const ctaText = registerLink?.textContent?.toLowerCase() || ''
-            const registerHref = registerLink?.getAttribute('href') || ''
-
-            // Check CTA states
-            const hasRegisterCTA = ctaText.includes('register')
-            const hasWaitlistCTA = ctaText.includes('waitlist')
-            const hasFullIndicator = text.includes('full') && !hasRegisterCTA && !hasWaitlistCTA
-
-            return {
-              found: true,
-              isCancelled,
-              hasRegisterCTA,
-              hasWaitlistCTA,
-              hasFullIndicator,
-              registerHref,
-              text: text.substring(0, 500),
-            }
-          }
-        }
-
-        return { found: false }
-      }, { classType, targetTime12, targetTime12WithSpace, branch })
-
-      if (!classInfo.found) {
-        return { found: false }
-      }
-
-      console.log(`✅ Found class matching criteria`)
-      console.log(`   Preview: ${classInfo.text?.substring(0, 200)}...`)
-
-      // CRITICAL: Check for cancelled class FIRST
-      if (classInfo.isCancelled) {
-        console.log(`⚠️ Class is CANCELLED - not proceeding with booking`)
-        return {
-          found: true,
-          status: 'cancelled',
-          errorMessage: 'This class has been cancelled by the gym.',
-        }
-      }
-
-      // Determine status based on CTA
-      if (classInfo.hasRegisterCTA && classInfo.registerHref) {
-        console.log(`✅ Class is available for registration`)
-        console.log(`   Register URL: ${classInfo.registerHref}`)
-        return {
-          found: true,
-          status: 'available',
-          registerUrl: classInfo.registerHref,
-        }
-      }
-
-      if (classInfo.hasWaitlistCTA && classInfo.registerHref) {
-        console.log(`⚠️ Class is full - waitlist only`)
-        return {
-          found: true,
-          status: 'waitlist',
-          registerUrl: classInfo.registerHref,
-        }
-      }
-
-      if (classInfo.hasFullIndicator) {
-        console.log(`⚠️ Class is full - no booking available`)
-        return {
-          found: true,
-          status: 'full',
-          errorMessage: 'Class is full with no waitlist available.',
-        }
-      }
-
-      // No CTA found - class doesn't offer online registration
-      console.log(`ℹ️ No booking CTA found - class does not offer online registration`)
-      return {
-        found: true,
-        status: 'no_registration',
-      }
-    }
-
-    // First attempt: search current page
-    let result = await searchPage()
-
-    // If not found, try page-based pagination (YMCA uses "Page X of Y" with chevron buttons)
-    if (!result.found) {
-      console.log('Class not found in initial results, checking for pagination...')
-      let paginationAttempts = 0
-      const maxPaginationAttempts = 10
-
-      while (paginationAttempts < maxPaginationAttempts && !result.found) {
-        // Check current page info and find next page button
-        const paginationInfo = await page.evaluate(() => {
-          // Look for "Page X of Y" text
-          const pageText = document.body.innerText.match(/Page (\d+) of (\d+)/i)
-          const currentPage = pageText ? parseInt(pageText[1]) : 1
-          const totalPages = pageText ? parseInt(pageText[2]) : 1
-
-          // Find next page button (chevron_right or > symbol)
-          const nextButtons = Array.from(document.querySelectorAll('a, button'))
-          const nextButton = nextButtons.find(el => {
-            const text = el.textContent?.trim() || ''
-            const ariaLabel = el.getAttribute('aria-label')?.toLowerCase() || ''
-            return (
-              text === '>' ||
-              text === 'chevron_right' ||
-              text.includes('next') ||
-              ariaLabel.includes('next')
-            )
-          })
-
-          return {
-            currentPage,
-            totalPages,
-            hasNextPage: currentPage < totalPages,
-            nextButtonExists: !!nextButton,
-          }
-        })
-
-        console.log(`   Page ${paginationInfo.currentPage} of ${paginationInfo.totalPages}`)
-
-        if (!paginationInfo.hasNextPage || !paginationInfo.nextButtonExists) {
-          console.log('No more pages to check - reached end of pagination')
-          break
-        }
-
-        // Click next page button
-        console.log(`Clicking next page (going to page ${paginationInfo.currentPage + 1})...`)
-        // Click the BOTTOM pagination (class list), NOT the TOP date navigation
-        // YMCA uses different classes:
-        //   - TOP (date nav): .schedule-dashboard__arrow with aria-label="next date"
-        //   - BOTTOM (pagination): .schedule-dashboard__pager--next
-        const clicked = await page.evaluate(() => {
-          // First try: specific YMCA pagination class (most reliable)
-          const pagerNext = document.querySelector('.schedule-dashboard__pager--next') as HTMLElement
-          if (pagerNext) {
-            pagerNext.click()
-            return true
-          }
-          // Fallback: find chevron_right that's NOT the date navigation
-          const buttons = Array.from(document.querySelectorAll('a, button'))
-          const next = buttons.find(el => {
-            const text = el.textContent?.trim() || ''
-            const ariaLabel = el.getAttribute('aria-label') || ''
-            // Skip date navigation arrows
-            if (ariaLabel.includes('date')) return false
-            return text === 'chevron_right' && !el.classList.contains('schedule-dashboard__arrow')
-          })
-          if (next) {
-            (next as HTMLElement).click()
-            return true
-          }
-          return false
-        })
-
-        if (!clicked) {
-          console.log('Could not find next page button')
-          break
-        }
-
-        // Wait for page to load
-        await new Promise(resolve => setTimeout(resolve, 2000))
-
-        // IMPORTANT: Scroll to top of page after pagination
-        // YMCA site does NOT auto-scroll after pagination click
-        // Without this, we'd miss classes at the top of the next page
-        await page.evaluate(() => {
-          window.scrollTo(0, 0)
-        })
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        // Search again on new page
-        result = await searchPage()
-        paginationAttempts++
-      }
-    }
-
-    if (!result.found) {
-      return {
-        found: false,
-        errorMessage: `Class "${classType}" at ${formatClassTime12Hour(classTime)} not found on YMCA schedule.`,
-      }
-    }
-
-    return result
+    rows = await fetchGroupExRows(locationId, targetDate)
   } catch (error) {
     return {
       found: false,
-      errorMessage: error instanceof Error ? error.message : 'Error searching for class on YMCA',
+      errorMessage: `Couldn't load the YMCA class schedule (${error instanceof Error ? error.message : 'unknown error'}). This is usually temporary on the YMCA's side.`,
     }
   }
+
+  const candidates = rows
+    .map(row => {
+      const rawTitle = stripHtml(row[2])
+      const cancelled = CANCELLED_TITLE_PATTERN.test(rawTitle)
+      return {
+        row,
+        date: feedDateToYYYYMMDD(stripHtml(row[0])),
+        startTime: stripHtml(row[1]).split('-')[0].trim().toLowerCase(),
+        title: cancelled ? rawTitle.replace(CANCELLED_TITLE_PATTERN, '').trim() : rawTitle,
+        cancelled,
+      }
+    })
+    .filter(c => c.date === targetDate && c.startTime === targetTime)
+
+  // Exact (normalized) name match only. A "contains" fallback would let
+  // "BODYPUMP" grab "BODYPUMP HEAVY" at the same time slot.
+  const wanted = normalizeClassName(classType)
+  const match = candidates.find(c => normalizeClassName(c.title) === wanted)
+
+  console.log(`   Feed returned ${rows.length} rows, ${candidates.length} at ${targetTime} on ${targetDate}`)
+
+  if (!match) {
+    if (candidates.length > 0) {
+      console.log(`   Classes at that time: ${candidates.map(c => c.title).join(', ')}`)
+    }
+    return { found: false, errorMessage: notFoundMessage }
+  }
+
+  const signupCell = String(match.row[9] ?? '')
+  const signupTag = /<a\b[^>]*class="[^"]*signUpGXP[^"]*"[^>]*>/i.exec(signupCell)?.[0] ?? ''
+
+  console.log(`✅ Found in feed: ${match.title} ${stripHtml(match.row[1])}`)
+  if (signupTag) {
+    console.log(
+      `   Feed state (informational - class page decides): ${readAttr(signupTag, 'textmsg') || '-'}` +
+      ` | ${readAttr(signupTag, 'data-details') || '-'}` +
+      (readAttr(signupTag, 'start-info') ? ` | window opens ${readAttr(signupTag, 'start-info')}` : '')
+    )
+  }
+
+  if (match.cancelled) {
+    console.log('⚠️ Class is CANCELLED in feed - not proceeding with booking')
+    return { found: true, status: 'cancelled', errorMessage: 'This class has been cancelled by the gym.' }
+  }
+
+  if (!signupTag) {
+    console.log('ℹ️ No sign-up link in feed - class does not offer online registration')
+    return { found: true, status: 'no_registration' }
+  }
+
+  let registerUrl = readAttr(signupTag, 'href')
+  if (!GROUPEX_RESERVATION_URL_PATTERN.test(registerUrl)) {
+    const classId = readAttr(signupTag, 'alt')
+    if (!/^\d+$/.test(classId)) {
+      console.error(`[groupex-feed] Sign-up link has unexpected href "${registerUrl}" and no class id`)
+      return { found: true, status: 'available' }
+    }
+    const [year, month, day] = targetDate.split('-').map(Number)
+    registerUrl = `https://groupexpro.com/gxp/reservations/schedule/index/${classId}/${month}/${day}/${year}`
+    console.log(`   Built sign-up URL from class id ${classId}`)
+  }
+
+  console.log(`   Register URL: ${registerUrl}`)
+  return { found: true, status: 'available', registerUrl }
 }
 
 /**
- * Perform GroupExPro login
+ * Log in through Daxko and land on the Daxko class sign-up page.
  *
- * GroupExPro handles auth directly (email + password on same form).
- * After successful login, redirects to the class details page where
- * the user can reserve a spot or join the waitlist.
+ * As of Nov 2026 the GroupExPro reservation URL redirects (client-side JS) to
+ * Daxko's 2-step login (find_account: email -> password), whose return_url is
+ * Daxko's GXP ChooseMembers.mvc page for that class. Same flow the app used
+ * before March 2026 (see git 48fb54a^), minus the GroupExPro click-through.
  *
- * @param page Puppeteer page instance
- * @param registerUrl The GroupExPro registration URL to navigate to
- * @param username User's email address
- * @param password User's password
- * @returns Success with class details URL, or failure with error
+ * @returns Success with the ChooseMembers URL, or failure with error
  */
-async function performGroupExProLogin(
+type DaxkoLoginResult = {
+  success: boolean
+  classDetailsUrl?: string
+  error?: string
+  errorKind?: 'credentials' | 'site'
+}
+
+export async function performDaxkoLogin(
   page: Page,
   registerUrl: string,
   username: string,
   password: string
-): Promise<{ success: boolean; classDetailsUrl?: string; error?: string }> {
+): Promise<DaxkoLoginResult> {
+  // 'site' = the YMCA pages didn't look as expected (redirect, missing fields,
+  // timeouts). Kept apart from 'credentials' so a site change doesn't send
+  // every user a "check your password" email.
+  const siteError = (error: string): DaxkoLoginResult => ({ success: false, errorKind: 'site', error })
   try {
-    // STEP 1: Validate and navigate to GroupExPro registration URL
     try {
       const parsed = new URL(registerUrl)
       if (parsed.hostname !== 'www.groupexpro.com' && parsed.hostname !== 'groupexpro.com') {
-        return { success: false, error: `Registration URL is not on groupexpro.com: ${parsed.hostname}` }
+        return siteError(`Registration URL is not on groupexpro.com: ${parsed.hostname}`)
       }
     } catch {
-      return { success: false, error: `Invalid registration URL: ${registerUrl}` }
+      return siteError(`Invalid registration URL: ${registerUrl}`)
     }
 
-    console.log(`🔐 Navigating to GroupExPro: ${registerUrl}`)
+    // STEP 1: Open the sign-up URL and wait for the redirect to Daxko
+    console.log(`🔐 Opening sign-up URL: ${registerUrl}`)
     await page.goto(registerUrl, { waitUntil: 'networkidle2' })
-    await takeScreenshot(page, '03-groupexpro-login')
 
-    // STEP 2: Enter credentials on GroupExPro login form
-    console.log('📝 Entering credentials on GroupExPro login...')
-
-    // Find email field
-    await page.waitForSelector('input[type="text"], input[type="email"]', { timeout: 10000 })
-    const emailField = await page.$('input[type="text"], input[type="email"]')
-    if (!emailField) {
-      return { success: false, error: 'Could not find email field on GroupExPro login page' }
+    if (!page.url().includes('operations.daxko.com')) {
+      await page
+        .waitForFunction(() => location.hostname === 'operations.daxko.com', { timeout: 15000 })
+        .catch(error => console.error('[daxko-login] Timed out waiting for redirect to Daxko:', error))
     }
 
-    await emailField.type(username, { delay: 50 })
-    console.log('   Entered email: [redacted]')
+    // Fallback: older GroupExPro page with a Login button that forwards to Daxko
+    if (!page.url().includes('operations.daxko.com')) {
+      const gxpLoginButton = await page.$('button[type="submit"], input[type="submit"], input[value="Login"]')
+      if (gxpLoginButton && !(await page.$('input[type="password"]'))) {
+        console.log('   Still on GroupExPro - clicking Login to forward to Daxko')
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
+          gxpLoginButton.click(),
+        ])
+      }
+    }
 
-    // Find password field
+    console.log(`   Login page: ${page.url().split('?')[0]}`)
+    if (!page.url().includes('operations.daxko.com')) {
+      await takeScreenshot(page, '03-redirect-failed')
+      return siteError(`Expected redirect to the YMCA (Daxko) login page, but got: ${page.url().split('?')[0]}`)
+    }
+    await takeScreenshot(page, '03a-daxko-login')
+
+    // Already signed in (session cookie) - Daxko may skip straight to the class page
+    if (page.url().split('?')[0].includes('ChooseMembers.mvc')) {
+      console.log('✅ Already on ChooseMembers page')
+      return { success: true, classDetailsUrl: page.url() }
+    }
+
+    // STEP 2: Email step
+    console.log('📝 Daxko login step 1: email')
+    await page.waitForSelector('input#user_name, input[name="user_name"], input[type="email"]', { timeout: 10000 })
+    const emailField = await page.$('input#user_name, input[name="user_name"], input[type="email"]')
+    if (!emailField) {
+      return siteError('Could not find email field on Daxko login page')
+    }
+    await emailField.type(username, { delay: 50 })
+
+    const submitButton = await page.$('#submit_button, button[type="submit"], input[type="submit"]')
+    if (!submitButton) {
+      return siteError('Could not find Submit button on Daxko login page')
+    }
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 20000 })
+        .catch(error => console.error('[daxko-login] No navigation after email step:', error)),
+      submitButton.click(),
+    ])
+
+    // STEP 3: Password step
+    console.log('📝 Daxko login step 2: password')
+    try {
+      await page.waitForSelector('input[type="password"]', { timeout: 10000 })
+    } catch {
+      await takeScreenshot(page, '03b-no-password-field')
+      const content = (await page.content()).toLowerCase()
+      if (content.includes('no account') || content.includes("couldn't find") || content.includes('could not find') || content.includes('not found')) {
+        return { success: false, errorKind: 'credentials', error: 'No YMCA account found for this email.' }
+      }
+      return siteError('Could not find password field on Daxko login page')
+    }
+    await takeScreenshot(page, '03b-daxko-password')
+
     const passwordField = await page.$('input[type="password"]')
     if (!passwordField) {
-      return { success: false, error: 'Could not find password field on GroupExPro login page' }
+      return siteError('Could not find password field on Daxko login page')
     }
-
     await passwordField.type(password, { delay: 50 })
-    console.log('   Entered password')
 
-    // STEP 3: Click Login button
-    const loginButton = await page.$('button[type="submit"], input[type="submit"], input[value="Login"]')
-    if (!loginButton) {
-      return { success: false, error: 'Could not find Login button on GroupExPro page' }
+    // Never tick "Keep me logged in"
+    const keepLoggedIn = await page.$('input[type="checkbox"]')
+    if (keepLoggedIn && (await page.evaluate(el => (el as HTMLInputElement).checked, keepLoggedIn))) {
+      await keepLoggedIn.click()
     }
 
+    const loginButton = await page.$('#submit_button, button[type="submit"], input[type="submit"]')
+    if (!loginButton) {
+      return siteError('Could not find Login button on Daxko password page')
+    }
     console.log('   Clicking Login...')
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
+      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 })
+        .catch(error => console.error('[daxko-login] No navigation after password step:', error)),
       loginButton.click(),
     ])
 
-    // STEP 4: Verify we reached the class details page
+    // STEP 4: Expect the ChooseMembers page for this class
     const finalUrl = page.url()
-    console.log(`   Final URL: ${finalUrl}`)
-
-    // Success: redirected to class details page
-    if (finalUrl.includes('/gxp/reservations/start/index/')) {
-      console.log('✅ Successfully logged in and reached class details page')
-      await takeScreenshot(page, '04-class-details')
+    console.log(`   Final URL: ${finalUrl.split('?')[0]}`)
+    if (finalUrl.includes('operations.daxko.com') && finalUrl.split('?')[0].includes('ChooseMembers.mvc')) {
+      console.log('✅ Logged in and reached Daxko ChooseMembers page')
+      await takeScreenshot(page, '04-daxko-choosemembers')
       return { success: true, classDetailsUrl: finalUrl }
     }
 
-    // Still on login page - check for specific error messages
-    const pageContent = (await page.content()).toLowerCase()
-
-    if (pageContent.includes('incorrect login') || pageContent.includes('incorrect password') || pageContent.includes('field is required')) {
-      // Clear password field before taking screenshot
+    // Still on a login page = bad credentials
+    if (await page.$('input[type="password"]')) {
       const pwField = await page.$('input[type="password"]')
-      if (pwField) {
-        await pwField.evaluate((el: HTMLInputElement) => { el.value = '' })
-      }
+      if (pwField) await pwField.evaluate(el => { (el as HTMLInputElement).value = '' })
       await takeScreenshot(page, '03-login-failed')
-      return {
-        success: false,
-        error: 'Login failed: Email or password is incorrect.',
-      }
-    }
-
-    // Generic login failure
-    if (finalUrl.includes('/gxp/auth/login/')) {
-      await takeScreenshot(page, '03-login-failed')
-      return {
-        success: false,
-        error: 'Login failed: Still on login page after submitting credentials.',
-      }
+      return { success: false, errorKind: 'credentials', error: 'Email or password is incorrect.' }
     }
 
     await takeScreenshot(page, '03-unexpected')
-    return {
-      success: false,
-      error: `Unexpected page after login. URL: ${finalUrl}`,
-    }
+    return siteError(`Unexpected page after login. URL: ${finalUrl.split('?')[0]}`)
   } catch (error) {
     await takeScreenshot(page, '03-error')
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Login error',
-    }
+    return siteError(error instanceof Error ? error.message : 'Login error')
   }
 }
 
 /**
- * Complete booking on GroupExPro class details page
+ * Complete booking on the Daxko GXP ChooseMembers page.
  *
- * After login, GroupExPro shows a class details page with either:
- * - "Reserve a Spot" button (spots available, checkbox next to user name)
- * - "Join the Waitlist" button (0 spots available, no checkbox)
+ * Page anatomy (verified Nov 2026):
+ * - input.member_checkbox per household member, with data-email-id,
+ *   data-is-reserved="True|False", data-mem-waitlist-status="True|False";
+ *   disabled until the reservation window opens
+ * - "The Reservation Window for Active Members will open on ..." notice
+ * - "Active Members (Accepting Spot in WaitList)" when the class is full
+ * - button#reservation_button "Reserve" (same label for reserve and waitlist)
+ * - #submit_error_message for errors after clicking
  *
- * @param page Puppeteer page on GroupExPro class details page
+ * Error message text below is load-bearing for email routing: "full" triggers
+ * the Inngest retry loop, "cancelled" routes to the critical email, and
+ * "YMCA's booking system" selects the ymca_system_error variant.
+ *
+ * @param page Puppeteer page on the Daxko ChooseMembers page
+ * @param username Logged-in email, used to pick the right household member
  * @param branchUsed Branch name for result reporting
- * @returns Booking result with status and any error message
  */
-async function completeGroupExProBooking(
+async function completeDaxkoBooking(
   page: Page,
+  username: string,
   branchUsed: string
 ): Promise<{
   status: 'confirmed' | 'waitlisted' | 'failed'
@@ -620,240 +555,251 @@ async function completeGroupExProBooking(
   selectedBranch: string
   alreadyBooked?: boolean
 }> {
+  const FULL_MESSAGE =
+    "Class is currently full, but don't worry - we've got you covered!\n\nWe'll automatically keep trying every 15 minutes until the class starts. If someone cancels, we'll grab that spot for you. No action needed - just sit back and relax!"
+  const CANCELLED_MESSAGE =
+    "This class has been cancelled by the gym.\n\nWhat to do: Remove this class from your schedule (Dashboard -> Schedule -> Delete). Check your gym's website for the class status or alternative times."
+  const CONFLICT_MESSAGE =
+    "You already have another class booked at this time.\n\nWhat to do:\n1. Log into your gym account and find your existing reservation\n2. Cancel it if you prefer this class instead\n3. Or adjust your schedule to avoid the conflict (Dashboard -> Schedule)\n\nGyms don't allow double-booking the same time slot."
+  // NOTE: "YMCA's booking system" is a routing marker in lib/email/get-email-template.ts. Do not remove.
+  const SYSTEM_ERROR_MESSAGE =
+    "The YMCA's booking system is having trouble with this class right now - it looks like an issue on their end. We recommend calling the YMCA to let them know, and you can also try booking directly through the YMCA website or app. We'll pick back up automatically for future classes."
+
   try {
-    console.log('📋 Completing booking on GroupExPro class details page...')
+    console.log('📋 Completing booking on Daxko ChooseMembers page...')
+    console.log(`   Current URL: ${page.url().split('?')[0]}`)
 
-    const currentUrl = page.url()
-    console.log(`   Current URL: ${currentUrl}`)
-
-    // Wait for action button or status text to render (may be dynamically loaded after login redirect)
     try {
-      await page.waitForFunction(
-        () => {
-          const text = document.body.innerHTML
-          return text.includes('Reserve a Spot') ||
-                 text.includes('Join the Waitlist') ||
-                 text.includes('Cancel Reservation') ||
-                 text.includes('Cancel Waitlist') ||
-                 text.includes('filled to capacity')
-        },
-        { timeout: 10000 }
-      )
+      await page.waitForSelector('#reservation_button, input.member_checkbox', { timeout: 10000 })
     } catch {
-      console.log('⚠️  Timed out waiting for action button to render, proceeding anyway...')
+      console.log('⚠️  Timed out waiting for Reserve button / member list, proceeding anyway...')
     }
 
-    // Capture page content AFTER waitForFunction to ensure JS-rendered content is present
-    const pageContent = await page.content()
-    const pageContentLower = pageContent.toLowerCase()
+    // Visible text only (not raw HTML): hidden modals / message templates in the
+    // page source must not trigger cancelled / full / window checks.
+    const pageContentLower = (await page.evaluate(() => document.body.innerText)).toLowerCase()
 
-    // STEP 1: Detect available vs waitlist by looking for action buttons
-    const allButtons = await page.$$('button, a, input[type="submit"], input[type="button"]')
-    let actionButton = null
-    let isWaitlistAction = false
-
-    for (const btn of allButtons) {
-      const btnText = await page.evaluate(
-        (el) => (el as HTMLElement).textContent?.trim() || (el as HTMLInputElement).value?.trim() || '',
-        btn
-      )
-
-      if (btnText && btnText.toLowerCase().includes('join the waitlist')) {
-        actionButton = btn
-        isWaitlistAction = true
-        console.log(`   Found button: "${btnText}" (waitlist)`)
-        break
-      }
-
-      if (btnText && btnText.toLowerCase().includes('reserve a spot')) {
-        actionButton = btn
-        isWaitlistAction = false
-        console.log(`   Found button: "${btnText}" (reserve)`)
-        break
-      }
+    if (pageContentLower.includes('class has been cancelled') || pageContentLower.includes('class has been canceled')) {
+      return { status: 'failed', errorMessage: CANCELLED_MESSAGE, selectedBranch: branchUsed }
     }
 
-    if (!actionButton) {
-      // Check if class is filled to capacity (no booking buttons, no existing reservation)
-      if (pageContentLower.includes('filled to capacity')) {
-        console.log('⚠️ Class filled to capacity on details page')
-        // Error message MUST contain "full" to trigger Inngest retry logic
+    // STEP 1: Find this user's member checkbox (household accounts list several)
+    const members = await page.$$eval('input.member_checkbox', els =>
+      els.map(el => {
+        const input = el as HTMLInputElement
+        return {
+          email: (input.getAttribute('data-email-id') || '').toLowerCase(),
+          reserved: input.getAttribute('data-is-reserved') === 'True',
+          waitlisted: input.getAttribute('data-mem-waitlist-status') === 'True',
+          disabled: input.disabled,
+          checked: input.checked,
+        }
+      })
+    )
+    console.log(`   Members on page: ${members.length}`)
+
+    let memberIndex = members.findIndex(m => m.email && m.email === username.toLowerCase())
+    if (memberIndex === -1 && members.length === 1) {
+      console.log('   Login email not on the member row - single member, using it')
+      memberIndex = 0
+    }
+    if (memberIndex === -1 && members.length > 1) {
+      // Never guess on a household account: we could book (or report as booked) someone else
+      console.error(`[daxko-booking] ${members.length} members listed, none match the login email`)
+      return {
+        status: 'failed',
+        errorMessage:
+          "Your YMCA membership lists several family members, and none of them matched your sign-in email, so we didn't book anyone.\n\nWhat to do: Book this class manually, and make sure your email on the YMCA account matches the one saved in My Workout Scheduler.",
+        selectedBranch: branchUsed,
+      }
+    }
+    const member = memberIndex >= 0 ? members[memberIndex] : null
+
+    // STEP 2: Already reserved / waitlisted (booked outside this system, or a retry after success)
+    if (member?.reserved) {
+      console.log('✅ Class already reserved')
+      return { status: 'confirmed', alreadyBooked: true, selectedBranch: branchUsed }
+    }
+    if (member?.waitlisted) {
+      console.log('✅ Already on waitlist')
+      return { status: 'waitlisted', alreadyBooked: true, selectedBranch: branchUsed }
+    }
+
+    const isWaitlistMode =
+      pageContentLower.includes('accepting spot in waitlist') ||
+      pageContentLower.includes('reservation spots are full') ||
+      pageContentLower.includes('can join waitlist')
+    const windowNotOpen = RESERVATION_WINDOW_CLOSED_PATTERN.test(pageContentLower)
+    // Only claim "full" when the page says so (drives retries + "Retrying" badge)
+    const pageSaysFull =
+      pageContentLower.includes('fully booked') ||
+      pageContentLower.includes('waitlist is full') ||
+      pageContentLower.includes('filled to capacity')
+    const reserveButton = await page.$('#reservation_button')
+    const reserveDisabled = reserveButton
+      ? await page.evaluate(el => (el as HTMLButtonElement).disabled, reserveButton)
+      : true
+
+    // STEP 3: Nothing to click. Window still closed, or full with no waitlist
+    if (!member || member.disabled || !reserveButton) {
+      if (windowNotOpen) {
         return {
           status: 'failed',
           errorMessage:
-            "Class is currently full, but don't worry - we've got you covered!\n\nWe'll automatically keep trying every 15 minutes until the class starts. If someone cancels, we'll grab that spot for you. No action needed - just sit back and relax!",
+            "The YMCA hasn't opened sign-ups for this class yet, so it couldn't be booked.\n\nWhat to do: Check the class's booking window in your schedule settings. If it looks right, try booking manually through the YMCA website once sign-ups open.",
           selectedBranch: branchUsed,
         }
       }
-
-      // Check if already reserved/waitlisted (page shows confirmation already)
-      if (pageContentLower.includes('you have reserved') || pageContentLower.includes('cancel reservation')) {
-        console.log('✅ Class already reserved')
-        return { status: 'confirmed', alreadyBooked: true, selectedBranch: branchUsed }
+      if (!member && !reserveButton) {
+        return {
+          status: 'failed',
+          errorMessage:
+            'No Reserve button found on the YMCA booking page.\n\nWhat to do: Try booking manually through the gym website.',
+          selectedBranch: branchUsed,
+        }
       }
-      if (pageContentLower.includes('you are on the waitlist') || pageContentLower.includes('cancel waitlist')) {
-        console.log('✅ Already on waitlist')
-        return { status: 'waitlisted', alreadyBooked: true, selectedBranch: branchUsed }
+      if (pageSaysFull) {
+        console.log('⚠️  Page says the class is fully booked')
+        return { status: 'failed', errorMessage: FULL_MESSAGE, selectedBranch: branchUsed }
       }
-
+      const notice = await page
+        .$eval('#reservation_details', el => (el.textContent || '').replace(/\s+/g, ' ').trim())
+        .catch(error => {
+          console.error('[daxko-booking] Could not read #reservation_details:', error)
+          return ''
+        })
+      // Notice text stays in the log only: page wording in errorMessage could
+      // accidentally match email-routing keywords (e.g. "full" -> retry loop).
+      console.log(`⚠️  Member selection disabled for an unrecognized reason. Page notice: "${notice}"`)
       return {
         status: 'failed',
         errorMessage:
-          'No "Reserve a Spot" or "Join the Waitlist" button found on class details page.\n\nWhat to do: Try booking manually through the gym website.',
+          "The YMCA booking page didn't allow a reservation for this class.\n\nWhat to do: Try booking manually through the YMCA website or app.",
         selectedBranch: branchUsed,
       }
     }
 
-    // STEP 2: For reservation (not waitlist), ensure checkbox is checked
-    if (!isWaitlistAction) {
-      console.log('Checking user checkbox for reservation...')
-      const checkboxes = await page.$$('input[type="checkbox"]')
+    console.log(isWaitlistMode ? '⚠️  Class is FULL - joining WAITLIST' : '✓ Spots available - reserving')
 
-      for (const checkbox of checkboxes) {
-        const isChecked = await page.evaluate((el) => (el as HTMLInputElement).checked, checkbox)
-        if (!isChecked) {
-          console.log('   Checkbox not checked, clicking to select...')
-          await checkbox.click()
-          await new Promise(resolve => setTimeout(resolve, 500))
-          console.log('   Checkbox selected')
-          break
-        } else {
-          console.log('   Checkbox already checked')
+    // STEP 4: Select the member and click Reserve
+    const checkboxes = await page.$$('input.member_checkbox')
+    if (!member.checked) {
+      await checkboxes[memberIndex].click()
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+
+    if (reserveDisabled) {
+      // Some pages enable the button only after a member is ticked
+      const stillDisabled = await page.evaluate(el => (el as HTMLButtonElement).disabled, reserveButton)
+      if (stillDisabled) {
+        console.log('⚠️  Reserve button still disabled after selecting member')
+        if (pageSaysFull) {
+          return { status: 'failed', errorMessage: FULL_MESSAGE, selectedBranch: branchUsed }
+        }
+        return {
+          status: 'failed',
+          errorMessage:
+            "The YMCA booking page's Reserve button stayed disabled for this class.\n\nWhat to do: Try booking manually through the YMCA website or app.",
+          selectedBranch: branchUsed,
         }
       }
-
-      // Set up alert handler in case checkbox wasn't properly selected
-      page.once('dialog', async (dialog) => {
-        console.log(`   Alert detected: "${dialog.message()}"`)
-        await dialog.dismiss()
-      })
     }
 
-    // STEP 3: Click the action button
-    console.log(`Clicking "${isWaitlistAction ? 'Join the Waitlist' : 'Reserve a Spot'}" button...`)
-    try {
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 }).catch(() => {}),
-        actionButton.click(),
-      ])
-      // Wait for page content to update (confirmation may appear without navigation)
-      await new Promise(resolve => setTimeout(resolve, 2000))
-    } catch {
-      console.log('Navigation wait timed out, continuing...')
-      await new Promise(resolve => setTimeout(resolve, 2000))
-    }
+    page.once('dialog', async dialog => {
+      console.log(`   Dialog: "${dialog.message()}"`)
+      await dialog.dismiss()
+    })
 
+    console.log('Clicking Reserve...')
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 })
+        .catch(error => console.log('   No navigation after Reserve (errors render in place):', error instanceof Error ? error.message : error)),
+      reserveButton.click(),
+    ])
+    await new Promise(resolve => setTimeout(resolve, 2000))
     await takeScreenshot(page, '05-booking-result')
 
-    // STEP 4: Check for confirmation
-    const finalContent = (await page.content()).toLowerCase()
+    // STEP 5: Read the result
+    const finalUrl = page.url()
+    const finalContent = (await page.evaluate(() => document.body.innerText)).toLowerCase()
+    const submitError = await page
+      .$eval('#submit_error_message', el => ((el as HTMLElement).offsetParent !== null ? el.textContent || '' : ''))
+      .catch(error => {
+        // Confirmation page has no #submit_error_message - expected after success
+        console.log('   No #submit_error_message on result page:', error instanceof Error ? error.message : error)
+        return ''
+      })
+    if (submitError.trim()) {
+      console.log(`   Daxko error message: ${submitError.trim()}`)
+    }
+    const errorText = (submitError + ' ' + finalContent).toLowerCase()
+    console.log(`   Final URL: ${finalUrl.split('?')[0]}`)
 
-    // Check for reservation confirmation
-    // From screenshots: "You have reserved 1 spot for this class."
-    const isConfirmed =
-      finalContent.includes('you have reserved') ||
-      finalContent.includes('reserved 1 spot') ||
-      finalContent.includes('reservation is complete')
+    if (
+      errorText.includes('already have an existing reservation') ||
+      errorText.includes('already have a reservation during this time') ||
+      (errorText.includes('could not be completed') && errorText.includes('existing reservation'))
+    ) {
+      return { status: 'failed', errorMessage: CONFLICT_MESSAGE, selectedBranch: branchUsed }
+    }
 
-    // Check for waitlist confirmation
-    // From screenshots: "You are now on the waitlist." / "You are on the waitlist for this class."
+    if (
+      errorText.includes('class has been cancelled') ||
+      errorText.includes('class has been canceled') ||
+      errorText.includes('cannot add exercisers')
+    ) {
+      return { status: 'failed', errorMessage: CANCELLED_MESSAGE, selectedBranch: branchUsed }
+    }
+
     const isWaitlisted =
-      finalContent.includes('you are now on the waitlist') ||
-      finalContent.includes('you are on the waitlist') ||
+      finalContent.includes('now that you are in waitlist') ||
+      finalContent.includes('you are in waitlist') ||
       finalContent.includes('added to waitlist') ||
       finalContent.includes('joined the waitlist')
 
-    // Check for the checkbox alert (means we failed to check it)
-    if (finalContent.includes('please select') && finalContent.includes('user for reservation')) {
-      console.log('⚠️  Checkbox selection failed - "Please select atleast one user" error')
-      return {
-        status: 'failed',
-        errorMessage:
-          'Failed to select user checkbox before reserving.\n\nWhat to do: Try booking manually through the gym website.',
-        selectedBranch: branchUsed,
-      }
+    const isConfirmed =
+      finalContent.includes('now that reservation is complete') ||
+      finalContent.includes('reservation is complete') ||
+      (finalContent.includes('awesome!') && !isWaitlisted)
+
+    if (isWaitlisted) {
+      console.log('✅ Successfully added to WAITLIST')
+      return { status: 'waitlisted', selectedBranch: branchUsed }
     }
-
-    // Check for concurrent booking conflict
-    const hasConcurrentConflict =
-      finalContent.includes('already have an existing reservation') ||
-      finalContent.includes('already have a reservation during this time') ||
-      finalContent.includes('already booked for these timings') ||
-      finalContent.includes('already booked for this time')
-
-    if (hasConcurrentConflict) {
-      console.log('⚠️  Concurrent booking conflict')
-      return {
-        status: 'failed',
-        errorMessage:
-          "You already have another class booked at this time.\n\nWhat to do:\n1. Log into your gym account and find your existing reservation\n2. Cancel it if you prefer this class instead\n3. Or adjust your schedule to avoid the conflict (Dashboard -> Schedule)\n\nGyms don't allow double-booking the same time slot.",
-        selectedBranch: branchUsed,
-      }
-    }
-
-    // Check for cancelled class
-    const hasClassCancelledError =
-      finalContent.includes('class has been cancelled') ||
-      finalContent.includes('class has been canceled') ||
-      finalContent.includes('cannot add exercisers')
-
-    if (hasClassCancelledError) {
-      console.log('⚠️  Class has been cancelled')
-      return {
-        status: 'failed',
-        errorMessage:
-          "This class has been cancelled by the gym.\n\nWhat to do: Remove this class from your schedule (Dashboard -> Schedule -> Delete). Check your gym's website for the class status or alternative times.",
-        selectedBranch: branchUsed,
-      }
-    }
-
-    // Check for YMCA/GroupExPro reservation system error
-    // This occurs when the class appears on the schedule but the reservation system
-    // cannot process bookings (e.g., class missing from app, backend issue).
-    // Also catches the waitlist variant defensively - we haven't seen it yet
-    // but the booking flow handles both Reserve and Waitlist buttons. Use
-    // specific full phrases only to avoid false positives on unrelated text
-    // that happens to include "unable to join" (e.g. "unable to join gym").
-    const hasReservationSystemError =
-      finalContent.includes('unable to reserve a spot') ||
-      finalContent.includes('unable to reserve') ||
-      finalContent.includes('unable to join the waitlist')
-
-    if (hasReservationSystemError) {
-      console.log('⚠️  YMCA reservation system error - unable to reserve')
-      return {
-        status: 'failed',
-        // NOTE: The phrase "YMCA's booking system" is used as a routing marker
-        // in lib/email/get-email-template.ts to select the ymca_system_error
-        // variant of the technical failure template. The routing layer
-        // matches on the lowercased full possessive phrase. Do not remove.
-        errorMessage:
-          "The YMCA's booking system is having trouble with this class right now - it looks like an issue on their end. We recommend calling the YMCA to let them know, and you can also try booking directly through the YMCA website or app. We'll pick back up automatically for future classes.",
-        selectedBranch: branchUsed,
-      }
-    }
-
     if (isConfirmed) {
       console.log('✅ Successfully BOOKED class')
       return { status: 'confirmed', selectedBranch: branchUsed }
     }
 
-    if (isWaitlisted) {
-      console.log('✅ Successfully added to WAITLIST')
-      return { status: 'waitlisted', selectedBranch: branchUsed }
+    if (submitError.trim()) {
+      const submitErrorLower = submitError.toLowerCase()
+      // Whole-word "full" only: a bare substring also matches "successfully" / "fully"
+      if (/\bfull\b|fully booked|no (spots|capacity)|capacity reached/.test(submitErrorLower)) {
+        return { status: 'failed', errorMessage: FULL_MESSAGE, selectedBranch: branchUsed }
+      }
+      // Our checkbox click didn't register - our bug, not the YMCA's
+      if (/select/.test(submitErrorLower) && /member/.test(submitErrorLower)) {
+        return {
+          status: 'failed',
+          errorMessage:
+            "We couldn't select you on the YMCA booking page, so the reservation didn't go through.\n\nWhat to do: Try booking manually through the YMCA website or app.",
+          selectedBranch: branchUsed,
+        }
+      }
+      return { status: 'failed', errorMessage: SYSTEM_ERROR_MESSAGE, selectedBranch: branchUsed }
     }
 
     console.log('⚠️  Booking result unclear')
     return {
       status: 'failed',
       errorMessage:
-        "Booking result unclear after clicking button.\n\nWhat to do RIGHT NOW:\n1. Check your gym account to see if the class was booked\n2. If booked: Great! You're all set (ignore this error)\n3. If not booked: Try booking manually",
+        "Booking result unclear after clicking Reserve.\n\nWhat to do RIGHT NOW:\n1. Check your gym account to see if the class was booked\n2. If booked: Great! You're all set (ignore this error)\n3. If not booked: Try booking manually",
       selectedBranch: branchUsed,
     }
   } catch (error) {
     return {
       status: 'failed',
-      errorMessage: error instanceof Error ? error.message : 'GroupExPro booking error',
+      errorMessage: error instanceof Error ? error.message : 'Daxko booking error',
       selectedBranch: branchUsed,
     }
   }
@@ -864,10 +810,10 @@ async function completeGroupExProBooking(
 // =============================================================================
 
 /**
- * Wait for the booking window to open by refreshing the GroupExPro class details page.
+ * Wait for the booking window to open by refreshing the Daxko ChooseMembers page.
  * Called when we arrive early (before the booking window opens).
- * The page shows "not yet available for sign-up" until the window opens,
- * then a refresh reveals "Reserve a Spot" or "Join the Waitlist".
+ * The page shows "The Reservation Window for Active Members will open on ..."
+ * (member checkbox + Reserve disabled) until the window opens.
  */
 async function waitForBookingWindow(
   page: Page,
@@ -892,8 +838,8 @@ async function waitForBookingWindow(
   }
 
   // Tight refresh loop: reload every 2s, max 15 attempts
-  // Uses domcontentloaded (not networkidle2) because we only check for text absence,
-  // not JS-rendered buttons. completeGroupExProBooking has its own waitForFunction.
+  // Uses domcontentloaded (not networkidle2): the window notice is server-rendered,
+  // and completeDaxkoBooking waits for the Reserve button itself.
   const MAX_REFRESHES = 15
   const REFRESH_INTERVAL_MS = 2000
 
@@ -901,11 +847,9 @@ async function waitForBookingWindow(
     console.log(`   Refresh ${i}/${MAX_REFRESHES}...`)
     await page.reload({ waitUntil: 'domcontentloaded' })
 
-    // Check if "not yet available" text is gone
-    const stillBlocked = await page.evaluate(() => {
-      const text = document.body.innerText.toLowerCase()
-      return text.includes('not yet available for sign-up')
-    })
+    // Check if the "Reservation Window ... will open" notice is gone
+    const pageText = (await page.evaluate(() => document.body.innerText)).toLowerCase()
+    const stillBlocked = RESERVATION_WINDOW_CLOSED_PATTERN.test(pageText)
 
     if (!stillBlocked) {
       console.log(`   Booking window is open after ${i} refresh(es)`)
@@ -917,7 +861,7 @@ async function waitForBookingWindow(
     }
   }
 
-  // Exhausted refreshes - proceed anyway, completeGroupExProBooking handles gracefully
+  // Exhausted refreshes - proceed anyway, completeDaxkoBooking handles gracefully
   console.log('   Max refreshes reached, proceeding anyway')
   return { refreshCount: MAX_REFRESHES }
 }
@@ -927,12 +871,13 @@ async function waitForBookingWindow(
  *
  * Flow:
  * 1. Calculate target date in gym timezone
- * 2. Navigate to YMCA schedule (with date + branch filter)
- * 3. Find class by name/time
- * 4. Check class state (available, waitlist, full, cancelled)
- * 5. Click Register → GroupExPro login (enter credentials)
+ * 2. Find class by name/time/branch in the GroupExPro schedule feed
+ * 4. Stop early only if the feed says cancelled or no online registration.
+ *    Full/waitlist are NOT decided here - the live class page decides (step 6).
+ * 5. Open sign-up URL → redirects to Daxko 2-step login (email, then password)
+ *    → Daxko GXP ChooseMembers page for the class
  * 5.5. Wait for booking window (early-start: sleep then refresh)
- * 6. Complete booking on GroupExPro class details page
+ * 6. Complete booking on the ChooseMembers page (select member → Reserve)
  *
  * @param page Puppeteer page instance
  * @param params Booking parameters
@@ -961,26 +906,9 @@ async function bookClassYMCAHybrid(
     const targetDate = calculateTargetDateYYYYMMDD(dayOfWeek, classTime)
     console.log(`   Target date: ${targetDate}`)
 
-    // STEP 2: Navigate to YMCA schedule with date + branch filter
-    console.log('\n📅 Step 2: Navigating to YMCA schedule...')
-    const navResult = await navigateToYMCASchedule(page, targetDate, branch)
-    if (!navResult.success) {
-      screenshotPath = await takeScreenshot(page, '01-ymca-schedule-failed')
-      return {
-        status: 'failed',
-        branchUsed: branch,
-        errorMessage: `Failed to navigate to YMCA schedule: ${navResult.error}`,
-        screenshotPath,
-      }
-    }
-
-    screenshotPath = await takeScreenshot(page, '01-ymca-schedule')
-
-    // STEP 3: Find class on YMCA schedule
-    console.log('\n🔍 Step 3: Finding class on schedule...')
-    const searchResult = await findClassOnYMCA(page, classType, classTime, branch)
-
-    screenshotPath = await takeScreenshot(page, '02-class-found')
+    // STEP 2-3: Find class in the GroupExPro schedule feed (no browser needed)
+    console.log('\n🔍 Step 2: Finding class in schedule feed...')
+    const searchResult = await findClassInGroupExFeed(targetDate, classType, classTime, branch)
 
     if (!searchResult.found) {
       return {
@@ -1008,16 +936,9 @@ async function bookClassYMCAHybrid(
       }
     }
 
-    if (searchResult.status === 'full') {
-      // IMPORTANT: Error message MUST contain "full" to trigger Inngest retry logic
-      return {
-        status: 'failed',
-        branchUsed: branch,
-        errorMessage:
-          "Class is currently full, but don't worry - we've got you covered!\n\nWe'll automatically keep trying every 15 minutes until the class starts. If someone cancels, we'll grab that spot for you. No action needed - just sit back and relax!",
-        screenshotPath,
-      }
-    }
+    // NOTE: No 'full' early-return here. Even when the feed shows 0 spots or
+    // "WAITLIST ONLY", we log in and let completeDaxkoBooking read the
+    // live class page (spots / waitlist / full).
 
     if (searchResult.status === 'no_registration') {
       return {
@@ -1039,16 +960,28 @@ async function bookClassYMCAHybrid(
       }
     }
 
-    // STEP 5: GroupExPro login
-    console.log('\n🔐 Step 5: Logging into GroupExPro...')
-    const loginResult = await performGroupExProLogin(page, searchResult.registerUrl, username, password)
+    // STEP 5: Daxko login (via the GroupExPro sign-up URL redirect)
+    console.log('\n🔐 Step 5: Logging into the YMCA (Daxko)...')
+    const loginResult = await performDaxkoLogin(page, searchResult.registerUrl, username, password)
 
     if (!loginResult.success) {
-      screenshotPath = await takeScreenshot(page, '03-groupexpro-login-failed')
+      screenshotPath = await takeScreenshot(page, '03-daxko-login-failed')
+      if (loginResult.errorKind === 'credentials') {
+        return {
+          status: 'failed',
+          branchUsed: branch,
+          errorMessage: `Login failed: ${loginResult.error}\n\nWhat to do: Try logging into your gym website manually. If successful, update your credentials in Dashboard → Gym Credentials. If you can't log in, reset your password on the gym website first.`,
+          screenshotPath,
+        }
+      }
+      // Site problem, not the user's credentials. Details stay in the log:
+      // words like "password" in them would route to the critical email.
+      console.error(`[daxko-login] Sign-in flow failed (site): ${loginResult.error}`)
       return {
         status: 'failed',
         branchUsed: branch,
-        errorMessage: `Login failed: ${loginResult.error}\n\nWhat to do: Try logging into your gym website manually. If successful, update your credentials in Dashboard → Gym Credentials. If you can't log in, reset your password on the gym website first.`,
+        errorMessage:
+          "The YMCA website's sign-in step didn't work as expected, so this class couldn't be booked. This usually means the YMCA changed their website.\n\nWhat to do: Try booking manually through the YMCA website or app.",
         screenshotPath,
       }
     }
@@ -1061,9 +994,9 @@ async function bookClassYMCAHybrid(
       console.log(`   Total refreshes: ${waitResult.refreshCount}`)
     }
 
-    // STEP 6: Complete booking on GroupExPro class details page
-    console.log('\n📋 Step 6: Completing booking on GroupExPro...')
-    const bookingResult = await completeGroupExProBooking(page, branch)
+    // STEP 6: Complete booking on the Daxko ChooseMembers page
+    console.log('\n📋 Step 6: Completing booking on Daxko...')
+    const bookingResult = await completeDaxkoBooking(page, username, branch)
 
     screenshotPath = await takeScreenshot(page, '05-booking-result')
 
@@ -1113,7 +1046,7 @@ export type BookingParams = {
 /**
  * Main booking function
  *
- * Uses YMCA/GroupExPro flow (YMCA schedule -> GroupExPro login -> class details -> booking)
+ * Flow: GroupExPro schedule feed -> sign-up URL -> Daxko login -> Daxko ChooseMembers -> Reserve
  */
 export async function bookClass(params: BookingParams): Promise<BookingResult> {
   // Note: Skip logic is handled by Inngest before calling this function
@@ -1144,7 +1077,7 @@ export async function bookClass(params: BookingParams): Promise<BookingResult> {
     page.setDefaultTimeout(30000) // 30 seconds
 
     // MVP: Use YMCA/GroupExPro flow for all bookings
-    // This navigates YMCA schedule → GroupExPro login → class details → booking
+    // Schedule feed lookup → Daxko login → ChooseMembers page → Reserve
     const result = await bookClassYMCAHybrid(page, params)
 
     return result
