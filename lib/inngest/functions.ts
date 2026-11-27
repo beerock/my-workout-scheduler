@@ -5,7 +5,6 @@
 import { inngest } from './client';
 import {
   createBookingAttempt,
-  updateBookingAttempt,
   getClassById,
   getAllActiveClasses,
 } from '@/scripts/database-helpers';
@@ -189,16 +188,24 @@ export const bookClassFunction = inngest.createFunction(
       }
     }
 
-    // Check for duplicate runs - if another booking attempt is already in progress, exit
+    // Check for duplicate runs - 5-minute lockout per class.
+    // Any non-skipped attempt started in the last 5 minutes blocks a new run,
+    // whatever its status. This is the server-side brake on Book Now -> cancel
+    // -> Book Now spam (cancel stops the Inngest run but not a GitHub Actions
+    // run already dispatched). Don't narrow this to status='pending': since
+    // v2.39 the single attempt row reaches a final status ~1 min in, which
+    // would shrink the lockout to ~1 min. (Before v2.39 an orphaned 'pending'
+    // row held the lock for the full 5 minutes.) Class-full retries (15 min)
+    // and timeout retries (25+ min) fall outside the window.
     const hasDuplicateRun = await step.run('check-duplicate-runs', async () => {
       const supabase = createServiceRoleClient();
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
-      const { data: pendingAttempts, error } = await supabase
+      const { data: recentAttempts, error } = await supabase
         .from('booking_attempts')
-        .select('id, attempt_timestamp')
+        .select('id, status, attempt_timestamp')
         .eq('recurring_class_id', classId)
-        .eq('status', 'pending')
+        .neq('status', 'skipped')
         .gte('attempt_timestamp', fiveMinutesAgo)
         .limit(10);
 
@@ -207,9 +214,9 @@ export const bookClassFunction = inngest.createFunction(
         return false; // Proceed with caution
       }
 
-      if (pendingAttempts && pendingAttempts.length > 0) {
+      if (recentAttempts && recentAttempts.length > 0) {
         console.log(
-          `[Inngest] Found ${pendingAttempts.length} recent pending attempt(s) - potential duplicate run detected`
+          `[Inngest] Found ${recentAttempts.length} attempt(s) for this class in the last 5 minutes - duplicate run lockout`
         );
         return true;
       }
@@ -292,9 +299,13 @@ export const bookClassFunction = inngest.createFunction(
         // without it on any 422 (don't depend on GitHub's error wording) so
         // booking still happens - the script then creates its own row. If the
         // retry also fails, the !response.ok check below throws as before.
+        // Logged at error level: after merge this should never happen, and if
+        // it does every booking is back to writing duplicate rows.
+        let attemptIdPassed = true;
         if (response.status === 422) {
           const errorText = await response.text();
-          console.warn(`[Inngest] Dispatch with attempt_id rejected (422: ${errorText}) - retrying without it`);
+          console.error(`[Inngest] Dispatch with attempt_id rejected (422: ${errorText}) - retrying without it (script will create its own attempt row)`);
+          attemptIdPassed = false;
           response = await dispatch(baseInputs);
         }
 
@@ -308,6 +319,7 @@ export const bookClassFunction = inngest.createFunction(
         return {
           success: true,
           message: 'GitHub Actions workflow triggered',
+          attemptIdPassed,
         };
       } catch (error) {
         console.error(`[Inngest] Failed to trigger GitHub Actions:`, error);
@@ -336,7 +348,7 @@ export const bookClassFunction = inngest.createFunction(
         const supabase = createServiceRoleClient();
         const { data: updatedRows, error } = await supabase
           .from('booking_attempts')
-          // @ts-ignore - Supabase client type inference issue (same as updateBookingAttempt)
+          // @ts-ignore - Supabase client type inference issue (same as scripts/database-helpers updateBookingAttempt)
           .update({
             status: 'failed',
             error_message: 'Timeout waiting for GitHub Actions result',
@@ -370,7 +382,15 @@ export const bookClassFunction = inngest.createFunction(
         };
       });
 
-      if (!timeoutUpdate.markedFailed) {
+      // Only a handled outcome stops the run. A 'failed' row (e.g. class full,
+      // result event lost) or an unreadable status falls through to the normal
+      // timeout retry below, same as before v2.39.
+      const HANDLED_STATUSES = ['confirmed', 'waitlisted', 'no_registration', 'skipped'];
+      if (
+        !timeoutUpdate.markedFailed &&
+        timeoutUpdate.existingStatus &&
+        HANDLED_STATUSES.includes(timeoutUpdate.existingStatus)
+      ) {
         console.warn(
           `[Inngest] Result event never arrived, but attempt ${attemptId} already has status "${timeoutUpdate.existingStatus}" - leaving it and not retrying`
         );
@@ -490,10 +510,22 @@ export const bookClassFunction = inngest.createFunction(
 
     const { status, errorMessage, alreadyBooked } = bookingResult.data;
     // The row that holds the real result. Normally this is our own attemptId
-    // (passed to the workflow); it differs only if the dispatch fell back to
-    // running without attempt_id and the script created its own row.
-    const resultAttemptId: string =
-      typeof bookingResult.data.attemptId === 'string' ? bookingResult.data.attemptId : attemptId;
+    // (passed to the workflow). Only trust a different ID from the event when
+    // the dispatch fell back to running without attempt_id (script created its
+    // own row) - otherwise a different ID means this event belongs to another
+    // run of the same class (waitForEvent matches on classId only, e.g. a late
+    // result from a run that was cancelled or timed out).
+    const eventAttemptId = bookingResult.data.attemptId;
+    let resultAttemptId: string = attemptId;
+    if (typeof eventAttemptId === 'string' && eventAttemptId !== attemptId) {
+      if (workflowResult.attemptIdPassed === false) {
+        resultAttemptId = eventAttemptId;
+      } else {
+        console.warn(
+          `[Inngest] booking/result attemptId ${eventAttemptId} doesn't match this run's attempt ${attemptId} - likely another run's result; linking notifications to ${attemptId}`
+        );
+      }
+    }
     console.log(`[Inngest] Booking result: ${status}`);
     if (errorMessage) {
       console.log(`[Inngest] Error message: ${errorMessage}`);

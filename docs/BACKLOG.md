@@ -218,14 +218,14 @@ Inngest `check-duplicate-runs` step queries for pending booking attempts before 
 ### Duplicate Check Window & Re-Trigger UX
 **Status:** Backlogged | **Priority:** Medium
 
-The `check-duplicate-runs` step blocks new booking attempts if a `pending` attempt exists for the same class within the last 5 minutes. This is overly conservative -- GitHub Actions runs typically complete in 60-90 seconds. If a user triggers a booking, realizes they selected the wrong day/time, edits the class, and retries, they may have to wait several minutes with no feedback.
+The `check-duplicate-runs` step blocks new booking attempts if any non-skipped attempt exists for the same class within the last 5 minutes (since v2.39; before that an orphaned `pending` row had the same effect). This is overly conservative -- GitHub Actions runs typically complete in 60-90 seconds. If a user triggers a booking, realizes they selected the wrong day/time, edits the class, and retries, they may have to wait several minutes with no feedback.
 
 **Requirements:**
 - Evaluate reducing the 5-minute window (e.g., 2 minutes)
 - Consider cancel-and-replace: when user edits + retriggers, cancel the pending attempt before sending a new one
 - Add UI feedback ("Booking in progress...") on the class card so users understand why retry is blocked
 
-**Last Updated:** April 8, 2026
+**Last Updated:** November 27, 2026
 
 ---
 

@@ -303,6 +303,20 @@ async function testSingleBooking() {
       log.debug('Stack:', error.stack)
     }
 
+    // Finalize the attempt row so it doesn't stay 'pending' forever. Inngest
+    // gets a result event below, so its timeout (which would mark the row
+    // failed) never fires.
+    if (typeof attemptId !== 'undefined') {
+      try {
+        await updateBookingAttempt(attemptId, {
+          status: 'failed',
+          error_message: `Exception: ${error instanceof Error ? error.message : String(error)}`,
+        })
+      } catch (updateError) {
+        log.error('⚠️  Failed to mark attempt record as failed:', updateError)
+      }
+    }
+
     // Send failure event to Inngest if we have the attempt ID
     if (process.env.INNGEST_EVENT_KEY && typeof attemptId !== 'undefined') {
       try {

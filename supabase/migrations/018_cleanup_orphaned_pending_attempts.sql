@@ -14,6 +14,12 @@
 --              are skipped so an in-flight booking is never touched.
 --              Deleting (not marking 'failed') is deliberate: 'failed' rows
 --              appear in booking history and count against the success rate.
+--              Pairing is one-to-one: when several orphans sit before the same
+--              sibling (duplicate runs, retries whose script row was never
+--              created), only the orphan closest to it is paired. The others
+--              are still deleted, and their notification_log links become NULL
+--              (the FK's ON DELETE SET NULL) instead of pointing at another
+--              run's row.
 --
 
 -- =============================================================================
@@ -21,7 +27,10 @@
 -- =============================================================================
 
 CREATE TEMP TABLE orphan_attempt_map AS
-SELECT p.id AS orphan_id, s.id AS sibling_id
+SELECT
+  p.id AS orphan_id,
+  s.id AS sibling_id,
+  ROW_NUMBER() OVER (PARTITION BY s.id ORDER BY p.attempt_timestamp DESC) AS sibling_rank
 FROM booking_attempts p
 CROSS JOIN LATERAL (
   SELECT o.id
@@ -37,13 +46,14 @@ WHERE p.status = 'pending'
   AND p.attempt_timestamp < NOW() - INTERVAL '1 hour';
 
 -- =============================================================================
--- 2. Repoint notification_log links to the sibling row
+-- 2. Repoint notification_log links to the sibling row (paired orphans only)
 -- =============================================================================
 
 UPDATE notification_log nl
 SET booking_attempt_id = m.sibling_id
 FROM orphan_attempt_map m
-WHERE nl.booking_attempt_id = m.orphan_id;
+WHERE nl.booking_attempt_id = m.orphan_id
+  AND m.sibling_rank = 1;
 
 -- =============================================================================
 -- 3. Delete the orphans
